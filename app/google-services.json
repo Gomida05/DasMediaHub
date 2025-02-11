@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "947834834561",
+    "project_id": "downloader-5775b",
+    "storage_bucket": "downloader-5775b.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:947834834561:android:67bd8ae0a1e3293f644780",
+        "android_client_info": {
+          "package_name": "com.das.forui"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyBeTFeUL1sChm_Gydx8wbzlyebvilqvgZY"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

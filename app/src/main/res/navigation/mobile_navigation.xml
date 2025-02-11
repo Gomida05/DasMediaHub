@@ -1,0 +1,49 @@
+<?xml version="1.0" encoding="utf-8"?>
+<navigation xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:id="@+id/mobile_navigation"
+    app:startDestination="@+id/navigation_home">
+
+    <fragment
+        android:id="@+id/navigation_home"
+        android:name="com.das.forui.ui.home.HomeFragment"
+        tools:layout="@layout/fragment_home"/>
+<!--        android:label="@string/title_home"-->
+    <fragment
+        android:id="@+id/nav_result"
+        android:name="com.das.forui.ui.result.ResultFragment"
+        tools:layout="@layout/fragment_result"/>
+
+
+    <fragment
+        android:id="@+id/nav_Downloads"
+        android:name="com.das.forui.ui.downloads.DownloadsPageFragment"
+        tools:layout="@layout/fragment_downloads"/>
+<!--        android:label="@string/title_dashboard"-->
+
+    <fragment
+        android:id="@+id/navigation_settings"
+        android:name="com.das.forui.ui.settings.SettingsFragment"
+        tools:layout="@layout/fragment_settings" />
+<!--        android:label="@string/title_notifications"-->
+
+    <fragment
+        android:id="@+id/nav_searcher"
+        android:name="com.das.forui.ui.searcher.SearchPageFragment"
+        tools:layout="@layout/fragment_searcher"/>
+    <fragment
+        android:id="@+id/nav_video_viewer"
+        android:name="com.das.forui.ui.viewer.ViewerFragment"
+        tools:layout="@layout/video_viewer"/>
+
+    <fragment
+        android:id="@+id/nav_watch_later"
+        android:name="com.das.forui.ui.watch_later.WatchLaterFragment"
+        tools:layout="@layout/fragment_watch_later"/>
+
+    <fragment
+        android:id="@+id/nav_splash_screen"
+        android:name="com.das.forui.ui.settings.slashScreen"
+        tools:layout="@layout/splash_screen_activity"/>
+</navigation>

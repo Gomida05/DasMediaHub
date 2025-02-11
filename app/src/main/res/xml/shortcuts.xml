@@ -1,0 +1,35 @@
+<shortcuts xmlns:tools="http://schemas.android.com/tools"
+    xmlns:android="http://schemas.android.com/apk/res/android">
+    <shortcut
+        android:shortcutId="searcher"
+        android:enabled="true"
+        android:icon= "@drawable/search_icon_for_shortcut"
+        android:shortcutShortLabel="@string/searchorinsert"
+        android:shortcutLongLabel="@string/searchorinsert"
+        tools:targetApi="n_mr1">
+        <intent
+            android:action="android.intent.action.SEND"
+            android:targetPackage="com.das.forui"
+            android:targetClass="com.das.forui.MainActivity"
+            android:mimeType="text/plain">
+            <extra android:name="android.intent.extra.TEXT" android:value="Search12.23.58/'[0][-"/>
+        </intent>
+    </shortcut>
+    <shortcut
+        android:shortcutId="coms"
+        android:enabled="true"
+        android:icon="@drawable/download_icon_for_shortcut"
+        android:shortcutShortLabel="@string/downloads"
+        android:shortcutLongLabel="@string/downloads"
+        android:shortcutDisabledMessage="@string/downloads"
+        tools:targetApi="n_mr1">
+        <intent
+            android:action="android.intent.action.SEND"
+            android:targetPackage="com.das.forui"
+            android:mimeType="text/plain"
+            android:targetClass="com.das.forui.MainActivity">
+            <extra android:name="android.intent.extra.TEXT" android:value="DownloadsPageFragment12.23.58/'[0][-"/>
+        </intent>
+    </shortcut>
+
+</shortcuts>

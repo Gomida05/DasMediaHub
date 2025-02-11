@@ -1,0 +1,37 @@
+<resources>
+    <string name="app_name">ForUI</string>
+    <string name="start_service">Test background service</string>
+    <string name="title_home">Home</string>
+    <string name="title_watch_later">Watch Later</string>
+    <string name="title_notifications">Notifications</string>
+    <string name="setting">Settings</string>
+    <string name="searcher_title">Searcher</string>
+    <string name="num">1</string>
+    <string name="shortMe">This is for </string>
+    <string name="shortlabel1">Hello there</string>
+    <string name="shortlabel2">Hello here</string>
+    <string name="searcher">Search or Insert URL</string>
+    <string name="stop_service">Stop Service</string>
+    <string name="downloads">Downloads</string>
+    <string name="searchorinsert">Search or Insert URL</string>
+    <string name="ListItem">Click here to list</string>
+    <string name="default_dialog_text">Please connect to internet</string>
+    <string name="youtube_downloader">YouTube Downloader</string>
+    <string name="textview_of_video_viewer">Video Viewer</string>
+    <string name="todo">TODO</string>
+    <string name="stop_background_service">Stop background service</string>
+    <string name="exit_this_page">Navigate Up</string>
+    <string name="list_of_videos">List of videos</string>
+    <string name="download_as_audio">Download as Audio</string>
+    <string name="download_as_video">Download as Video</string>
+    <string name="watch_later">Watch later</string>
+    <string name="share_it_to_others">Share it to others</string>
+    <string name="this_is_settings_fragment">This is settings Fragment</string>
+    <string name="you_haven_t_save_any_video">You haven\'t save any videos to watch!,\nbut You just a chill guy!\nyou come here to check it anyway.</string>
+    <string name="channel_profile_image">Channel profile Image</string>
+    <string name="coming_soon">coming soon</string>
+    <string name="go_back">Go Back</string>
+    <string name="progressbar_is_visible">ProgressBar is visible!</string>
+    <string name="progressbar_is_invisible">ProgressBar is invisible!</string>
+    <string name="more_options">More Options</string>
+</resources>

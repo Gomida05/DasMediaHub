@@ -1,0 +1,155 @@
+<?xml version="1.1" encoding="utf-8"?>
+<androidx.constraintlayout.widget.ConstraintLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:contextClickable="true"
+    tools:context=".ui.searcher.SearchPageFragment">
+
+
+
+
+<!--    <ImageButton-->
+<!--        android:id="@+id/button5"-->
+<!--        android:layout_width="25dp"-->
+<!--        android:layout_height="25dp"-->
+<!--        android:layout_marginBottom="217dp"-->
+<!--        android:background="?android:attr/background"-->
+<!--        android:src="@drawable/close"-->
+<!--        android:visibility="visible"-->
+<!--        app:layout_constraintBottom_toTopOf="@+id/searchHistory"-->
+<!--        app:layout_constraintEnd_toEndOf="parent"-->
+<!--        app:layout_constraintHorizontal_bias="0.89"-->
+<!--        app:layout_constraintStart_toEndOf="@+id/back"-->
+<!--        app:layout_constraintTop_toTopOf="parent"-->
+<!--        app:layout_constraintVertical_bias="0.2"-->
+<!--        />-->
+
+    <!--    <EditText-->
+<!--        android:id="@+id/editTextText"-->
+<!--        android:layout_width="298dp"-->
+<!--        android:layout_height="34dp"-->
+<!--        android:autofillHints=""-->
+<!--        android:background="@drawable/textbox"-->
+<!--        android:drawableStart="@drawable/search_24dp"-->
+<!--        android:drawableEnd="@drawable/close"-->
+<!--        android:focusable="true"-->
+<!--        android:focusableInTouchMode="true"-->
+<!--        android:hint="@string/searcher"-->
+<!--        android:imeOptions="actionSearch"-->
+<!--        android:inputType="text|textAutoCorrect|textEnableTextConversionSuggestions"-->
+<!--        android:paddingStart="5dp"-->
+<!--        android:paddingEnd="43dp"-->
+<!--        android:textAlignment="textStart"-->
+<!--        android:textIsSelectable="true"-->
+<!--        app:layout_constraintBottom_toTopOf="@+id/searchHistory"-->
+<!--        app:layout_constraintEnd_toEndOf="parent"-->
+<!--        app:layout_constraintHorizontal_bias="0.422"-->
+<!--        app:layout_constraintStart_toEndOf="@+id/back"-->
+<!--        app:layout_constraintTop_toTopOf="parent"-->
+<!--        app:layout_constraintVertical_bias="0.047"-->
+<!--        tools:targetApi="tiramisu" />-->
+
+
+    <LinearLayout
+        android:layout_width="395dp"
+        android:layout_height="39dp"
+        android:background="@drawable/textbox"
+        android:orientation="horizontal"
+        app:layout_constraintBottom_toTopOf="@+id/searchHistory"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toTopOf="parent"
+        app:layout_constraintVertical_bias="0.07">
+
+        <Button
+            android:id="@+id/back"
+            android:layout_width="52dp"
+            android:layout_height="42dp"
+            android:layout_gravity="start|center"
+            android:layout_marginStart="4dp"
+            android:pointerIcon="arrow"
+            app:cornerRadius="@android:dimen/app_icon_size"
+            app:icon="@drawable/arrow_back"
+            app:layout_constraintBottom_toBottomOf="parent" />
+        <!--            android:background="@drawable/textbox"-->
+        <com.google.android.material.textfield.TextInputEditText
+            android:id="@+id/editTextText"
+            android:layout_width="298dp"
+            android:focusable="true"
+            android:layout_height="34dp"
+            android:layout_gravity="center"
+            android:autofillHints=""
+            android:background="@drawable/fullscreen_24dp"
+            android:gravity="center|start"
+            android:hint="@string/searcher"
+            android:imeOptions="actionSearch"
+            android:inputType="text|textAutoCorrect|textEnableTextConversionSuggestions"
+            android:paddingStart="5dp"
+            android:paddingTop="0dp"
+            android:paddingEnd="5dp"
+            android:textAlignment="textStart"
+            android:textIsSelectable="true"
+            app:boxBackgroundMode="none"
+            tools:targetApi="tiramisu" />
+
+        <com.google.android.material.button.MaterialButton
+            android:id="@+id/clear"
+            android:layout_width="34dp"
+            android:layout_height="34dp"
+            android:layout_gravity="center_vertical|end"
+            app:icon="@drawable/close"
+            app:cornerRadius="85dp"
+            android:paddingStart="10dp"
+            android:paddingEnd="-1dp"
+            android:visibility="gone"
+            android:focusableInTouchMode="false"
+            android:focusable="false"
+            tools:ignore="ContentDescription" />
+    </LinearLayout>
+
+    <Button
+        android:id="@+id/button6"
+        android:layout_width="57dp"
+        android:layout_height="57dp"
+        android:textAlignment="center"
+        android:visibility="gone"
+        app:cornerRadius="18dip"
+        app:icon="@drawable/close"
+        app:layout_constraintBottom_toBottomOf="parent"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintHorizontal_bias="0.988"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toTopOf="parent"
+        app:layout_constraintVertical_bias="0.02" />
+    <ProgressBar
+        android:id="@+id/progressBar"
+        style="?android:attr/progressBarStyle"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:visibility="gone"
+        app:layout_constraintBottom_toBottomOf="parent"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toTopOf="parent" />
+
+    <ListView
+        android:id="@+id/searchHistory"
+        android:layout_width="match_parent"
+        android:layout_height="291dp"
+        android:layout_marginBottom="40dp"
+        android:longClickable="true"
+        app:layout_constraintBottom_toBottomOf="parent"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintHorizontal_bias="0.0"
+        app:layout_constraintStart_toStartOf="parent" />
+
+
+
+
+    <!--   Will add list modifier -->
+
+
+
+</androidx.constraintlayout.widget.ConstraintLayout>

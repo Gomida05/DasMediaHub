@@ -1,0 +1,187 @@
+<?xml version="1.0" encoding="utf-8"?>
+
+<androidx.constraintlayout.widget.ConstraintLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
+    tools:context=".ui.viewer.ViewerFragment"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent">
+
+
+    <com.google.android.exoplayer2.ui.PlayerView
+        android:id="@+id/videoPlayerLocally"
+        android:layout_width="match_parent"
+        android:layout_height="220dp"
+        android:background="@color/black"
+        app:auto_show="true"
+        android:keepScreenOn="true"
+        app:controller_layout_id="@layout/customed_control"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintHorizontal_bias="0.0"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toTopOf="parent"
+        app:show_shuffle_button="true"
+        app:use_controller="true" />
+
+    <androidx.constraintlayout.widget.ConstraintLayout
+        android:id="@+id/hide_these"
+        android:layout_width="match_parent"
+        android:layout_height="525dp"
+        app:layout_constraintBottom_toBottomOf="parent"
+        app:layout_constraintTop_toBottomOf="@+id/videoPlayerLocally">
+
+        <TextView
+            android:id="@+id/give_me_title"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:ellipsize="end"
+            android:maxLines="2"
+            android:textAlignment="textStart"
+            android:textColor="?android:attr/colorForeground"
+            android:textSize="16sp"
+            app:cornerRadius="8dp"
+            app:layout_constraintBottom_toBottomOf="parent"
+            app:layout_constraintEnd_toEndOf="parent"
+            app:layout_constraintHorizontal_bias="0.0"
+            app:layout_constraintStart_toStartOf="parent"
+            app:layout_constraintTop_toTopOf="parent"
+            app:layout_constraintVertical_bias="0.0" />
+
+        <LinearLayout
+            android:id="@+id/textHolder"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:gravity="center"
+            android:orientation="horizontal"
+            app:layout_constraintBottom_toTopOf="@+id/buttonHolder"
+            app:layout_constraintTop_toBottomOf="@+id/give_me_title"
+            tools:layout_editor_absoluteX="0dp">
+
+            <ImageButton
+                android:id="@+id/channelImageVideoView"
+                android:layout_width="34dp"
+                android:layout_height="34dp"
+                android:layout_gravity="start"
+                android:layout_marginEnd="8dp"
+                app:cornerRadius="80dp"
+                android:background="@drawable/shaper_of_image"
+                android:tooltipText="@string/channel_profile_image"
+                tools:ignore="ContentDescription"
+                tools:targetApi="o" />
+
+            <TextView
+                android:id="@+id/give_me_view_channelName"
+                android:layout_width="120dp"
+                android:layout_height="wrap_content"
+                android:layout_gravity="center_vertical"
+                android:layout_marginEnd="15dp"
+                android:ellipsize="end"
+                android:gravity="start"
+                android:maxLines="1" />
+
+            <TextView
+                android:id="@+id/give_me_view_number"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_gravity="center_vertical|center"
+                android:layout_marginStart="25dp"
+                android:layout_marginEnd="25dp"
+                android:gravity="center" />
+
+            <TextView
+                android:id="@+id/give_me_view_date"
+                android:layout_width="95dp"
+                android:layout_height="wrap_content"
+                android:layout_gravity="center_vertical|end"
+                android:layout_marginStart="15dp"
+                app:layout_constraintBottom_toTopOf="@+id/buttonHolder"
+                app:layout_constraintEnd_toEndOf="parent" />
+        </LinearLayout>
+
+        <LinearLayout
+            android:id="@+id/buttonHolder"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:gravity="center"
+            android:orientation="horizontal"
+            app:layout_constraintBottom_toTopOf="@+id/myComposeView2"
+            app:layout_constraintEnd_toEndOf="parent"
+            app:layout_constraintHorizontal_bias="0.0"
+            app:layout_constraintStart_toStartOf="parent"
+            app:layout_constraintTop_toTopOf="parent"
+            app:layout_constraintVertical_bias="0.9">
+
+            <Button
+                android:id="@+id/sharing_button"
+                android:layout_width="55dp"
+                android:layout_height="45dp"
+                android:layout_gravity="start"
+                android:layout_marginStart="18dp"
+                android:layout_marginEnd="25dp"
+                android:gravity="center"
+                android:tooltipText="@string/share_it_to_others"
+                app:cornerRadius="8dp"
+                app:icon="@drawable/share_24dp"
+                tools:targetApi="o" />
+
+            <com.google.android.material.button.MaterialButton
+                android:id="@+id/saved_to_watch_later"
+                android:layout_width="55dp"
+                android:layout_height="45dp"
+                android:layout_gravity="center"
+                android:layout_marginEnd="25dp"
+                android:drawableTop="@drawable/un_favorite_icon"
+                android:gravity="center"
+                android:tag="unfavorite_icon"
+                android:tooltipText="@string/watch_later"
+                app:cornerRadius="8dp"
+                tools:ignore="RtlHardcoded"
+                tools:targetApi="o" />
+
+            <Button
+                android:id="@+id/download_as_audio"
+                android:layout_width="55dp"
+                android:layout_height="45dp"
+                android:layout_gravity="center"
+                android:tooltipText="@string/download_as_audio"
+                app:cornerRadius="8dp"
+                app:icon="@drawable/music_note_24dp"
+                tools:targetApi="o" />
+
+            <Button
+                android:id="@+id/download_as_video"
+                android:layout_width="55dp"
+                android:layout_height="45dp"
+                android:layout_marginStart="25dp"
+                android:tooltipText="@string/download_as_video"
+                app:cornerRadius="8dp"
+                app:icon="@drawable/smart_display_24dp"
+                tools:targetApi="o" />
+
+
+            <com.google.android.material.button.MaterialButton
+                android:id="@+id/click_for_more"
+                android:layout_width="55dp"
+                android:layout_height="45dp"
+                android:layout_marginStart="25dp"
+                android:layout_marginEnd="18dp"
+                android:gravity="center"
+                android:tooltipText="@string/more_options"
+                app:cornerRadius="8dp"
+                app:icon="@drawable/more_vert_24dp"
+                tools:targetApi="o" />
+        </LinearLayout>
+
+
+        <androidx.compose.ui.platform.ComposeView
+            android:id="@+id/myComposeView2"
+            android:layout_width="match_parent"
+            android:layout_height="395dp"
+            android:layout_marginBottom="4dp"
+            app:layout_constraintBottom_toBottomOf="parent"
+            tools:layout_editor_absoluteX="0dp"/>
+
+
+    </androidx.constraintlayout.widget.ConstraintLayout>
+
+</androidx.constraintlayout.widget.ConstraintLayout>
