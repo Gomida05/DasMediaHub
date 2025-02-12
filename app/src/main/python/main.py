@@ -1,16 +1,13 @@
 import http.client, json, traceback
-from typing import overload
 from pytubefix import YouTube, exceptions
 from youtubesearchpython import Video, VideosSearch
 
 
 
-def get_video_url(video_url: str, client: str="ANDROID"):
+def get_video_url(video_url: str):
     try:
-        yt = YouTube(video_url, client=client)
+        yt = YouTube(video_url)
         stream = yt.streams.get_highest_resolution()
-        # yt.captions['a.en'].save_captions("/data/user/0/com.das.forui/cache/subtitles.vtt")
-        # print(stream.url)
         return str(stream.url)
     except Exception as e:
         print(f"error in url {e}")

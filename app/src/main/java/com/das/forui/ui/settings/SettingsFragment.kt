@@ -146,9 +146,9 @@ class SettingsFragment : Fragment() {
         println("Selected Folder Path: $path")
         val pather="/storage/emulated/0/${extractFolderPath(path.toString())}"
         if (type=="video"){
-          PathSaver().saveMoviesDownloadPath(requireContext(), pather)
+          PathSaver().setMoviesDownloadPath(requireContext(), pather)
         }else{
-          PathSaver().saveMusicDownloadPath(requireContext(), pather)
+          PathSaver().setMusicDownloadPath(requireContext(), pather)
         }
 
       } else {

@@ -230,7 +230,7 @@ class MainActivity : AppCompatActivity() {
 
 
     fun downloadVideo(link: String, title: String, contexts: Context) {
-        val path = PathSaver().getMoviesDownloadPath(contexts)
+        val path = PathSaver().getVideosDownloadPath(contexts)
 //                createSingleDirectory("/storage/emulated/0/Movies/ForUI")
         createSingleDirectory(path.toString())
         try {
@@ -412,24 +412,9 @@ class MainActivity : AppCompatActivity() {
 
 
 
-    @SuppressLint("UnsafeIntentLaunch")
     fun createMediaNotification(title: String) {
 
         val pendingIntent = PendingIntent.getActivity(this,0, intent, PendingIntent.FLAG_IMMUTABLE)
-//        val playIntent = Intent(this, AudioServiceFromUrl::class.java).apply { action = ACTION_PLAY }
-//        val playPendingIntent = PendingIntent.getService(this, 0, playIntent,
-//            PendingIntent.FLAG_NO_CREATE or PendingIntent.FLAG_IMMUTABLE)
-//
-//        val pauseIntent = Intent(this, AudioServiceFromUrl::class.java).apply { action = ACTION_PAUSE }
-//        val pausePendingIntent = PendingIntent.getService(this, 0, pauseIntent, PendingIntent.FLAG_IMMUTABLE)
-//
-//        val stopIntent = Intent(this, AudioServiceFromUrl::class.java).apply { action = ACTION_STOP }
-//        val stopPendingIntent = PendingIntent.getService(
-//            this,
-//            0, // Request code
-//            stopIntent,
-//            PendingIntent.FLAG_IMMUTABLE or PendingIntent.FLAG_UPDATE_CURRENT
-//        )
 
 
         val mediaStyle = MediaStyle()

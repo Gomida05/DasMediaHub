@@ -49,9 +49,8 @@ class AudioServiceFromUrl : Service() {
         super.onCreate()
         createNotificationChannel()
         audioManager = getSystemService(AudioManager::class.java)
-        mediaSession = MediaSessionCompat(this, "AudioService").apply {
-            isActive = true
-        }
+        mediaSession = MediaSessionCompat(this, "AudioService")
+        mediaSession.isActive = true
         exoPlayer = ExoPlayer.Builder(this).build()
 
 
@@ -226,7 +225,7 @@ class AudioServiceFromUrl : Service() {
                 channelId,
                 "Foreground Service Channel",
                 NotificationManager.IMPORTANCE_HIGH).apply {
-                setShowBadge(true)
+                setShowBadge(false)
                 description = "channelDescription"
                 enableLights(false)
                 enableVibration(false)
@@ -242,6 +241,8 @@ class AudioServiceFromUrl : Service() {
         return DatabaseFavorite(this).isWatchUrlExist(videoId)
 
     }
+
+
 
     private fun createMediaNotification(
         title: String,
@@ -346,17 +347,18 @@ class AudioServiceFromUrl : Service() {
             .putString(MediaMetadata.METADATA_KEY_TITLE, title)
             .putString(MediaMetadata.METADATA_KEY_ARTIST, channelName)
             .putString(MediaMetadata.METADATA_KEY_ALBUM_ART_URI, title)
+            .putBitmap("gg", BitmapFactory.decodeResource(this.resources, R.drawable.favorite))
             .build()
-
+        mediaSession.setMetadata(metadata)
         val mediaStyle = MediaStyle()
             .setMediaSession(mediaSession.sessionToken)
             .setShowActionsInCompactView(1, 2, 3)
+//        MediaMetadataCompat.fromMediaMetadata(metadata)
         val notification= NotificationCompat.Builder(this, channelId)
             .setContentTitle(title)
             .setContentText(channelName)
             .setContentIntent(pendingIntent)
             .setSmallIcon(R.drawable.music_note_24dp)
-            .setLargeIcon(BitmapFactory.decodeResource(resources , R.drawable.music_note_24dp))
             .setOngoing(false)
             .setFullScreenIntent(fullScreenPendingIntent, true)
             .setStyle(mediaStyle)
@@ -387,6 +389,8 @@ class AudioServiceFromUrl : Service() {
         getSystemService(NotificationManager::class.java).notify(1, notification)
         return notification
     }
+
+
 
 
 

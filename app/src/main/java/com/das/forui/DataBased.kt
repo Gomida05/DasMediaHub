@@ -30,7 +30,7 @@ class PathSaver {
         return "/storage/emulated/0/Music/ForUI"
     }
 
-    fun saveMusicDownloadPath(context: Context, path: String) {
+    fun setMusicDownloadPath(context: Context, path: String) {
         val sharedPref: SharedPreferences =
             context.getSharedPreferences("AppPreferences", Context.MODE_PRIVATE)
         with(sharedPref.edit()) {
@@ -40,7 +40,7 @@ class PathSaver {
         }
     }
 
-    fun getMoviesDownloadPath(context: Context): String? {
+    fun getVideosDownloadPath(context: Context): String? {
 
         val sharedPref: SharedPreferences = context.getSharedPreferences("AppPreferences", Context.MODE_PRIVATE)
         var downloadPath = sharedPref.getString("download_path2", null)
@@ -55,7 +55,7 @@ class PathSaver {
     }
 
 
-    fun saveMoviesDownloadPath(context: Context, path: String) {
+    fun setMoviesDownloadPath(context: Context, path: String) {
         println("hello there\n$path")
         val sharedPref: SharedPreferences =context.getSharedPreferences("AppPreferences", Context.MODE_PRIVATE)
         with(sharedPref.edit()) {

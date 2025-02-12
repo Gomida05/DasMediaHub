@@ -144,7 +144,7 @@ class DownloadingService(private val channelId: String) : Service() {
 
 
     fun downloadVideo(link: String, title: String, contexts: Context) {
-        val path = PathSaver().getMoviesDownloadPath(contexts)
+        val path = PathSaver().getVideosDownloadPath(contexts)
         MainActivity().createSingleDirectory(path.toString())
         try {
             var forToast: String

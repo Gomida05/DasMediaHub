@@ -1,8 +1,7 @@
-@file:Suppress("DEPRECATION", "USELESS_ELVIS")
+@file:Suppress("DEPRECATION")
 package com.das.forui.ui.viewer
 
 import android.app.AlertDialog
-import android.content.Context
 import android.content.Context.AUDIO_SERVICE
 import android.content.Intent
 import android.content.pm.ActivityInfo
@@ -17,11 +16,9 @@ import android.view.LayoutInflater
 import android.view.MotionEvent
 import android.view.View
 import android.view.ViewGroup
-import android.widget.ArrayAdapter
 import android.widget.ImageButton
 import android.widget.ImageView
 import android.widget.TextView
-import android.widget.Toast
 import androidx.activity.OnBackPressedCallback
 import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.background
@@ -33,21 +30,12 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.Favorite
-import androidx.compose.material.icons.filled.FavoriteBorder
-import androidx.compose.material.icons.filled.Home
 import androidx.compose.material.icons.filled.MoreVert
-import androidx.compose.material.icons.filled.MusicNote
-import androidx.compose.material.icons.filled.Share
-import androidx.compose.material.icons.filled.SmartDisplay
-import androidx.compose.material3.Button
-import androidx.compose.material3.ButtonColors
 import androidx.compose.material3.Card
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ExperimentalMaterial3Api
@@ -55,8 +43,6 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
-import androidx.compose.material3.TopAppBar
-import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.mutableStateOf
@@ -64,14 +50,10 @@ import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.graphics.vector.rememberVectorPainter
-import androidx.compose.ui.input.nestedscroll.nestedScroll
 import androidx.compose.ui.layout.ContentScale
-import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.ViewCompositionStrategy
 import androidx.compose.ui.text.style.TextAlign
-import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.core.content.ContextCompat
@@ -84,6 +66,7 @@ import com.bumptech.glide.load.resource.bitmap.CircleCrop
 import com.chaquo.python.Python
 import com.das.forui.AudioServiceFromUrl
 import com.das.forui.DatabaseFavorite
+import com.das.forui.DownloaderClass
 import com.das.forui.MainActivity
 import com.das.forui.R
 import com.das.forui.databinding.VideoViewerBinding
@@ -153,8 +136,8 @@ class ViewerFragment: Fragment() {
         videoURL= arguments?.getString("View_URL").toString()
         channelThumbnail = arguments?.getString("channel_Thumbnails").toString()
         var viewNumber= arguments?.getString("View_Number")
-        var dateOfVideo= arguments?.getString("dateOfVideo")
-        var channelName= arguments?.getString("channelName")
+        var dateOfVideo= arguments?.getString("dateOfVideo").toString()
+        var channelName= arguments?.getString("channelName").toString()
         duration= arguments?.getString("duration").toString()
 
 
@@ -297,19 +280,22 @@ class ViewerFragment: Fragment() {
                     playIntent.putExtra("videoId", videoID)
                     playIntent.putExtra("media_url", url)
                     playIntent.putExtra("title", binding.giveMeTitle.text.toString())
-                    playIntent.putExtra("channelName", binding.giveMeViewChannelName.text.toString())
+                    playIntent.putExtra(
+                        "channelName",
+                        binding.giveMeViewChannelName.text.toString()
+                    )
                     playIntent.putExtra("viewNumber", binding.giveMeViewNumber.text.toString())
                     playIntent.putExtra("videoDate", binding.giveMeViewDate.text.toString())
                     playIntent.putExtra("duration", duration)
                     activity?.startService(playIntent)
                 }
-                .setNegativeButton("No") { _, _ ->}.show()
+                .setNegativeButton("No") { _, _ -> }.show()
         }
 
         binding.channelImageVideoView.setOnClickListener {
             AlertDialog.Builder(context)
                 .setTitle("This feature is currently under development!!!")
-                .setPositiveButton("Okay"){ _, _ ->}
+                .setPositiveButton("Okay") { _, _ -> }
                 .setIcon(R.drawable.setting)
                 .setMessage("Thank you for understanding!")
                 .setIcon(R.mipmap.ic_launcher)
@@ -320,53 +306,61 @@ class ViewerFragment: Fragment() {
 
 
 
-            binding.downloadAsAudio.setOnClickListener{
-                (activity as MainActivity).downloadMusic(receivedLink=videoID, title=videoTitle, context= requireContext())
-            }
-            binding.downloadAsVideo.setOnClickListener {
-                (activity as MainActivity).downloadVideo(link = videoID, title = videoTitle, contexts = requireContext())
-            }
+        binding.downloadAsAudio.setOnClickListener {
+            DownloaderClass(requireContext()).downloadVideo(url, videoTitle, "mp3")
+        }
+        binding.downloadAsVideo.setOnClickListener {
+            DownloaderClass(requireContext()).downloadVideo(url, videoTitle, "mp4")
+//                (activity as MainActivity).downloadVideo(link = videoID, title = videoTitle, contexts = requireContext())
+        }
 
-            val buttonSaver= binding.savedToWatchLater
-            buttonSaver.setOnClickListener {
-                val dbHere = DatabaseFavorite(requireContext())
-                val newIcon: Any
-                val toastEr: String
-                if (buttonSaver.tag == "favorite_icon") {
-                    dbHere.deleteWatchUrl(videoID)
-                    buttonSaver.tag = "unfavorite_icon"
-                    newIcon= R.drawable.un_favorite_icon
-                    toastEr= "Removed from watch later list"
+        val buttonSaver = binding.savedToWatchLater
+        buttonSaver.setOnClickListener {
+            val dbHere = DatabaseFavorite(requireContext())
+            val newIcon: Any
+            val toastEr: String
+            if (buttonSaver.tag == "favorite_icon") {
+                dbHere.deleteWatchUrl(videoID)
+                buttonSaver.tag = "unfavorite_icon"
+                newIcon = R.drawable.un_favorite_icon
+                toastEr = "Removed from watch later list"
 
-                } else {
-                    toastEr= "Added to watch later list"
-                    val durations = duration
-                    val videoChannelName = view?.findViewById<TextView>(R.id.give_me_view_channelName)?.text.toString()
-                    val videoViewCount = view?.findViewById<TextView>(R.id.give_me_view_number)?.text.toString()
-                    val videoDate = view?.findViewById<TextView>(R.id.give_me_view_date)?.text.toString()
-                    dbHere.insertData(videoID, videoTitle, videoDate, videoViewCount, videoChannelName, durations)
-                    buttonSaver.tag = "favorite_icon"
-                    newIcon= R.drawable.favorite
-                }
-                (activity as MainActivity).showDiaglo(toastEr)
-                val icon = ContextCompat.getDrawable(requireContext(), newIcon)
-                buttonSaver.setCompoundDrawablesWithIntrinsicBounds(null, icon, null, null)
+            } else {
+                toastEr = "Added to watch later list"
+                val durations = duration
+                val videoChannelName =
+                    view?.findViewById<TextView>(R.id.give_me_view_channelName)?.text.toString()
+                val videoViewCount =
+                    view?.findViewById<TextView>(R.id.give_me_view_number)?.text.toString()
+                val videoDate =
+                    view?.findViewById<TextView>(R.id.give_me_view_date)?.text.toString()
+                dbHere.insertData(
+                    videoID,
+                    videoTitle,
+                    videoDate,
+                    videoViewCount,
+                    videoChannelName,
+                    durations
+                )
+                buttonSaver.tag = "favorite_icon"
+                newIcon = R.drawable.favorite
+            }
+            (activity as MainActivity).showDiaglo(toastEr)
+            val icon = ContextCompat.getDrawable(requireContext(), newIcon)
+            buttonSaver.setCompoundDrawablesWithIntrinsicBounds(null, icon, null, null)
 
 //            buttonSaver.tag = if (buttonSaver.tag == "unfavorite_icon") "favorite_icon" else "unfavorite_icon"
-            }
-            binding.sharingButton.setOnClickListener {
-                val shareIntent = Intent(Intent.ACTION_SEND).apply {
-                    type = "text/plain"
-                    putExtra(Intent.EXTRA_TEXT, "${videoURL}&feature=shared")
-                }
-
-                val chooser = Intent.createChooser(shareIntent, "Share via")
-                startActivity(chooser)
-            }
-//        val durationTextView = view.findViewById(R.id.exo_duration)
-//        val fullScreenButton = view?.findViewById(R.id.dd)
         }
-//        }
+        binding.sharingButton.setOnClickListener {
+            val shareIntent = Intent(Intent.ACTION_SEND).apply {
+                type = "text/plain"
+                putExtra(Intent.EXTRA_TEXT, "${videoURL}&feature=shared")
+            }
+
+            val chooser = Intent.createChooser(shareIntent, "Share via")
+            startActivity(chooser)
+        }
+    }
 
 
 
@@ -379,17 +373,12 @@ class ViewerFragment: Fragment() {
         videoIds: String,
         titleVideo: String, channelThumbnails: String, channelName: String, views: String, dateOfVideo: String
         ) {
-        val scrollBehavior = TopAppBarDefaults.enterAlwaysScrollBehavior()
+
         val searchResults = remember { mutableStateOf<List<Video>>(emptyList()) }
         val isLoading = remember { mutableStateOf(true) }
-        var favorite: ImageVector
-        val dataBase = DatabaseFavorite(requireContext())
 
-        favorite = if (dataBase.isWatchUrlExist(videoIds)){
-            Icons.Default.Favorite
-        }else{
-            Icons.Default.FavoriteBorder
-        }
+
+
         LaunchedEffect(titleVideo) {
             if (titleVideo.isNotBlank()) {
                 isLoading.value = true
