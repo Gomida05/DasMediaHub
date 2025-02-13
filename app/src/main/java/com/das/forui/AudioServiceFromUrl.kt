@@ -9,7 +9,6 @@ import android.app.NotificationManager
 import android.app.PendingIntent
 import android.app.Service
 import android.content.Intent
-import android.graphics.Bitmap
 import android.graphics.BitmapFactory
 import android.media.AudioAttributes
 import android.media.AudioFocusRequest
@@ -22,10 +21,11 @@ import android.os.Looper
 import android.support.v4.media.MediaMetadataCompat
 import android.support.v4.media.session.MediaSessionCompat
 import android.util.Log
-import androidx.core.graphics.convertTo
-import com.google.android.exoplayer2.ExoPlayer
-import com.google.android.exoplayer2.MediaItem
-import com.google.android.exoplayer2.Player
+import androidx.core.app.Person
+import androidx.media3.common.MediaItem
+import androidx.media3.common.Player
+import androidx.media3.common.util.UnstableApi
+import androidx.media3.exoplayer.ExoPlayer
 import kotlin.properties.Delegates
 
 class AudioServiceFromUrl : Service() {
@@ -58,6 +58,7 @@ class AudioServiceFromUrl : Service() {
     }
 
 
+    @UnstableApi
     override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
 
 
@@ -128,6 +129,7 @@ class AudioServiceFromUrl : Service() {
                     exoPlayer?.prepare()
                     exoPlayer?.play()
                     exoPlayer?.addListener(object : Player.Listener {
+                        @Deprecated("Deprecated in Java")
                         override fun onPositionDiscontinuity(reason: Int) {
                             super.onPositionDiscontinuity(reason)
                             val currentPosition = exoPlayer?.currentPosition ?: 0L
@@ -141,7 +143,7 @@ class AudioServiceFromUrl : Service() {
 
                         override fun onPlayWhenReadyChanged(playWhenReady: Boolean, reason: Int) {
                             super.onPlayWhenReadyChanged(playWhenReady, reason)
-                            if (playWhenReady ==true){
+                            if (playWhenReady){
                                 requestAudioFocus()
                                 println("service playing")
                             }else{
@@ -153,7 +155,8 @@ class AudioServiceFromUrl : Service() {
                 }
             }
             ACTION_PREVIOUS -> {
-                exoPlayer?.previous()
+                exoPlayer?.seekToPrevious()
+//                    .previous()
             }
 
             ACTION_PAUSE_PLAY -> {
@@ -354,6 +357,10 @@ class AudioServiceFromUrl : Service() {
             .setMediaSession(mediaSession.sessionToken)
             .setShowActionsInCompactView(1, 2, 3)
 //        MediaMetadataCompat.fromMediaMetadata(metadata)
+        val incomingCaller = Person.Builder()
+            .setName("Jane Doe")
+            .setImportant(true)
+            .build()
         val notification= NotificationCompat.Builder(this, channelId)
             .setContentTitle(title)
             .setContentText(channelName)
@@ -362,6 +369,7 @@ class AudioServiceFromUrl : Service() {
             .setOngoing(false)
             .setFullScreenIntent(fullScreenPendingIntent, true)
             .setStyle(mediaStyle)
+            .addPerson(incomingCaller)
             .addAction(NotificationCompat.Action(
                 if (isAdded(videoId)) R.drawable.favorite else R.drawable.un_favorite_icon,
                 actionText, actionIntent

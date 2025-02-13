@@ -90,6 +90,7 @@ dependencies {
     //ImageLoader
 
     implementation("io.coil-kt:coil-compose:2.2.2")
+    implementation("androidx.media3:media3-session:1.5.1")
 
     //Material 3
     val composeBom = platform("androidx.compose:compose-bom:2025.01.01")
@@ -117,6 +118,7 @@ dependencies {
     implementation("com.google.android.exoplayer:exoplayer-dash:2.19.1")
     implementation("com.google.android.exoplayer:exoplayer-hls:2.19.1")
     implementation("com.google.android.exoplayer:exoplayer-ui:2.19.1")
+    implementation("com.google.android.exoplayer:extension-mediasession:2.19.1")
     implementation("androidx.core:core-ktx:1.15.0")
     implementation("androidx.legacy:legacy-support-v4:1.0.0")
     implementation("androidx.media:media:1.7.0")
