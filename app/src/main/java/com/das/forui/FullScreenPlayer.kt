@@ -4,9 +4,13 @@ package com.das.forui
 
 
 
+import android.app.Notification
+import android.app.PendingIntent
 import android.app.PictureInPictureParams
+import android.app.RemoteAction
 import android.content.Intent
 import android.content.res.Configuration
+import android.graphics.drawable.Icon
 import android.media.AudioManager
 import android.net.Uri
 import android.os.Build
@@ -14,6 +18,7 @@ import android.os.Bundle
 import android.util.Rational
 import android.view.View
 import android.widget.ImageButton
+import android.widget.MediaController
 import android.widget.Toast
 import androidx.activity.OnBackPressedCallback
 import androidx.appcompat.app.AppCompatActivity
@@ -75,7 +80,17 @@ class FullScreenPlayerActivity : AppCompatActivity() {
                     showMyDiaglo("Unsupported media type")
                 }
             }
-        } else {
+        } else if(intent.action == "ControlMedia"){
+            val mediaUri: Uri = intent.data!!
+            if (intent.getStringExtra("ControlMedia") == "play"){
+                exoPlayer?.play()
+            }
+            else{
+                exoPlayer?.pause()
+            }
+
+        }
+        else {
             showMyDiaglo("No valid media to play")
         }
     }
@@ -113,10 +128,47 @@ class FullScreenPlayerActivity : AppCompatActivity() {
     override fun onUserLeaveHint() {
         super.onUserLeaveHint()
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+
+            val playIntent = PendingIntent.getBroadcast(
+                this,
+                0,
+                Intent("com.das.forui.ACTION_CONTROL_MEDIA").apply {
+                    putExtra("ControlMedia", "play")  // Set the action as "play"
+                },
+                PendingIntent.FLAG_IMMUTABLE
+            )
+
+            val pauseIntent = PendingIntent.getBroadcast(
+                this,
+                0,
+                Intent("com.das.forui.ACTION_CONTROL_MEDIA").apply {
+                    putExtra("ControlMedia", "pause")  // Set the action as "pause"
+                },
+                PendingIntent.FLAG_IMMUTABLE
+            )
+
+
+            val playAction = RemoteAction(
+                Icon.createWithResource(this, R.drawable.play_arrow_24dp),  // Icon for Play
+                "Play",  // Title
+                "Resume playback",  // Description
+                playIntent  // PendingIntent
+            )
+
+            val pauseAction = RemoteAction(
+                Icon.createWithResource(this, R.drawable.pause_icon),  // Icon for Pause
+                "Pause",  // Title
+                "Pause playback",  // Description
+                pauseIntent  // PendingIntent
+            )
+
+
+
             val aspectRatio = Rational(14, 9)
 
             val pipBuilder = PictureInPictureParams.Builder()
                 .setAspectRatio(aspectRatio)
+                .setActions(listOf(playAction,pauseAction))
             findViewById<PlayerView>(R.id.start_video_player_locally).useController = false
             enterPictureInPictureMode(pipBuilder.build())
         }
@@ -129,6 +181,8 @@ class FullScreenPlayerActivity : AppCompatActivity() {
         super.onPictureInPictureModeChanged(isInPictureInPictureMode, newConfig)
         if(isInPictureInPictureMode){
             findViewById<PlayerView>(R.id.start_video_player_locally).useController=false
+        }else{
+            findViewById<PlayerView>(R.id.start_video_player_locally).useController= true
         }
     }
 
@@ -181,5 +235,9 @@ class FullScreenPlayerActivity : AppCompatActivity() {
     override fun onDestroy() {
         super.onDestroy()
     }
+}
+
+class MediaControlActivity: AppCompatActivity(){
+
 }
 

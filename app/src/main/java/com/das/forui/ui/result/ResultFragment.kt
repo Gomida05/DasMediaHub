@@ -1,13 +1,10 @@
-@file:Suppress("USELESS_ELVIS")
-
 package com.das.forui.ui.result
 
-import android.app.AlertDialog
+
 import android.os.Bundle
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
-import android.widget.ImageView
 import android.widget.Toast
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Box
@@ -54,7 +51,6 @@ import coil.compose.AsyncImage
 import coil.request.ImageRequest
 import com.das.forui.MainActivity
 import com.das.forui.databinding.FragmentResultBinding
-import com.bumptech.glide.Glide
 import com.chaquo.python.Python
 import com.das.forui.R
 import com.google.gson.Gson
@@ -85,10 +81,6 @@ class ResultFragment : Fragment() {
         return binding.root
     }
 
-    override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
-        super.onViewCreated(view, savedInstanceState)
-
-    }
 
     @OptIn(ExperimentalMaterial3Api::class)
     @Composable
@@ -118,9 +110,12 @@ class ResultFragment : Fragment() {
                     title = {
                     },
                     actions = {
-                        Button(onClick = { findNavController().navigateUp()  }, modifier = Modifier
-                            .fillMaxWidth()
-                            .padding(start = 12.dp, end=12.dp, bottom = 1.dp, top = 1.dp)
+                        Button(onClick = {
+                            findNavController().navigateUp()
+                                         },
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .padding(start = 12.dp, end=12.dp, bottom = 1.dp, top = 1.dp)
                         ) {
                             Icon(
                                 painter = rememberVectorPainter(Icons.Outlined.Search),
@@ -320,7 +315,7 @@ class ResultFragment : Fragment() {
 
 
 
-    fun callPythonForSearchVideos(inputText: String): List<SearchResultFromMain>? {
+    private fun callPythonForSearchVideos(inputText: String): List<SearchResultFromMain>? {
         return try {
             val py = Python.getInstance()
             val mainFile = py.getModule("main")

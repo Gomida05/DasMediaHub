@@ -78,17 +78,12 @@
 
         </activity>
 
-        <activity android:name=".JustStartDownload"
-            android:exported="true"
-            android:label="@string/downloads"
-            android:launchMode="singleTask"
-            android:resizeableActivity="true"
-            android:supportsPictureInPicture="true"
-            android:configChanges="uiMode|screenSize|orientation|screenLayout|smallestScreenSize|keyboardHidden|colorMode|touchscreen"
-            android:theme="@style/AppTheme.NoAction">
-
-        </activity>
-
+        <receiver android:name=".MediaControlFullScreenBroadcast"
+            android:exported="false">
+            <intent-filter>
+                <action android:name="com.das.forui.ACTION_CONTROL_MEDIA" />
+            </intent-filter>
+        </receiver>
 
         <activity
             android:name=".FullScreenPlayerActivity"
@@ -101,12 +96,6 @@
             android:launchMode="singleTask"
             android:theme="@style/AppTheme.NoAction"
             tools:ignore="DiscouragedApi">
-
-
-<!--            <intent-filter>-->
-<!--                <action android:name="android.intent.action.MAIN" />-->
-<!--                <category android:name="android.intent.category.LAUNCHER" />-->
-<!--            </intent-filter>-->
 
 
             <intent-filter>
@@ -151,14 +140,14 @@
 <!--            android:theme="@android:style/Theme.Fullscreen"-->
 
         <service
-            android:name=".AudioServiceFromUrl"
+            android:name=".services.AudioServiceFromUrl"
             android:enabled="true"
             android:exported="false"
             android:foregroundServiceType="mediaPlayback"/>
 
 
         <service
-            android:name=".DownloadingService"
+            android:name=".services.DownloadingService"
             android:exported="false"
             android:enabled="true"
             android:foregroundServiceType="dataSync"
@@ -175,7 +164,7 @@
         </service>
 
         <service
-            android:name=".MyService"
+            android:name=".services.MyService"
             android:enabled="true"
             android:exported="false"
             android:foregroundServiceType="dataSync"

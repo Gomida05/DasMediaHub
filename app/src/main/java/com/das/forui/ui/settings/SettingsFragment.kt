@@ -1,28 +1,53 @@
 @file:Suppress("DEPRECATION")
-
 package com.das.forui.ui.settings
 
 
 import android.app.Activity
-import android.app.AlertDialog
 import android.content.Context
 import android.content.Intent
-import android.content.res.Configuration
 import android.net.Uri
 import android.os.Bundle
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
-import android.widget.ArrayAdapter
-import android.widget.ImageView
-import android.widget.ListView
-import android.widget.TextView
-import androidx.appcompat.app.AppCompatDelegate
+import androidx.compose.foundation.background
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.ArrowForward
+import androidx.compose.material.icons.filled.Folder
+import androidx.compose.material.icons.filled.Info
+import androidx.compose.material.icons.filled.ManageSearch
+import androidx.compose.material.icons.filled.Update
+import androidx.compose.material.icons.filled.VideoLibrary
+import androidx.compose.material3.Button
+import androidx.compose.material3.AlertDialog
+import androidx.compose.material3.ButtonColors
+import androidx.compose.material3.Icon
+import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
+import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
+import androidx.compose.ui.Alignment
+import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.platform.ViewCompositionStrategy
+import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import androidx.documentfile.provider.DocumentFile
 import androidx.fragment.app.Fragment
 import androidx.navigation.fragment.findNavController
 import com.das.forui.MainActivity
-import com.das.forui.PathSaver
+import com.das.forui.databased.PathSaver
 import com.das.forui.R
 import com.das.forui.databinding.FragmentSettingsBinding
 
@@ -42,56 +67,189 @@ class SettingsFragment : Fragment() {
 
     _binding = FragmentSettingsBinding.inflate(inflater, container, false)
 
-    val listView: ListView = binding.settingsList
-    val items = arrayOf(
-      "Setting for searchList",
-      "HeadLine",
-      "Change Downloading Location",
-      "Check for update",
-      "About Us"
-    )
-    val adapter = CustomAdapter(requireContext(), items)
-    listView.adapter = adapter
-    AppCompatDelegate.setDefaultNightMode(AppCompatDelegate.MODE_NIGHT_FOLLOW_SYSTEM)
+    binding.settingsListFromComposeView.apply {
+      setViewCompositionStrategy(ViewCompositionStrategy.DisposeOnViewTreeLifecycleDestroyed)
+      setContent {
+        ListSettingsItem()
+      }
+    }
     return binding.root
   }
 
-  override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
-    super.onViewCreated(view, savedInstanceState)
+  data class SettingsDataClass (
+    val title: String,
+    val leftIcon: ImageVector,
+    val rightIcon: ImageVector
 
-    binding.settingsList.setOnItemClickListener { parent, _, position, _ ->
-      when (parent.getItemAtPosition(position).toString()) {
-          "Setting for searchList" -> {
-            findNavController().navigate(R.id.nav_result)
-          }
-          "HeadLine" -> {
-            findNavController().navigate(R.id.nav_splash_screen)
-          }
-          "Change Downloading Location" -> {
-            alertDialogPathChoose()
-          }
-          "About Us" -> {
-            goToWeb()
-          }
-        "Check for update" -> {
-          (activity as MainActivity).showDiaglo("coming soon")
-          }
+    )
+
+  @Composable
+  private fun ListSettingsItem() {
+    val settingsResults = remember { mutableStateOf<List<SettingsDataClass>>(emptyList()) }
+
+      val item = listOf<String>(
+        "Setting for searchList",
+        "HeadLine",
+        "Change Downloading Location",
+        "Check for update",
+        "About Us"
+      )
+      val leftIcons = listOf<ImageVector>(
+        Icons.Default.ManageSearch,
+        Icons.Default.VideoLibrary,
+        Icons.Default.Folder,
+        Icons.Default.Update,
+        Icons.Default.Info
+      )
+      val rightIcons = listOf<ImageVector>(
+        Icons.Default.ArrowForward,
+        Icons.Default.ArrowForward,
+        Icons.Default.ArrowForward,
+        Icons.Default.ArrowForward,
+        Icons.Default.ArrowForward
+      )
+
+    val allItems = item.zip(leftIcons).zip(rightIcons) { titleIconPair, rightIcon ->
+      SettingsDataClass(
+        title = titleIconPair.first,
+        leftIcon = titleIconPair.second,
+        rightIcon = rightIcon
+      )
+    }
+    LazyColumn(
+      modifier = Modifier
+    ) {
+      settingsResults.value = allItems
+      items(settingsResults.value) { settingsItem ->
+        CategoryItems(
+          title = settingsItem.title,
+          leftHandIcon = settingsItem.leftIcon,
+          rightHandIcon = settingsItem.rightIcon
+
+          )
       }
     }
-
   }
+
+    @Composable
+    fun CategoryItems(
+      title: String,
+      leftHandIcon: ImageVector,
+      rightHandIcon: ImageVector
+    ){
+      var showAlertDialog by remember { mutableStateOf(false) }
+
+      Button(
+        onClick = {showAlertDialog = true},
+        colors = ButtonColors(Color.Black, Color.White, Color.Red, Color.Blue),
+        modifier = Modifier
+          .fillMaxWidth()
+          .height(80.dp)
+          .padding(top = 2.dp, bottom = 2.dp)
+          .background(Color.Black, RoundedCornerShape(20.dp))
+      ) {
+        if (showAlertDialog){
+          GotClicks(title)
+        }
+        Box(
+          modifier = Modifier.fillMaxWidth()
+        ) {
+          Icon(
+            imageVector = leftHandIcon,
+            "",
+            modifier = Modifier.align(Alignment.CenterStart)
+          )
+          Text(
+            text = title,
+            fontSize = 16.sp,
+            modifier = Modifier.align(Alignment.Center)
+          )
+          Icon(
+            rightHandIcon,
+            "",
+            modifier = Modifier.align(Alignment.CenterEnd)
+          )
+        }
+
+      }
+
+    }
+
+
+  @Composable
+  private fun GotClicks(title: String){
+
+
+    when (title) {
+      "Setting for searchList" -> {
+        findNavController().navigate(R.id.nav_result)
+      }
+
+      "HeadLine" -> {
+        findNavController().navigate(R.id.nav_splash_screen)
+      }
+
+      "Change Downloading Location" -> {
+        AlertDialogPathChoose()
+      }
+
+      "About Us" -> {
+        goToWeb()
+      }
+
+      "Check for update" -> {
+        (activity as MainActivity).showDiaglo("coming soon")
+      }
+    }
+  }
+
+
 
   private fun goToWeb() {
     val browserIntent = Intent(Intent.ACTION_VIEW, Uri.parse("https://myfirstpythontokotlinasbackend.onrender.com/aboutdownloader"))
     startActivity(browserIntent)
   }
 
-  private fun alertDialogPathChoose(){
-    AlertDialog.Builder(context)
-      .setTitle("Which location do you want to change it please select on of them")
-      .setPositiveButton("Video's"){ _, _ -> openFolderPicker(folderPickerForMyVideo)}
-      .setNeutralButton("Audio's"){ _, _ -> openFolderPicker(folderPickerRequestCode)}
-      .show()
+
+
+  @Composable
+  private fun AlertDialogPathChoose() {
+
+    var openDialog by remember { mutableStateOf(true) }
+
+
+    if (openDialog) {
+      AlertDialog(
+        onDismissRequest = { openDialog = false },
+        title = { Text("Which location do you want to change it please select on of them") },
+        confirmButton = {
+          TextButton(
+            onClick = {
+              openFolderPicker(folderPickerForMyVideo)
+              // Handle the confirm button action
+            }
+          ) {
+            Text("Video's")
+          }
+          TextButton(
+            onClick = {
+              openFolderPicker(folderPickerRequestCode)
+            }
+          ) {
+            Text("Audio's")
+          }
+        },
+        dismissButton = {
+          TextButton(
+            onClick = {
+              openDialog = false
+            }
+          ) {
+            Text("Cancel")
+          }
+        }
+      )
+    }
   }
   
   private fun openFolderPicker(code: Int) {
@@ -163,10 +321,6 @@ class SettingsFragment : Fragment() {
   }
 
 
-  override fun onConfigurationChanged(newConfig: Configuration) {
-    super.onConfigurationChanged(newConfig)
-
-  }
 
 
 
@@ -183,29 +337,5 @@ class SettingsFragment : Fragment() {
     _binding = null
   }
 
-  class CustomAdapter(context: Context, private val items: Array<String>) :
-    ArrayAdapter<String>(context, R.layout.list_item, items) {
-
-    override fun getView(position: Int, convertView: View?, parent: ViewGroup): View {
-      val view =
-        convertView ?: LayoutInflater.from(context).inflate(R.layout.list_item, parent, false)
-
-      val leftIcon = view.findViewById<ImageView>(R.id.left_icon)
-      val rightIcon = view.findViewById<ImageView>(R.id.right_icon)
-      rightIcon.setBackgroundResource(R.drawable.textbox)
-//      rightIcon.setBackgroundColor(R.color.teal_200)
-      val itemText = view.findViewById<TextView>(R.id.item_text)
-
-      // Set your icons
-      leftIcon.setImageResource(R.mipmap.icon) // Replace with your actual drawable resource
-      rightIcon.setImageResource(R.drawable.accpuntimg) // Replace with your actual drawable resource
-
-      // Set your item text
-      itemText.text = items[position]
-
-      return view
-
-    }
-  }
 }
 

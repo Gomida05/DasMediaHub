@@ -64,11 +64,11 @@ import coil.request.ImageRequest
 import com.bumptech.glide.Glide
 import com.bumptech.glide.load.resource.bitmap.CircleCrop
 import com.chaquo.python.Python
-import com.das.forui.AudioServiceFromUrl
-import com.das.forui.DatabaseFavorite
+import com.das.forui.services.AudioServiceFromUrl
 import com.das.forui.DownloaderClass
 import com.das.forui.MainActivity
 import com.das.forui.R
+import com.das.forui.databased.DatabaseFavorite
 import com.das.forui.databinding.VideoViewerBinding
 import com.google.android.exoplayer2.ExoPlayer
 import com.google.android.exoplayer2.MediaItem
@@ -96,7 +96,7 @@ class ViewerFragment: Fragment() {
     private var audioFocusRequest: AudioFocusRequest? = null
     private lateinit var playerView: PlayerView
     private var _binding: VideoViewerBinding? = null
-    private val ids = mutableListOf<String>()
+    var isPlaying = false
     private val binding get() = _binding!!
     private var exoPlayer: ExoPlayer?= null
     private lateinit var gestureDetector: GestureDetector
@@ -643,12 +643,12 @@ class ViewerFragment: Fragment() {
 
 
 
-            exoPlayer?.hasNextMediaItem()
+
             exoPlayer?.addListener(object : Player.Listener {
                 override fun onPlaybackStateChanged(state: Int) {
                     super.onPlaybackStateChanged(state)
-                    if (state == Player.STATE_ENDED) {
-//                                            loadMedia("https://rr1---sn-uigxx03-ajtl.googlevideo.com/videoplayback?expire=1733809712&ei=0IFXZ4yDM8nLmLAP0KuXkQs&ip=2a04%3A4a43%3A977f%3Af392%3A488%3Af57f%3A2e91%3Af970&id=o-AP1jvq5SB4PyoIxftzFcyDhnOoJYtFkz6gwzvCV4dZKr&itag=18&source=youtube&requiressl=yes&xpc=EgVo2aDSNQ%3D%3D&met=1733788112%2C&mh=SH&mm=31%2C29&mn=sn-uigxx03-ajtl%2Csn-aigzrn7e&ms=au%2Crdu&mv=m&mvi=1&pl=57&rms=au%2Cau&pcm2=yes&initcwndbps=1001250&bui=AQn3pFQRRCfZ-thiT9XXa8gdCyODGraPQCWec-TG-n3No2CqTbAVSg6FUqsvPEtkTSDOLoz-FGRKjDsp&vprv=1&mime=video%2Fmp4&rqh=1&cnr=14&ratebypass=yes&dur=903.093&lmt=1725726923730991&mt=1733787646&fvip=4&fexp=51326932%2C51335594%2C51347747&c=ANDROID_VR&txp=5309224&sparams=expire%2Cei%2Cip%2Cid%2Citag%2Csource%2Crequiressl%2Cxpc%2Cpcm2%2Cbui%2Cvprv%2Cmime%2Crqh%2Ccnr%2Cratebypass%2Cdur%2Clmt&sig=AJfQdSswRQIgZYrNHQWM0OMLTt-ZuAruMoa1rHNpXGmSZSSp2Y3b8d4CIQDruSFUA4ppu_RurRrSokhMKFZg7kHtWm2rwpxMeRGRqQ%3D%3D&lsparams=met%2Cmh%2Cmm%2Cmn%2Cms%2Cmv%2Cmvi%2Cpl%2Crms%2Cinitcwndbps&lsig=AGluJ3MwRQIgd2lflxQvzlD9TkorrTdzHil3a7X_mA7HUlg9HSrekIQCIQCPEHdGpJ2YfrK_nYrSqnNvVpBBgG2SAOYZPDa6DIkzzA%3D%3D")
+                    if (state == Player.STATE_ENDED || state == Player.COMMAND_SEEK_TO_NEXT) {
+//                        playVideo("https://rr1---sn-uigxx03-ajtl.googlevideo.com/videoplayback?expire=1733809712&ei=0IFXZ4yDM8nLmLAP0KuXkQs&ip=2a04%3A4a43%3A977f%3Af392%3A488%3Af57f%3A2e91%3Af970&id=o-AP1jvq5SB4PyoIxftzFcyDhnOoJYtFkz6gwzvCV4dZKr&itag=18&source=youtube&requiressl=yes&xpc=EgVo2aDSNQ%3D%3D&met=1733788112%2C&mh=SH&mm=31%2C29&mn=sn-uigxx03-ajtl%2Csn-aigzrn7e&ms=au%2Crdu&mv=m&mvi=1&pl=57&rms=au%2Cau&pcm2=yes&initcwndbps=1001250&bui=AQn3pFQRRCfZ-thiT9XXa8gdCyODGraPQCWec-TG-n3No2CqTbAVSg6FUqsvPEtkTSDOLoz-FGRKjDsp&vprv=1&mime=video%2Fmp4&rqh=1&cnr=14&ratebypass=yes&dur=903.093&lmt=1725726923730991&mt=1733787646&fvip=4&fexp=51326932%2C51335594%2C51347747&c=ANDROID_VR&txp=5309224&sparams=expire%2Cei%2Cip%2Cid%2Citag%2Csource%2Crequiressl%2Cxpc%2Cpcm2%2Cbui%2Cvprv%2Cmime%2Crqh%2Ccnr%2Cratebypass%2Cdur%2Clmt&sig=AJfQdSswRQIgZYrNHQWM0OMLTt-ZuAruMoa1rHNpXGmSZSSp2Y3b8d4CIQDruSFUA4ppu_RurRrSokhMKFZg7kHtWm2rwpxMeRGRqQ%3D%3D&lsparams=met%2Cmh%2Cmm%2Cmn%2Cms%2Cmv%2Cmvi%2Cpl%2Crms%2Cinitcwndbps&lsig=AGluJ3MwRQIgd2lflxQvzlD9TkorrTdzHil3a7X_mA7HUlg9HSrekIQCIQCPEHdGpJ2YfrK_nYrSqnNvVpBBgG2SAOYZPDa6DIkzzA%3D%3D")
                     }
                 }
 
@@ -657,10 +657,12 @@ class ViewerFragment: Fragment() {
                     reason: Int
                 ) {
                     super.onPlayWhenReadyChanged(playWhenReady, reason)
-                    if (playWhenReady == true) {
+                    if (playWhenReady) {
+                        isPlaying = true
                         println("service playing")
                         requestAudioFocus()
                     } else {
+                        isPlaying = false
                         println("service pausing")
                         releaseAudioFocus()
                     }
@@ -871,36 +873,6 @@ class ViewerFragment: Fragment() {
     }
 
 
-//    private fun goSearch(text: String) {
-//
-//        try {
-//            if (text.isBlank() || text.isEmpty() || text=="null"){
-//                (activity as MainActivity).showDiaglo("Something went wrong!")
-//            }else{
-//                CoroutineScope(Dispatchers.IO).launch {
-//                    val videoList = (activity as MainActivity).callPythonSearchSuggestion(text)
-//                    if (videoList != null) {
-//                        withContext(Dispatchers.Main) {
-//                            fetchDataFromPython(videoList)
-//                        }
-//                    }
-//                    else {
-//                        withContext(Dispatchers.Main) {
-//                            (activity as MainActivity).showDiaglo("Something went wrong please check your internet!")
-//                        }
-//                    }
-//                }
-//            }
-//
-//        }catch (e: Exception){
-//            Log.e("ViewerFragment", "error found ${e.message}")
-//            binding.progressBarForList.visibility= View.GONE
-//        }
-//
-//    }
-
-
-
 
 
 
@@ -960,7 +932,7 @@ class ViewerFragment: Fragment() {
 
 
 
-    fun hideSystemUI() {
+    private fun hideSystemUI() {
         (activity as MainActivity).window.decorView.systemUiVisibility = (
                 View.SYSTEM_UI_FLAG_FULLSCREEN or
                         View.SYSTEM_UI_FLAG_HIDE_NAVIGATION or
@@ -970,12 +942,12 @@ class ViewerFragment: Fragment() {
     }
 
 
-    fun showSystemUI() {
+    private fun showSystemUI() {
         (activity as MainActivity).window.decorView.systemUiVisibility = View.SYSTEM_UI_FLAG_VISIBLE
     }
 
 
-    fun callPythonSearchSuggestion(inputText: String): List<Video>? {
+    private fun callPythonSearchSuggestion(inputText: String): List<Video>? {
         return try {
 
             val py = Python.getInstance()
@@ -1003,9 +975,7 @@ class ViewerFragment: Fragment() {
 
     override fun onResume() {
         super.onResume()
-        exoPlayer?.playWhenReady= true
         (activity as MainActivity).hideBottomNav()
-//        requestAudioFocus()
     }
 
 

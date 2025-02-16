@@ -11,10 +11,10 @@ import android.widget.ArrayAdapter
 import android.widget.ListView
 import androidx.fragment.app.Fragment
 import androidx.navigation.findNavController
-import com.das.forui.DatabaseHelper1
+import com.das.forui.databased.DatabaseHelper1
 import com.das.forui.FullScreenPlayerActivity
 import com.das.forui.MainActivity
-import com.das.forui.MyService
+import com.das.forui.services.MyService
 import com.das.forui.R
 import com.das.forui.databinding.FragmentDownloadsBinding
 

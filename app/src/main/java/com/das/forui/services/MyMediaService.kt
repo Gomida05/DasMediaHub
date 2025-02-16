@@ -1,14 +1,13 @@
-package com.das.forui
+package com.das.forui.services
 
-import android.app.NotificationManager
 import android.app.PendingIntent
 import android.media.browse.MediaBrowser
 import android.media.session.MediaSession
 import android.os.Bundle
 import android.service.media.MediaBrowserService
-import android.support.v4.media.session.MediaControllerCompat
 import android.support.v4.media.session.MediaSessionCompat
-import androidx.compose.ui.graphics.colorspace.Connector
+import com.das.forui.MediaPlayerNotificationManager
+import com.das.forui.NotificationListener
 import com.google.android.exoplayer2.SimpleExoPlayer
 import com.google.android.exoplayer2.ext.mediasession.MediaSessionConnector
 import com.google.android.exoplayer2.upstream.DefaultDataSourceFactory
@@ -55,7 +54,7 @@ class MyMediaService: MediaBrowserService() {
             mediaSessionCompact.sessionToken,
             NotificationListener(this)
         ) {}
-        notificationManager.showNotification(exoPlayer)
+//        notificationManager.showNotification(exoPlayer)
 
         mediaSessionConnector = MediaSessionConnector(mediaSessionCompact)
 

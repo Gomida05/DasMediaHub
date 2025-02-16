@@ -37,7 +37,10 @@ import androidx.navigation.ui.setupActionBarWithNavController
 import androidx.navigation.ui.setupWithNavController
 import com.chaquo.python.Python
 import com.chaquo.python.android.AndroidPlatform
+import com.das.forui.databased.DatabaseHelper1
+import com.das.forui.databased.PathSaver
 import com.das.forui.databinding.ActivityMainBinding
+import com.das.forui.ui.viewer.ViewerFragment
 import com.google.android.gms.ads.AdRequest
 import com.google.android.gms.ads.AdView
 import com.google.android.gms.ads.MobileAds
@@ -414,7 +417,9 @@ class MainActivity : AppCompatActivity() {
 
     fun createMediaNotification(title: String) {
 
-        val pendingIntent = PendingIntent.getActivity(this,0, intent, PendingIntent.FLAG_IMMUTABLE)
+        val thisIntent = Intent(this, this::class.java)
+
+        val pendingIntent = PendingIntent.getActivity(this,0, thisIntent, PendingIntent.FLAG_IMMUTABLE)
 
 
         val mediaStyle = MediaStyle()
@@ -523,10 +528,14 @@ class MainActivity : AppCompatActivity() {
             val navHostFragment = supportFragmentManager.findFragmentById(R.id.nav_host_fragment_activity_main) as NavHostFragment
             val currentFragment = navHostFragment.childFragmentManager.fragments.lastOrNull().toString()
             if (currentFragment.startsWith("ViewerFragment")) {
+
+
+
                 val aspectRatio = Rational(14, 9)
                 val pipBuilder = PictureInPictureParams.Builder()
-                        .setAspectRatio(aspectRatio)
-                enterPictureInPictureMode(pipBuilder.build())
+                    .setAspectRatio(aspectRatio)
+                    .build()
+                enterPictureInPictureMode(pipBuilder)
             }
         }
     }

@@ -9,9 +9,8 @@ import android.content.Intent
 import android.net.Uri
 import android.os.Build
 import android.os.Environment
-import android.os.Handler
-import android.os.Looper
 import androidx.core.app.NotificationCompat
+import com.das.forui.databased.PathSaver
 import java.io.File
 
 class DownloaderClass(val context: Context) {

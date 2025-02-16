@@ -1,5 +1,5 @@
 @file:Suppress("DEPRECATION")
-package com.das.forui
+package com.das.forui.services
 
 import android.app.Notification
 import androidx.core.app.NotificationCompat
@@ -26,6 +26,9 @@ import androidx.media3.common.MediaItem
 import androidx.media3.common.Player
 import androidx.media3.common.util.UnstableApi
 import androidx.media3.exoplayer.ExoPlayer
+import com.das.forui.MainActivity
+import com.das.forui.R
+import com.das.forui.databased.DatabaseFavorite
 import kotlin.properties.Delegates
 
 class AudioServiceFromUrl : Service() {
@@ -181,7 +184,7 @@ class AudioServiceFromUrl : Service() {
                 val notificationManager = getSystemService(NotificationManager::class.java)
                 notificationManager?.cancel(1)
             }
-            ACTION_ADD_TO_WATCH_LATER->{
+            ACTION_ADD_TO_WATCH_LATER ->{
                 val dBase= DatabaseFavorite(this)
                 if (isAdded(videoId)) {
                     dBase.deleteWatchUrl(videoId)
@@ -196,7 +199,7 @@ class AudioServiceFromUrl : Service() {
                 }
             }
 
-            ACTION_DELETE_INTENT->{
+            ACTION_DELETE_INTENT ->{
 //                println("Notification deleted by the user.")
 
                 if (exoPlayer?.isPlaying == false){

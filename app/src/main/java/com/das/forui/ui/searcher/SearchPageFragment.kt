@@ -1,170 +1,220 @@
 package com.das.forui.ui.searcher
 
 import android.app.AlertDialog
-import android.content.Context
 import android.database.Cursor
 import android.os.Bundle
-import android.text.Editable
-import android.text.TextWatcher
-import android.view.KeyEvent
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
-import android.view.inputmethod.InputMethodManager
-import android.widget.ArrayAdapter
-import android.widget.EditText
-import android.widget.Toast
+import androidx.compose.foundation.background
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.text.KeyboardActions
+import androidx.compose.foundation.text.KeyboardOptions
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.filled.ArrowBack
+import androidx.compose.material.icons.filled.Clear
+import androidx.compose.material.icons.filled.Delete
+import androidx.compose.material3.Button
+import androidx.compose.material3.ButtonColors
+import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
+import androidx.compose.material3.Text
+import androidx.compose.material3.TextField
+import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
+import androidx.compose.ui.Alignment
+import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.vector.rememberVectorPainter
+import androidx.compose.ui.platform.ViewCompositionStrategy
+import androidx.compose.ui.text.input.ImeAction
+import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import androidx.fragment.app.Fragment
+import androidx.lifecycle.ViewModel
 import androidx.navigation.fragment.findNavController
 import com.das.forui.MainActivity
 import com.das.forui.R
-import com.das.forui.SearchHistoryDB
 import com.das.forui.databinding.FragmentSearcherBinding
-
-
+import androidx.lifecycle.viewmodel.compose.viewModel
+import com.das.forui.databased.SearchHistoryDB
 
 class SearchPageFragment : Fragment() {
 
     private var _binding: FragmentSearcherBinding? = null
     private val binding get() = _binding!!
-    private lateinit var adapter: ArrayAdapter<String>
+
     override fun onCreateView(
         inflater: LayoutInflater,
         container: ViewGroup?,
         savedInstanceState: Bundle?
     ): View {
         _binding = FragmentSearcherBinding.inflate(inflater, container, false)
-        adapter = ArrayAdapter(requireContext(), android.R.layout.simple_list_item_1, mutableListOf())
+
+        binding.searchHistoryFromComposeView.apply {
+            setViewCompositionStrategy(ViewCompositionStrategy.DisposeOnViewTreeLifecycleDestroyed)
+            setContent {
+                ListSearchHistoryItem()
+            }
+        }
+        binding.editTextCompose.apply {
+            setViewCompositionStrategy(ViewCompositionStrategy.DisposeOnViewTreeLifecycleDestroyed)
+            setContent {
+                ShowTextField()
+            }
+        }
+
         return binding.root
+    }
+
+    @Composable
+    private fun ShowTextField() {
+        val searchViewModel: SearchViewModel = viewModel()
+
+        TextField(
+            value = searchViewModel.searchText,
+            onValueChange = { searchViewModel.updateSearchText(it) },
+            shape = RoundedCornerShape(17.dp),
+            singleLine = true,
+            placeholder = { Text(text = "Enter search text") },
+            keyboardOptions = KeyboardOptions.Default.copy(
+                imeAction = ImeAction.Search
+            ),
+            keyboardActions = KeyboardActions(
+                onSearch = {
+                    keyEvent(searchViewModel.searchText)
+                }
+            ),
+            trailingIcon = {
+                if (searchViewModel.searchText.isNotEmpty()) {
+                    IconButton(onClick = {
+                        searchViewModel.updateSearchText("")
+                    }) {
+                        Icon(Icons.Default.Clear, contentDescription = "Clear Text")
+                    }
+                }
+            },
+            leadingIcon = {
+                Button(onClick = {
+                    findNavController().navigateUp()
+                },
+                    colors = ButtonColors(Color.Black, Color.White, Color.Unspecified, Color.Unspecified),
+                    modifier = Modifier
+                ) {
+                    Icon(Icons.AutoMirrored.Default.ArrowBack, contentDescription = "navigator")
+                }
+            },
+            modifier = Modifier
+                .background(Color(0xFF03DAC5), RoundedCornerShape(15.dp))
+        )
     }
 
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
-        fetchDataFromDatabase()
-        val sentText=arguments?.getString("EXTRA_ONE")
-//        binding.editTextText.text= sentText.toString() as Editable?
+        val sentText=arguments?.getString("EXTRA_ONE").toString()
         if (sentText=="Search12.23.58/'[0][-"){
 
         }else {
-            binding.editTextText.setText(sentText)
+            SearchViewModel().updateSearchText(sentText)
         }
-        binding.searchHistory.adapter = adapter
 
     }
 
 
-    override fun onStart() {
-        super.onStart()
+
+    @Composable
+    private fun ListSearchHistoryItem(){
 
 
+        val settingsResults = remember { mutableStateOf<List<String>>(emptyList()) }
 
-        val textEdit: EditText = binding.editTextText
-        binding.searchHistory.setOnItemLongClickListener { parent, _, position, _ ->
-            val selectedItem = parent.getItemAtPosition(position).toString()
-            removeIt(selectedItem)
-            true
+        LaunchedEffect(Unit) {
+            settingsResults.value = fetchDataFromDatabase()
         }
-
-
-        binding.searchHistory.setOnItemClickListener { parent, _, position, _ ->
-            val selectedItem = parent.getItemAtPosition(position).toString()
-            textEdit.setText(selectedItem)
-            goSearch(selectedItem)
-        }
-
-
-
-
-        textEdit.addTextChangedListener(object : TextWatcher {
-            override fun afterTextChanged(s: Editable) {
-                if (s.isNotEmpty()) {
-                    addTheButton()
-                } else {
-                    removeTheButton()
-                }
-            }
-
-            override fun beforeTextChanged(s: CharSequence, start: Int, count: Int, after: Int) {
-                // No action needed here
-
-            }
-
-            override fun onTextChanged(s: CharSequence, start: Int, before: Int, count: Int) {
-            }
-        })
-        val editText: EditText = binding.editTextText
-        editText.setOnKeyListener { _, keyCode, event ->
-            if (event.action == KeyEvent.ACTION_DOWN && keyCode == KeyEvent.KEYCODE_ENTER) {
-
-                if (editText.text.isNotBlank()) {
-                    keyEvent()
-                    true
-                } else {
-                    textEdit.post {
-                        editText.requestFocus()
-                        editText.setSelection(textEdit.text.length)
-
+        LazyColumn(
+            modifier = Modifier
+        ) {
+            items(settingsResults.value) { settingsItem ->
+                CategoryItems(
+                    title = settingsItem,
+                    onDelete = {
+                        // Show the confirmation dialog
+                        SearchHistoryDB(requireContext()).deleteSearchList(settingsItem)
+                        settingsResults.value = settingsResults.value.filter { it != settingsItem }
+                        // Call the database function to delete
                     }
+                )
+            }
+        }
+    }
 
-                    Toast.makeText(
-                        context,
-                        "Please enter some text before proceeding.",
-                        Toast.LENGTH_SHORT
-                    ).show()
-                    false
+    @Composable
+    private fun CategoryItems(title : String, onDelete: () -> Unit){
+
+        Button(
+            onClick = {
+                SearchViewModel().updateSearchText(title)
+                goSearch(title)
+            },
+            colors = ButtonColors(Color.Black, Color.White, Color.Red, Color.Blue),
+            modifier = Modifier
+                .fillMaxWidth()
+                .height(60.dp)
+                .padding(top = 2.dp, bottom = 2.dp)
+                .background(Color.Black, RoundedCornerShape(20.dp))
+        ) {
+            Box(
+            modifier = Modifier.fillMaxWidth()
+            ) {
+                Text(
+                    text = title,
+                    fontSize = 16.sp,
+                    modifier = Modifier.align(Alignment.Center)
+                )
+
+                IconButton(
+                    onClick = {
+
+                        AlertDialog.Builder(requireContext())
+                            .setTitle("Are you sure you want to remove it from the list?")
+                            .setPositiveButton("Yes") { _, _ ->
+                                onDelete()
+                            }
+                            .setNegativeButton("No") { _, _ ->
+                            }
+                            .show()
+
+
+                    },
+                    modifier = Modifier.align(Alignment.CenterEnd)
+                ) {
+                    Icon(
+                        painter = rememberVectorPainter(Icons.Default.Delete),
+                        ""
+                    )
                 }
-            } else {
-                false
             }
+
+
         }
-
-
-
-
-
-        val clear= binding.clear
-
-
-        binding.back.setOnClickListener {
-            it.isEnabled = false
-            findNavController().navigateUp()
-        }
-
-        clear.setOnClickListener {
-            textEdit.text.clear()
-            removeTheButton()
-//            SearchHistoryDB(requireContext()).deleteWatchUrl()
-        }
-
-
     }
 
 
 
 
 
-    private fun removeIt(selectedItem: String) {
-        AlertDialog.Builder(requireContext())
-            .setTitle("Are you sure you want to remove it from the list?")
-            .setPositiveButton("Yes") { _, _ ->
-                removeList(selectedItem)
-            }
-            .setNegativeButton("No") { _, _ ->
-            }
-            .show()
 
-    }
-
-
-
-    private fun removeList(selectedItem: String) {
-        adapter.remove(selectedItem)
-        SearchHistoryDB(requireContext()).deleteSearchList(selectedItem)
-        adapter.notifyDataSetChanged()
-    }
-
-    private fun keyEvent() {
-        val editTextText = binding.editTextText.text.toString()
+    private fun keyEvent(editTextText: String) {
         val bundle = Bundle().apply { putString("EXTRA_TEXT", editTextText) }
 
         try {
@@ -194,17 +244,7 @@ class SearchPageFragment : Fragment() {
     }
 
 
-
-    private fun removeTheButton() {
-//        binding.editTextText.drawable
-        binding.clear.visibility= View.GONE
-    }
-
-    fun addTheButton() {
-        binding.clear.visibility= View.VISIBLE
-    }
-
-    private fun fetchDataFromDatabase() {
+    private fun fetchDataFromDatabase(): List<String> {
         try {
             val dbHelper = SearchHistoryDB(requireContext())
 
@@ -220,17 +260,13 @@ class SearchPageFragment : Fragment() {
                 it.close()
             } ?: run {}
 
-            if (urls.isNotEmpty()) {
-                adapter.clear()
-                adapter.addAll(urls)
-                adapter.notifyDataSetChanged()
-            } else {
-            }
+            return urls.toList()
         }catch (e:Exception){
             val alerting= (activity as MainActivity)
             alerting.showDiaglo(e.message.toString())
             alerting.alertUserError(e.message.toString())
         }
+        return listOf("")
 
     }
 
@@ -238,28 +274,27 @@ class SearchPageFragment : Fragment() {
 
     override fun onResume() {
         super.onResume()
-        val textEdit: EditText = binding.editTextText
-        if(textEdit.toString().isNotEmpty()){
-            addTheButton()
-        }
-        textEdit.requestFocus()
-        textEdit.post {
-            val imm = context?.getSystemService(Context.INPUT_METHOD_SERVICE) as InputMethodManager
-            @Suppress("DEPRECATION")
-            imm.showSoftInput(textEdit, InputMethodManager.SHOW_FORCED)
-        }
         (activity as MainActivity).hideBottomNav()
     }
 
     override fun onPause() {
         super.onPause()
-        val textEdit: EditText = binding.editTextText
-        val imm = context?.getSystemService(Context.INPUT_METHOD_SERVICE) as InputMethodManager
-        imm.hideSoftInputFromWindow(textEdit.windowToken, 0)
     }
 
     override fun onDestroyView() {
         super.onDestroyView()
         _binding = null
+    }
+}
+
+
+class SearchViewModel : ViewModel() {
+
+    var searchText by mutableStateOf("")
+        private set
+
+    // Function to update the global text
+    fun updateSearchText(newText: String) {
+        searchText = newText
     }
 }

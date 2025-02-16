@@ -13,7 +13,7 @@ import androidx.fragment.app.Fragment
 import androidx.lifecycle.ViewModelProvider
 import androidx.navigation.fragment.findNavController
 import com.das.forui.MainActivity
-import com.das.forui.MyService
+import com.das.forui.services.MyService
 import com.das.forui.R
 import com.das.forui.databinding.FragmentHomeBinding
 

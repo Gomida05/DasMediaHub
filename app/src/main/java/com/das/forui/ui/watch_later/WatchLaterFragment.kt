@@ -14,10 +14,9 @@ import android.widget.TextView
 import androidx.fragment.app.Fragment
 import androidx.navigation.fragment.findNavController
 import com.bumptech.glide.Glide
-import com.bumptech.glide.load.resource.bitmap.CircleCrop
-import com.das.forui.DatabaseFavorite
 import com.das.forui.MainActivity
 import com.das.forui.R
+import com.das.forui.databased.DatabaseFavorite
 import com.das.forui.databinding.FragmentWatchLaterBinding
 
 class WatchLaterFragment: Fragment() {
@@ -190,8 +189,5 @@ class WatchLaterFragment: Fragment() {
         }
     }
 
-    override fun onResume() {
-        super.onResume()
-    }
 
 }

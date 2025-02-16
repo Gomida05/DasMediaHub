@@ -1,4 +1,4 @@
-package com.das.forui
+package com.das.forui.services
 
 import android.app.NotificationChannel
 import android.app.NotificationManager
@@ -14,6 +14,10 @@ import android.widget.Toast
 import androidx.annotation.RequiresApi
 import androidx.core.app.NotificationCompat
 import com.chaquo.python.Python
+import com.das.forui.MainActivity
+import com.das.forui.R
+import com.das.forui.databased.DatabaseHelper1
+import com.das.forui.databased.PathSaver
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
@@ -97,7 +101,7 @@ class DownloadingService(private val channelId: String) : Service() {
     }
 
 
-    fun downloadMusic(received: String, title: String, context: Context) {
+    private fun downloadMusic(received: String, title: String, context: Context) {
         val path = PathSaver().getMusicDownloadPath(context)
         MainActivity().createSingleDirectory(path.toString())
         try {

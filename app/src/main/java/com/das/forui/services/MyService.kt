@@ -1,4 +1,4 @@
-package com.das.forui
+package com.das.forui.services
 
 import android.app.NotificationChannel
 import android.app.NotificationManager
@@ -7,9 +7,9 @@ import android.app.Service
 import android.content.Intent
 import android.os.Build
 import android.os.IBinder
-import android.util.Log
-import androidx.annotation.RequiresApi
 import androidx.core.app.NotificationCompat
+import com.das.forui.MainActivity
+import com.das.forui.R
 
 class MyService : Service() {
     private val channelId = "ForegroundServiceChannel"
@@ -23,11 +23,11 @@ class MyService : Service() {
         return null
     }
 
-    @RequiresApi(Build.VERSION_CODES.O)
     override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
+        val mainIntent = Intent(this, MainActivity::class.java)
         val pendingIntent = PendingIntent.getActivity(
-            application.applicationContext,
-            0, intent, PendingIntent.FLAG_MUTABLE
+            this,
+            0, mainIntent, PendingIntent.FLAG_MUTABLE
         )
 
         val notification = NotificationCompat.Builder(this, channelId)
@@ -44,18 +44,7 @@ class MyService : Service() {
 
         startForeground(1, notification)
 
-        // Your service-related work here
 
-        Thread {
-//            val py = Python.getInstance()
-//            val mainFile = py.getModule("main")
-//            val variable = mainFile.callAttr("Service").toString()
-//            Log.d("MainActivity", variable)
-            while (true) {
-                Log.d("MyService", "Service is running")
-                Thread.sleep(1000)
-            }
-        }.start()
 
         return START_STICKY
     }
@@ -66,8 +55,12 @@ class MyService : Service() {
                 channelId,
                 "Foreground Service Channel",
                 NotificationManager.IMPORTANCE_HIGH
-            )
-            serviceChannel.setShowBadge(true)
+            ).apply {
+                setShowBadge(true)
+                setSound(null, null)
+                enableVibration(false)
+                importance = NotificationManager.IMPORTANCE_HIGH
+            }
             val manager = getSystemService(NotificationManager::class.java)
             manager.createNotificationChannel(serviceChannel)
         }
