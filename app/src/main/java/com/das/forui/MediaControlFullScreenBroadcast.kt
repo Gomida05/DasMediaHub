@@ -19,6 +19,9 @@ class MediaControlFullScreenBroadcast: BroadcastReceiver() {
                 // Call your media pause method
                 pauseMedia(context)
             }
+            "cancel" ->{
+
+            }
         }
     }
 

@@ -20,6 +20,7 @@ import android.widget.ImageButton
 import android.widget.ImageView
 import android.widget.TextView
 import androidx.activity.OnBackPressedCallback
+import androidx.annotation.RequiresApi
 import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.background
 import androidx.compose.foundation.combinedClickable
@@ -45,6 +46,7 @@ import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.MutableState
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
@@ -70,6 +72,7 @@ import com.das.forui.MainActivity
 import com.das.forui.R
 import com.das.forui.databased.DatabaseFavorite
 import com.das.forui.databinding.VideoViewerBinding
+import com.das.forui.ui.viewer.GlobalVideoList.listOfVideos
 import com.google.android.exoplayer2.ExoPlayer
 import com.google.android.exoplayer2.MediaItem
 import com.google.android.exoplayer2.Player
@@ -119,7 +122,7 @@ class ViewerFragment: Fragment() {
 
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
-
+        listOfVideos.clear()
         (activity as MainActivity).hideBottomNav()
         videoID = arguments?.getString("View_ID").toString()
         playerView = binding.videoPlayerLocally
@@ -127,54 +130,59 @@ class ViewerFragment: Fragment() {
         playVideo("https://www.youtube.com/watch?v=$videoID")
 
 
-
-        val setTitle= view.findViewById<TextView>(R.id.set_title_over_view)
+        val setTitle = view.findViewById<TextView>(R.id.set_title_over_view)
 
 
         videoID = arguments?.getString("View_ID").toString()
-        videoTitle= arguments?.getString("View_Title").toString()
-        videoURL= arguments?.getString("View_URL").toString()
+        videoTitle = arguments?.getString("View_Title").toString()
+        videoURL = arguments?.getString("View_URL").toString()
         channelThumbnail = arguments?.getString("channel_Thumbnails").toString()
-        var viewNumber= arguments?.getString("View_Number")
-        var dateOfVideo= arguments?.getString("dateOfVideo").toString()
-        var channelName= arguments?.getString("channelName").toString()
-        duration= arguments?.getString("duration").toString()
-
+        var viewNumber = arguments?.getString("View_Number")
+        var dateOfVideo = arguments?.getString("dateOfVideo").toString()
+        var channelName = arguments?.getString("channelName").toString()
+        duration = arguments?.getString("duration").toString()
 
 
         val videoPlayerHeight = resources.getDimensionPixelSize(R.dimen.video_player_height)
         binding.hideThese.visibility = View.VISIBLE
-        activity?.requestedOrientation= ActivityInfo.SCREEN_ORIENTATION_PORTRAIT
-        setTitle.visibility= View.GONE
+        activity?.requestedOrientation = ActivityInfo.SCREEN_ORIENTATION_PORTRAIT
+        setTitle.visibility = View.GONE
         binding.videoPlayerLocally.layoutParams.height = videoPlayerHeight
         val drawable = ContextCompat.getDrawable(requireContext(), R.drawable.fullscreen_24dp)
-        (activity as MainActivity).findViewById<ImageButton>(R.id.exofullscreen).setImageDrawable(drawable)
+        (activity as MainActivity).findViewById<ImageButton>(R.id.exofullscreen)
+            .setImageDrawable(drawable)
         isFullScreen = false
         showSystemUI()
 
 
-
-        val buttonSaver=binding.savedToWatchLater
+        val buttonSaver = binding.savedToWatchLater
         val dataBase = DatabaseFavorite(requireContext())
-        if (dataBase.isWatchUrlExist(videoID)){
-            buttonSaver.tag= "favorite_icon"
-            val newIcon= R.drawable.favorite
+        if (dataBase.isWatchUrlExist(videoID)) {
+            buttonSaver.tag = "favorite_icon"
+            val newIcon = R.drawable.favorite
             val icon = ContextCompat.getDrawable(requireContext(), newIcon)
             buttonSaver.setCompoundDrawablesWithIntrinsicBounds(null, icon, null, null)
         }
 
 
 
-        if (descriptions !="Something went wrong please try again!!") {
+        if (descriptions != "Something went wrong please try again!!") {
             binding.giveMeTitle.text = videoTitle
-            setTitle.text= videoTitle
-            binding.giveMeViewNumber.text= viewNumber
-            binding.giveMeViewChannelName.text=channelName
-            binding.giveMeViewDate.text= dateOfVideo
+            setTitle.text = videoTitle
+            binding.giveMeViewNumber.text = viewNumber
+            binding.giveMeViewChannelName.text = channelName
+            binding.giveMeViewDate.text = dateOfVideo
             binding.myComposeView2.apply {
                 setViewCompositionStrategy(ViewCompositionStrategy.DisposeOnViewTreeLifecycleDestroyed)
                 setContent {
-                    SuggestedVideos(videoID, videoTitle, channelThumbnail, channelName.toString(), viewNumber.toString(), dateOfVideo.toString())
+                    SuggestedVideos(
+                        videoID,
+                        videoTitle,
+                        channelThumbnail,
+                        channelName.toString(),
+                        viewNumber.toString(),
+                        dateOfVideo.toString()
+                    )
                 }
             }
             Glide.with(requireContext())
@@ -225,35 +233,57 @@ class ViewerFragment: Fragment() {
         }
 
 
-        (activity as MainActivity).onBackPressedDispatcher.addCallback(viewLifecycleOwner, object : OnBackPressedCallback(true) {
-            override fun handleOnBackPressed() {
-                if(isFullScreen){
-                    toggleFullScreen()
-                }else {
-                    exoPlayer?.playWhenReady = false
-                    releaseAudioFocus()
-                    findNavController().navigateUp()
+        (activity as MainActivity).onBackPressedDispatcher.addCallback(
+            viewLifecycleOwner,
+            object : OnBackPressedCallback(true) {
+                override fun handleOnBackPressed() {
+                    if (isFullScreen) {
+                        toggleFullScreen()
+                    } else {
+                        exoPlayer?.playWhenReady = false
+                        releaseAudioFocus()
+                        findNavController().navigateUp()
+                    }
                 }
-            }
-        })
+            })
 
 
 
 
-        view.findViewById<ImageButton>(R.id.navigateUpFromVideoPLayer).setOnClickListener{
-            if(isFullScreen){
+        view.findViewById<ImageButton>(R.id.navigateUpFromVideoPLayer).setOnClickListener {
+            if (isFullScreen) {
                 toggleFullScreen()
-            }else {
+            } else {
                 exoPlayer?.stop()
                 releaseAudioFocus()
                 findNavController().navigateUp()
             }
         }
-        view.findViewById<ImageButton>(R.id.exofullscreen).setOnClickListener{
+        view.findViewById<ImageButton>(R.id.exofullscreen).setOnClickListener {
             toggleFullScreen()
         }
+        view.findViewById<ImageButton>(R.id.play_next_video).setOnClickListener {
+            exoPlayer?.let {
+                it.stop()
+                it.release()
+            }
+            val listOfVideosIndex = listOfVideos[1]
+            val bundle = Bundle().apply {
+                putString("View_ID", listOfVideosIndex.videoId)
+                putString("View_URL", "https://www.youtube.com/watch?v=${listOfVideosIndex.videoId}")
+                putString("View_Title", listOfVideosIndex.title)
+                putString("View_Number", listOfVideosIndex.views)
+                putString("dateOfVideo", listOfVideosIndex.dateOfVideo)
+                putString("channelName", listOfVideosIndex.channelName)
+                putString("duration", listOfVideosIndex.duration)
+                putString("channel_Thumbnails", listOfVideosIndex.channelThumbnailsUrl)
+            }
+            findNavController().run {
+                popBackStack()
+                navigate(R.id.nav_video_viewer, bundle)
+            }
+        }
     }
-
 
 
     override fun onStart() {
@@ -367,7 +397,6 @@ class ViewerFragment: Fragment() {
 
 
 
-    @OptIn(ExperimentalMaterial3Api::class)
     @Composable
     fun SuggestedVideos(
         videoIds: String,
@@ -408,8 +437,9 @@ class ViewerFragment: Fragment() {
                             textAlign = TextAlign.Center
                         )
                     } else {
+
                         LazyColumn(modifier = Modifier) {
-                            items(searchResults.value) { searchItem ->
+                            items(searchResults.value) {searchItem ->
                                 CategoryItems(
                                     videoId = searchItem.videoId,
                                     title = searchItem.title,
@@ -418,9 +448,10 @@ class ViewerFragment: Fragment() {
                                     channelName = searchItem.channelName,
                                     duration = searchItem.duration,
                                     videoThumbnailURL = searchItem.videoId,
-                                    channelThumbnails = searchItem.channelThumbnailsUrl,
-
+                                    channelThumbnails = searchItem.channelThumbnailsUrl
                                     )
+                                listOfVideos.add(searchItem)
+
                             }
                         }
                     }
@@ -443,6 +474,7 @@ class ViewerFragment: Fragment() {
         channelThumbnails: String
     ){
         val context= requireContext()
+
 
         Card(
             modifier = Modifier
@@ -615,7 +647,7 @@ class ViewerFragment: Fragment() {
                 val mainFile = py.getModule("main")
                 val variable = mainFile["get_video_url"]
                 val result = variable?.call("https://www.youtube.com/watch?v=$uri").toString()
-                if (result != "False") {
+                if (result != "False" && isAdded) {
                     url = result
                     withContext(Dispatchers.Main) {
                         exoPlayer?.let {
@@ -630,7 +662,7 @@ class ViewerFragment: Fragment() {
                         exoPlayer?.setMediaItem(mediaItem)
                         playerView.player = exoPlayer
                         exoPlayer?.prepare()
-                        exoPlayer?.playWhenReady = true
+                        exoPlayer?.play()
                         requestAudioFocus()
                     }
                 } else {
@@ -647,7 +679,26 @@ class ViewerFragment: Fragment() {
             exoPlayer?.addListener(object : Player.Listener {
                 override fun onPlaybackStateChanged(state: Int) {
                     super.onPlaybackStateChanged(state)
-                    if (state == Player.STATE_ENDED || state == Player.COMMAND_SEEK_TO_NEXT) {
+                    if (state == Player.STATE_ENDED) {
+                        exoPlayer?.let {
+                            it.stop()
+                            it.release()
+                        }
+                        val listOfVideosIndex = listOfVideos[1]
+                        val bundle = Bundle().apply {
+                            putString("View_ID", listOfVideosIndex.videoId)
+                            putString("View_URL", "https://www.youtube.com/watch?v=${listOfVideosIndex.videoId}")
+                            putString("View_Title", listOfVideosIndex.title)
+                            putString("View_Number", listOfVideosIndex.views)
+                            putString("dateOfVideo", listOfVideosIndex.dateOfVideo)
+                            putString("channelName", listOfVideosIndex.channelName)
+                            putString("duration", listOfVideosIndex.duration)
+                            putString("channel_Thumbnails", listOfVideosIndex.channelThumbnailsUrl)
+                        }
+                        findNavController().run {
+                            popBackStack()
+                            navigate(R.id.nav_video_viewer, bundle)
+                        }
 //                        playVideo("https://rr1---sn-uigxx03-ajtl.googlevideo.com/videoplayback?expire=1733809712&ei=0IFXZ4yDM8nLmLAP0KuXkQs&ip=2a04%3A4a43%3A977f%3Af392%3A488%3Af57f%3A2e91%3Af970&id=o-AP1jvq5SB4PyoIxftzFcyDhnOoJYtFkz6gwzvCV4dZKr&itag=18&source=youtube&requiressl=yes&xpc=EgVo2aDSNQ%3D%3D&met=1733788112%2C&mh=SH&mm=31%2C29&mn=sn-uigxx03-ajtl%2Csn-aigzrn7e&ms=au%2Crdu&mv=m&mvi=1&pl=57&rms=au%2Cau&pcm2=yes&initcwndbps=1001250&bui=AQn3pFQRRCfZ-thiT9XXa8gdCyODGraPQCWec-TG-n3No2CqTbAVSg6FUqsvPEtkTSDOLoz-FGRKjDsp&vprv=1&mime=video%2Fmp4&rqh=1&cnr=14&ratebypass=yes&dur=903.093&lmt=1725726923730991&mt=1733787646&fvip=4&fexp=51326932%2C51335594%2C51347747&c=ANDROID_VR&txp=5309224&sparams=expire%2Cei%2Cip%2Cid%2Citag%2Csource%2Crequiressl%2Cxpc%2Cpcm2%2Cbui%2Cvprv%2Cmime%2Crqh%2Ccnr%2Cratebypass%2Cdur%2Clmt&sig=AJfQdSswRQIgZYrNHQWM0OMLTt-ZuAruMoa1rHNpXGmSZSSp2Y3b8d4CIQDruSFUA4ppu_RurRrSokhMKFZg7kHtWm2rwpxMeRGRqQ%3D%3D&lsparams=met%2Cmh%2Cmm%2Cmn%2Cms%2Cmv%2Cmvi%2Cpl%2Crms%2Cinitcwndbps&lsig=AGluJ3MwRQIgd2lflxQvzlD9TkorrTdzHil3a7X_mA7HUlg9HSrekIQCIQCPEHdGpJ2YfrK_nYrSqnNvVpBBgG2SAOYZPDa6DIkzzA%3D%3D")
                     }
                 }
@@ -986,4 +1037,8 @@ class ViewerFragment: Fragment() {
         (activity as MainActivity).showBottomNav()
         _binding = null
     }
+}
+
+object GlobalVideoList {
+    val listOfVideos = mutableListOf<ViewerFragment.Video>()
 }

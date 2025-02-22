@@ -40,6 +40,7 @@ import com.chaquo.python.android.AndroidPlatform
 import com.das.forui.databased.DatabaseHelper1
 import com.das.forui.databased.PathSaver
 import com.das.forui.databinding.ActivityMainBinding
+import com.das.forui.services.AudioServiceFromUrl
 import com.das.forui.ui.viewer.ViewerFragment
 import com.google.android.gms.ads.AdRequest
 import com.google.android.gms.ads.AdView
@@ -67,7 +68,7 @@ class MainActivity : AppCompatActivity() {
         supportActionBar?.hide()
         if (!Python.isStarted()) {
             val startTime= System.nanoTime()
-            Python.start(AndroidPlatform(this@MainActivity))
+            Python.start(AndroidPlatform(this))
             val elapsedTime = System.nanoTime() - startTime
             Log.d("AppStartup", "Python initialization took: ${elapsedTime / 1_000_000} ms")
         }
@@ -82,16 +83,16 @@ class MainActivity : AppCompatActivity() {
 
         onNewIntent(intent)
 
-        val appBarConfiguration = AppBarConfiguration(
-            setOf(
-                R.id.navigation_home,
-                R.id.nav_watch_later,
-                R.id.navigation_settings
-            )
-        )
+
         setupActionBarWithNavController(
             findNavController(R.id.nav_host_fragment_activity_main),
-            appBarConfiguration
+            AppBarConfiguration(
+                setOf(
+                    R.id.navigation_home,
+                    R.id.nav_watch_later,
+                    R.id.navigation_settings
+                )
+            )
         )
         binding.navView.setupWithNavController(
             findNavController(R.id.nav_host_fragment_activity_main)
@@ -218,7 +219,7 @@ class MainActivity : AppCompatActivity() {
             val mainFile = py.getModule("main")
             val variable = mainFile["SearchWithLink"]
             val result = variable?.call("https://www.youtube.com/watch?v=$inputText")
-            println("nine $result")
+            println("python: $result")
             val jsonString = result.toString()
             // Use Gson to parse the JSON string into a Map
             val resultMapType = object : TypeToken<Map<String, Any>>() {}.type
@@ -554,5 +555,12 @@ class MainActivity : AppCompatActivity() {
     fun videoSetting(view: View) {
 
         showDiaglo("coming soon $view")
+    }
+
+    override fun onDestroy() {
+        if (AudioServiceFromUrl().exoPlayerFromAudioService?.isPlaying == true){
+            Toast.makeText(this, "Can't close it!", Toast.LENGTH_SHORT).show()
+        }
+        super.onDestroy()
     }
 }

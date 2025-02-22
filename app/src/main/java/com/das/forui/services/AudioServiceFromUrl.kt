@@ -9,23 +9,30 @@ import android.app.NotificationManager
 import android.app.PendingIntent
 import android.app.Service
 import android.content.Intent
+import android.graphics.Bitmap
 import android.graphics.BitmapFactory
+import android.graphics.Canvas
+import android.graphics.drawable.Drawable
 import android.media.AudioAttributes
 import android.media.AudioFocusRequest
 import android.media.AudioManager
-import android.media.MediaMetadata
+import android.net.Uri
 import android.os.Build
+import android.os.Bundle
 import android.os.Handler
 import android.os.IBinder
 import android.os.Looper
 import android.support.v4.media.MediaMetadataCompat
+import android.support.v4.media.RatingCompat
 import android.support.v4.media.session.MediaSessionCompat
 import android.util.Log
-import androidx.core.app.Person
 import androidx.media3.common.MediaItem
 import androidx.media3.common.Player
 import androidx.media3.common.util.UnstableApi
 import androidx.media3.exoplayer.ExoPlayer
+import com.bumptech.glide.Glide
+import com.bumptech.glide.request.target.CustomTarget
+import com.bumptech.glide.request.transition.Transition
 import com.das.forui.MainActivity
 import com.das.forui.R
 import com.das.forui.databased.DatabaseFavorite
@@ -34,7 +41,7 @@ import kotlin.properties.Delegates
 class AudioServiceFromUrl : Service() {
 
     private val channelId = "MediaYouTubePlayer"
-    private var exoPlayer: ExoPlayer? = null
+    var exoPlayerFromAudioService: ExoPlayer? = null
     private lateinit var mediaSession: MediaSessionCompat
     private val handler = Handler(Looper.getMainLooper())
     private lateinit var audioManager: AudioManager
@@ -46,6 +53,7 @@ class AudioServiceFromUrl : Service() {
     private lateinit var duration: String
     private var audioFocusRequest: AudioFocusRequest? = null
     private var actionIcon by Delegates.notNull<Int>()
+    var isForeGroundAudioService = false
 
 
     override fun onCreate() {
@@ -54,7 +62,7 @@ class AudioServiceFromUrl : Service() {
         audioManager = getSystemService(AudioManager::class.java)
         mediaSession = MediaSessionCompat(this, "AudioService")
         mediaSession.isActive = true
-        exoPlayer = ExoPlayer.Builder(this).build()
+        exoPlayerFromAudioService = ExoPlayer.Builder(this).build()
 
 
 
@@ -85,13 +93,49 @@ class AudioServiceFromUrl : Service() {
 //        actionIcon = if (isAdded(videoId)) R.drawable.favorite else R.drawable.un_favorite_icon
         println("it's is here $isAdded")
 
+        val duration = exoPlayerFromAudioService?.duration!!.toLong()
 
+
+
+        val metadata = MediaMetadataCompat
+            .Builder()
+            .putString(MediaMetadataCompat.METADATA_KEY_MEDIA_URI, mediaUrl)
+            .putString(MediaMetadataCompat.METADATA_KEY_TITLE, title) // Song/Video title
+            .putString(MediaMetadataCompat.METADATA_KEY_ARTIST, channelName) // Channel name as the artist
+            .putString(MediaMetadataCompat.METADATA_KEY_ALBUM, "Album name") // Optional, if available
+            .putLong(MediaMetadataCompat.METADATA_KEY_DURATION, duration) // Song/Video duration
+            .putString(MediaMetadataCompat.METADATA_KEY_ALBUM_ART_URI, audiUrl)
+            .putRating(MediaMetadataCompat.METADATA_KEY_RATING, RatingCompat.newPercentageRating(
+                100F
+            ))
+        getBitmapFromUrl("https://img.youtube.com/vi/$videoId/0.jpg") { bitmap ->
+            // Once the bitmap is loaded, we can set it on the metadata
+            if (bitmap != null) {
+                metadata.putBitmap(MediaMetadataCompat.METADATA_KEY_ALBUM_ART, bitmap)
+            } else {
+                // Handle case where the bitmap is null (e.g., show a default image)
+                metadata.putBitmap(MediaMetadataCompat.METADATA_KEY_ALBUM_ART, BitmapFactory.decodeResource(resources, R.drawable.music_note_24dp))
+            }
+            // Update the media session with the metadata after the bitmap is set
+            mediaSession.setMetadata(metadata.build())
+        }
 
         mediaSession.setCallback(object : MediaSessionCompat.Callback() {
             override fun onPlay() {
                 super.onPlay()
                 requestAudioFocus()
-                exoPlayer?.play()
+                exoPlayerFromAudioService?.play()
+                
+            }
+
+            override fun onPlayFromUri(uri: Uri?, extras: Bundle?) {
+                super.onPlayFromUri(uri, extras)
+            }
+
+
+            override fun onFastForward() {
+                super.onFastForward()
+                exoPlayerFromAudioService?.seekForward()
             }
 
 
@@ -100,43 +144,43 @@ class AudioServiceFromUrl : Service() {
                 println("here is it from1")
                 releaseAudioFocus()
                 handler.removeCallbacksAndMessages(this)
-                exoPlayer?.pause()
+                exoPlayerFromAudioService?.pause()
             }
 
             override fun onStop() {
                 super.onStop()
                 releaseAudioFocus()
                 println("it is pausing1")
-                exoPlayer?.stop()
-                exoPlayer?.release()
+                exoPlayerFromAudioService?.stop()
+                exoPlayerFromAudioService?.release()
                 stopSelf()
             }
         })
 
-        val notifications=createMediaNotification(title, channelName, audiUrl)
+        val notifications = createMediaNotification(title, channelName, audiUrl)
 
         startForeground(1, notifications)
         when (action) {
 
             ACTION_START -> {
-                if (exoPlayer == null) {
+                if (exoPlayerFromAudioService == null) {
                     // Reinitialize ExoPlayer if it's null
-                    exoPlayer = ExoPlayer.Builder(this).build()
-                    exoPlayer?.setMediaItem(mediaItem)
-                    exoPlayer?.prepare()
-                    exoPlayer?.play()
+                    exoPlayerFromAudioService = ExoPlayer.Builder(this).build()
+                    exoPlayerFromAudioService?.setMediaItem(mediaItem)
+                    exoPlayerFromAudioService?.prepare()
+                    exoPlayerFromAudioService?.play()
                     actionIcon = if (isAdded(videoId)) R.drawable.favorite else R.drawable.un_favorite_icon
                 } else {
                     actionIcon = if (isAdded(videoId)) R.drawable.favorite else R.drawable.un_favorite_icon
-                    exoPlayer?.setMediaItem(mediaItem)
-                    exoPlayer?.prepare()
-                    exoPlayer?.play()
-                    exoPlayer?.addListener(object : Player.Listener {
+                    exoPlayerFromAudioService?.setMediaItem(mediaItem)
+                    exoPlayerFromAudioService?.prepare()
+                    exoPlayerFromAudioService?.play()
+                    exoPlayerFromAudioService?.addListener(object : Player.Listener {
                         @Deprecated("Deprecated in Java")
                         override fun onPositionDiscontinuity(reason: Int) {
                             super.onPositionDiscontinuity(reason)
-                            val currentPosition = exoPlayer?.currentPosition ?: 0L
-                            val duration = exoPlayer?.duration ?: 0L
+                            val currentPosition = exoPlayerFromAudioService?.currentPosition ?: 0L
+                            val duration = exoPlayerFromAudioService?.duration ?: 0L
                             println("duration $duration")
                             println("current Position $currentPosition")
                             // Update the notification with the current progress
@@ -158,25 +202,25 @@ class AudioServiceFromUrl : Service() {
                 }
             }
             ACTION_PREVIOUS -> {
-                exoPlayer?.seekToPrevious()
+                exoPlayerFromAudioService?.seekToPrevious()
 //                    .previous()
             }
 
             ACTION_PAUSE_PLAY -> {
                 println("media Item $mediaUrl")
 
-                if (exoPlayer?.isPlaying == false) {
+                if (exoPlayerFromAudioService?.isPlaying == false) {
                     println(" it is still not playing")
-                    exoPlayer?.playWhenReady=true
+                    exoPlayerFromAudioService?.playWhenReady=true
                 }else{
-                    exoPlayer?.pause()
+                    exoPlayerFromAudioService?.pause()
 
                     println("it is still pausing")
                 }
             }
 
             ACTION_NEXT -> {
-                exoPlayer?.next()
+                exoPlayerFromAudioService?.next()
             }
 
             ACTION_KILL ->{
@@ -192,7 +236,7 @@ class AudioServiceFromUrl : Service() {
                     isAdded=false
                     println("it's here ${isAdded(videoId)} and $isAdded")
                 } else {
-                    dBase.insertData(videoId, title, videoDate, videoViews, channelName, duration)
+                    dBase.insertData(videoId, title, videoDate, videoViews, channelName, duration.toString())
                     isAdded=true
                     actionIcon= R.drawable.favorite
                     println("it's is here and $isAdded")
@@ -202,7 +246,7 @@ class AudioServiceFromUrl : Service() {
             ACTION_DELETE_INTENT ->{
 //                println("Notification deleted by the user.")
 
-                if (exoPlayer?.isPlaying == false){
+                if (exoPlayerFromAudioService?.isPlaying == false){
                     stopSelf()
                     val notificationManager = getSystemService(NotificationManager::class.java)
                     notificationManager?.cancel(1)
@@ -231,7 +275,7 @@ class AudioServiceFromUrl : Service() {
                 channelId,
                 "Foreground Service Channel",
                 NotificationManager.IMPORTANCE_HIGH).apply {
-                setShowBadge(false)
+                setShowBadge(true)
                 description = "channelDescription"
                 enableLights(false)
                 enableVibration(false)
@@ -345,56 +389,42 @@ class AudioServiceFromUrl : Service() {
         val fullScreenPendingIntent = PendingIntent.getActivity(this, 0,
             fullScreenIntent, PendingIntent.FLAG_IMMUTABLE or PendingIntent.FLAG_UPDATE_CURRENT)
 
-        val duration = exoPlayer?.duration!!.toLong()
 
 
-        val metadata = MediaMetadataCompat.Builder()
-            .putLong(MediaMetadata.METADATA_KEY_DURATION, duration)
-            .putString(MediaMetadata.METADATA_KEY_TITLE, title)
-            .putString(MediaMetadata.METADATA_KEY_ARTIST, channelName)
-            .putString(MediaMetadata.METADATA_KEY_ALBUM_ART_URI, title)
-            .putBitmap("gg", BitmapFactory.decodeResource(this.resources, R.drawable.favorite))
-            .build()
-        mediaSession.setMetadata(metadata)
+
+
+
         val mediaStyle = MediaStyle()
             .setMediaSession(mediaSession.sessionToken)
             .setShowActionsInCompactView(1, 2, 3)
-//        MediaMetadataCompat.fromMediaMetadata(metadata)
-        val incomingCaller = Person.Builder()
-            .setName("Jane Doe")
-            .setImportant(true)
-            .build()
+
+
+
         val notification= NotificationCompat.Builder(this, channelId)
-            .setContentTitle(title)
-            .setContentText(channelName)
             .setContentIntent(pendingIntent)
             .setSmallIcon(R.drawable.music_note_24dp)
-            .setOngoing(false)
+            .setOngoing(true)
+            .setVisibility(NotificationCompat.VISIBILITY_PUBLIC)
             .setFullScreenIntent(fullScreenPendingIntent, true)
             .setStyle(mediaStyle)
-            .addPerson(incomingCaller)
             .addAction(NotificationCompat.Action(
                 if (isAdded(videoId)) R.drawable.favorite else R.drawable.un_favorite_icon,
                 actionText, actionIntent
             ))
             .addAction(R.drawable.skip_previous_24dp, "Previous", previousPendingIntent)
             .addAction(NotificationCompat.Action(
-                if (exoPlayer?.isPlaying == true) R.drawable.play_arrow_24dp else R.drawable.pause_icon,
+                if (exoPlayerFromAudioService?.isPlaying == true) R.drawable.pause_icon else R.drawable.play_arrow_24dp,
                 "Play/Pause", pausePendingIntent
             ))
             .addAction(R.drawable.skip_next_24dp, "Next", nextPendingIntent)
             .addAction(R.drawable.stop_circle_24dp, "Stop", stopPendingIntent)
-            .setForegroundServiceBehavior(NotificationCompat.FOREGROUND_SERVICE_IMMEDIATE)
             .setAutoCancel(false)
             .setSound(null)
             .setPriority(NotificationCompat.PRIORITY_MAX)
-            .setVisibility(NotificationCompat.VISIBILITY_PUBLIC)
             .setDeleteIntent(deletePendingIntent)
             .setVibrate(longArrayOf(0))
             .setProgress(100, 75, false)
             .build()
-
-
 
 
         getSystemService(NotificationManager::class.java).notify(1, notification)
@@ -402,34 +432,69 @@ class AudioServiceFromUrl : Service() {
     }
 
 
+    private fun getBitmapFromUrl(url: String, callback: (Bitmap?) -> Unit) {
+        Glide.with(this)
+            .asBitmap()
+            .load(url)
+            .into(object : CustomTarget<Bitmap>() {
+                override fun onResourceReady(resource: Bitmap, transition: Transition<in Bitmap>?) {
+                    // Pass the loaded bitmap back via the callback
+                    callback(resource)
+                }
 
+                override fun onLoadCleared(placeholder: Drawable?) {
+                    // Optionally handle cleanup or pass a default bitmap back
+                    val fallbackBitmap = placeholder?.let { drawableToBitmap(it) }
+                    callback(fallbackBitmap)
+                }
+            })
+    }
 
+    // Utility function to convert Drawable to Bitmap
+    fun drawableToBitmap(drawable: Drawable): Bitmap {
+        val width = drawable.intrinsicWidth
+        val height = drawable.intrinsicHeight
 
+        if (width <= 0 || height <= 0) {
+            return Bitmap.createBitmap(
+                1,
+                1,
+                Bitmap.Config.ARGB_8888
+            ) // Return a blank Bitmap if drawable has no intrinsic size
+        }
+
+        val bitmap = Bitmap.createBitmap(width, height, Bitmap.Config.ARGB_8888)
+        val canvas = Canvas(bitmap)
+        drawable.setBounds(0, 0, canvas.width, canvas.height)
+        drawable.draw(canvas)
+
+        return bitmap
+    }
 
     private val audioFocusChangeListener = AudioManager.OnAudioFocusChangeListener { focusChange ->
 
         when (focusChange) {
             AudioManager.AUDIOFOCUS_GAIN -> {
                 // Audio focus gained, resume playback if it was paused
-                if (exoPlayer?.playWhenReady == false) {
-                    exoPlayer?.play()
+                if (exoPlayerFromAudioService?.playWhenReady == false) {
+                    exoPlayerFromAudioService?.play()
                 }
             }
             AudioManager.AUDIOFOCUS_LOSS -> {
-                if (exoPlayer?.playWhenReady == true) {
-                    exoPlayer?.pause()
+                if (exoPlayerFromAudioService?.playWhenReady == true) {
+                    exoPlayerFromAudioService?.pause()
                 }
             }
             AudioManager.AUDIOFOCUS_LOSS_TRANSIENT -> {
                 // Temporarily lost audio focus (e.g., incoming call), pause playback
-                if (exoPlayer?.playWhenReady == true) {
-                    exoPlayer?.pause()
+                if (exoPlayerFromAudioService?.playWhenReady == true) {
+                    exoPlayerFromAudioService?.pause()
                 }
             }
             AudioManager.AUDIOFOCUS_LOSS_TRANSIENT_CAN_DUCK -> {
                 // Lost audio focus but can duck (e.g., lower volume)
-                if (exoPlayer?.playWhenReady == true) {
-                    exoPlayer?.volume = 0.1f // Lower volume when focus is lost transiently
+                if (exoPlayerFromAudioService?.playWhenReady == true) {
+                    exoPlayerFromAudioService?.volume = 0.1f // Lower volume when focus is lost transiently
                 }
             }
         }
@@ -500,6 +565,6 @@ class AudioServiceFromUrl : Service() {
 
     override fun onDestroy() {
         super.onDestroy()
-        exoPlayer?.release()
+        exoPlayerFromAudioService?.release()
     }
 }
