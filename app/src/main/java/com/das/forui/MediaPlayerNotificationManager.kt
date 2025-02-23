@@ -19,6 +19,7 @@ class MediaPlayerNotificationManager(
     notificationListener: NotificationListener,
     private val newSong: () -> Unit
 ) {
+
     private val notificationManager: PlayerNotificationManager
 
 

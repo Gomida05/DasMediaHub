@@ -18,9 +18,10 @@ import android.view.View
 import android.view.ViewGroup
 import android.widget.ImageButton
 import android.widget.ImageView
+import android.widget.ProgressBar
 import android.widget.TextView
+import android.widget.Toast
 import androidx.activity.OnBackPressedCallback
-import androidx.annotation.RequiresApi
 import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.background
 import androidx.compose.foundation.combinedClickable
@@ -39,14 +40,12 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.MoreVert
 import androidx.compose.material3.Card
 import androidx.compose.material3.CircularProgressIndicator
-import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
-import androidx.compose.runtime.MutableState
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
@@ -73,6 +72,7 @@ import com.das.forui.R
 import com.das.forui.databased.DatabaseFavorite
 import com.das.forui.databinding.VideoViewerBinding
 import com.das.forui.ui.viewer.GlobalVideoList.listOfVideos
+import com.das.forui.ui.viewer.GlobalVideoList.previousVideos
 import com.google.android.exoplayer2.ExoPlayer
 import com.google.android.exoplayer2.MediaItem
 import com.google.android.exoplayer2.Player
@@ -137,7 +137,7 @@ class ViewerFragment: Fragment() {
         videoTitle = arguments?.getString("View_Title").toString()
         videoURL = arguments?.getString("View_URL").toString()
         channelThumbnail = arguments?.getString("channel_Thumbnails").toString()
-        var viewNumber = arguments?.getString("View_Number")
+        var viewNumber = arguments?.getString("View_Number").toString()
         var dateOfVideo = arguments?.getString("dateOfVideo").toString()
         var channelName = arguments?.getString("channelName").toString()
         duration = arguments?.getString("duration").toString()
@@ -263,31 +263,91 @@ class ViewerFragment: Fragment() {
             toggleFullScreen()
         }
         view.findViewById<ImageButton>(R.id.play_next_video).setOnClickListener {
-            exoPlayer?.let {
-                it.stop()
-                it.release()
-            }
-            val listOfVideosIndex = listOfVideos[1]
-            val bundle = Bundle().apply {
-                putString("View_ID", listOfVideosIndex.videoId)
-                putString("View_URL", "https://www.youtube.com/watch?v=${listOfVideosIndex.videoId}")
-                putString("View_Title", listOfVideosIndex.title)
-                putString("View_Number", listOfVideosIndex.views)
-                putString("dateOfVideo", listOfVideosIndex.dateOfVideo)
-                putString("channelName", listOfVideosIndex.channelName)
-                putString("duration", listOfVideosIndex.duration)
-                putString("channel_Thumbnails", listOfVideosIndex.channelThumbnailsUrl)
-            }
-            findNavController().run {
-                popBackStack()
-                navigate(R.id.nav_video_viewer, bundle)
-            }
+            playThisOne(
+                videoDetails = Video(
+                    videoId = videoID,
+                    title = videoTitle,
+                    views = viewNumber,
+                    duration = duration,
+                    dateOfVideo =  dateOfVideo,
+                    channelName = channelName,
+                    channelThumbnailsUrl = channelThumbnail
+                )
+            )
         }
     }
 
 
     override fun onStart() {
         super.onStart()
+
+
+
+        exoPlayer?.addListener(object : Player.Listener {
+            override fun onPlaybackStateChanged(state: Int) {
+                if (state == Player.STATE_ENDED) {
+                    playThisOne()
+
+                    Toast.makeText(requireContext(), "Video end", Toast.LENGTH_SHORT).show()
+                }
+                super.onPlaybackStateChanged(state)
+            }
+
+            override fun onIsLoadingChanged(isLoading: Boolean) {
+                super.onIsLoadingChanged(isLoading)
+                val viewIt = view?.findViewById<ProgressBar>(R.id.progress_bar_load_video)
+                if (isLoading){
+                    viewIt?.visibility = View.VISIBLE
+                    Toast.makeText(requireContext(), "Loading", Toast.LENGTH_SHORT).show()
+                }
+                else{
+                    viewIt?.visibility = View.GONE
+                    Toast.makeText(requireContext(), "Finished", Toast.LENGTH_SHORT).show()
+                }
+            }
+
+            override fun onPlayWhenReadyChanged(
+                playWhenReady: Boolean,
+                reason: Int
+            ) {
+                super.onPlayWhenReadyChanged(playWhenReady, reason)
+                if (playWhenReady) {
+                    isPlaying = true
+                    println("service playing")
+                    requestAudioFocus()
+                } else {
+                    isPlaying = false
+                    println("service pausing")
+                    releaseAudioFocus()
+                }
+            }
+        })
+        gestureDetector =
+            GestureDetector(
+                requireContext(),
+                object : GestureDetector.SimpleOnGestureListener() {
+                    override fun onDown(e: MotionEvent): Boolean {
+                        return super.onDown(e)
+                    }
+
+                    override fun onDoubleTap(e: MotionEvent): Boolean {
+                        handleDoubleTap(e)
+                        return super.onDoubleTap(e)
+                    }
+
+                })
+
+        // Set OnTouchListener to detect touch events and pass them to the GestureDetector
+        playerView.setOnTouchListener { v, event ->
+            if (event.action == MotionEvent.ACTION_UP) {
+                v.performClick()
+            }
+
+            // Pass the event to GestureDetector
+            gestureDetector.onTouchEvent(event)
+            true
+        }
+
 
 
         binding.giveMeTitle.setOnClickListener {
@@ -393,6 +453,28 @@ class ViewerFragment: Fragment() {
     }
 
 
+    private fun playThisOne(gotIndex: Int = 1, videoDetails: Video = listOfVideos[gotIndex]){
+        exoPlayer?.let {
+            it.stop()
+            it.release()
+        }
+        val listOfVideosIndex = videoDetails
+        val bundle = Bundle().apply {
+            putString("View_ID", listOfVideosIndex.videoId)
+            putString("View_URL", "https://www.youtube.com/watch?v=${listOfVideosIndex.videoId}")
+            putString("View_Title", listOfVideosIndex.title)
+            putString("View_Number", listOfVideosIndex.views)
+            putString("dateOfVideo", listOfVideosIndex.dateOfVideo)
+            putString("channelName", listOfVideosIndex.channelName)
+            putString("duration", listOfVideosIndex.duration)
+            putString("channel_Thumbnails", listOfVideosIndex.channelThumbnailsUrl)
+        }
+        previousVideos.add(listOfVideosIndex)
+        findNavController().run {
+            popBackStack()
+            navigate(R.id.nav_video_viewer, bundle)
+        }
+    }
 
 
 
@@ -442,7 +524,7 @@ class ViewerFragment: Fragment() {
                             items(searchResults.value) {searchItem ->
                                 CategoryItems(
                                     videoId = searchItem.videoId,
-                                    title = searchItem.title,
+                                    titles = searchItem.title,
                                     viewsNumber = searchItem.views,
                                     dateOfVideo = searchItem.dateOfVideo,
                                     channelName = searchItem.channelName,
@@ -465,7 +547,7 @@ class ViewerFragment: Fragment() {
     @Composable
     fun CategoryItems(
         videoId: String,
-        title: String,
+        titles: String,
         viewsNumber: String,
         dateOfVideo: String,
         channelName: String,
@@ -482,27 +564,20 @@ class ViewerFragment: Fragment() {
                 .padding(bottom = 3.dp, top = 3.dp)
                 .combinedClickable(
                     onClick = {
-                        exoPlayer?.let {
-                            it.stop()
-                            it.release()
-                        }
-                        val bundle = Bundle().apply {
-                            putString("View_ID", videoId)
-                            putString("View_URL", "https://www.youtube.com/watch?v=$videoId")
-                            putString("View_Title", title)
-                            putString("View_Number", viewsNumber)
-                            putString("dateOfVideo", dateOfVideo)
-                            putString("channelName", channelName)
-                            putString("duration", duration)
-                            putString("channel_Thumbnails", channelThumbnails)
-                        }
-                        findNavController().run{
-                            popBackStack()
-                            navigate(R.id.nav_video_viewer, bundle)
-                        }
+                        playThisOne(
+                            videoDetails = Video(
+                                videoId = videoId,
+                                title = titles,
+                                views = viewsNumber,
+                                duration = duration,
+                                dateOfVideo =  dateOfVideo,
+                                channelName = channelName,
+                                channelThumbnailsUrl = channelThumbnails
+                            )
+                        )
                     },
                     onLongClick = {
-                        imageViewer(videoId, title)
+                        imageViewer(videoId, titles)
                     }
                 ),
             shape = RoundedCornerShape(1)
@@ -576,7 +651,7 @@ class ViewerFragment: Fragment() {
 
 
                         Text(
-                            text = title,
+                            text = titles,
                             maxLines = 1,
                             fontSize = 15.sp,
                             textAlign = TextAlign.Start,
@@ -676,73 +751,7 @@ class ViewerFragment: Fragment() {
 
 
 
-            exoPlayer?.addListener(object : Player.Listener {
-                override fun onPlaybackStateChanged(state: Int) {
-                    super.onPlaybackStateChanged(state)
-                    if (state == Player.STATE_ENDED) {
-                        exoPlayer?.let {
-                            it.stop()
-                            it.release()
-                        }
-                        val listOfVideosIndex = listOfVideos[1]
-                        val bundle = Bundle().apply {
-                            putString("View_ID", listOfVideosIndex.videoId)
-                            putString("View_URL", "https://www.youtube.com/watch?v=${listOfVideosIndex.videoId}")
-                            putString("View_Title", listOfVideosIndex.title)
-                            putString("View_Number", listOfVideosIndex.views)
-                            putString("dateOfVideo", listOfVideosIndex.dateOfVideo)
-                            putString("channelName", listOfVideosIndex.channelName)
-                            putString("duration", listOfVideosIndex.duration)
-                            putString("channel_Thumbnails", listOfVideosIndex.channelThumbnailsUrl)
-                        }
-                        findNavController().run {
-                            popBackStack()
-                            navigate(R.id.nav_video_viewer, bundle)
-                        }
-//                        playVideo("https://rr1---sn-uigxx03-ajtl.googlevideo.com/videoplayback?expire=1733809712&ei=0IFXZ4yDM8nLmLAP0KuXkQs&ip=2a04%3A4a43%3A977f%3Af392%3A488%3Af57f%3A2e91%3Af970&id=o-AP1jvq5SB4PyoIxftzFcyDhnOoJYtFkz6gwzvCV4dZKr&itag=18&source=youtube&requiressl=yes&xpc=EgVo2aDSNQ%3D%3D&met=1733788112%2C&mh=SH&mm=31%2C29&mn=sn-uigxx03-ajtl%2Csn-aigzrn7e&ms=au%2Crdu&mv=m&mvi=1&pl=57&rms=au%2Cau&pcm2=yes&initcwndbps=1001250&bui=AQn3pFQRRCfZ-thiT9XXa8gdCyODGraPQCWec-TG-n3No2CqTbAVSg6FUqsvPEtkTSDOLoz-FGRKjDsp&vprv=1&mime=video%2Fmp4&rqh=1&cnr=14&ratebypass=yes&dur=903.093&lmt=1725726923730991&mt=1733787646&fvip=4&fexp=51326932%2C51335594%2C51347747&c=ANDROID_VR&txp=5309224&sparams=expire%2Cei%2Cip%2Cid%2Citag%2Csource%2Crequiressl%2Cxpc%2Cpcm2%2Cbui%2Cvprv%2Cmime%2Crqh%2Ccnr%2Cratebypass%2Cdur%2Clmt&sig=AJfQdSswRQIgZYrNHQWM0OMLTt-ZuAruMoa1rHNpXGmSZSSp2Y3b8d4CIQDruSFUA4ppu_RurRrSokhMKFZg7kHtWm2rwpxMeRGRqQ%3D%3D&lsparams=met%2Cmh%2Cmm%2Cmn%2Cms%2Cmv%2Cmvi%2Cpl%2Crms%2Cinitcwndbps&lsig=AGluJ3MwRQIgd2lflxQvzlD9TkorrTdzHil3a7X_mA7HUlg9HSrekIQCIQCPEHdGpJ2YfrK_nYrSqnNvVpBBgG2SAOYZPDa6DIkzzA%3D%3D")
-                    }
-                }
 
-                override fun onPlayWhenReadyChanged(
-                    playWhenReady: Boolean,
-                    reason: Int
-                ) {
-                    super.onPlayWhenReadyChanged(playWhenReady, reason)
-                    if (playWhenReady) {
-                        isPlaying = true
-                        println("service playing")
-                        requestAudioFocus()
-                    } else {
-                        isPlaying = false
-                        println("service pausing")
-                        releaseAudioFocus()
-                    }
-                }
-            })
-            gestureDetector =
-                GestureDetector(
-                    requireContext(),
-                    object : GestureDetector.SimpleOnGestureListener() {
-                        override fun onDown(e: MotionEvent): Boolean {
-                            return super.onDown(e)
-                        }
-
-                        override fun onDoubleTap(e: MotionEvent): Boolean {
-                            handleDoubleTap(e)
-                            return super.onDoubleTap(e)
-                        }
-                    })
-
-            // Set OnTouchListener to detect touch events and pass them to the GestureDetector
-            playerView.setOnTouchListener { v, event ->
-                if (event.action == MotionEvent.ACTION_UP) {
-                    v.performClick()
-                }
-
-                // Pass the event to GestureDetector
-                gestureDetector.onTouchEvent(event)
-                true
-            }
         }
          catch (e: Exception) {
             println("error found in this ${e.message}")
@@ -850,11 +859,10 @@ class ViewerFragment: Fragment() {
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
             audioFocusRequest?.let {
                 audioManager.abandonAudioFocusRequest(it)
+                audioFocusRequest = null
                 Log.d("AudioService", "Audio focus released for API >= 26")
-            } ?: run {
-                Log.w("AudioService", "audioFocusRequest is null, cannot release focus")
             }
-        } else {
+        }else {
             audioManager.abandonAudioFocus(audioFocusChangeListener)
             Log.d("AudioService", "Audio focus released for API < 26")
         }
@@ -1037,8 +1045,13 @@ class ViewerFragment: Fragment() {
         (activity as MainActivity).showBottomNav()
         _binding = null
     }
+
+
+
+
 }
 
 object GlobalVideoList {
     val listOfVideos = mutableListOf<ViewerFragment.Video>()
+    val previousVideos = mutableListOf<ViewerFragment.Video>()
 }

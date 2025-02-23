@@ -85,11 +85,8 @@ class AudioServiceFromUrl : Service() {
         videoDate = intent?.getStringExtra("videoDate").toString()
         duration = intent?.getStringExtra("duration").toString()
         isAdded= isAdded(videoId)
-        actionIcon = if (isAdded(videoId)){
-            R.drawable.favorite
-        } else{
-            R.drawable.un_favorite_icon
-        }
+        actionIcon = if (isAdded(videoId)) R.drawable.favorite else R.drawable.un_favorite_icon
+
 //        actionIcon = if (isAdded(videoId)) R.drawable.favorite else R.drawable.un_favorite_icon
         println("it's is here $isAdded")
 
@@ -500,17 +497,12 @@ class AudioServiceFromUrl : Service() {
         }
     }
 
-//    private fun releaseAudioFocus() {
-//        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
-//            audioManager.abandonAudioFocusRequest(audioFocusRequest!!)
-//        } else {
-//            audioManager.abandonAudioFocus(audioFocusChangeListener)
-//        }
-//    }
+
     private fun releaseAudioFocus() {
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
             audioFocusRequest?.let {
                 audioManager.abandonAudioFocusRequest(it)
+                audioFocusRequest = null
             }
         } else {
             audioManager.abandonAudioFocus(audioFocusChangeListener)
@@ -527,6 +519,7 @@ class AudioServiceFromUrl : Service() {
                 .build()
 
             audioFocusRequest = AudioFocusRequest.Builder(AudioManager.AUDIOFOCUS_GAIN)
+
                 .setAudioAttributes(audioAttributes)
                 .setOnAudioFocusChangeListener(audioFocusChangeListener)
                 .build()

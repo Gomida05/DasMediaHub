@@ -1,3 +1,5 @@
+@file:Suppress("DEPRECATION")
+
 package com.das.forui.services
 
 import android.app.PendingIntent
@@ -47,7 +49,7 @@ class MyMediaService: MediaBrowserService() {
             setSessionActivity(activityIntent)
             isActive = true
         }
-        sessionToken = mediaSessionCompact.sessionToken as MediaSession.Token?
+        sessionToken = mediaSessionCompact.sessionToken as MediaSession.Token
 
         notificationManager = MediaPlayerNotificationManager(
             this,
