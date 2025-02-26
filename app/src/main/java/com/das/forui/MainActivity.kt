@@ -18,6 +18,7 @@ import android.os.Bundle
 import android.os.Environment
 import android.os.Handler
 import android.os.Looper
+import android.os.PersistableBundle
 import android.provider.Settings
 import android.util.Log
 import android.util.Rational
@@ -117,36 +118,13 @@ class MainActivity : AppCompatActivity() {
     }
 
 
-    override fun onConfigurationChanged(newConfig: Configuration) {
-        super.onConfigurationChanged(newConfig)
-        if ((newConfig.uiMode and Configuration.UI_MODE_NIGHT_MASK) !=
-            (resources.configuration.uiMode and Configuration.UI_MODE_NIGHT_MASK)) {
-            println("nighter modeler")
-            Handler(Looper.getMainLooper()).post {
-                AppCompatDelegate.setDefaultNightMode(AppCompatDelegate.MODE_NIGHT_YES)
+    override fun onSaveInstanceState(outState: Bundle, outPersistentState: PersistableBundle) {
+        super.onSaveInstanceState(outState, outPersistentState)
 
-                onNightModeChanged(newConfig.uiMode)
-
-                val isNightMode = isNightModeEnabled()
-                AppCompatDelegate.setDefaultNightMode(
-                    if (isNightMode) AppCompatDelegate.MODE_NIGHT_YES else AppCompatDelegate.MODE_NIGHT_NO
-                )
-            }
-
-        }
+        /*
+        TODO WE WILL ADD THE FUNCTIONALITY HERE SO IT GONNA BE EASY TO RECREATE THE ACTIVITY
+         */
     }
-
-    private fun isNightModeEnabled(): Boolean {
-        val currentNightMode = resources.configuration.uiMode and Configuration.UI_MODE_NIGHT_MASK
-        return currentNightMode == Configuration.UI_MODE_NIGHT_YES
-    }
-    override fun onNightModeChanged(mode: Int) {
-        super.onNightModeChanged(mode)
-        AppCompatDelegate.setDefaultNightMode(mode)
-    }
-
-
-
     fun startBanner(startOrStop: Boolean){
         try {
             MobileAds.initialize(this@MainActivity) { }
@@ -550,15 +528,12 @@ class MainActivity : AppCompatActivity() {
             return match?.groups?.get(1)?.value
         }
     }
-
-    fun videoSetting(view: View) {
-
-        showDiaglo("coming soon $view")
-    }
+    fun videoSetting(view: View) {}
 
     override fun onDestroy() {
         if (AudioServiceFromUrl().exoPlayerFromAudioService?.isPlaying == true){
             Toast.makeText(this, "Can't close it!", Toast.LENGTH_SHORT).show()
+
         }
         super.onDestroy()
     }

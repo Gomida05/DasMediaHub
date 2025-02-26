@@ -7,6 +7,17 @@
     android:paddingEnd="20dp">
 
 
+    <ProgressBar
+        android:id="@+id/progress_bar_load_video"
+        android:visibility="gone"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        app:layout_constraintBottom_toBottomOf="parent"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintHorizontal_bias="0.5"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toTopOf="parent"
+        app:layout_constraintVertical_bias="0.5" />
 
     <ImageButton
         android:id="@+id/navigateUpFromVideoPLayer"
@@ -55,8 +66,6 @@
     <ImageButton
         android:id="@id/exo_settings"
         style="@style/ExoStyledControls.Button.Bottom.Settings"
-        android:layout_gravity="start"
-        android:onClick="videoSetting"
         android:tintMode="src_in"
         app:layout_constraintBottom_toBottomOf="parent"
         app:layout_constraintEnd_toEndOf="parent"
@@ -109,7 +118,6 @@
         <ImageButton
             android:id="@+id/play_next_video"
             style="@style/ExoMediaButton.Next"
-            android:onClick="videoSetting"
             android:layout_marginStart="15dp"
             app:tint="@color/teal_700"
             tools:ignore="ContentDescription" />
