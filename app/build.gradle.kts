@@ -54,7 +54,7 @@ android {
     productFlavors {
         create("py312") {
             dimension = "pyVersion"
-            version = "3.12"
+            version = "3.13"
         }
     }
 
@@ -62,8 +62,8 @@ android {
 }
 chaquopy {
     defaultConfig {
-        version = "3.12"
-        buildPython("C:\\Users\\esrom\\AppData\\Local\\Programs\\Python\\Python312\\python.exe")
+        version = "3.13"
+        buildPython("C:\\Users\\esrom\\AppData\\Local\\Programs\\Python\\Python313\\python.exe")
         pip{
             install("pytubefix")
             install("youtube-search-python")
