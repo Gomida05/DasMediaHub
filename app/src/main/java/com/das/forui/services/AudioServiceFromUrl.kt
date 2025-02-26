@@ -16,7 +16,6 @@ import android.graphics.drawable.Drawable
 import android.media.AudioAttributes
 import android.media.AudioFocusRequest
 import android.media.AudioManager
-import android.net.Uri
 import android.os.Build
 import android.os.Bundle
 import android.os.Handler
@@ -25,6 +24,7 @@ import android.os.Looper
 import android.support.v4.media.MediaMetadataCompat
 import android.support.v4.media.RatingCompat
 import android.support.v4.media.session.MediaSessionCompat
+import android.support.v4.media.session.PlaybackStateCompat
 import android.util.Log
 import androidx.media3.common.MediaItem
 import androidx.media3.common.Player
@@ -69,6 +69,10 @@ class AudioServiceFromUrl : Service() {
     }
 
 
+    fun formatTimeToFloat(milliseconds: Long): Float {
+        return milliseconds / 1000f
+    }
+
     @UnstableApi
     override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
 
@@ -102,12 +106,11 @@ class AudioServiceFromUrl : Service() {
             .putString(MediaMetadataCompat.METADATA_KEY_MEDIA_URI, mediaUrl)
             .putString(MediaMetadataCompat.METADATA_KEY_TITLE, title) // Song/Video title
             .putString(MediaMetadataCompat.METADATA_KEY_ARTIST, channelName) // Channel name as the artist
-            .putString(MediaMetadataCompat.METADATA_KEY_ALBUM, "Album name") // Optional, if available
+            .putString(MediaMetadataCompat.METADATA_KEY_ALBUM, "unknown album") // Optional, if available
             .putLong(MediaMetadataCompat.METADATA_KEY_DURATION, duration) // Song/Video duration
             .putString(MediaMetadataCompat.METADATA_KEY_ALBUM_ART_URI, audiUrl)
-            .putRating(MediaMetadataCompat.METADATA_KEY_RATING, RatingCompat.newPercentageRating(
-                100F
-            ))
+
+
         getBitmapFromUrl("https://img.youtube.com/vi/$videoId/0.jpg") { bitmap ->
             // Once the bitmap is loaded, we can set it on the metadata
             if (bitmap != null) {
@@ -116,27 +119,152 @@ class AudioServiceFromUrl : Service() {
                 // Handle case where the bitmap is null (e.g., show a default image)
                 metadata.putBitmap(MediaMetadataCompat.METADATA_KEY_ALBUM_ART, BitmapFactory.decodeResource(resources, R.drawable.music_note_24dp))
             }
-            // Update the media session with the metadata after the bitmap is set
+
             mediaSession.setMetadata(metadata.build())
+            // Update the media session with the metadata after the bitmap is set
         }
 
+        mediaSession.setPlaybackState(
+            PlaybackStateCompat.Builder()
+                .setState(PlaybackStateCompat.STATE_PLAYING, exoPlayerFromAudioService?.currentPosition!!,
+                    1F
+                )
+                .setActions(PlaybackStateCompat.ACTION_PREPARE)
+                .addCustomAction(ACTION_PAUSE, "myPauseButton", R.drawable.pause_icon)
+                .addCustomAction(ACTION_NEXT, "myNextButton", R.drawable.skip_next_24dp)
+                .addCustomAction(ACTION_PREVIOUS, "myPreviousButton", R.drawable.skip_previous_24dp)
+                .addCustomAction(ACTION_KILL, "myStopButton", R.drawable.stop_circle_24dp)
+                .setBufferedPosition(exoPlayerFromAudioService?.currentPosition!!)
+                .build()
+        )
+
+
+
+        exoPlayerFromAudioService?.addListener(object : Player.Listener {
+
+
+            override fun onPositionDiscontinuity(
+                oldPosition: Player.PositionInfo,
+                newPosition: Player.PositionInfo,
+                reason: Int
+            ) {
+                super.onPositionDiscontinuity(oldPosition, newPosition, reason)
+                val currentPosition = newPosition.contentPositionMs
+
+
+                mediaSession.setPlaybackState(
+                    PlaybackStateCompat.Builder()
+                        .setState(PlaybackStateCompat.STATE_PLAYING, currentPosition,
+                            1F
+                        )
+                        .setActions(PlaybackStateCompat.ACTION_SEEK_TO)
+                        .addCustomAction(ACTION_PAUSE, "myPauseButton", R.drawable.pause_icon)
+                        .addCustomAction(ACTION_NEXT, "myNextButton", R.drawable.skip_next_24dp)
+                        .addCustomAction(ACTION_PREVIOUS, "myPreviousButton", R.drawable.skip_previous_24dp)
+                        .addCustomAction(ACTION_KILL, "myStopButton", R.drawable.stop_circle_24dp)
+                        .setBufferedPosition(currentPosition)
+                        .build()
+                )
+            }
+
+
+            override fun onPlaybackStateChanged(playbackState: Int) {
+                super.onPlaybackStateChanged(playbackState)
+
+                if (playbackState == Player.STATE_ENDED){
+                    mediaSession.setPlaybackState(
+                        PlaybackStateCompat.Builder()
+                            .setState(PlaybackStateCompat.STATE_PLAYING, exoPlayerFromAudioService?.currentPosition!!,
+                                1F
+                            )
+                            .setActions(PlaybackStateCompat.ACTION_STOP)
+                            .addCustomAction(ACTION_PLAY, "myPlayButton", R.drawable.play_arrow_24dp)
+                            .addCustomAction(ACTION_NEXT, "myNextButton", R.drawable.skip_next_24dp)
+                            .addCustomAction(ACTION_PREVIOUS, "myPreviousButton", R.drawable.skip_previous_24dp)
+                            .addCustomAction(ACTION_KILL, "myStopButton", R.drawable.stop_circle_24dp)
+                            .setBufferedPosition(exoPlayerFromAudioService?.currentPosition!!)
+                            .build()
+                    )
+                }
+            }
+        }
+
+        )
+
+
+
+
         mediaSession.setCallback(object : MediaSessionCompat.Callback() {
+
+
+
+            override fun onSeekTo(pos: Long) {
+                super.onSeekTo(pos)
+                exoPlayerFromAudioService?.seekTo(pos)
+            }
+
             override fun onPlay() {
                 super.onPlay()
                 requestAudioFocus()
                 exoPlayerFromAudioService?.play()
-                
+
             }
 
-            override fun onPlayFromUri(uri: Uri?, extras: Bundle?) {
-                super.onPlayFromUri(uri, extras)
+            override fun onCustomAction(action: String?, extras: Bundle?) {
+                super.onCustomAction(action, extras)
+                if (action.toString() == ACTION_PLAY){
+                    exoPlayerFromAudioService?.play()
+                    mediaSession.setPlaybackState(
+                        PlaybackStateCompat.Builder()
+                            .setState(PlaybackStateCompat.STATE_PLAYING, exoPlayerFromAudioService?.currentPosition!!,
+                                1F
+                            )
+                            .setActions(PlaybackStateCompat.ACTION_SEEK_TO)
+//                            .addCustomAction("Fav", "myFavButton", R.drawable.favorite)
+                            .addCustomAction(ACTION_PAUSE, "myPauseButton", R.drawable.pause_icon)
+                            .addCustomAction(ACTION_NEXT, "myNextButton", R.drawable.skip_next_24dp)
+                            .addCustomAction(ACTION_PREVIOUS, "myPreviousButton", R.drawable.skip_previous_24dp)
+                            .addCustomAction(ACTION_KILL, "myStopButton", R.drawable.stop_circle_24dp)
+                            .setBufferedPosition(exoPlayerFromAudioService?.currentPosition!!)
+                            .build()
+                    )
+
+                }
+                else if (action.toString() == ACTION_PAUSE){
+                    exoPlayerFromAudioService?.pause()
+                    mediaSession.setPlaybackState(
+                        PlaybackStateCompat.Builder()
+                            .setState(PlaybackStateCompat.STATE_PAUSED, exoPlayerFromAudioService?.currentPosition!!,
+                                1F
+                            )
+                            .setActions(PlaybackStateCompat.ACTION_SEEK_TO)
+                            .addCustomAction(ACTION_PLAY, "myPlayButton", R.drawable.play_arrow_24dp)
+                            .addCustomAction(ACTION_NEXT, "myNextButton", R.drawable.skip_next_24dp)
+                            .addCustomAction(ACTION_PREVIOUS, "myPreviousButton", R.drawable.skip_previous_24dp)
+                            .addCustomAction(ACTION_ADD_TO_WATCH_LATER, "myFavButton", R.drawable.favorite)
+//                            .addCustomAction("Kill", "myStopButton", R.drawable.stop_circle_24dp)
+
+                            .setBufferedPosition(exoPlayerFromAudioService?.currentPosition!!)
+                            .build()
+                    )
+                }
+                else if (action.toString() == ACTION_PREVIOUS){
+                    exoPlayerFromAudioService?.seekToPrevious()
+                }
+                else if (action.toString() == ACTION_NEXT){
+                    exoPlayerFromAudioService?.seekToNext()
+                }
+                else if (action.toString() == ACTION_ADD_TO_WATCH_LATER){
+
+                }
+                else if (action.toString() == ACTION_KILL){
+                    stopSelf()
+                    val notificationManager = getSystemService(NotificationManager::class.java)
+                    notificationManager?.cancel(1)
+                }
             }
 
 
-            override fun onFastForward() {
-                super.onFastForward()
-                exoPlayerFromAudioService?.seekForward()
-            }
 
 
             override fun onPause() {
@@ -151,11 +279,15 @@ class AudioServiceFromUrl : Service() {
                 super.onStop()
                 releaseAudioFocus()
                 println("it is pausing1")
-                exoPlayerFromAudioService?.stop()
-                exoPlayerFromAudioService?.release()
+                exoPlayerFromAudioService?.let {
+                    it.stop()
+                    it.release()
+                }
                 stopSelf()
             }
         })
+
+
 
         val notifications = createMediaNotification(title, channelName, audiUrl)
 
@@ -176,16 +308,6 @@ class AudioServiceFromUrl : Service() {
                     exoPlayerFromAudioService?.prepare()
                     exoPlayerFromAudioService?.play()
                     exoPlayerFromAudioService?.addListener(object : Player.Listener {
-                        @Deprecated("Deprecated in Java")
-                        override fun onPositionDiscontinuity(reason: Int) {
-                            super.onPositionDiscontinuity(reason)
-                            val currentPosition = exoPlayerFromAudioService?.currentPosition ?: 0L
-                            val duration = exoPlayerFromAudioService?.duration ?: 0L
-                            println("duration $duration")
-                            println("current Position $currentPosition")
-                            // Update the notification with the current progress
-//                getSystemService(NotificationManager::class.java).notify(1, createMediaNotification(title, channelName, audiUrl, hasBeenAdded, currentPosition, duration))
-                        }
 
 
                         override fun onPlayWhenReadyChanged(playWhenReady: Boolean, reason: Int) {
@@ -201,33 +323,9 @@ class AudioServiceFromUrl : Service() {
                     })
                 }
             }
-            ACTION_PREVIOUS -> {
-                exoPlayerFromAudioService?.seekToPrevious()
-//                    .previous()
-            }
 
-            ACTION_PAUSE_PLAY -> {
-                println("media Item $mediaUrl")
 
-                if (exoPlayerFromAudioService?.isPlaying == false) {
-                    println(" it is still not playing")
-                    exoPlayerFromAudioService?.playWhenReady=true
-                }else{
-                    exoPlayerFromAudioService?.pause()
 
-                    println("it is still pausing")
-                }
-            }
-
-            ACTION_NEXT -> {
-                exoPlayerFromAudioService?.next()
-            }
-
-            ACTION_KILL ->{
-                stopSelf()
-                val notificationManager = getSystemService(NotificationManager::class.java)
-                notificationManager?.cancel(1)
-            }
             ACTION_ADD_TO_WATCH_LATER ->{
                 val dBase= DatabaseFavorite(this)
                 if (isAdded(videoId)) {
@@ -301,62 +399,9 @@ class AudioServiceFromUrl : Service() {
     ): Notification {
 
 
-        val previousIntent = Intent(this, AudioServiceFromUrl::class.java).apply {
-            action = ACTION_PREVIOUS
-        }
-
-        val previousPendingIntent = PendingIntent.getService(this, 0, previousIntent,PendingIntent.FLAG_MUTABLE)
-
-        val pauseIntent = Intent(this, AudioServiceFromUrl::class.java).apply {
-            action = ACTION_PAUSE_PLAY
-            putExtra("title", title)
-            putExtra("media_url", audiUrl)
-            putExtra("videoId", videoId)
-            putExtra("channelName", channelName)
-            putExtra("viewNumber", videoViews)
-            putExtra("videoDate", videoDate)
-            putExtra("duration", duration)
-        }
-        val pausePendingIntent = PendingIntent.getService(this, 0, pauseIntent, PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_MUTABLE)
-
-        val nextIntent = Intent(this, AudioServiceFromUrl::class.java).apply { action = ACTION_NEXT }
-        val nextPendingIntent = PendingIntent.getService(
-            this,
-            0,
-            nextIntent,
-            PendingIntent.FLAG_IMMUTABLE or PendingIntent.FLAG_UPDATE_CURRENT
-        )
-        val stopIntent = Intent(this, AudioServiceFromUrl::class.java).apply {
-            action = ACTION_KILL
-        }
-        val stopPendingIntent = PendingIntent.getService(
-            this,
-            0,
-            stopIntent,
-            PendingIntent.FLAG_MUTABLE
-        )
-
-        val actionText = if (isAdded) "addIt" else "removeIt"
-
-        val watchLaterIntent = Intent(this, AudioServiceFromUrl::class.java).apply {
-            action = ACTION_ADD_TO_WATCH_LATER
-            putExtra("videoId", videoId)
-            putExtra("is_added", isAdded(videoId))
-            putExtra("title", title)
-            putExtra("media_url", audiUrl)
-            putExtra("channelName", channelName)
-            putExtra("viewNumber", videoViews)
-            putExtra("videoDate", videoDate)
-            putExtra("duration", duration)
-        }
 
 
-        val actionIntent = PendingIntent.getService(
-            this,
-            0,
-            watchLaterIntent,
-            PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_MUTABLE
-        )
+
 
         val deleteIntent = Intent(this, AudioServiceFromUrl::class.java).apply {
             action = ACTION_DELETE_INTENT
@@ -391,12 +436,11 @@ class AudioServiceFromUrl : Service() {
 
 
 
-
-
-
         val mediaStyle = MediaStyle()
             .setMediaSession(mediaSession.sessionToken)
-            .setShowActionsInCompactView(1, 2, 3)
+            .setShowActionsInCompactView(1,2,3)
+
+
 
 
 
@@ -407,17 +451,6 @@ class AudioServiceFromUrl : Service() {
             .setVisibility(NotificationCompat.VISIBILITY_PUBLIC)
             .setFullScreenIntent(fullScreenPendingIntent, true)
             .setStyle(mediaStyle)
-            .addAction(NotificationCompat.Action(
-                if (isAdded(videoId)) R.drawable.favorite else R.drawable.un_favorite_icon,
-                actionText, actionIntent
-            ))
-            .addAction(R.drawable.skip_previous_24dp, "Previous", previousPendingIntent)
-            .addAction(NotificationCompat.Action(
-                if (exoPlayerFromAudioService?.isPlaying == true) R.drawable.pause_icon else R.drawable.play_arrow_24dp,
-                "Play/Pause", pausePendingIntent
-            ))
-            .addAction(R.drawable.skip_next_24dp, "Next", nextPendingIntent)
-            .addAction(R.drawable.stop_circle_24dp, "Stop", stopPendingIntent)
             .setAutoCancel(false)
             .setSound(null)
             .setPriority(NotificationCompat.PRIORITY_MAX)
@@ -555,8 +588,9 @@ class AudioServiceFromUrl : Service() {
     companion object {
 
         const val ACTION_START= "com.das.forui.Start"
-        const val ACTION_PREVIOUS = "com.das.forui.PLAY"
-        const val ACTION_PAUSE_PLAY = "com.das.forui.PAUSE"
+        const val ACTION_PREVIOUS = "com.das.forui.Previous"
+        const val ACTION_PLAY = "com.das.forui.PLAY"
+        const val ACTION_PAUSE = "com.das.forui.PAUSE"
         const val ACTION_NEXT = "com.das.forui.STOP"
         const val ACTION_KILL= "com.das.forui.kill"
         const val ACTION_ADD_TO_WATCH_LATER ="com.das.forui.ACTION_ADD_TO_WATCH_LATER"

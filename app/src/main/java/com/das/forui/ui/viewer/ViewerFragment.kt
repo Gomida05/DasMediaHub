@@ -20,7 +20,6 @@ import android.widget.ImageButton
 import android.widget.ImageView
 import android.widget.TextView
 import androidx.activity.OnBackPressedCallback
-import androidx.annotation.RequiresApi
 import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.background
 import androidx.compose.foundation.combinedClickable
@@ -39,14 +38,12 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.MoreVert
 import androidx.compose.material3.Card
 import androidx.compose.material3.CircularProgressIndicator
-import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
-import androidx.compose.runtime.MutableState
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
@@ -73,6 +70,7 @@ import com.das.forui.R
 import com.das.forui.databased.DatabaseFavorite
 import com.das.forui.databinding.VideoViewerBinding
 import com.das.forui.ui.viewer.GlobalVideoList.listOfVideos
+import com.das.forui.ui.viewer.GlobalVideoList.previousVideos
 import com.google.android.exoplayer2.ExoPlayer
 import com.google.android.exoplayer2.MediaItem
 import com.google.android.exoplayer2.Player
@@ -176,12 +174,7 @@ class ViewerFragment: Fragment() {
                 setViewCompositionStrategy(ViewCompositionStrategy.DisposeOnViewTreeLifecycleDestroyed)
                 setContent {
                     SuggestedVideos(
-                        videoID,
-                        videoTitle,
-                        channelThumbnail,
-                        channelName.toString(),
-                        viewNumber.toString(),
-                        dateOfVideo.toString()
+                        videoTitle
                     )
                 }
             }
@@ -213,12 +206,7 @@ class ViewerFragment: Fragment() {
                             setViewCompositionStrategy(ViewCompositionStrategy.DisposeOnViewTreeLifecycleDestroyed)
                             setContent {
                                 SuggestedVideos(
-                                    videoID,
-                                    videoTitle,
-                                    channelThumbnails = channelThumbnail,
-                                    channelName,
-                                    views,
-                                    dateOfVideo
+                                    videoTitle
                                 )
                             }
                         }
@@ -263,25 +251,7 @@ class ViewerFragment: Fragment() {
             toggleFullScreen()
         }
         view.findViewById<ImageButton>(R.id.play_next_video).setOnClickListener {
-            exoPlayer?.let {
-                it.stop()
-                it.release()
-            }
-            val listOfVideosIndex = listOfVideos[1]
-            val bundle = Bundle().apply {
-                putString("View_ID", listOfVideosIndex.videoId)
-                putString("View_URL", "https://www.youtube.com/watch?v=${listOfVideosIndex.videoId}")
-                putString("View_Title", listOfVideosIndex.title)
-                putString("View_Number", listOfVideosIndex.views)
-                putString("dateOfVideo", listOfVideosIndex.dateOfVideo)
-                putString("channelName", listOfVideosIndex.channelName)
-                putString("duration", listOfVideosIndex.duration)
-                putString("channel_Thumbnails", listOfVideosIndex.channelThumbnailsUrl)
-            }
-            findNavController().run {
-                popBackStack()
-                navigate(R.id.nav_video_viewer, bundle)
-            }
+            playThisOne(2)
         }
     }
 
@@ -358,12 +328,9 @@ class ViewerFragment: Fragment() {
             } else {
                 toastEr = "Added to watch later list"
                 val durations = duration
-                val videoChannelName =
-                    view?.findViewById<TextView>(R.id.give_me_view_channelName)?.text.toString()
-                val videoViewCount =
-                    view?.findViewById<TextView>(R.id.give_me_view_number)?.text.toString()
-                val videoDate =
-                    view?.findViewById<TextView>(R.id.give_me_view_date)?.text.toString()
+                val videoChannelName = view?.findViewById<TextView>(R.id.give_me_view_channelName)?.text.toString()
+                val videoViewCount = view?.findViewById<TextView>(R.id.give_me_view_number)?.text.toString()
+                val videoDate = view?.findViewById<TextView>(R.id.give_me_view_date)?.text.toString()
                 dbHere.insertData(
                     videoID,
                     videoTitle,
@@ -396,12 +363,32 @@ class ViewerFragment: Fragment() {
 
 
 
+    private fun playThisOne(gotIndex: Int = 1, videoDetails: Video = listOfVideos[gotIndex]){
+        exoPlayer?.let {
+            it.stop()
+            it.release()
+        }
+        val bundle = Bundle().apply {
+            putString("View_ID", videoDetails.videoId)
+            putString("View_URL", "https://www.youtube.com/watch?v=${videoDetails.videoId}")
+            putString("View_Title", videoDetails.title)
+            putString("View_Number", videoDetails.views)
+            putString("dateOfVideo", videoDetails.dateOfVideo)
+            putString("channelName", videoDetails.channelName)
+            putString("duration", videoDetails.duration)
+            putString("channel_Thumbnails", videoDetails.channelThumbnailsUrl)
+        }
+        previousVideos.add(videoDetails)
+        findNavController().run {
+            popBackStack()
+            navigate(R.id.nav_video_viewer, bundle)
+        }
+    }
+
+
 
     @Composable
-    fun SuggestedVideos(
-        videoIds: String,
-        titleVideo: String, channelThumbnails: String, channelName: String, views: String, dateOfVideo: String
-        ) {
+    fun SuggestedVideos( titleVideo: String) {
 
         val searchResults = remember { mutableStateOf<List<Video>>(emptyList()) }
         val isLoading = remember { mutableStateOf(true) }
@@ -482,24 +469,10 @@ class ViewerFragment: Fragment() {
                 .padding(bottom = 3.dp, top = 3.dp)
                 .combinedClickable(
                     onClick = {
-                        exoPlayer?.let {
-                            it.stop()
-                            it.release()
-                        }
-                        val bundle = Bundle().apply {
-                            putString("View_ID", videoId)
-                            putString("View_URL", "https://www.youtube.com/watch?v=$videoId")
-                            putString("View_Title", title)
-                            putString("View_Number", viewsNumber)
-                            putString("dateOfVideo", dateOfVideo)
-                            putString("channelName", channelName)
-                            putString("duration", duration)
-                            putString("channel_Thumbnails", channelThumbnails)
-                        }
-                        findNavController().run{
-                            popBackStack()
-                            navigate(R.id.nav_video_viewer, bundle)
-                        }
+                        playThisOne(
+                            videoDetails = Video(videoId,title, viewsNumber, dateOfVideo,
+                                duration, channelName, channelThumbnails)
+                        )
                     },
                     onLongClick = {
                         imageViewer(videoId, title)
@@ -617,13 +590,7 @@ class ViewerFragment: Fragment() {
                     }
                     IconButton(
                         onClick = {
-                            AlertDialog.Builder(context)
-                                .setTitle("This feature is currently under development!!!")
-                                .setPositiveButton("Okay") { _, _ -> }
-                                .setIcon(R.drawable.setting)
-                                .setMessage("Thank you for understanding!")
-                                .setIcon(R.mipmap.ic_launcher)
-                                .show()
+                            imageViewer(videoId, title)
                         }
 
                     ) {
@@ -680,25 +647,7 @@ class ViewerFragment: Fragment() {
                 override fun onPlaybackStateChanged(state: Int) {
                     super.onPlaybackStateChanged(state)
                     if (state == Player.STATE_ENDED) {
-                        exoPlayer?.let {
-                            it.stop()
-                            it.release()
-                        }
-                        val listOfVideosIndex = listOfVideos[1]
-                        val bundle = Bundle().apply {
-                            putString("View_ID", listOfVideosIndex.videoId)
-                            putString("View_URL", "https://www.youtube.com/watch?v=${listOfVideosIndex.videoId}")
-                            putString("View_Title", listOfVideosIndex.title)
-                            putString("View_Number", listOfVideosIndex.views)
-                            putString("dateOfVideo", listOfVideosIndex.dateOfVideo)
-                            putString("channelName", listOfVideosIndex.channelName)
-                            putString("duration", listOfVideosIndex.duration)
-                            putString("channel_Thumbnails", listOfVideosIndex.channelThumbnailsUrl)
-                        }
-                        findNavController().run {
-                            popBackStack()
-                            navigate(R.id.nav_video_viewer, bundle)
-                        }
+                        playThisOne(2)
 //                        playVideo("https://rr1---sn-uigxx03-ajtl.googlevideo.com/videoplayback?expire=1733809712&ei=0IFXZ4yDM8nLmLAP0KuXkQs&ip=2a04%3A4a43%3A977f%3Af392%3A488%3Af57f%3A2e91%3Af970&id=o-AP1jvq5SB4PyoIxftzFcyDhnOoJYtFkz6gwzvCV4dZKr&itag=18&source=youtube&requiressl=yes&xpc=EgVo2aDSNQ%3D%3D&met=1733788112%2C&mh=SH&mm=31%2C29&mn=sn-uigxx03-ajtl%2Csn-aigzrn7e&ms=au%2Crdu&mv=m&mvi=1&pl=57&rms=au%2Cau&pcm2=yes&initcwndbps=1001250&bui=AQn3pFQRRCfZ-thiT9XXa8gdCyODGraPQCWec-TG-n3No2CqTbAVSg6FUqsvPEtkTSDOLoz-FGRKjDsp&vprv=1&mime=video%2Fmp4&rqh=1&cnr=14&ratebypass=yes&dur=903.093&lmt=1725726923730991&mt=1733787646&fvip=4&fexp=51326932%2C51335594%2C51347747&c=ANDROID_VR&txp=5309224&sparams=expire%2Cei%2Cip%2Cid%2Citag%2Csource%2Crequiressl%2Cxpc%2Cpcm2%2Cbui%2Cvprv%2Cmime%2Crqh%2Ccnr%2Cratebypass%2Cdur%2Clmt&sig=AJfQdSswRQIgZYrNHQWM0OMLTt-ZuAruMoa1rHNpXGmSZSSp2Y3b8d4CIQDruSFUA4ppu_RurRrSokhMKFZg7kHtWm2rwpxMeRGRqQ%3D%3D&lsparams=met%2Cmh%2Cmm%2Cmn%2Cms%2Cmv%2Cmvi%2Cpl%2Crms%2Cinitcwndbps&lsig=AGluJ3MwRQIgd2lflxQvzlD9TkorrTdzHil3a7X_mA7HUlg9HSrekIQCIQCPEHdGpJ2YfrK_nYrSqnNvVpBBgG2SAOYZPDa6DIkzzA%3D%3D")
                     }
                 }
@@ -723,10 +672,6 @@ class ViewerFragment: Fragment() {
                 GestureDetector(
                     requireContext(),
                     object : GestureDetector.SimpleOnGestureListener() {
-                        override fun onDown(e: MotionEvent): Boolean {
-                            return super.onDown(e)
-                        }
-
                         override fun onDoubleTap(e: MotionEvent): Boolean {
                             handleDoubleTap(e)
                             return super.onDoubleTap(e)
@@ -908,7 +853,7 @@ class ViewerFragment: Fragment() {
             else -> views.toString()
         }
     }
-    fun formatDate(dateStr: String): String {
+    private fun formatDate(dateStr: String): String {
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
             val inputFormatter = DateTimeFormatter.ISO_OFFSET_DATE_TIME
 
@@ -1041,4 +986,5 @@ class ViewerFragment: Fragment() {
 
 object GlobalVideoList {
     val listOfVideos = mutableListOf<ViewerFragment.Video>()
+    val previousVideos = mutableListOf<ViewerFragment.Video>()
 }

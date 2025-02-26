@@ -41,7 +41,7 @@
         android:layout_height="wrap_content"
         android:text="@string/you_haven_t_save_any_video"
         android:textColor="?android:attr/colorForeground"
-        app:drawableEndCompat="@mipmap/chill_guy"
+        app:drawableEndCompat="@mipmap/ema_img"
         app:layout_constraintBottom_toBottomOf="parent"
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintStart_toStartOf="parent"

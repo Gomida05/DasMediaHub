@@ -41,7 +41,6 @@ import com.das.forui.databased.DatabaseHelper1
 import com.das.forui.databased.PathSaver
 import com.das.forui.databinding.ActivityMainBinding
 import com.das.forui.services.AudioServiceFromUrl
-import com.das.forui.ui.viewer.ViewerFragment
 import com.google.android.gms.ads.AdRequest
 import com.google.android.gms.ads.AdView
 import com.google.android.gms.ads.MobileAds
