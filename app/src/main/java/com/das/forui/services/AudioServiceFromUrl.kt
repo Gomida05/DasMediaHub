@@ -9,7 +9,6 @@ import android.app.NotificationManager
 import android.app.PendingIntent
 import android.app.Service
 import android.content.Intent
-import android.content.Intent.EXTRA_TEXT
 import android.graphics.Bitmap
 import android.graphics.BitmapFactory
 import android.graphics.Canvas
@@ -30,13 +29,14 @@ import androidx.media3.common.MediaItem
 import androidx.media3.common.Player
 import androidx.media3.common.util.UnstableApi
 import androidx.media3.exoplayer.ExoPlayer
+import androidx.media3.session.MediaSession
+import androidx.media3.session.MediaStyleNotificationHelper
 import com.bumptech.glide.Glide
 import com.bumptech.glide.request.target.CustomTarget
 import com.bumptech.glide.request.transition.Transition
 import com.das.forui.MainActivity
 import com.das.forui.R
 import com.das.forui.databased.DatabaseFavorite
-import com.das.forui.ui.viewer.ViewerFragment
 import kotlin.properties.Delegates
 
 class AudioServiceFromUrl : Service() {
@@ -53,24 +53,19 @@ class AudioServiceFromUrl : Service() {
     private lateinit var videoId: String
     private lateinit var durationFromActivity: String
     private var audioFocusRequest: AudioFocusRequest? = null
-    var isForeGroundAudioService = false
 
 
     override fun onCreate() {
         super.onCreate()
         createNotificationChannel()
         audioManager = getSystemService(AudioManager::class.java)
-        mediaSession = MediaSessionCompat(this, "AudioService")
-        mediaSession.isActive = true
+        mediaSession = MediaSessionCompat(this, "AudioService").apply {
+            isActive = true
+        }
         exoPlayerFromAudioService = ExoPlayer.Builder(this).build()
 
 
 
-    }
-
-
-    fun formatTimeToFloat(milliseconds: Long): Float {
-        return milliseconds / 1000f
     }
 
     @UnstableApi
@@ -91,32 +86,36 @@ class AudioServiceFromUrl : Service() {
         isAdded= isAdded(videoId)
 
 
-        val duration = exoPlayerFromAudioService?.duration!!.toLong()
 
-
-
-        val metadata = MediaMetadataCompat
-            .Builder()
+        val metadata = MediaMetadataCompat.Builder()
             .putString(MediaMetadataCompat.METADATA_KEY_MEDIA_URI, mediaUrl)
             .putString(MediaMetadataCompat.METADATA_KEY_TITLE, title) // Song/Video title
-            .putString(MediaMetadataCompat.METADATA_KEY_ARTIST, channelName) // Channel name as the artist
-            .putString(MediaMetadataCompat.METADATA_KEY_ALBUM, "unknown album") // Optional, if available
-            .putLong(MediaMetadataCompat.METADATA_KEY_DURATION, duration) // Song/Video duration
+            .putString(
+                    MediaMetadataCompat.METADATA_KEY_ARTIST,
+                    channelName
+                )
+            .putString(
+                    MediaMetadataCompat.METADATA_KEY_ALBUM,
+                    "unknown album"
+                )
+            .putLong(MediaMetadataCompat.METADATA_KEY_DURATION, exoPlayerFromAudioService?.duration!!)
             .putString(MediaMetadataCompat.METADATA_KEY_ALBUM_ART_URI, audiUrl)
 
 
         getBitmapFromUrl("https://img.youtube.com/vi/$videoId/0.jpg") { bitmap ->
-            // Once the bitmap is loaded, we can set it on the metadata
+
             if (bitmap != null) {
                 metadata.putBitmap(MediaMetadataCompat.METADATA_KEY_ALBUM_ART, bitmap)
             } else {
-                // Handle case where the bitmap is null (e.g., show a default image)
-                metadata.putBitmap(MediaMetadataCompat.METADATA_KEY_ALBUM_ART, BitmapFactory.decodeResource(resources, R.drawable.music_note_24dp))
-            }
 
-            mediaSession.setMetadata(metadata.build())
-            // Update the media session with the metadata after the bitmap is set
+                metadata.putBitmap(
+                    MediaMetadataCompat.METADATA_KEY_ALBUM_ART,
+                    BitmapFactory.decodeResource(resources, R.drawable.music_note_24dp)
+                )
+            }
+        mediaSession.setMetadata(metadata.build())
         }
+
 
 
 
@@ -181,10 +180,40 @@ class AudioServiceFromUrl : Service() {
                 super.onPlayWhenReadyChanged(playWhenReady, reason)
                 if (playWhenReady){
                     requestAudioFocus()
-                    println("service playing")
+                    mediaSession.setPlaybackState(
+                        PlaybackStateCompat.Builder()
+                            .setState(PlaybackStateCompat.STATE_PLAYING, exoPlayerFromAudioService?.currentPosition!!,
+                                1F
+                            )
+                            .setActions(PlaybackStateCompat.ACTION_SEEK_TO)
+                            .addCustomAction(ACTION_PLAY, "myPlayButton", R.drawable.play_arrow_24dp)
+                            .addCustomAction(ACTION_NEXT, "myNextButton", R.drawable.skip_next_24dp)
+                            .addCustomAction(ACTION_PREVIOUS, "myPreviousButton", R.drawable.skip_previous_24dp)
+                            .addCustomAction(ACTION_ADD_TO_WATCH_LATER, "myFavButton",
+                                if (isAdded(videoId)) R.drawable.favorite else R.drawable.un_favorite_icon
+                            )
+                            .addCustomAction(ACTION_KILL, "myStopButton", R.drawable.stop_circle_24dp)
+                            .setBufferedPosition(exoPlayerFromAudioService?.currentPosition!!)
+                            .build()
+                    )
                 }else{
                     releaseAudioFocus()
-                    println("service pausing")
+                    mediaSession.setPlaybackState(
+                        PlaybackStateCompat.Builder()
+                            .setState(PlaybackStateCompat.STATE_PAUSED, exoPlayerFromAudioService?.currentPosition!!,
+                                1F
+                            )
+                            .setActions(PlaybackStateCompat.ACTION_PAUSE)
+                            .addCustomAction(ACTION_PLAY, "myPlayButton", R.drawable.play_arrow_24dp)
+                            .addCustomAction(ACTION_NEXT, "myNextButton", R.drawable.skip_next_24dp)
+                            .addCustomAction(ACTION_PREVIOUS, "myPreviousButton", R.drawable.skip_previous_24dp)
+                            .addCustomAction(ACTION_ADD_TO_WATCH_LATER, "myFavButton",
+                                if (isAdded(videoId)) R.drawable.favorite else R.drawable.un_favorite_icon
+                            )
+                            .addCustomAction(ACTION_KILL, "myStopButton", R.drawable.stop_circle_24dp)
+                            .setBufferedPosition(exoPlayerFromAudioService?.currentPosition!!)
+                            .build()
+                    )
                 }
             }
         }
@@ -266,7 +295,7 @@ class AudioServiceFromUrl : Service() {
                                 1F
                             )
                             .setActions(PlaybackStateCompat.ACTION_SEEK_TO)
-                            .addCustomAction(ACTION_PLAY, "myPlayButton", R.drawable.play_arrow_24dp)
+                            .addCustomAction(ACTION_PAUSE, "myPauseButton", R.drawable.pause_icon)
                             .addCustomAction(ACTION_NEXT, "myNextButton", R.drawable.skip_next_24dp)
                             .addCustomAction(ACTION_PREVIOUS, "myPreviousButton", R.drawable.skip_previous_24dp)
                             .setBufferedPosition(exoPlayerFromAudioService?.currentPosition!!)
@@ -296,6 +325,7 @@ class AudioServiceFromUrl : Service() {
                     stopSelf()
                     val notificationManager = getSystemService(NotificationManager::class.java)
                     notificationManager?.cancel(1)
+
                 }
             }
 
@@ -363,27 +393,19 @@ class AudioServiceFromUrl : Service() {
                         .setBufferedPosition(exoPlayerFromAudioService?.currentPosition!!)
                         .build()
                 )
-            }
-
-
-
-
-
-            ACTION_DELETE_INTENT ->{
-//                println("Notification deleted by the user.")
-
-                if (exoPlayerFromAudioService?.isPlaying == false){
-                    stopSelf()
-                    val notificationManager = getSystemService(NotificationManager::class.java)
-                    notificationManager?.cancel(1)
-                }
 
             }
+
+
+
+
+
+
         }
 
 
 
-        val notifications = createMediaNotification(title, channelName, audiUrl)
+        val notifications = createMediaNotification()
 
         startForeground(1, notifications)
         return START_STICKY
@@ -422,34 +444,7 @@ class AudioServiceFromUrl : Service() {
 
 
 
-    private fun createMediaNotification(
-        title: String,
-        channelName: String,
-        audiUrl: String
-    ): Notification {
-
-
-
-
-
-
-        val deleteIntent = Intent(this, AudioServiceFromUrl::class.java).apply {
-            action = ACTION_DELETE_INTENT
-            putExtra("title", title)
-            putExtra("media_url", audiUrl)
-            putExtra("videoId", videoId)
-            putExtra("channelName", channelName)
-            putExtra("viewNumber", videoViews)
-            putExtra("videoDate", videoDate)
-            putExtra("duration", durationFromActivity)
-        }
-
-        val deletePendingIntent = PendingIntent.getService(
-            this,
-            0,
-            deleteIntent,
-            PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
-        )
+    private fun createMediaNotification(): Notification {
 
         val mainIntent = Intent(this, MainActivity::class.java)
 
@@ -473,8 +468,6 @@ class AudioServiceFromUrl : Service() {
 
 
 
-
-
         val notification= NotificationCompat.Builder(this, channelId)
             .setContentIntent(pendingIntent)
             .setSmallIcon(R.drawable.music_note_24dp)
@@ -485,9 +478,6 @@ class AudioServiceFromUrl : Service() {
             .setAutoCancel(false)
             .setSound(null)
             .setPriority(NotificationCompat.PRIORITY_MAX)
-            .setDeleteIntent(deletePendingIntent)
-            .setVibrate(longArrayOf(0))
-            .setProgress(100, 75, false)
             .build()
 
 
@@ -507,32 +497,9 @@ class AudioServiceFromUrl : Service() {
                 }
 
                 override fun onLoadCleared(placeholder: Drawable?) {
-                    // Optionally handle cleanup or pass a default bitmap back
-                    val fallbackBitmap = placeholder?.let { drawableToBitmap(it) }
-                    callback(fallbackBitmap)
+
                 }
             })
-    }
-
-    // Utility function to convert Drawable to Bitmap
-    fun drawableToBitmap(drawable: Drawable): Bitmap {
-        val width = drawable.intrinsicWidth
-        val height = drawable.intrinsicHeight
-
-        if (width <= 0 || height <= 0) {
-            return Bitmap.createBitmap(
-                1,
-                1,
-                Bitmap.Config.ARGB_8888
-            ) // Return a blank Bitmap if drawable has no intrinsic size
-        }
-
-        val bitmap = Bitmap.createBitmap(width, height, Bitmap.Config.ARGB_8888)
-        val canvas = Canvas(bitmap)
-        drawable.setBounds(0, 0, canvas.width, canvas.height)
-        drawable.draw(canvas)
-
-        return bitmap
     }
 
     private val audioFocusChangeListener = AudioManager.OnAudioFocusChangeListener { focusChange ->
@@ -621,7 +588,6 @@ class AudioServiceFromUrl : Service() {
         const val ACTION_NEXT = "com.das.forui.STOP"
         const val ACTION_KILL= "com.das.forui.kill"
         const val ACTION_ADD_TO_WATCH_LATER ="com.das.forui.ACTION_ADD_TO_WATCH_LATER"
-        const val ACTION_DELETE_INTENT = "com.das.forui.DELETE_INTENT"
     }
 
     override fun onDestroy() {
