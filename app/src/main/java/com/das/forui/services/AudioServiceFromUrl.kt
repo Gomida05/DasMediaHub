@@ -21,6 +21,7 @@ import android.os.Handler
 import android.os.IBinder
 import android.os.Looper
 import android.support.v4.media.MediaMetadataCompat
+import android.support.v4.media.session.MediaControllerCompat
 import android.support.v4.media.session.MediaSessionCompat
 import android.support.v4.media.session.PlaybackStateCompat
 import android.util.Log
@@ -33,6 +34,7 @@ import com.das.forui.databased.DatabaseFavorite
 import com.google.android.exoplayer2.ExoPlayer
 import com.google.android.exoplayer2.MediaItem
 import com.google.android.exoplayer2.Player
+import com.google.android.exoplayer2.ui.PlayerNotificationManager
 
 class AudioServiceFromUrl : Service() {
 
@@ -62,7 +64,15 @@ class AudioServiceFromUrl : Service() {
 
     }
     override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
-
+//        val mediaSessionMe  = MediaControllerCompat(this, mediaSession)
+//
+//
+//        val playerNotifier = PlayerNotificationManager.Builder(this, 1, "MediaYouTubePlayer")
+//            .setMediaDescriptionAdapter(NotificationMediaDescriptionAdapter(this, mediaSessionMe))
+//            .setNotificationListener(NotificationListenerService())
+//            .build()
+//        playerNotifier.setPlayer(exoPlayerFromAudioService)
+//        playerNotifier.setMediaSessionToken(mediaSessionMe.sessionToken)
 
 
         val action = intent?.action

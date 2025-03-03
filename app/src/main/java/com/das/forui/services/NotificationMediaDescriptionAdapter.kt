@@ -26,7 +26,7 @@ import com.google.android.exoplayer2.Player
 import com.google.android.exoplayer2.ui.PlayerNotificationManager
 import com.google.android.exoplayer2.ui.PlayerNotificationManager.BitmapCallback
 
-class NotificationMediaDescriptionAdapter(private val metadataCompat: MediaControllerCompat, val context: Context): PlayerNotificationManager.MediaDescriptionAdapter {
+class NotificationMediaDescriptionAdapter(private val context: Context, private val metadataCompat: MediaControllerCompat): PlayerNotificationManager.MediaDescriptionAdapter {
     override fun getCurrentContentTitle(player: Player): CharSequence {
         return metadataCompat.metadata.description.title.toString()
     }
