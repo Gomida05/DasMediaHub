@@ -11,7 +11,6 @@ import android.app.Service
 import android.content.Intent
 import android.graphics.Bitmap
 import android.graphics.BitmapFactory
-import android.graphics.Canvas
 import android.graphics.drawable.Drawable
 import android.media.AudioAttributes
 import android.media.AudioFocusRequest
@@ -25,19 +24,15 @@ import android.support.v4.media.MediaMetadataCompat
 import android.support.v4.media.session.MediaSessionCompat
 import android.support.v4.media.session.PlaybackStateCompat
 import android.util.Log
-import androidx.media3.common.MediaItem
-import androidx.media3.common.Player
-import androidx.media3.common.util.UnstableApi
-import androidx.media3.exoplayer.ExoPlayer
-import androidx.media3.session.MediaSession
-import androidx.media3.session.MediaStyleNotificationHelper
 import com.bumptech.glide.Glide
 import com.bumptech.glide.request.target.CustomTarget
 import com.bumptech.glide.request.transition.Transition
 import com.das.forui.MainActivity
 import com.das.forui.R
 import com.das.forui.databased.DatabaseFavorite
-import kotlin.properties.Delegates
+import com.google.android.exoplayer2.ExoPlayer
+import com.google.android.exoplayer2.MediaItem
+import com.google.android.exoplayer2.Player
 
 class AudioServiceFromUrl : Service() {
 
@@ -46,7 +41,6 @@ class AudioServiceFromUrl : Service() {
     private lateinit var mediaSession: MediaSessionCompat
     private val handler = Handler(Looper.getMainLooper())
     private lateinit var audioManager: AudioManager
-    private var isAdded by Delegates.notNull<Boolean>()
     private lateinit var mediaUrl: String
     private lateinit var videoViews: String
     private lateinit var videoDate: String
@@ -67,15 +61,12 @@ class AudioServiceFromUrl : Service() {
 
 
     }
-
-    @UnstableApi
     override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
 
 
 
         val action = intent?.action
         mediaUrl = intent?.getStringExtra("media_url").orEmpty()
-        val audiUrl= mediaUrl
         val title=  intent?.getStringExtra("title").toString()
         val channelName= intent?.getStringExtra("channelName").toString()
         val mediaItem = MediaItem.fromUri(mediaUrl)
@@ -83,7 +74,6 @@ class AudioServiceFromUrl : Service() {
         videoViews = intent?.getStringExtra("viewNumber").toString()
         videoDate = intent?.getStringExtra("videoDate").toString()
         durationFromActivity = intent?.getStringExtra("duration").toString()
-        isAdded= isAdded(videoId)
 
 
 
@@ -99,7 +89,6 @@ class AudioServiceFromUrl : Service() {
                     "unknown album"
                 )
             .putLong(MediaMetadataCompat.METADATA_KEY_DURATION, exoPlayerFromAudioService?.duration!!)
-            .putString(MediaMetadataCompat.METADATA_KEY_ALBUM_ART_URI, audiUrl)
 
 
         getBitmapFromUrl("https://img.youtube.com/vi/$videoId/0.jpg") { bitmap ->
@@ -115,6 +104,7 @@ class AudioServiceFromUrl : Service() {
             }
         mediaSession.setMetadata(metadata.build())
         }
+
 
 
 
@@ -163,7 +153,7 @@ class AudioServiceFromUrl : Service() {
                             .setState(PlaybackStateCompat.STATE_PAUSED, exoPlayerFromAudioService?.currentPosition!!,
                                 1F
                             )
-                            .setActions(PlaybackStateCompat.ACTION_STOP)
+                            .setActions(PlaybackStateCompat.ACTION_PAUSE)
                             .addCustomAction(ACTION_PLAY, "myPlayButton", R.drawable.play_arrow_24dp)
                             .addCustomAction(ACTION_NEXT, "myNextButton", R.drawable.skip_next_24dp)
                             .addCustomAction(ACTION_PREVIOUS, "myPreviousButton", R.drawable.skip_previous_24dp)
@@ -219,6 +209,7 @@ class AudioServiceFromUrl : Service() {
         }
 
         )
+
 
 
 
@@ -415,6 +406,7 @@ class AudioServiceFromUrl : Service() {
 
 
 
+
     override fun onBind(intent: Intent?): IBinder? {
         return null
     }
@@ -456,10 +448,6 @@ class AudioServiceFromUrl : Service() {
             PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
         )
 
-        val fullScreenIntent = Intent(this, MainActivity::class.java)
-        val fullScreenPendingIntent = PendingIntent.getActivity(this, 0,
-            fullScreenIntent, PendingIntent.FLAG_IMMUTABLE or PendingIntent.FLAG_UPDATE_CURRENT)
-
 
 
         val mediaStyle = MediaStyle()
@@ -473,7 +461,6 @@ class AudioServiceFromUrl : Service() {
             .setSmallIcon(R.drawable.music_note_24dp)
             .setOngoing(true)
             .setVisibility(NotificationCompat.VISIBILITY_PUBLIC)
-            .setFullScreenIntent(fullScreenPendingIntent, true)
             .setStyle(mediaStyle)
             .setAutoCancel(false)
             .setSound(null)
@@ -589,6 +576,8 @@ class AudioServiceFromUrl : Service() {
         const val ACTION_KILL= "com.das.forui.kill"
         const val ACTION_ADD_TO_WATCH_LATER ="com.das.forui.ACTION_ADD_TO_WATCH_LATER"
     }
+
+
 
     override fun onDestroy() {
         super.onDestroy()
