@@ -291,7 +291,7 @@ class ViewerFragment: Fragment() {
                         putExtra("videoDate", binding.giveMeViewDate.text)
                         putExtra("duration", duration)
                     }
-                    MainApplication().startService(playIntent)
+                    activity?.startService(playIntent)
                 }
                 .setNegativeButton("No") { _, _ -> }.show()
         }
