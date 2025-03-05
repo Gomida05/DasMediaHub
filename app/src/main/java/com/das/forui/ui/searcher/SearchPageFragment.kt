@@ -1,6 +1,7 @@
 package com.das.forui.ui.searcher
 
 import android.app.AlertDialog
+import android.content.Intent.EXTRA_TEXT
 import android.database.Cursor
 import android.os.Bundle
 import android.view.LayoutInflater
@@ -49,6 +50,7 @@ import com.das.forui.databinding.FragmentSearcherBinding
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.das.forui.databased.SearchHistoryDB
 
+
 class SearchPageFragment : Fragment() {
 
     private var _binding: FragmentSearcherBinding? = null
@@ -76,6 +78,17 @@ class SearchPageFragment : Fragment() {
 
         return binding.root
     }
+
+
+    override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
+        super.onViewCreated(view, savedInstanceState)
+        val sentText=arguments?.getString(EXTRA_TEXT).toString()
+        if (sentText != "Search12.23.58/'[0][-"){
+            keyEvent(sentText)
+        }
+
+    }
+
 
     @Composable
     private fun ShowTextField() {
@@ -119,16 +132,6 @@ class SearchPageFragment : Fragment() {
         )
     }
 
-    override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
-        super.onViewCreated(view, savedInstanceState)
-        val sentText=arguments?.getString("EXTRA_ONE").toString()
-        if (sentText=="Search12.23.58/'[0][-"){
-
-        }else {
-            SearchViewModel().updateSearchText(sentText)
-        }
-
-    }
 
 
 
@@ -230,7 +233,7 @@ class SearchPageFragment : Fragment() {
                 goSearch(editTextText)
             }
         } catch (e: Exception) {
-            (activity as MainActivity).showDiaglo(e.message.toString())
+            (activity as MainActivity).showDialogs(e.message.toString())
         }
     }
 
@@ -239,7 +242,7 @@ class SearchPageFragment : Fragment() {
             val bundle = Bundle().apply { putString("EXTRA_TEXT", text) }
             findNavController().navigate(R.id.nav_result, bundle)
         } catch (e: Exception) {
-            (activity as MainActivity).showDiaglo(e.message.toString())
+            (activity as MainActivity).showDialogs(e.message.toString())
         }
     }
 
@@ -263,7 +266,7 @@ class SearchPageFragment : Fragment() {
             return urls.toList()
         }catch (e:Exception){
             val alerting= (activity as MainActivity)
-            alerting.showDiaglo(e.message.toString())
+            alerting.showDialogs(e.message.toString())
             alerting.alertUserError(e.message.toString())
         }
         return listOf("")
@@ -277,10 +280,6 @@ class SearchPageFragment : Fragment() {
         (activity as MainActivity).hideBottomNav()
     }
 
-    override fun onPause() {
-        super.onPause()
-    }
-
     override fun onDestroyView() {
         super.onDestroyView()
         _binding = null
@@ -291,10 +290,9 @@ class SearchPageFragment : Fragment() {
 class SearchViewModel : ViewModel() {
 
     var searchText by mutableStateOf("")
-        private set
 
-    // Function to update the global text
     fun updateSearchText(newText: String) {
         searchText = newText
+
     }
 }

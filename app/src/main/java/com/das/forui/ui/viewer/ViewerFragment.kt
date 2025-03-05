@@ -66,6 +66,7 @@ import com.chaquo.python.Python
 import com.das.forui.services.AudioServiceFromUrl
 import com.das.forui.DownloaderClass
 import com.das.forui.MainActivity
+import com.das.forui.MainApplication
 import com.das.forui.R
 import com.das.forui.databased.DatabaseFavorite
 import com.das.forui.databinding.VideoViewerBinding
@@ -184,39 +185,41 @@ class ViewerFragment: Fragment() {
                 .into(binding.channelImageVideoView)
 
         } else {
-            CoroutineScope(Dispatchers.IO).launch {
-                val videoDetails = (activity as MainActivity).callPythonSearchWithLink(videoID)
+            if (isAdded) {
+                CoroutineScope(Dispatchers.IO).launch {
+                    val videoDetails = (activity as MainActivity).callPythonSearchWithLink(videoID)
 
-                withContext(Dispatchers.Main) {
-                    if (videoDetails != null) {
-                        videoTitle = videoDetails["title"].toString()
-                        val views = videoDetails["viewNumber"].toString()
-                        val date = videoDetails["date"].toString()
-                        val channel = videoDetails["channelName"].toString()
-                        descriptions = videoDetails["description"].toString()
-                        viewNumber = formatViews(views.toLong())
-                        channelName = channel
-                        dateOfVideo = formatDate(date)
-                        binding.giveMeTitle.text = videoTitle
-                        setTitle.text = videoTitle
-                        binding.giveMeViewNumber.text = viewNumber
-                        binding.giveMeViewChannelName.text = channelName
-                        binding.giveMeViewDate.text = dateOfVideo
-                        binding.myComposeView2.apply {
-                            setViewCompositionStrategy(ViewCompositionStrategy.DisposeOnViewTreeLifecycleDestroyed)
-                            setContent {
-                                SuggestedVideos(
-                                    videoTitle
-                                )
+                    withContext(Dispatchers.Main) {
+                        if (videoDetails != null) {
+                            videoTitle = videoDetails["title"].toString()
+                            val views = videoDetails["viewNumber"].toString()
+                            val date = videoDetails["date"].toString()
+                            val channel = videoDetails["channelName"].toString()
+                            descriptions = videoDetails["description"].toString()
+                            viewNumber = formatViews(views.toLong())
+                            channelName = channel
+                            dateOfVideo = formatDate(date)
+                            binding.giveMeTitle.text = videoTitle
+                            setTitle.text = videoTitle
+                            binding.giveMeViewNumber.text = viewNumber
+                            binding.giveMeViewChannelName.text = channelName
+                            binding.giveMeViewDate.text = dateOfVideo
+                            binding.myComposeView2.apply {
+                                setViewCompositionStrategy(ViewCompositionStrategy.DisposeOnViewTreeLifecycleDestroyed)
+                                setContent {
+                                    SuggestedVideos(
+                                        videoTitle
+                                    )
+                                }
                             }
                         }
                     }
                 }
+                Glide.with(requireContext())
+                    .load(channelThumbnail)
+                    .transform(CircleCrop())
+                    .into(binding.channelImageVideoView)
             }
-            Glide.with(requireContext())
-                .load(channelThumbnail)
-                .transform(CircleCrop())
-                .into(binding.channelImageVideoView)
 
         }
 
@@ -275,19 +278,20 @@ class ViewerFragment: Fragment() {
             AlertDialog.Builder(context)
                 .setTitle("Do you want to play it in the background?")
                 .setPositiveButton("yes") { _, _ ->
-                    val playIntent = Intent(requireContext(), AudioServiceFromUrl::class.java)
-                    playIntent.action = AudioServiceFromUrl.ACTION_START
-                    playIntent.putExtra("videoId", videoID)
-                    playIntent.putExtra("media_url", url)
-                    playIntent.putExtra("title", binding.giveMeTitle.text.toString())
-                    playIntent.putExtra(
-                        "channelName",
-                        binding.giveMeViewChannelName.text.toString()
-                    )
-                    playIntent.putExtra("viewNumber", binding.giveMeViewNumber.text.toString())
-                    playIntent.putExtra("videoDate", binding.giveMeViewDate.text.toString())
-                    playIntent.putExtra("duration", duration)
-                    activity?.startService(playIntent)
+                    val playIntent = Intent(requireContext(), AudioServiceFromUrl::class.java).apply {
+                        action = AudioServiceFromUrl.ACTION_START
+                        putExtra("videoId", videoID)
+                        putExtra("media_url", url)
+                        putExtra("title", binding.giveMeTitle.text)
+                        putExtra(
+                            "channelName",
+                            binding.giveMeViewChannelName.text
+                        )
+                        putExtra("viewNumber", binding.giveMeViewNumber.text)
+                        putExtra("videoDate", binding.giveMeViewDate.text)
+                        putExtra("duration", duration)
+                    }
+                    MainApplication().startService(playIntent)
                 }
                 .setNegativeButton("No") { _, _ -> }.show()
         }
@@ -307,11 +311,10 @@ class ViewerFragment: Fragment() {
 
 
         binding.downloadAsAudio.setOnClickListener {
-            DownloaderClass(requireContext()).downloadVideo(url, videoTitle, "mp3")
+            (activity as MainActivity).downloadMusic(videoID, videoTitle, requireContext())
         }
         binding.downloadAsVideo.setOnClickListener {
             DownloaderClass(requireContext()).downloadVideo(url, videoTitle, "mp4")
-//                (activity as MainActivity).downloadVideo(link = videoID, title = videoTitle, contexts = requireContext())
         }
 
         val buttonSaver = binding.savedToWatchLater
@@ -342,7 +345,7 @@ class ViewerFragment: Fragment() {
                 buttonSaver.tag = "favorite_icon"
                 newIcon = R.drawable.favorite
             }
-            (activity as MainActivity).showDiaglo(toastEr)
+            (activity as MainActivity).showDialogs(toastEr)
             val icon = ContextCompat.getDrawable(requireContext(), newIcon)
             buttonSaver.setCompoundDrawablesWithIntrinsicBounds(null, icon, null, null)
 
@@ -634,7 +637,7 @@ class ViewerFragment: Fragment() {
                     }
                 } else {
                     withContext(Dispatchers.Main) {
-                        (activity as MainActivity).showDiaglo("Something went wrong $result")
+                        (activity as MainActivity).showDialogs("Something went wrong $result")
                         println("there you go an error $result")
                     }
                 }
@@ -691,7 +694,7 @@ class ViewerFragment: Fragment() {
         }
          catch (e: Exception) {
             println("error found in this ${e.message}")
-            (activity as MainActivity).showDiaglo("found an error here ${e.message}")
+            (activity as MainActivity).showDialogs("found an error here ${e.message}")
         }
     }
 

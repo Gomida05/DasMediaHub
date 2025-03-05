@@ -42,8 +42,4 @@
         android:name="com.das.forui.ui.watch_later.WatchLaterFragment"
         tools:layout="@layout/fragment_watch_later"/>
 
-    <fragment
-        android:id="@+id/nav_splash_screen"
-        android:name="com.das.forui.ui.settings.slashScreen"
-        tools:layout="@layout/splash_screen_activity"/>
 </navigation>

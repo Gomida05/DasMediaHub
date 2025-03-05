@@ -1,0 +1,105 @@
+package com.das.forui.mediacontroller
+
+import android.content.Context
+import android.support.v4.media.session.PlaybackStateCompat
+import com.das.forui.R
+import com.das.forui.databased.DatabaseFavorite
+import com.das.forui.services.AudioServiceFromUrl.Companion.ACTION_ADD_TO_WATCH_LATER
+import com.das.forui.services.AudioServiceFromUrl.Companion.ACTION_KILL
+import com.das.forui.services.AudioServiceFromUrl.Companion.ACTION_NEXT
+import com.das.forui.services.AudioServiceFromUrl.Companion.ACTION_PAUSE
+import com.das.forui.services.AudioServiceFromUrl.Companion.ACTION_PLAY
+import com.das.forui.services.AudioServiceFromUrl.Companion.ACTION_PREVIOUS
+import com.das.forui.ui.viewer.ViewerFragment.Video
+
+class MediaSessionPlaybackState(val context: Context) {
+
+
+    fun setStateToPlaying(currentPosition: Long, videoId: String): PlaybackStateCompat {
+        val playbackState = PlaybackStateCompat.Builder()
+            .setState(
+                PlaybackStateCompat.STATE_PLAYING, currentPosition,
+                1F
+            )
+            .setActions(PlaybackStateCompat.ACTION_SEEK_TO)
+            .addCustomAction(ACTION_PAUSE, "myPauseButton", R.drawable.pause_icon)
+            .addCustomAction(ACTION_NEXT, "myNextButton", R.drawable.skip_next_24dp)
+            .addCustomAction(
+                ACTION_PREVIOUS,
+                "myPreviousButton",
+                R.drawable.skip_previous_24dp
+            )
+            .addCustomAction(
+                ACTION_ADD_TO_WATCH_LATER, "myFavButton",
+                if (isAddedToTheDataBased(videoId)) R.drawable.favorite else R.drawable.un_favorite_icon
+            )
+            .addCustomAction(ACTION_KILL, "myStopButton", R.drawable.stop_circle_24dp)
+            .setBufferedPosition(currentPosition)
+            .build()
+
+        return playbackState
+    }
+
+    fun setStateToPaused(currentPosition: Long, videoId: String): PlaybackStateCompat{
+        val playbackState = PlaybackStateCompat.Builder()
+            .setState(PlaybackStateCompat.STATE_PAUSED, currentPosition,
+                1F
+            )
+            .setActions(PlaybackStateCompat.ACTION_SEEK_TO)
+            .addCustomAction(ACTION_PLAY, "myPlayButton", R.drawable.play_arrow_24dp)
+            .addCustomAction(ACTION_NEXT, "myNextButton", R.drawable.skip_next_24dp)
+            .addCustomAction(ACTION_PREVIOUS, "myPreviousButton", R.drawable.skip_previous_24dp)
+            .addCustomAction(ACTION_ADD_TO_WATCH_LATER, "myFavButton",
+                if (isAddedToTheDataBased(videoId)) R.drawable.favorite else R.drawable.un_favorite_icon
+            )
+            .addCustomAction(ACTION_KILL, "myStopButton", R.drawable.stop_circle_24dp)
+            .setBufferedPosition(currentPosition)
+            .build()
+
+        return playbackState
+    }
+
+    fun addItOrRemoveFromDB(
+        currentPosition: Long,
+        video: Video
+    ): PlaybackStateCompat{
+        val db = DatabaseFavorite(context)
+        val playbackSate = PlaybackStateCompat.Builder()
+            .setState(PlaybackStateCompat.STATE_PLAYING, currentPosition,
+                1F
+            )
+            .setActions(PlaybackStateCompat.ACTION_SEEK_TO)
+            .addCustomAction(ACTION_PAUSE, "myPauseButton", R.drawable.pause_icon)
+            .addCustomAction(ACTION_NEXT, "myNextButton", R.drawable.skip_next_24dp)
+            .addCustomAction(ACTION_PREVIOUS, "myPreviousButton", R.drawable.skip_previous_24dp)
+            .setBufferedPosition(currentPosition)
+
+        if (isAddedToTheDataBased(video.videoId)){
+            db.deleteWatchUrl(video.videoId)
+            playbackSate
+                .addCustomAction(ACTION_ADD_TO_WATCH_LATER, "myFavButton", R.drawable.un_favorite_icon)
+                .addCustomAction(ACTION_KILL, "myStopButton", R.drawable.stop_circle_24dp)
+
+        }
+        else{
+            db.insertData(
+                video.videoId, video.title, video.dateOfVideo,
+                video.views, video.channelName, video.duration
+            )
+            playbackSate
+                .addCustomAction(ACTION_ADD_TO_WATCH_LATER, "myFavButton", R.drawable.favorite)
+                .addCustomAction(ACTION_KILL, "myStopButton", R.drawable.stop_circle_24dp)
+
+        }
+
+        return playbackSate.build()
+    }
+
+
+    private fun isAddedToTheDataBased(videoId: String): Boolean{
+        println("the provided url is ${DatabaseFavorite(context).isWatchUrlExist(videoId)}")
+        return DatabaseFavorite(context).isWatchUrlExist(videoId)
+
+    }
+
+}

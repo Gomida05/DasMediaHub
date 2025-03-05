@@ -1,4 +1,6 @@
-package com.das.forui.services
+@file:Suppress("DEPRECATION")
+
+package com.das.forui.mediacontroller
 
 import android.app.Notification
 import android.app.NotificationManager
@@ -6,16 +8,14 @@ import android.app.PendingIntent
 import android.content.Context
 import android.content.Intent
 import android.graphics.Bitmap
-import android.graphics.BitmapFactory
 import android.graphics.drawable.Drawable
-import android.support.v4.media.MediaMetadataCompat
 import android.support.v4.media.session.MediaControllerCompat
+import android.widget.Toast
 import androidx.core.app.NotificationCompat
 import com.bumptech.glide.Glide
 import com.bumptech.glide.request.target.CustomTarget
 import com.bumptech.glide.request.transition.Transition
 import com.das.forui.R
-import com.das.forui.databased.DatabaseFavorite
 import com.das.forui.services.AudioServiceFromUrl.Companion.ACTION_ADD_TO_WATCH_LATER
 import com.das.forui.services.AudioServiceFromUrl.Companion.ACTION_KILL
 import com.das.forui.services.AudioServiceFromUrl.Companion.ACTION_NEXT
@@ -24,7 +24,6 @@ import com.das.forui.services.AudioServiceFromUrl.Companion.ACTION_PLAY
 import com.das.forui.services.AudioServiceFromUrl.Companion.ACTION_PREVIOUS
 import com.google.android.exoplayer2.Player
 import com.google.android.exoplayer2.ui.PlayerNotificationManager
-import com.google.android.exoplayer2.ui.PlayerNotificationManager.BitmapCallback
 
 class NotificationMediaDescriptionAdapter(private val context: Context, private val metadataCompat: MediaControllerCompat): PlayerNotificationManager.MediaDescriptionAdapter {
     override fun getCurrentContentTitle(player: Player): CharSequence {
@@ -45,13 +44,15 @@ class NotificationMediaDescriptionAdapter(private val context: Context, private 
     ): Bitmap? {
         Glide.with(context)
             .asBitmap()
-            .load(metadataCompat.metadata.description.iconUri)
+            .load("https://img.youtube.com/vi/S9bCLPwzSC0/0.jpg")
             .into(object : CustomTarget<Bitmap>() {
+
                 override fun onResourceReady(resource: Bitmap, transition: Transition<in Bitmap>?) {
                     callback.onBitmap(resource)
                 }
 
                 override fun onLoadCleared(placeholder: Drawable?) {
+                    Toast.makeText(context, "Well well well", Toast.LENGTH_SHORT).show()
                 }
 
             }
@@ -118,10 +119,13 @@ class NotificationCustomActions(private val context: Context): PlayerNotificatio
     override fun onCustomAction(player: Player, action: String, intent: Intent) {
         when (action) {
             ACTION_PLAY -> {
+                player.pause()
             }
             ACTION_PAUSE -> {
+                player.play()
             }
             ACTION_PREVIOUS -> {
+                player.seekToPrevious()
             }
             ACTION_NEXT -> {
             }
@@ -129,6 +133,7 @@ class NotificationCustomActions(private val context: Context): PlayerNotificatio
             }
             ACTION_KILL -> {
                 val notificationManager = context.getSystemService(NotificationManager::class.java)
+                player.release()
             }
         }
     }
@@ -143,9 +148,10 @@ class NotificationCustomActions(private val context: Context): PlayerNotificatio
     }
 }
 
-class NotificationListenerService: PlayerNotificationManager.NotificationListener{
+class NotificationListenerService(private val player: Player): PlayerNotificationManager.NotificationListener{
 
     override fun onNotificationCancelled(notificationId: Int, dismissedByUser: Boolean) {
+        player.release()
         super.onNotificationCancelled(notificationId, dismissedByUser)
     }
 
@@ -155,6 +161,7 @@ class NotificationListenerService: PlayerNotificationManager.NotificationListene
         notification: Notification,
         ongoing: Boolean
     ) {
-        super.onNotificationPosted(notificationId, notification, ongoing)
+
+        super.onNotificationPosted(notificationId, notification, true)
     }
 }

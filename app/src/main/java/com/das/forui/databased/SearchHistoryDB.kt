@@ -67,6 +67,10 @@ class SearchHistoryDB(context: Context) : SQLiteOpenHelper(context, DATABASE_NAM
         if(isWatchUrlExist(title)){
             return false
         }
+        title.let{
+            it.trimEnd()
+            it.trimStart()
+        }
         val db = this.writableDatabase
         val contentValues = ContentValues().apply {
             put("title", title)

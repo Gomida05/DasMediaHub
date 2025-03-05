@@ -1,12 +1,16 @@
 package com.das.forui.ui.result
 
 
+import android.app.AlertDialog
 import android.os.Bundle
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
+import android.widget.ImageView
 import android.widget.Toast
+import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.background
+import androidx.compose.foundation.combinedClickable
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -49,6 +53,7 @@ import androidx.fragment.app.Fragment
 import androidx.navigation.fragment.findNavController
 import coil.compose.AsyncImage
 import coil.request.ImageRequest
+import com.bumptech.glide.Glide
 import com.das.forui.MainActivity
 import com.das.forui.databinding.FragmentResultBinding
 import com.chaquo.python.Python
@@ -166,6 +171,7 @@ class ResultFragment : Fragment() {
         }
     }
 
+    @OptIn(ExperimentalFoundationApi::class)
     @Composable
     fun CategoryItems(
         videoId: String,
@@ -180,24 +186,31 @@ class ResultFragment : Fragment() {
         val context= requireContext()
 
         Card(
-            onClick = {
-                val bundle = Bundle().apply {
-                    putString("View_ID", videoId)
-                    putString("View_URL", "https://www.youtube.com/watch?v=$videoId")
-                    putString("View_Title", title)
-                    putString("View_Number", viewsNumber)
-                    putString("dateOfVideo", dateOfVideo)
-                    putString("channelName", channelName)
-                    putString("duration", duration)
-                    putString("channel_Thumbnails", channelThumbnails)
-                }
-                findNavController().navigate(R.id.nav_video_viewer, bundle)
-
-            },
             shape = RoundedCornerShape(1),
             modifier = Modifier
                 .fillMaxWidth()
                 .padding(bottom = 3.dp, top = 3.dp)
+                .combinedClickable (
+                    onClick = {
+                        val bundle = Bundle().apply {
+                            putString("View_ID", videoId)
+                            putString("View_URL", "https://www.youtube.com/watch?v=$videoId")
+                            putString("View_Title", title)
+                            putString("View_Number", viewsNumber)
+                            putString("dateOfVideo", dateOfVideo)
+                            putString("channelName", channelName)
+                            putString("duration", duration)
+                            putString("channel_Thumbnails", channelThumbnails)
+                        }
+                        findNavController().navigate(R.id.nav_video_viewer, bundle)
+                    },
+                    onLongClick = {
+                        imageViewer(
+                            videoId,
+                            title
+                        )
+                    }
+                )
         ) {
             Column (
                 modifier = Modifier
@@ -237,7 +250,8 @@ class ResultFragment : Fragment() {
 
 
                     IconButton(
-                        onClick = { Toast.makeText(context, channelName, Toast.LENGTH_SHORT).show() }
+                        onClick = {
+                            Toast.makeText(context, channelName, Toast.LENGTH_SHORT).show() }
                     ) {
                         AsyncImage(
                             model = ImageRequest.Builder(context)
@@ -300,6 +314,10 @@ class ResultFragment : Fragment() {
                     }
                         IconButton(
                             onClick = {
+                             imageViewer(
+                                 videoId,
+                                 title
+                             )
                             }
 
                         ) {
@@ -328,6 +346,39 @@ class ResultFragment : Fragment() {
             return null
         }
     }
+
+
+    private fun imageViewer(selectedID: String, title: String) {
+        val thumbnailUrl = "https://img.youtube.com/vi/$selectedID/0.jpg"
+        val inflater = LayoutInflater.from(context)
+        val dialogView = inflater.inflate(R.layout.dialog_with_image, null)
+        val imageView: ImageView = dialogView.findViewById(R.id.dialog_image)
+
+        Glide.with(this)
+            .load(thumbnailUrl)
+            .error(R.drawable.close)
+            .centerCrop()
+            .into(imageView)
+        AlertDialog.Builder(context)
+            .setTitle("Do you want to download it as video or audio?")
+            .setView(dialogView)
+            .setPositiveButton("Video") { _, _ ->
+                (activity as MainActivity).downloadVideo(
+                    selectedID,
+                    title,
+                    requireContext()
+                )
+            }
+            .setNegativeButton("Music") { _, _ ->
+                (activity as MainActivity).downloadMusic(
+                    selectedID,
+                    title,
+                    requireContext()
+                )
+            }.show()
+    }
+
+
 
     data class SearchResultFromMain(
         val videoId: String,

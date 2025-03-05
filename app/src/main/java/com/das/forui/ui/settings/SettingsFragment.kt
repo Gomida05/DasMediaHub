@@ -10,14 +10,12 @@ import android.os.Bundle
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
-import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
-import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.ArrowForward
 import androidx.compose.material.icons.filled.Folder
@@ -76,32 +74,27 @@ class SettingsFragment : Fragment() {
     return binding.root
   }
 
-  data class SettingsDataClass (
-    val title: String,
-    val leftIcon: ImageVector,
-    val rightIcon: ImageVector
 
-    )
 
   @Composable
   private fun ListSettingsItem() {
     val settingsResults = remember { mutableStateOf<List<SettingsDataClass>>(emptyList()) }
 
-      val item = listOf<String>(
+      val item = listOf(
         "Setting for searchList",
         "HeadLine",
         "Change Downloading Location",
         "Check for update",
         "About Us"
       )
-      val leftIcons = listOf<ImageVector>(
+      val leftIcons = listOf(
         Icons.Default.ManageSearch,
         Icons.Default.VideoLibrary,
         Icons.Default.Folder,
         Icons.Default.Update,
         Icons.Default.Info
       )
-      val rightIcons = listOf<ImageVector>(
+      val rightIcons = listOf(
         Icons.Default.ArrowForward,
         Icons.Default.ArrowForward,
         Icons.Default.ArrowForward,
@@ -146,7 +139,6 @@ class SettingsFragment : Fragment() {
           .fillMaxWidth()
           .height(80.dp)
           .padding(top = 2.dp, bottom = 2.dp)
-          .background(Color.Black, RoundedCornerShape(20.dp))
       ) {
         if (showAlertDialog){
           GotClicks(title)
@@ -186,11 +178,11 @@ class SettingsFragment : Fragment() {
       }
 
       "HeadLine" -> {
-        findNavController().navigate(R.id.nav_splash_screen)
+
       }
 
       "Change Downloading Location" -> {
-        AlertDialogPathChoose()
+        AlertDialogPathChoose(true)
       }
 
       "About Us" -> {
@@ -198,7 +190,7 @@ class SettingsFragment : Fragment() {
       }
 
       "Check for update" -> {
-        (activity as MainActivity).showDiaglo("coming soon")
+        (activity as MainActivity).showDialogs("coming soon")
       }
     }
   }
@@ -213,9 +205,9 @@ class SettingsFragment : Fragment() {
 
 
   @Composable
-  private fun AlertDialogPathChoose() {
+  private fun AlertDialogPathChoose(soTruOrFalse: Boolean) {
 
-    var openDialog by remember { mutableStateOf(true) }
+    var openDialog by remember { mutableStateOf(soTruOrFalse) }
 
 
     if (openDialog) {
@@ -322,7 +314,12 @@ class SettingsFragment : Fragment() {
 
 
 
+  data class SettingsDataClass (
+    val title: String,
+    val leftIcon: ImageVector,
+    val rightIcon: ImageVector
 
+  )
 
 
 
@@ -338,4 +335,5 @@ class SettingsFragment : Fragment() {
   }
 
 }
+
 

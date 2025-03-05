@@ -5,43 +5,32 @@ import android.Manifest.permission.POST_NOTIFICATIONS
 import android.annotation.SuppressLint
 import android.app.NotificationChannel
 import android.app.NotificationManager
-import android.app.PendingIntent
 import android.app.PictureInPictureParams
 import android.content.Context
 import android.content.Intent
+import android.content.Intent.EXTRA_TEXT
 import android.content.pm.PackageManager
-import android.content.res.Configuration
 import android.media.MediaScannerConnection
-import android.net.Uri
 import android.os.Build
 import android.os.Bundle
-import android.os.Environment
-import android.os.Handler
-import android.os.Looper
-import android.os.PersistableBundle
-import android.provider.Settings
 import android.util.Log
 import android.util.Rational
 import android.view.View
 import android.widget.Toast
 import androidx.appcompat.app.AppCompatActivity
-import androidx.appcompat.app.AppCompatDelegate
 import androidx.core.app.ActivityCompat
 import androidx.core.app.NotificationCompat
 import androidx.core.app.NotificationManagerCompat
 import androidx.core.content.ContextCompat
-import androidx.media.app.NotificationCompat.MediaStyle
 import androidx.navigation.findNavController
 import androidx.navigation.fragment.NavHostFragment
 import androidx.navigation.ui.AppBarConfiguration
 import androidx.navigation.ui.setupActionBarWithNavController
 import androidx.navigation.ui.setupWithNavController
 import com.chaquo.python.Python
-import com.chaquo.python.android.AndroidPlatform
 import com.das.forui.databased.DatabaseHelper1
 import com.das.forui.databased.PathSaver
 import com.das.forui.databinding.ActivityMainBinding
-import com.das.forui.services.AudioServiceFromUrl
 import com.google.android.gms.ads.AdRequest
 import com.google.android.gms.ads.AdView
 import com.google.android.gms.ads.MobileAds
@@ -66,20 +55,7 @@ class MainActivity : AppCompatActivity() {
         setContentView(binding.root)
 
         supportActionBar?.hide()
-        if (!Python.isStarted()) {
-            val startTime= System.nanoTime()
-            Python.start(AndroidPlatform(this))
-            val elapsedTime = System.nanoTime() - startTime
-            Log.d("AppStartup", "Python initialization took: ${elapsedTime / 1_000_000} ms")
-        }
-        if(Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
-            if (Environment.isExternalStorageManager()) {
-            } else {
-                val uri = Uri.parse("package:$packageName")
-                val intenser = Intent(Settings.ACTION_MANAGE_APP_ALL_FILES_ACCESS_PERMISSION, uri)
-                startActivity(intenser)
-            }
-        }
+
 
         onNewIntent(intent)
 
@@ -118,13 +94,7 @@ class MainActivity : AppCompatActivity() {
     }
 
 
-    override fun onSaveInstanceState(outState: Bundle, outPersistentState: PersistableBundle) {
-        super.onSaveInstanceState(outState, outPersistentState)
 
-        /*
-        TODO WE WILL ADD THE FUNCTIONALITY HERE SO IT GONNA BE EASY TO RECREATE THE ACTIVITY
-         */
-    }
     fun startBanner(startOrStop: Boolean){
         try {
             MobileAds.initialize(this@MainActivity) { }
@@ -149,8 +119,7 @@ class MainActivity : AppCompatActivity() {
         super.onNewIntent(intent)
         setIntent(intent)
         if (intent.action == Intent.ACTION_SEND && intent.type.toString().startsWith("text/")) {
-            val sharedText = intent.getStringExtra(Intent.EXTRA_TEXT).toString()
-            println("here is it my man $sharedText")
+            val sharedText = intent.getStringExtra(EXTRA_TEXT).toString()
             sharedText.let {
 
                 if (isValidYoutubeURL(it)) {
@@ -169,7 +138,7 @@ class MainActivity : AppCompatActivity() {
                 }
                 else {
                     val bundle = Bundle().apply {
-                        putString("EXTRA_ONE", it)
+                        putString(EXTRA_TEXT, it)
                     }
                     findNavController(R.id.nav_host_fragment_activity_main).navigate(
                         R.id.nav_searcher,
@@ -248,12 +217,12 @@ class MainActivity : AppCompatActivity() {
                     }
                 }
                 withContext(Dispatchers.Main) {
-                    showDiaglo(forToast)
+                    showDialogs(forToast)
                 }
             }
         } catch (e: Exception) {
             Log.e("MainActivity", "Error: ${e.message}")
-            showDiaglo("An Exception Error from kt: \n$e")
+            showDialogs("An Exception Error from kt: \n$e")
         }
     }
 
@@ -298,7 +267,7 @@ class MainActivity : AppCompatActivity() {
                                 )
                                 println("filler is here \n $path")
                                 DatabaseHelper1(context).insertData(title, path = file.toString())
-//                            withContext(Dispatchers.Main) {
+
                                 justAlertUser("$title has been downloaded successfully go check it out!")
                                 Log.e("MainActivity", "here is it \n${file}")
                                 Log.d("MainActivity", "File scan initiated for ")
@@ -310,14 +279,14 @@ class MainActivity : AppCompatActivity() {
                             }
                         }
                         withContext(Dispatchers.Main) {
-                            showDiaglo(forToast)
+                            showDialogs(forToast)
                         }
                     }
                 }
             }
         } catch (e: Exception) {
             Log.e("MainActivity", "Error: ${e.message}")
-            showDiaglo("An Exception Error from kt: \n$e")
+            showDialogs("An Exception Error from kt: \n$e")
         }
     }
 
@@ -393,54 +362,8 @@ class MainActivity : AppCompatActivity() {
 
 
 
-    fun createMediaNotification(title: String) {
 
-        val thisIntent = Intent(this, this::class.java)
-
-        val pendingIntent = PendingIntent.getActivity(this,0, thisIntent, PendingIntent.FLAG_IMMUTABLE)
-
-
-        val mediaStyle = MediaStyle()
-            .setShowActionsInCompactView(0, 1, 2)
-
-
-        val ourNotification = NotificationCompat.Builder(this, "error_searching")
-            .setContentTitle(title)
-            .setContentText("From ForUI App")
-            .setContentIntent(pendingIntent)
-            .setSmallIcon(R.drawable.music_note_24dp)
-            .setOngoing(true)
-            .addAction(R.drawable.pause_icon, "Pause", null)
-            .addAction(R.drawable.play_arrow_24dp, "Play", null)
-            .addAction(R.drawable.stop_circle_24dp, "Stop", null)
-            .setStyle(mediaStyle)
-            .setCategory(NotificationCompat.CATEGORY_TRANSPORT)
-            .setProgress(100, 25, true)
-            .setPriority(NotificationCompat.PRIORITY_LOW)
-            .setAutoCancel(true)
-            .setSound(null)
-            .setVibrate(longArrayOf(0))
-            .build()
-        val notificationManager = NotificationManagerCompat.from(this)
-        if (ActivityCompat.checkSelfPermission(
-                this,
-                POST_NOTIFICATIONS
-            ) != PackageManager.PERMISSION_GRANTED
-        ) {
-            // TODO: Consider calling
-            //    ActivityCompat#requestPermissions
-            //here to request the missing permissions, and then overriding
-            //   public void onRequestPermissionsResult(int requestCode, String[] permissions,
-            //                                          int[] grantResults)
-            // to handle the case where the user grants the permission. See the documentation
-            // for ActivityCompat#requestPermissions for more details.
-            return
-        }
-        notificationManager.notify(101, ourNotification)
-    }
-
-
-    fun showDiaglo(inputText: String) {
+    fun showDialogs(inputText: String) {
         Toast.makeText(this, inputText, Toast.LENGTH_SHORT).show()
     }
 
@@ -527,14 +450,5 @@ class MainActivity : AppCompatActivity() {
             val match=pattern.find((url))
             return match?.groups?.get(1)?.value
         }
-    }
-    fun videoSetting(view: View) {}
-
-    override fun onDestroy() {
-        if (AudioServiceFromUrl().exoPlayerFromAudioService?.isPlaying == true){
-            Toast.makeText(this, "Can't close it!", Toast.LENGTH_SHORT).show()
-
-        }
-        super.onDestroy()
     }
 }

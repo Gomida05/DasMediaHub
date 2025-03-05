@@ -31,12 +31,13 @@ class DownloadsPageFragment: Fragment() {
     ): View {
         _binding = FragmentDownloadsBinding.inflate(inflater, container, false)
         adapter = ArrayAdapter(requireContext(), android.R.layout.simple_list_item_1, mutableListOf())
-        fetchDataFromDatabase()
+
         return binding.root
     }
 
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
+        fetchDataFromDatabase()
         binding.back.setOnClickListener {
             binding.root.findNavController().navigate(R.id.navigation_home)
         }
@@ -68,7 +69,7 @@ class DownloadsPageFragment: Fragment() {
                 shareIntent.setClass(requireContext(), FullScreenPlayerActivity::class.java)
                 startActivity(shareIntent)
             } else{
-                (activity as MainActivity).showDiaglo("We don't support this type of file")
+                (activity as MainActivity).showDialogs("We don't support this type of file")
             }
 
         }

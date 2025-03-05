@@ -26,6 +26,8 @@
 
 
     <application
+        android:name=".MainApplication"
+
         android:allowBackup="true"
         android:dataExtractionRules="@xml/data_extraction_rules"
         android:enableOnBackInvokedCallback="true"
@@ -36,6 +38,7 @@
         android:supportsRtl="true"
         android:theme="@style/Theme.ForUI"
         tools:targetApi="35">
+
 
         <activity
             android:name=".MainActivity"
@@ -120,24 +123,23 @@
             </intent-filter>
 
         </activity>
-
-
         <receiver
             android:name=".WidgetProvider"
-            android:exported="false"
-            android:label="ForUI App Widget">
-
+            android:label="ForUI App Widget"
+            android:enabled="true"
+            android:exported="true">
             <intent-filter>
-                <action android:name="android.appwidget.action.APPWIDGET_UPDATE"/>
+                <action android:name="android.appwidget.action.APPWIDGET_UPDATE" />
             </intent-filter>
 
             <meta-data
                 android:name="android.appwidget.provider"
-                android:resource="@xml/app_widget_provider"/>
+                android:resource="@xml/app_widget_provider" />
         </receiver>
 
+
+
         <meta-data android:name="wakelock" android:value="1"/>
-<!--            android:theme="@android:style/Theme.Fullscreen"-->
 
         <service
             android:name=".services.AudioServiceFromUrl"

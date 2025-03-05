@@ -2,9 +2,6 @@
 
 package com.das.forui
 
-
-
-import android.app.Notification
 import android.app.PendingIntent
 import android.app.PictureInPictureParams
 import android.app.RemoteAction
@@ -18,7 +15,6 @@ import android.os.Bundle
 import android.util.Rational
 import android.view.View
 import android.widget.ImageButton
-import android.widget.MediaController
 import android.widget.Toast
 import androidx.activity.OnBackPressedCallback
 import androidx.appcompat.app.AppCompatActivity
@@ -31,7 +27,7 @@ import com.google.android.exoplayer2.ui.PlayerView
 class FullScreenPlayerActivity : AppCompatActivity() {
 
     private lateinit var playerView: PlayerView
-    private var exoPlayer: ExoPlayer?= null
+    var exoPlayerOfFullScreen: ExoPlayer?= null
     private lateinit var audioManager: AudioManager
     private var audioFocusRequest: AudioManager.OnAudioFocusChangeListener? =null
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -46,18 +42,19 @@ class FullScreenPlayerActivity : AppCompatActivity() {
                         or View.SYSTEM_UI_FLAG_FULLSCREEN
                         or View.SYSTEM_UI_FLAG_HIDE_NAVIGATION
                 )
+        exoPlayerOfFullScreen = ExoPlayer.Builder(this).build()
         onNewIntent(intent)
     }
 
     override fun onStart() {
         super.onStart()
         findViewById<ImageButton>(R.id.exo_of_fullscreen).setOnClickListener{
-            showMyDiaglo("coming soon")
+            showMyDialog("coming soon")
         }
 
         this.onBackPressedDispatcher.addCallback(object : OnBackPressedCallback(true) {
             override fun handleOnBackPressed() {
-                exoPlayer?.stop()
+                exoPlayerOfFullScreen?.stop()
                 val intent = Intent(this@FullScreenPlayerActivity, MainActivity::class.java)
                 startActivity(intent)
             }
@@ -77,21 +74,20 @@ class FullScreenPlayerActivity : AppCompatActivity() {
                 } else if (mimeType.startsWith("audio/")) {
                     playAudio(it)
                 } else {
-                    showMyDiaglo("Unsupported media type")
+                    showMyDialog("Unsupported media type")
                 }
             }
         } else if(intent.action == "ControlMedia"){
-            val mediaUri: Uri = intent.data!!
             if (intent.getStringExtra("ControlMedia") == "play"){
-                exoPlayer?.play()
+                exoPlayerOfFullScreen?.play()
             }
             else{
-                exoPlayer?.pause()
+                exoPlayerOfFullScreen?.pause()
             }
 
         }
         else {
-            showMyDiaglo("No valid media to play")
+            showMyDialog("No valid media to play")
         }
     }
 
@@ -99,26 +95,25 @@ class FullScreenPlayerActivity : AppCompatActivity() {
 
     private fun playVideo(videoUri: Uri) {
         println("Playing video from URI: $videoUri")
-        exoPlayer = ExoPlayer.Builder(this).build()
         val mediaItem = MediaItem.fromUri(videoUri)
-        playerView.player = exoPlayer
-        exoPlayer?.setMediaItem(mediaItem)
-        exoPlayer?.prepare()
+        playerView.player = exoPlayerOfFullScreen
+        exoPlayerOfFullScreen?.setMediaItem(mediaItem)
+        exoPlayerOfFullScreen?.prepare()
         requestAudioFocus()
-        exoPlayer?.play()
+        exoPlayerOfFullScreen?.play()
     }
 
     private fun playAudio(audioUri: Uri) {
         println("Playing audio from URI: $audioUri")
-        exoPlayer = ExoPlayer.Builder(this).build()
+
         val mediaItem = MediaItem.fromUri(audioUri)
-        playerView.player = exoPlayer
+        playerView.player = exoPlayerOfFullScreen
         playerView.setBackgroundResource(R.drawable.music_note_24dp)
         playerView.keepScreenOn = false
-        exoPlayer?.setMediaItem(mediaItem)
+        exoPlayerOfFullScreen?.setMediaItem(mediaItem)
         requestAudioFocus()
-        exoPlayer?.prepare()
-        exoPlayer?.play()
+        exoPlayerOfFullScreen?.prepare()
+        exoPlayerOfFullScreen?.play()
     }
 
 
@@ -179,11 +174,7 @@ class FullScreenPlayerActivity : AppCompatActivity() {
         newConfig: Configuration
     ) {
         super.onPictureInPictureModeChanged(isInPictureInPictureMode, newConfig)
-        if(isInPictureInPictureMode){
-            findViewById<PlayerView>(R.id.start_video_player_locally).useController=false
-        }else{
-            findViewById<PlayerView>(R.id.start_video_player_locally).useController= true
-        }
+        findViewById<PlayerView>(R.id.start_video_player_locally).useController = !isInPictureInPictureMode
     }
 
 
@@ -191,7 +182,7 @@ class FullScreenPlayerActivity : AppCompatActivity() {
 
 
 
-    private fun showMyDiaglo(inputText: String) {
+    private fun showMyDialog(inputText: String) {
         Toast.makeText(this, inputText, Toast.LENGTH_SHORT).show()
     }
 
@@ -202,20 +193,20 @@ class FullScreenPlayerActivity : AppCompatActivity() {
             when (focusChange) {
                 AudioManager.AUDIOFOCUS_LOSS -> {
                     // Pause playback when losing focus
-                    exoPlayer?.playWhenReady = false
+                    exoPlayerOfFullScreen?.playWhenReady = false
                 }
                 AudioManager.AUDIOFOCUS_GAIN -> {
                     // Resume playback when gaining focus
-                    exoPlayer?.playWhenReady = true
-                    exoPlayer?.volume = 1.0f
+                    exoPlayerOfFullScreen?.playWhenReady = true
+                    exoPlayerOfFullScreen?.volume = 1.0f
                 }
                 AudioManager.AUDIOFOCUS_LOSS_TRANSIENT -> {
                     // Pause temporarily (e.g., during a phone call)
-                    exoPlayer?.playWhenReady = false
+                    exoPlayerOfFullScreen?.playWhenReady = false
                 }
                 AudioManager.AUDIOFOCUS_LOSS_TRANSIENT_CAN_DUCK -> {
                     // Can continue playing but with lower volume
-                    exoPlayer?.volume = 0.1f  // Reduce volume
+                    exoPlayerOfFullScreen?.volume = 0.1f  // Reduce volume
                 }
             }
         }
@@ -232,12 +223,7 @@ class FullScreenPlayerActivity : AppCompatActivity() {
         }
     }
 
-    override fun onDestroy() {
-        super.onDestroy()
-    }
-}
-
-class MediaControlActivity: AppCompatActivity(){
 
 }
+
 

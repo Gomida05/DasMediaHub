@@ -1,6 +1,6 @@
 <shape xmlns:android="http://schemas.android.com/apk/res/android">
     <solid
-        android:color="@color/common_google_signin_btn_text_light"/>
+        android:color="#2C2B2B"/>
     <corners
         android:radius="6dp"/>
 </shape>
