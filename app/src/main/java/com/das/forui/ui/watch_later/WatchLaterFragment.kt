@@ -124,7 +124,7 @@ class WatchLaterFragment: Fragment() {
                     )
                     )
                     watchUrl?.let { url ->
-                        urls.add("$title ")
+                        urls.add(title)
                         ids.add(url)
                     }
                 }
@@ -146,9 +146,9 @@ class WatchLaterFragment: Fragment() {
 
 
 
-    data class WatchLaterList(val title: String, val watchUrl: String, val thumbnailUrl: String, val viewer: String, val dateTime: String, val duration: String, val channelName: String)
+    private data class WatchLaterList(val title: String, val watchUrl: String, val thumbnailUrl: String, val viewer: String, val dateTime: String, val duration: String, val channelName: String)
 
-    class WatchLaterAdapter(
+    private class WatchLaterAdapter(
         context: Context,
         private val watchLaterLists: MutableList<WatchLaterList>
     ) : ArrayAdapter<WatchLaterList>(context, R.layout.watch_later_list, watchLaterLists) {

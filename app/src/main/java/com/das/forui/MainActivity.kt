@@ -1,6 +1,5 @@
 package com.das.forui
 
-
 import android.Manifest.permission.POST_NOTIFICATIONS
 import android.annotation.SuppressLint
 import android.app.NotificationChannel
@@ -11,6 +10,7 @@ import android.content.Intent
 import android.content.Intent.EXTRA_TEXT
 import android.content.pm.PackageManager
 import android.media.MediaScannerConnection
+import android.net.Uri
 import android.os.Build
 import android.os.Bundle
 import android.util.Log
@@ -28,9 +28,11 @@ import androidx.navigation.ui.AppBarConfiguration
 import androidx.navigation.ui.setupActionBarWithNavController
 import androidx.navigation.ui.setupWithNavController
 import com.chaquo.python.Python
-import com.das.forui.databased.DatabaseHelper1
+import com.das.forui.MainActivity.Youtuber.PLAY_HERE_AUDIO
+import com.das.forui.MainActivity.Youtuber.PLAY_HERE_VIDEO
 import com.das.forui.databased.PathSaver
 import com.das.forui.databinding.ActivityMainBinding
+import com.das.forui.ui.videoPlayerLocally.FullScreenPlayerFragment
 import com.google.android.gms.ads.AdRequest
 import com.google.android.gms.ads.AdView
 import com.google.android.gms.ads.MobileAds
@@ -121,22 +123,20 @@ class MainActivity : AppCompatActivity() {
         if (intent.action == Intent.ACTION_SEND && intent.type.toString().startsWith("text/")) {
             val sharedText = intent.getStringExtra(EXTRA_TEXT).toString()
             sharedText.let {
-
                 if (isValidYoutubeURL(it)) {
                     val videoId = Youtuber.extractor(it)
                     val bundle = Bundle().apply {
                         putString("View_ID", videoId)
                         putString("View_URL", "https://www.youtube.com/watch?v=$videoId")
                     }
+
                     findNavController(R.id.nav_host_fragment_activity_main).navigate(
                         R.id.nav_video_viewer,
                         bundle
                     )
-                }
-                else if (it.startsWith("DownloadsPageFr")){
+                } else if (it.startsWith("DownloadsPageFr")) {
                     findNavController(R.id.nav_host_fragment_activity_main).navigate(R.id.nav_Downloads)
-                }
-                else {
+                } else {
                     val bundle = Bundle().apply {
                         putString(EXTRA_TEXT, it)
                     }
@@ -146,6 +146,47 @@ class MainActivity : AppCompatActivity() {
                     )
                 }
             }
+        } else if (intent.action == Intent.ACTION_VIEW) {
+            val mediaUri: Uri? = intent.data
+            mediaUri?.let {
+                val mimeType = contentResolver.getType(it) ?: ""
+                if (mimeType.startsWith("video/")) {
+                    val bundle = Bundle().apply {
+                        putString(PLAY_HERE_VIDEO, intent.dataString)
+                    }
+                    findNavController(R.id.nav_host_fragment_activity_main).navigate(
+                        R.id.nav_fullscreen,
+                        bundle
+                    )
+                } else if (mimeType.startsWith("audio/")) {
+                    val bundle = Bundle().apply {
+                        putString(PLAY_HERE_AUDIO, intent.dataString)
+                    }
+                    findNavController(R.id.nav_host_fragment_activity_main).navigate(
+                        R.id.nav_fullscreen,
+                        bundle
+                    )
+                } else {
+                    showDialogs("Unsupported media type")
+                }
+            }
+        }
+        else if (intent.action == PLAY_HERE_VIDEO) {
+            val bundle = Bundle().apply {
+                putString(PLAY_HERE_VIDEO, intent.dataString)
+            }
+            findNavController(R.id.nav_host_fragment_activity_main).navigate(
+                R.id.nav_fullscreen,
+                bundle
+            )
+        } else if (intent.action == PLAY_HERE_AUDIO) {
+            val bundle = Bundle().apply {
+                putString(PLAY_HERE_AUDIO, intent.dataString)
+            }
+            findNavController(R.id.nav_host_fragment_activity_main).navigate(
+                R.id.nav_fullscreen,
+                bundle
+            )
         }
     }
 
@@ -207,7 +248,7 @@ class MainActivity : AppCompatActivity() {
                                     null
                                 )
                                 forToast = "$title has been downloaded successfully go check it out!"
-                                DatabaseHelper1(contexts).insertData(title, path = tester)
+
                             } else {
                                 Log.e("MainActivity", "File does not exist at path: $it")
                                 forToast = "Download interrupted by the internet please try again!"
@@ -266,7 +307,6 @@ class MainActivity : AppCompatActivity() {
                                     null
                                 )
                                 println("filler is here \n $path")
-                                DatabaseHelper1(context).insertData(title, path = file.toString())
 
                                 justAlertUser("$title has been downloaded successfully go check it out!")
                                 Log.e("MainActivity", "here is it \n${file}")
@@ -444,6 +484,8 @@ class MainActivity : AppCompatActivity() {
 
 
     object Youtuber{
+        const val PLAY_HERE_VIDEO = "com.das.forui.PLAY_HERE_VIDEO"
+        const val PLAY_HERE_AUDIO = "com.das.forui.PLAY_HERE_AUDIO"
         fun extractor(url: String): String? {
             val regex= "(?<=v=|/)([a-zA-Z0-9_-]{11})(?=&|\$|/)"
             val pattern= Regex(regex)

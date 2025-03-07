@@ -52,8 +52,6 @@
             android:windowSoftInputMode="stateVisible|adjustResize"
             tools:ignore="DiscouragedApi,LockedOrientationActivity">
 
-
-
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />
                 <category android:name="android.intent.category.LAUNCHER" />
@@ -79,27 +77,6 @@
                 android:name="android.app.shortcuts"
                 android:resource="@xml/shortcuts" />
 
-        </activity>
-
-        <receiver android:name=".MediaControlFullScreenBroadcast"
-            android:exported="false">
-            <intent-filter>
-                <action android:name="com.das.forui.ACTION_CONTROL_MEDIA" />
-            </intent-filter>
-        </receiver>
-
-        <activity
-            android:name=".FullScreenPlayerActivity"
-            android:exported="true"
-            android:label="@string/searchorinsert"
-            android:screenOrientation="fullSensor"
-            android:resizeableActivity="true"
-            android:supportsPictureInPicture="true"
-            android:configChanges="uiMode|screenSize|orientation|screenLayout|smallestScreenSize|keyboardHidden|touchscreen"
-            android:launchMode="singleTask"
-            android:theme="@style/AppTheme.NoAction"
-            tools:ignore="DiscouragedApi">
-
 
             <intent-filter>
                 <action android:name="android.intent.action.SEND" />
@@ -123,6 +100,15 @@
             </intent-filter>
 
         </activity>
+
+        <receiver android:name=".MediaControlFullScreenBroadcast"
+            android:exported="false">
+            <intent-filter>
+                <action android:name="com.das.forui.ACTION_CONTROL_MEDIA" />
+            </intent-filter>
+        </receiver>
+
+
         <receiver
             android:name=".WidgetProvider"
             android:label="ForUI App Widget"

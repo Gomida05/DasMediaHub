@@ -1,0 +1,71 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="65dp"
+    xmlns:app="http://schemas.android.com/apk/res-auto">
+
+
+    <ImageView
+        android:id="@+id/give_me_thumbnail_here"
+        android:layout_width="65dp"
+        android:layout_height="65dp"
+        android:layout_gravity="start|center_vertical"
+        android:contentDescription="@string/app_name"/>
+
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="65dp"
+        android:layout_gravity="center_horizontal"
+        android:orientation="vertical">
+
+        <TextView
+            android:id="@+id/give_me_title_for_this_video"
+            android:layout_width="match_parent"
+            android:layout_height="25dp"
+            android:layout_gravity="center"
+            android:gravity="start"
+            android:layout_marginTop="10dp"
+            android:layout_marginStart="12dp"
+            android:layout_marginEnd="25dp"
+            android:ellipsize="end"
+            android:maxLines="1"
+            android:textColor="?android:attr/colorForeground"
+            android:textSize="16sp" />
+        <androidx.constraintlayout.widget.ConstraintLayout
+            android:layout_width="match_parent"
+            android:layout_height="match_parent">
+
+            <TextView
+                android:id="@+id/give_me_date_for_this_video"
+                android:layout_width="90dp"
+                android:layout_height="15dp"
+                android:layout_marginStart="15dp"
+                app:layout_constraintBottom_toBottomOf="parent"
+                app:layout_constraintStart_toStartOf="parent"
+                app:layout_constraintTop_toTopOf="parent" />
+
+            <TextView
+                android:id="@+id/give_me_size_for_this_video"
+                android:layout_width="90dp"
+                android:layout_height="15dp"
+                android:layout_marginEnd="15dp"
+                app:layout_constraintBottom_toBottomOf="parent"
+                app:layout_constraintEnd_toEndOf="parent"
+                app:layout_constraintTop_toTopOf="parent" />
+        </androidx.constraintlayout.widget.ConstraintLayout>
+    </LinearLayout>
+
+
+
+    <!--    <ImageButton-->
+<!--        android:id="@+id/more_options_downloaded_video"-->
+<!--        android:layout_width="wrap_content"-->
+<!--        android:layout_height="wrap_content"-->
+<!--        android:src="@drawable/more_vert_24dp"-->
+<!--        android:backgroundTint="?android:attr/colorBackground"-->
+<!--        android:tintMode="src_in"-->
+<!--        android:contentDescription="@string/app_name"-->
+<!--        android:layout_gravity="end|center_vertical"/>-->
+
+</LinearLayout>

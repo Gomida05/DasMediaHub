@@ -66,7 +66,6 @@ import com.chaquo.python.Python
 import com.das.forui.services.AudioServiceFromUrl
 import com.das.forui.DownloaderClass
 import com.das.forui.MainActivity
-import com.das.forui.MainApplication
 import com.das.forui.R
 import com.das.forui.databased.DatabaseFavorite
 import com.das.forui.databinding.VideoViewerBinding
@@ -473,8 +472,10 @@ class ViewerFragment: Fragment() {
                 .combinedClickable(
                     onClick = {
                         playThisOne(
-                            videoDetails = Video(videoId,title, viewsNumber, dateOfVideo,
-                                duration, channelName, channelThumbnails)
+                            videoDetails = Video(
+                                videoId, title, viewsNumber, dateOfVideo,
+                                duration, channelName, channelThumbnails
+                            )
                         )
                     },
                     onLongClick = {

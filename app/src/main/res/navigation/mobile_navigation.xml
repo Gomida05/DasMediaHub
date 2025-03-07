@@ -41,5 +41,8 @@
         android:id="@+id/nav_watch_later"
         android:name="com.das.forui.ui.watch_later.WatchLaterFragment"
         tools:layout="@layout/fragment_watch_later"/>
-
+    <fragment
+        android:id="@+id/nav_fullscreen"
+        android:name="com.das.forui.ui.videoPlayerLocally.FullScreenPlayerFragment"
+        tools:layout="@layout/full_screen_player"/>
 </navigation>

@@ -1,28 +1,40 @@
 package com.das.forui.ui.downloads
 
+import android.app.AlertDialog
+import android.content.Context
 import android.content.Intent
-import android.database.Cursor
+import android.net.Uri
 import android.os.Bundle
 import android.util.Log
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
 import android.widget.ArrayAdapter
-import android.widget.ListView
+import android.widget.ImageView
+import android.widget.TextView
+import androidx.core.net.toUri
 import androidx.fragment.app.Fragment
 import androidx.navigation.findNavController
-import com.das.forui.databased.DatabaseHelper1
-import com.das.forui.FullScreenPlayerActivity
+import androidx.navigation.fragment.findNavController
+import com.bumptech.glide.Glide
 import com.das.forui.MainActivity
+import com.das.forui.MainActivity.Youtuber.PLAY_HERE_AUDIO
+import com.das.forui.MainActivity.Youtuber.PLAY_HERE_VIDEO
 import com.das.forui.services.MyService
 import com.das.forui.R
+import com.das.forui.databased.PathSaver
 import com.das.forui.databinding.FragmentDownloadsBinding
+import java.io.File
+import java.text.SimpleDateFormat
+import java.util.Date
+import java.util.Locale
+
 
 class DownloadsPageFragment: Fragment() {
     private var _binding: FragmentDownloadsBinding? = null
     private val binding get() = _binding!!
-    private lateinit var adapter: ArrayAdapter<String>
-    private val ids = mutableListOf<String>()
+    private lateinit var adapter: DownloadedArrayAdapter
+    private val ids = mutableListOf<Uri>()
 
     override fun onCreateView(
         inflater: LayoutInflater,
@@ -30,17 +42,27 @@ class DownloadsPageFragment: Fragment() {
         savedInstanceState: Bundle?
     ): View {
         _binding = FragmentDownloadsBinding.inflate(inflater, container, false)
-        adapter = ArrayAdapter(requireContext(), android.R.layout.simple_list_item_1, mutableListOf())
-
+        adapter = DownloadedArrayAdapter(requireContext(), mutableListOf())
         return binding.root
     }
 
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
+        (activity as MainActivity).hideBottomNav()
+
+        binding.downloadedHistory.adapter = adapter
+
         fetchDataFromDatabase()
+
+
+    }
+
+    override fun onStart() {
+        super.onStart()
         binding.back.setOnClickListener {
             binding.root.findNavController().navigate(R.id.navigation_home)
         }
+
         binding.button2.setOnClickListener {
             (activity as MainActivity).startBanner(false)
             val intent = Intent(requireContext(), MyService::class.java)
@@ -48,83 +70,103 @@ class DownloadsPageFragment: Fragment() {
 
         }
 
+        binding.downloadedHistory.setOnItemClickListener { _, _, position, _ ->
+            val selectedItem = adapter.getItem(position) // Get the item clicked in the list
 
+            val filePath = selectedItem?.pathOfVideo
 
-        val listView: ListView = binding.downloadedHistory
-        listView.adapter = adapter
-        listView.setOnItemClickListener { _, _, position, _ ->
-            val selectedId= ids[position]
-            if(selectedId.endsWith(".mp3")) {
-                val shareIntent = Intent(Intent.ACTION_VIEW) .apply {
-                    type = "audio/*"
-                    putExtra(Intent.EXTRA_TEXT, selectedId)
-                }
-                shareIntent.setClass(requireContext(), FullScreenPlayerActivity::class.java)
-                startActivity(shareIntent)
-            } else if(selectedId.endsWith(".mp4")) {
-                val shareIntent = Intent(Intent.ACTION_VIEW).apply {
-                    type = "video/*"
-                    putExtra(Intent.EXTRA_TEXT, selectedId)
-                }
-                shareIntent.setClass(requireContext(), FullScreenPlayerActivity::class.java)
-                startActivity(shareIntent)
-            } else{
-                (activity as MainActivity).showDialogs("We don't support this type of file")
+            println("here is the file name: $filePath")
+
+            val bundle = Bundle().apply {
+                putString(PLAY_HERE_VIDEO, filePath.toString())
             }
+            findNavController().navigate(
+                R.id.nav_fullscreen,
+                bundle
 
+            )
+
+        }
+
+        binding.downloadedHistory.setOnItemLongClickListener {_, _, position, _ ->
+            val selectedItem = adapter.getItem(position)
+
+            AlertDialog.Builder(requireContext())
+                .setTitle("Are you sure you want to delete this file?")
+                .setPositiveButton("Yes") { _, _ ->
+                    adapter.removeItem(position, selectedItem?.pathOfVideo!!)
+                }
+                .setNegativeButton("No") { _, _ -> }
+                .show()
+            true
         }
     }
 
-        override fun onResume() {
-        super.onResume()
-        (activity as MainActivity).hideBottomNav()
-    }
-
-    override fun onPause() {
-        super.onPause()
-        (activity as MainActivity).showBottomNav()
-    }
 
 
     private fun fetchDataFromDatabase() {
-        val dbHelper = DatabaseHelper1(requireContext())
 
-        val cursor: Cursor? = dbHelper.getResults()
-
-        Log.d("DownloadsFragment", "Query executed, cursor count: ${cursor?.count ?: "null"}")
+        val downloadedListData = mutableListOf<DownloadedListData>()
         val urls = mutableListOf<String>()
 
         ids.clear()
-        cursor?.let {
-            while (it.moveToNext()) {
-                val path = it.getString(it.getColumnIndexOrThrow("path"))
-                val title = it.getString(it.getColumnIndexOrThrow("title"))
-                path?.let { url ->
-                    urls.add("$title ")
-                    ids.add(url)
-                    Log.d("DownloadsFragment", "Watch URL: $title")
-                } ?: run {
-                    Log.e("DownloadsFragment", "Watch URL is null")
+        val pathOfVideos = File(PathSaver().getVideosDownloadPath(requireContext())!!)
+        if (pathOfVideos.exists()) {
+            val fileNames = arrayOfNulls<String>(pathOfVideos.listFiles()!!.size)
+            val pathOfVideosUris = arrayOfNulls<Uri?>(pathOfVideos.listFiles()!!.size)
+            pathOfVideos.listFiles()!!.mapIndexed { index, item ->
+                fileNames[index] = item?.name
+                pathOfVideosUris[index] = item?.toUri()
+
+            }
+            fileNames.zip(pathOfVideosUris).forEach { (fileName, videoUri) ->
+                if (videoUri != null && fileName != null) {
+                    val videoFile = File(pathOfVideos, fileName)
+                    val lastModified = videoFile.lastModified()
+                    val formattedDate = formatDate(lastModified)
+                    val fileSizeFormatted = formatFileSize(videoFile.length())
+                    downloadedListData.add(
+                        DownloadedListData(
+                            title = fileName,
+                            pathOfVideo = videoUri,
+                            thumbnailUri = videoUri,
+                            dateTime = formattedDate,
+                            fileSize = fileSizeFormatted
+                        )
+                    )
+                    videoUri.let { url ->
+                        urls.add(fileName)
+                        ids.add(url)
+                    }
                 }
             }
-            it.close()
-        } ?: run {
-            Log.e("DownloadsFragment", "Cursor is null")
-        }
-            Log.d("DownloadsFragment", "URLs collected: $urls")
-
-            if (urls.isNotEmpty()) {
+            if (downloadedListData.isNotEmpty()) {
                 adapter.clear()
-                adapter.addAll(urls)
+                adapter.addAll(downloadedListData)
                 adapter.notifyDataSetChanged()
             } else {
                 Log.e("DownloadsFragment", "URLs list is empty or null")
             }
+        }
+
     }
 
 
+    private fun formatDate(timestamp: Long): String {
+        val date = Date(timestamp)
+        val dateFormat = SimpleDateFormat("dd/MM/yyyy", Locale.getDefault())
+        return dateFormat.format(date)
+    }
 
 
+    private fun formatFileSize(sizeInBytes: Long): String {
+        return when {
+            sizeInBytes >= 1_073_741_824 -> String.format(Locale.ROOT, "%.2f GB", sizeInBytes / 1_073_741_824.0)
+            sizeInBytes >= 1_048_576 -> String.format(Locale.ROOT, "%.2f MB", sizeInBytes / 1_048_576.0)
+            sizeInBytes >= 1_024 -> String.format(Locale.ROOT, "%.2f KB", sizeInBytes / 1_024.0)
+            else -> String.format(Locale.ROOT, "%d bytes", sizeInBytes)
+        }
+    }
 
 
 
@@ -134,5 +176,55 @@ class DownloadsPageFragment: Fragment() {
     override fun onDestroyView() {
         super.onDestroyView()
         _binding = null
+
+    }
+
+    private data class DownloadedListData(
+        val title: String,
+        val pathOfVideo: Uri,
+        val thumbnailUri: Uri,
+        val dateTime: String,
+        val fileSize: String
+    )
+
+    private class DownloadedArrayAdapter(
+        private val context: Context,
+        private val downloadedLists: MutableList<DownloadedListData>
+    ): ArrayAdapter<DownloadedListData>(
+        context, R.layout.watch_later_list, downloadedLists
+    ){
+
+        override fun getView(position: Int, convertView: View?, parent: ViewGroup): View {
+
+            val view = convertView ?: LayoutInflater.from(context).inflate(R.layout.downloaded_list_item, parent, false)
+
+            val downloadedLists = getItem(position) ?: return view
+            val titleTextView: TextView = view.findViewById(R.id.give_me_title_for_this_video)
+            val thumbnailImageView: ImageView = view.findViewById(R.id.give_me_thumbnail_here)
+            val dateShow: TextView = view.findViewById(R.id.give_me_date_for_this_video)
+            val giveFileSize: TextView = view.findViewById(R.id.give_me_size_for_this_video)
+//            val duration: TextView = view.findViewById(R.id.Watch_video_list_duration)
+
+
+
+            titleTextView.text = downloadedLists.title
+            dateShow.text= downloadedLists.dateTime
+            giveFileSize.text = downloadedLists.fileSize
+//            duration.text= downloadedLists.duration
+
+
+            Glide.with(context)
+                .load(downloadedLists.thumbnailUri)
+                .placeholder(R.mipmap.ic_launcher_ofme)
+                .centerCrop()
+                .into(thumbnailImageView)
+            return view
+        }
+
+        fun removeItem(position: Int, videoId: Uri) {
+            File(videoId.path!!).delete()
+            downloadedLists.removeAt(position)
+            notifyDataSetChanged()
+        }
     }
 }

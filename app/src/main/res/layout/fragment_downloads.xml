@@ -46,19 +46,22 @@
         android:gravity="start"
         android:pointerIcon="arrow"
         app:cornerRadius="@android:dimen/app_icon_size"
+        android:tooltipText="@string/exit_this_page"
         app:icon="@drawable/arrow_back"
         app:layout_constraintBottom_toBottomOf="parent"
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintHorizontal_bias="0.0"
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintTop_toTopOf="parent"
-        app:layout_constraintVertical_bias="0.0" />
+        app:layout_constraintVertical_bias="0.0"
+        tools:targetApi="o" />
 
     <ListView
         android:id="@+id/downloadedHistory"
         android:layout_width="409dp"
-        android:layout_height="615dp"
+        android:layout_height="668dp"
         android:scrollbars="vertical"
+        tools:listitem="@layout/downloaded_list_item"
         app:layout_constraintBottom_toBottomOf="parent"
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintHorizontal_bias="0.0"

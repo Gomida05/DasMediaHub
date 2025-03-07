@@ -16,7 +16,6 @@ import androidx.core.app.NotificationCompat
 import com.chaquo.python.Python
 import com.das.forui.MainActivity
 import com.das.forui.R
-import com.das.forui.databased.DatabaseHelper1
 import com.das.forui.databased.PathSaver
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
@@ -125,7 +124,7 @@ class DownloadingService(private val channelId: String) : Service() {
                             null,
                             null
                         )
-                        DatabaseHelper1(context).insertData(title, path = file.toString())
+
                         Log.e("MainActivity", "here is it \n${file}")
                         Log.d("MainActivity", "File scan initiated for ")
                         forToast =
@@ -168,8 +167,6 @@ class DownloadingService(private val channelId: String) : Service() {
                             null,
                             null
                         )
-                        val databaseHelper1 = DatabaseHelper1(contexts)
-                        databaseHelper1.insertData(title, path = tester)
                         Log.d("MainActivity", "File scan initiated for $tester")
                         forToast =
                             "$title has been downloaded successfully go check it out!"
