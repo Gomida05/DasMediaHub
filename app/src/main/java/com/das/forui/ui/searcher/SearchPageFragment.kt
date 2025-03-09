@@ -48,6 +48,7 @@ import com.das.forui.MainActivity
 import com.das.forui.R
 import com.das.forui.databinding.FragmentSearcherBinding
 import androidx.lifecycle.viewmodel.compose.viewModel
+import com.das.forui.MainActivity.Youtuber.extractor
 import com.das.forui.databased.SearchHistoryDB
 
 
@@ -82,10 +83,6 @@ class SearchPageFragment : Fragment() {
 
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
-        val sentText=arguments?.getString(EXTRA_TEXT).toString()
-        if (sentText != "Search12.23.58/'[0][-"){
-            keyEvent(sentText)
-        }
 
     }
 
@@ -222,8 +219,8 @@ class SearchPageFragment : Fragment() {
 
         try {
             if ((activity as MainActivity).isValidYoutubeURL(editTextText)) {
-                val videoId = MainActivity.Youtuber.extractor(editTextText)
-                val bundled=bundle.apply {
+                val videoId = extractor(editTextText)
+                val bundled = bundle.apply {
                     putString("View_ID", videoId)
                     putString("View_URL", "https://www.youtube.com/watch?v=$videoId")
                 }

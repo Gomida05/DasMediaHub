@@ -8,6 +8,7 @@ import android.util.Log
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
+import android.widget.AdapterView
 import android.widget.ArrayAdapter
 import android.widget.ImageView
 import android.widget.TextView
@@ -48,17 +49,25 @@ class WatchLaterFragment: Fragment() {
     override fun onStart() {
         super.onStart()
 
-        binding.listView.setOnItemLongClickListener { _, _, position, _ ->
-            AlertDialog.Builder(requireContext())
-                .setTitle("Are you sure you want to remove this item?")
-                .setPositiveButton("Yes") { _, _ ->
-                    val selectedId = ids[position]
-                    adapter.removeItem(position, selectedId)
-                }
-                .setNegativeButton("No") { _, _ -> }
-                .show()
-            true
+        binding.listView.setOnItemLongClickListener(object : AdapterView.OnItemLongClickListener {
+            override fun onItemLongClick(
+                parent: AdapterView<*>?,
+                view: View?,
+                position: Int,
+                id: Long
+            ): Boolean {
+                AlertDialog.Builder(requireContext())
+                    .setTitle("Are you sure you want to remove this item?")
+                    .setPositiveButton("Yes") { _, _ ->
+                        val selectedId = ids[position]
+                        adapter.removeItem(position, selectedId)
+                    }
+                    .setNegativeButton("No") { _, _ -> }
+                    .show()
+                return true
+            }
         }
+        )
         binding.listView.setOnItemClickListener { _, _, position, _ ->
             onClickListListener(ids[position])
         }

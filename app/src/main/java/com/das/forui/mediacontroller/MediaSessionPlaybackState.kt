@@ -21,13 +21,11 @@ class MediaSessionPlaybackState(val context: Context) {
                 PlaybackStateCompat.STATE_PLAYING, currentPosition,
                 1F
             )
-            .setActions(PlaybackStateCompat.ACTION_SEEK_TO)
-            .addCustomAction(ACTION_PAUSE, "myPauseButton", R.drawable.pause_icon)
-            .addCustomAction(ACTION_NEXT, "myNextButton", R.drawable.skip_next_24dp)
-            .addCustomAction(
-                ACTION_PREVIOUS,
-                "myPreviousButton",
-                R.drawable.skip_previous_24dp
+            .setActions(
+                PlaybackStateCompat.ACTION_PLAY_PAUSE or
+                PlaybackStateCompat.ACTION_SKIP_TO_NEXT or
+                PlaybackStateCompat.ACTION_SKIP_TO_PREVIOUS or
+                PlaybackStateCompat.ACTION_SEEK_TO
             )
             .addCustomAction(
                 ACTION_ADD_TO_WATCH_LATER, "myFavButton",
@@ -45,10 +43,12 @@ class MediaSessionPlaybackState(val context: Context) {
             .setState(PlaybackStateCompat.STATE_PAUSED, currentPosition,
                 1F
             )
-            .setActions(PlaybackStateCompat.ACTION_SEEK_TO)
-            .addCustomAction(ACTION_PLAY, "myPlayButton", R.drawable.play_arrow_24dp)
-            .addCustomAction(ACTION_NEXT, "myNextButton", R.drawable.skip_next_24dp)
-            .addCustomAction(ACTION_PREVIOUS, "myPreviousButton", R.drawable.skip_previous_24dp)
+            .setActions(
+                PlaybackStateCompat.ACTION_PLAY_PAUSE or
+                PlaybackStateCompat.ACTION_SKIP_TO_NEXT or
+                PlaybackStateCompat.ACTION_SKIP_TO_PREVIOUS or
+                PlaybackStateCompat.ACTION_SEEK_TO
+            )
             .addCustomAction(ACTION_ADD_TO_WATCH_LATER, "myFavButton",
                 if (isAddedToTheDataBased(videoId)) R.drawable.favorite else R.drawable.un_favorite_icon
             )
@@ -68,12 +68,13 @@ class MediaSessionPlaybackState(val context: Context) {
             .setState(PlaybackStateCompat.STATE_PLAYING, currentPosition,
                 1F
             )
-            .setActions(PlaybackStateCompat.ACTION_SEEK_TO)
-            .addCustomAction(ACTION_PAUSE, "myPauseButton", R.drawable.pause_icon)
-            .addCustomAction(ACTION_NEXT, "myNextButton", R.drawable.skip_next_24dp)
-            .addCustomAction(ACTION_PREVIOUS, "myPreviousButton", R.drawable.skip_previous_24dp)
+            .setActions(
+                PlaybackStateCompat.ACTION_PLAY_PAUSE or
+                        PlaybackStateCompat.ACTION_SKIP_TO_NEXT or
+                        PlaybackStateCompat.ACTION_SKIP_TO_PREVIOUS or
+                        PlaybackStateCompat.ACTION_SEEK_TO
+            )
             .setBufferedPosition(currentPosition)
-
         if (isAddedToTheDataBased(video.videoId)){
             db.deleteWatchUrl(video.videoId)
             playbackSate

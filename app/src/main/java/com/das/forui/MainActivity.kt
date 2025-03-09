@@ -27,12 +27,12 @@ import androidx.navigation.fragment.NavHostFragment
 import androidx.navigation.ui.AppBarConfiguration
 import androidx.navigation.ui.setupActionBarWithNavController
 import androidx.navigation.ui.setupWithNavController
-import com.chaquo.python.Python
+import com.chaquo.python.Python.getInstance
 import com.das.forui.MainActivity.Youtuber.PLAY_HERE_AUDIO
 import com.das.forui.MainActivity.Youtuber.PLAY_HERE_VIDEO
+import com.das.forui.MainActivity.Youtuber.pythonInstant
 import com.das.forui.databased.PathSaver
 import com.das.forui.databinding.ActivityMainBinding
-import com.das.forui.ui.videoPlayerLocally.FullScreenPlayerFragment
 import com.google.android.gms.ads.AdRequest
 import com.google.android.gms.ads.AdView
 import com.google.android.gms.ads.MobileAds
@@ -50,6 +50,7 @@ import java.util.regex.Pattern
 
 
 class MainActivity : AppCompatActivity() {
+
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -202,8 +203,7 @@ class MainActivity : AppCompatActivity() {
 
     fun callPythonSearchWithLink(inputText: String): Map<String, Any>? {
         return try {
-            val py = Python.getInstance()
-            val mainFile = py.getModule("main")
+            val mainFile = pythonInstant.getModule("main")
             val variable = mainFile["SearchWithLink"]
             val result = variable?.call("https://www.youtube.com/watch?v=$inputText")
             println("python: $result")
@@ -226,8 +226,7 @@ class MainActivity : AppCompatActivity() {
         createSingleDirectory(path.toString())
         try {
             var forToast: String
-            val py = Python.getInstance()
-            val mainFile = py.getModule("main")
+            val mainFile = pythonInstant.getModule("main")
             val variable = mainFile["DownloadVideo"]
             CoroutineScope(Dispatchers.IO).launch {
                 when (val tester = variable?.call(link, path).toString()) {
@@ -279,8 +278,7 @@ class MainActivity : AppCompatActivity() {
         createSingleDirectory(path.toString())
         try {
             var forToast: String
-            val py = Python.getInstance()
-            val mainFile = py.getModule("main")
+            val mainFile = pythonInstant.getModule("main")
             val variable = mainFile["DownloadMusic"]
             CoroutineScope(Dispatchers.IO).launch {
                 when (val tester = variable?.call(receivedLink, path).toString()) {
@@ -484,6 +482,7 @@ class MainActivity : AppCompatActivity() {
 
 
     object Youtuber{
+        val pythonInstant = getInstance()
         const val PLAY_HERE_VIDEO = "com.das.forui.PLAY_HERE_VIDEO"
         const val PLAY_HERE_AUDIO = "com.das.forui.PLAY_HERE_AUDIO"
         fun extractor(url: String): String? {

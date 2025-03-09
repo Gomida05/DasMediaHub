@@ -17,7 +17,7 @@ android {
         minSdk = 24
         targetSdk = 35
         versionCode = 1
-        versionName = "1.04"
+        versionName = "1.05"
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
         flavorDimensions.add("pyVersion")
         ndk {

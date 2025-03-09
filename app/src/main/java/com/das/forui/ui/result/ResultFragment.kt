@@ -1,6 +1,5 @@
 package com.das.forui.ui.result
 
-
 import android.app.AlertDialog
 import android.os.Bundle
 import android.view.LayoutInflater
@@ -56,7 +55,7 @@ import coil.request.ImageRequest
 import com.bumptech.glide.Glide
 import com.das.forui.MainActivity
 import com.das.forui.databinding.FragmentResultBinding
-import com.chaquo.python.Python
+import com.das.forui.MainActivity.Youtuber.pythonInstant
 import com.das.forui.R
 import com.google.gson.Gson
 import com.google.gson.reflect.TypeToken
@@ -335,8 +334,7 @@ class ResultFragment : Fragment() {
 
     private fun callPythonForSearchVideos(inputText: String): List<SearchResultFromMain>? {
         return try {
-            val py = Python.getInstance()
-            val mainFile = py.getModule("main")
+            val mainFile = pythonInstant.getModule("main")
             val variable = mainFile["Searcher"]?.call(inputText).toString()
             val videoListType = object : TypeToken<List<SearchResultFromMain>>() {}.type
             val videoList: List<SearchResultFromMain> = Gson().fromJson(variable, videoListType)

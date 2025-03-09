@@ -12,6 +12,7 @@ import android.view.ViewGroup
 import android.widget.ArrayAdapter
 import android.widget.ImageView
 import android.widget.TextView
+import androidx.activity.OnBackPressedCallback
 import androidx.core.net.toUri
 import androidx.fragment.app.Fragment
 import androidx.navigation.findNavController
@@ -60,7 +61,7 @@ class DownloadsPageFragment: Fragment() {
     override fun onStart() {
         super.onStart()
         binding.back.setOnClickListener {
-            binding.root.findNavController().navigate(R.id.navigation_home)
+            findNavController().navigateUp()
         }
 
         binding.button2.setOnClickListener {
@@ -100,6 +101,14 @@ class DownloadsPageFragment: Fragment() {
                 .show()
             true
         }
+
+
+        activity?.onBackPressedDispatcher?.addCallback(object : OnBackPressedCallback(true){
+            override fun handleOnBackPressed() {
+               findNavController().navigateUp()
+            }
+        }
+        )
     }
 
 

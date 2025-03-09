@@ -1,6 +1,7 @@
 @file:Suppress("DEPRECATION")
 package com.das.forui.ui.viewer
 
+import android.annotation.SuppressLint
 import android.app.AlertDialog
 import android.content.Context.AUDIO_SERVICE
 import android.content.Intent
@@ -57,12 +58,12 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.core.content.ContextCompat
 import androidx.fragment.app.Fragment
+import androidx.lifecycle.lifecycleScope
 import androidx.navigation.fragment.findNavController
 import coil.compose.AsyncImage
 import coil.request.ImageRequest
 import com.bumptech.glide.Glide
 import com.bumptech.glide.load.resource.bitmap.CircleCrop
-import com.chaquo.python.Python
 import com.das.forui.services.AudioServiceFromUrl
 import com.das.forui.DownloaderClass
 import com.das.forui.MainActivity
@@ -77,16 +78,14 @@ import com.google.android.exoplayer2.Player
 import com.google.android.exoplayer2.ui.PlayerView
 import com.google.gson.Gson
 import com.google.gson.reflect.TypeToken
-import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import java.time.ZonedDateTime
 import java.time.format.DateTimeFormatter
 import java.util.Locale
+import com.das.forui.MainActivity.Youtuber.pythonInstant
 
-
-@Suppress("SourceLockedOrientationActivity")
 
 class ViewerFragment: Fragment() {
     private lateinit var duration: String
@@ -143,7 +142,9 @@ class ViewerFragment: Fragment() {
 
         val videoPlayerHeight = resources.getDimensionPixelSize(R.dimen.video_player_height)
         binding.hideThese.visibility = View.VISIBLE
-        activity?.requestedOrientation = ActivityInfo.SCREEN_ORIENTATION_PORTRAIT
+
+        @SuppressLint("SourceLockedOrientationActivity")
+        (activity as MainActivity).requestedOrientation = ActivityInfo.SCREEN_ORIENTATION_PORTRAIT
         setTitle.visibility = View.GONE
         binding.videoPlayerLocally.layoutParams.height = videoPlayerHeight
         val drawable = ContextCompat.getDrawable(requireContext(), R.drawable.fullscreen_24dp)
@@ -184,8 +185,8 @@ class ViewerFragment: Fragment() {
                 .into(binding.channelImageVideoView)
 
         } else {
-            if (isAdded) {
-                CoroutineScope(Dispatchers.IO).launch {
+            if (isAdded && _binding!= null) {
+                viewLifecycleOwner.lifecycleScope.launch {
                     val videoDetails = (activity as MainActivity).callPythonSearchWithLink(videoID)
 
                     withContext(Dispatchers.Main) {
@@ -261,6 +262,19 @@ class ViewerFragment: Fragment() {
     override fun onStart() {
         super.onStart()
 
+
+        exoPlayer?.addListener(myExoPlayerListener())
+        gestureDetector = GestureDetector(requireContext(), gestureDetector())
+
+        playerView.setOnTouchListener { v, event ->
+            if (event.action == MotionEvent.ACTION_UP) {
+                v.performClick()
+            }
+
+            // Pass the event to GestureDetector
+            gestureDetector.onTouchEvent(event)
+            true
+        }
 
         binding.giveMeTitle.setOnClickListener {
             AlertDialog.Builder(requireContext())
@@ -385,6 +399,7 @@ class ViewerFragment: Fragment() {
             popBackStack()
             navigate(R.id.nav_video_viewer, bundle)
         }
+
     }
 
 
@@ -612,86 +627,39 @@ class ViewerFragment: Fragment() {
 
     private fun playVideo(uri: String) {
         try {
-
-            CoroutineScope(Dispatchers.IO).launch {
-                val py = Python.getInstance()
-                val mainFile = py.getModule("main")
-                val variable = mainFile["get_video_url"]
-                val result = variable?.call("https://www.youtube.com/watch?v=$uri").toString()
-                if (result != "False" && isAdded) {
-                    url = result
-                    withContext(Dispatchers.Main) {
-                        exoPlayer?.let {
-                            it.stop()
-                            it.release()
-                        }
-                        println("Video URL for ExoPlayer: $url")
-                        exoPlayer = ExoPlayer.Builder(requireContext()).build()
+            if (isAdded) {
+                viewLifecycleOwner.lifecycleScope.launch {
+                    val mainFile = pythonInstant.getModule("main")
+                    val variable = mainFile["get_video_url"]
+                    val result = variable?.call("https://www.youtube.com/watch?v=$uri").toString()
+                    if (result != "False") {
+                        url = result
+                        withContext(Dispatchers.Main) {
+                            exoPlayer?.let {
+                                it.stop()
+                                it.release()
+                            }
+                            println("Video URL for ExoPlayer: $url")
+                            exoPlayer = ExoPlayer.Builder(requireContext()).build()
 //                        val subtitleUri = listOf(MediaItem.Subtitle("${requireContext().cacheDir}/subtitles.vtt".toUri(), MimeTypes.TEXT_VTT, "en"))
-                        val mediaItem = MediaItem.fromUri(url)
+                            val mediaItem = MediaItem.fromUri(url)
 //                        setSubtitles(subtitleUri)
-                        exoPlayer?.setMediaItem(mediaItem)
-                        playerView.player = exoPlayer
-                        exoPlayer?.prepare()
-                        exoPlayer?.play()
-                        requestAudioFocus()
-                    }
-                } else {
-                    withContext(Dispatchers.Main) {
-                        (activity as MainActivity).showDialogs("Something went wrong $result")
-                        println("there you go an error $result")
-                    }
-                }
-            }
-
-
-
-
-            exoPlayer?.addListener(object : Player.Listener {
-                override fun onPlaybackStateChanged(state: Int) {
-                    super.onPlaybackStateChanged(state)
-                    if (state == Player.STATE_ENDED) {
-                        playThisOne(2)
-//                        playVideo("https://rr1---sn-uigxx03-ajtl.googlevideo.com/videoplayback?expire=1733809712&ei=0IFXZ4yDM8nLmLAP0KuXkQs&ip=2a04%3A4a43%3A977f%3Af392%3A488%3Af57f%3A2e91%3Af970&id=o-AP1jvq5SB4PyoIxftzFcyDhnOoJYtFkz6gwzvCV4dZKr&itag=18&source=youtube&requiressl=yes&xpc=EgVo2aDSNQ%3D%3D&met=1733788112%2C&mh=SH&mm=31%2C29&mn=sn-uigxx03-ajtl%2Csn-aigzrn7e&ms=au%2Crdu&mv=m&mvi=1&pl=57&rms=au%2Cau&pcm2=yes&initcwndbps=1001250&bui=AQn3pFQRRCfZ-thiT9XXa8gdCyODGraPQCWec-TG-n3No2CqTbAVSg6FUqsvPEtkTSDOLoz-FGRKjDsp&vprv=1&mime=video%2Fmp4&rqh=1&cnr=14&ratebypass=yes&dur=903.093&lmt=1725726923730991&mt=1733787646&fvip=4&fexp=51326932%2C51335594%2C51347747&c=ANDROID_VR&txp=5309224&sparams=expire%2Cei%2Cip%2Cid%2Citag%2Csource%2Crequiressl%2Cxpc%2Cpcm2%2Cbui%2Cvprv%2Cmime%2Crqh%2Ccnr%2Cratebypass%2Cdur%2Clmt&sig=AJfQdSswRQIgZYrNHQWM0OMLTt-ZuAruMoa1rHNpXGmSZSSp2Y3b8d4CIQDruSFUA4ppu_RurRrSokhMKFZg7kHtWm2rwpxMeRGRqQ%3D%3D&lsparams=met%2Cmh%2Cmm%2Cmn%2Cms%2Cmv%2Cmvi%2Cpl%2Crms%2Cinitcwndbps&lsig=AGluJ3MwRQIgd2lflxQvzlD9TkorrTdzHil3a7X_mA7HUlg9HSrekIQCIQCPEHdGpJ2YfrK_nYrSqnNvVpBBgG2SAOYZPDa6DIkzzA%3D%3D")
-                    }
-                }
-
-                override fun onPlayWhenReadyChanged(
-                    playWhenReady: Boolean,
-                    reason: Int
-                ) {
-                    super.onPlayWhenReadyChanged(playWhenReady, reason)
-                    if (playWhenReady) {
-                        isPlaying = true
-                        println("service playing")
-                        requestAudioFocus()
-                    } else {
-                        isPlaying = false
-                        println("service pausing")
-                        releaseAudioFocus()
-                    }
-                }
-            })
-            gestureDetector =
-                GestureDetector(
-                    requireContext(),
-                    object : GestureDetector.SimpleOnGestureListener() {
-                        override fun onDoubleTap(e: MotionEvent): Boolean {
-                            handleDoubleTap(e)
-                            return super.onDoubleTap(e)
+                            exoPlayer?.setMediaItem(mediaItem)
+                            playerView.player = exoPlayer
+                            exoPlayer?.prepare()
+                            exoPlayer?.play()
+                            requestAudioFocus()
                         }
-                    })
-
-            // Set OnTouchListener to detect touch events and pass them to the GestureDetector
-            playerView.setOnTouchListener { v, event ->
-                if (event.action == MotionEvent.ACTION_UP) {
-                    v.performClick()
+                    } else {
+                        withContext(Dispatchers.Main) {
+                            (activity as MainActivity).showDialogs("Something went wrong $result")
+                            println("there you go an error $result")
+                        }
+                    }
                 }
-
-                // Pass the event to GestureDetector
-                gestureDetector.onTouchEvent(event)
-                true
             }
+
+
         }
          catch (e: Exception) {
             println("error found in this ${e.message}")
@@ -816,13 +784,13 @@ class ViewerFragment: Fragment() {
 
 
 
+    @SuppressLint("SourceLockedOrientationActivity")
     private fun toggleFullScreen() {
 
         if (isFullScreen) {
             val videoPlayerHeight = resources.getDimensionPixelSize(R.dimen.video_player_height)
             binding.hideThese.visibility = View.VISIBLE
-//            view?.findViewById<LinearLayout>(R.id.upper_controller_of_first)?.visibility= View.VISIBLE
-            activity?.requestedOrientation= ActivityInfo.SCREEN_ORIENTATION_PORTRAIT
+            (activity as MainActivity).requestedOrientation= ActivityInfo.SCREEN_ORIENTATION_PORTRAIT
             view?.findViewById<TextView>(R.id.set_title_over_view)?.visibility= View.GONE
             binding.videoPlayerLocally.layoutParams.height = videoPlayerHeight
 
@@ -930,6 +898,46 @@ class ViewerFragment: Fragment() {
 
 
 
+    private fun myExoPlayerListener():Player.Listener {
+
+        return object : Player.Listener {
+
+            override fun onPlaybackStateChanged(state: Int) {
+                super.onPlaybackStateChanged(state)
+                if (state == Player.STATE_ENDED) {
+                    playThisOne(1)
+//                        playVideo("https://rr1---sn-uigxx03-ajtl.googlevideo.com/videoplayback?expire=1733809712&ei=0IFXZ4yDM8nLmLAP0KuXkQs&ip=2a04%3A4a43%3A977f%3Af392%3A488%3Af57f%3A2e91%3Af970&id=o-AP1jvq5SB4PyoIxftzFcyDhnOoJYtFkz6gwzvCV4dZKr&itag=18&source=youtube&requiressl=yes&xpc=EgVo2aDSNQ%3D%3D&met=1733788112%2C&mh=SH&mm=31%2C29&mn=sn-uigxx03-ajtl%2Csn-aigzrn7e&ms=au%2Crdu&mv=m&mvi=1&pl=57&rms=au%2Cau&pcm2=yes&initcwndbps=1001250&bui=AQn3pFQRRCfZ-thiT9XXa8gdCyODGraPQCWec-TG-n3No2CqTbAVSg6FUqsvPEtkTSDOLoz-FGRKjDsp&vprv=1&mime=video%2Fmp4&rqh=1&cnr=14&ratebypass=yes&dur=903.093&lmt=1725726923730991&mt=1733787646&fvip=4&fexp=51326932%2C51335594%2C51347747&c=ANDROID_VR&txp=5309224&sparams=expire%2Cei%2Cip%2Cid%2Citag%2Csource%2Crequiressl%2Cxpc%2Cpcm2%2Cbui%2Cvprv%2Cmime%2Crqh%2Ccnr%2Cratebypass%2Cdur%2Clmt&sig=AJfQdSswRQIgZYrNHQWM0OMLTt-ZuAruMoa1rHNpXGmSZSSp2Y3b8d4CIQDruSFUA4ppu_RurRrSokhMKFZg7kHtWm2rwpxMeRGRqQ%3D%3D&lsparams=met%2Cmh%2Cmm%2Cmn%2Cms%2Cmv%2Cmvi%2Cpl%2Crms%2Cinitcwndbps&lsig=AGluJ3MwRQIgd2lflxQvzlD9TkorrTdzHil3a7X_mA7HUlg9HSrekIQCIQCPEHdGpJ2YfrK_nYrSqnNvVpBBgG2SAOYZPDa6DIkzzA%3D%3D")
+                }
+            }
+
+            override fun onPlayWhenReadyChanged(
+                playWhenReady: Boolean,
+                reason: Int
+            ) {
+                super.onPlayWhenReadyChanged(playWhenReady, reason)
+                if (playWhenReady) {
+                    isPlaying = true
+                    println("service playing")
+                    requestAudioFocus()
+                } else {
+                    isPlaying = false
+                    println("service pausing")
+                    releaseAudioFocus()
+                }
+            }
+
+        }
+    }
+    private fun gestureDetector(): GestureDetector.SimpleOnGestureListener {
+
+        return object : GestureDetector.SimpleOnGestureListener() {
+            override fun onDoubleTap(e: MotionEvent): Boolean {
+                handleDoubleTap(e)
+                return super.onDoubleTap(e)
+            }
+        }
+    }
+
 
 
     private fun hideSystemUI() {
@@ -950,8 +958,7 @@ class ViewerFragment: Fragment() {
     private fun callPythonSearchSuggestion(inputText: String): List<Video>? {
         return try {
 
-            val py = Python.getInstance()
-            val mainFile = py.getModule("main")
+            val mainFile = pythonInstant.getModule("main")
             val getResultFromPython = mainFile["Searcher"]?.call(inputText).toString()
             val videoListType = object : TypeToken<List<Video>>() {}.type
             Gson().fromJson(getResultFromPython, videoListType)

@@ -1,8 +1,8 @@
-@file:Suppress("DEPRECATION")
 package com.das.forui.ui.videoPlayerLocally
 
+import android.annotation.SuppressLint
+import android.content.pm.ActivityInfo
 import android.media.AudioManager
-import android.net.Uri
 import android.os.Bundle
 import android.view.LayoutInflater
 import android.view.View
@@ -21,12 +21,13 @@ import com.das.forui.R
 import com.das.forui.databinding.FullScreenPlayerBinding
 import com.google.android.exoplayer2.ExoPlayer
 import com.google.android.exoplayer2.MediaItem
-import com.google.android.material.bottomnavigation.BottomNavigationView
+import com.google.android.exoplayer2.MediaItem.fromUri
 
 
 class FullScreenPlayerFragment: Fragment() {
     private var _binding: FullScreenPlayerBinding? = null
     private val binding get() = _binding!!
+    @Suppress("DEPRECATION")
     private var exoPlayer: ExoPlayer? = null
 
     private lateinit var audioManager: AudioManager
@@ -45,16 +46,25 @@ class FullScreenPlayerFragment: Fragment() {
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
         (activity as MainActivity).hideBottomNav()
+        @Suppress("DEPRECATION")
         exoPlayer = ExoPlayer.Builder(requireContext()).build()
+
+//        @SuppressLint("SourceLockedOrientationActivity")
+        (activity as MainActivity).requestedOrientation = ActivityInfo.SCREEN_ORIENTATION_SENSOR_LANDSCAPE
 
         audioManager = requireContext().getSystemService(AUDIO_SERVICE) as AudioManager
         val videoUri = arguments?.getString(PLAY_HERE_VIDEO)
         val audioUri = arguments?.getString(PLAY_HERE_AUDIO)
         if (!videoUri.isNullOrEmpty()){
-            playVideo(videoUri.toUri())
+            playVideo(
+                fromUri(videoUri.toUri())
+            )
         }
         else if(!audioUri.isNullOrEmpty()){
-            playAudio(audioUri.toUri())
+
+            playAudio(
+                fromUri(audioUri.toUri())
+            )
         }
 
 
@@ -62,10 +72,17 @@ class FullScreenPlayerFragment: Fragment() {
             Toast.makeText(requireContext(), "coming soon!", Toast.LENGTH_SHORT).show()
         }
 
-        (activity as MainActivity).onBackPressedDispatcher.addCallback(object : OnBackPressedCallback(true) {
+        activity?.onBackPressedDispatcher?.addCallback(object : OnBackPressedCallback(true) {
             override fun handleOnBackPressed() {
-                exoPlayer?.release()
-                hideSystemUI()
+                exoPlayer?.let {
+                    it.stop()
+                    it.release()
+                }
+
+                @SuppressLint("SourceLockedOrientationActivity")
+                activity?.requestedOrientation = ActivityInfo.SCREEN_ORIENTATION_PORTRAIT
+
+                showSystemUI()
                 findNavController().navigateUp()
             }
         })
@@ -74,34 +91,35 @@ class FullScreenPlayerFragment: Fragment() {
 
 
 
-    private fun playVideo(videoUri: Uri) {
-        println("Playing video from URI: $videoUri")
+    private fun playVideo(@Suppress("DEPRECATION") mediaItem: MediaItem) {
         hideSystemUI()
         val playerView = binding.startVideoPlayerLocally
-        val mediaItem = MediaItem.fromUri(videoUri)
         playerView.player = exoPlayer
         playerView.keepScreenOn = true
-        exoPlayer?.setMediaItem(mediaItem)
-        exoPlayer?.prepare()
-        exoPlayer?.play()
+        exoPlayer?.let {
+            it.setMediaItem(mediaItem)
+            it.prepare()
+            it.play()
+        }
         requestAudioFocus(exoPlayer)
     }
 
-    private fun playAudio(audioUri: Uri) {
+    private fun playAudio(@Suppress("DEPRECATION") mediaItem: MediaItem) {
         showSystemUI()
         val playerView = binding.startVideoPlayerLocally
-        val mediaItem = MediaItem.fromUri(audioUri)
         playerView.player = exoPlayer
         playerView.setBackgroundResource(R.drawable.music_note_24dp)
         playerView.keepScreenOn = false
-        exoPlayer?.setMediaItem(mediaItem)
-        exoPlayer?.prepare()
-        exoPlayer?.play()
+        exoPlayer?.let {
+            it.setMediaItem(mediaItem)
+            it.prepare()
+            it.play()
+        }
         requestAudioFocus(exoPlayer)
     }
 
 
-    private   fun requestAudioFocus(exoPlayer: ExoPlayer?) {
+    private fun requestAudioFocus(@Suppress("DEPRECATION") exoPlayer: ExoPlayer?) {
         audioFocusRequest = AudioManager.OnAudioFocusChangeListener { focusChange ->
             when (focusChange) {
                 AudioManager.AUDIOFOCUS_LOSS -> {
@@ -125,6 +143,7 @@ class FullScreenPlayerFragment: Fragment() {
         }
 
         // Request audio focus when app starts
+        @Suppress("DEPRECATION")
         val result = audioManager.requestAudioFocus(
             audioFocusRequest!!,
             AudioManager.STREAM_MUSIC,
@@ -137,7 +156,9 @@ class FullScreenPlayerFragment: Fragment() {
     }
 
     private fun hideSystemUI() {
-        (activity as MainActivity).window.decorView.systemUiVisibility = (
+
+        @Suppress("DEPRECATION")
+        activity?.window?.decorView?.systemUiVisibility = (
                 View.SYSTEM_UI_FLAG_FULLSCREEN or
                         View.SYSTEM_UI_FLAG_HIDE_NAVIGATION or
                         View.SYSTEM_UI_FLAG_IMMERSIVE_STICKY
@@ -147,6 +168,7 @@ class FullScreenPlayerFragment: Fragment() {
 
 
     private fun showSystemUI() {
+        @Suppress("DEPRECATION")
         (activity as MainActivity).window.decorView.systemUiVisibility = View.SYSTEM_UI_FLAG_VISIBLE
     }
 
@@ -156,12 +178,15 @@ class FullScreenPlayerFragment: Fragment() {
         binding.startVideoPlayerLocally.useController = !isInPictureInPictureMode
     }
 
-    override fun onDestroyView() {
-        super.onDestroyView()
-        showSystemUI()
-    }
     override fun onDestroy() {
         super.onDestroy()
-        showSystemUI()
+
+        @SuppressLint("SourceLockedOrientationActivity")
+        (activity as MainActivity).requestedOrientation = ActivityInfo.SCREEN_ORIENTATION_PORTRAIT
+
+        exoPlayer?.let {
+            it.stop()
+            it.release()
+        }
     }
 }
