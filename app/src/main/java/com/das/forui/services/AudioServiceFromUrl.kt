@@ -32,6 +32,7 @@ import com.das.forui.ui.viewer.ViewerFragment.Video
 import com.google.android.exoplayer2.ExoPlayer
 import com.google.android.exoplayer2.MediaItem
 import com.google.android.exoplayer2.Player
+import kotlin.properties.Delegates
 
 class AudioServiceFromUrl : Service() {
 
@@ -45,6 +46,7 @@ class AudioServiceFromUrl : Service() {
     lateinit var videoId: String
     private lateinit var durationFromActivity: String
     private var audioFocusRequest: AudioFocusRequest? = null
+    private var exoPlayerDuration by Delegates.notNull<Long>()
 
 
     override fun onCreate() {
@@ -53,18 +55,18 @@ class AudioServiceFromUrl : Service() {
         audioManager = getSystemService(AudioManager::class.java)
         exoPlayer = ExoPlayer.Builder(this).build()
 
-
-        val mediaButtonReceiver = PendingIntent.getBroadcast(
-            this, 0,
-            Intent(Intent.ACTION_MEDIA_BUTTON),
-            PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
-        )
-
         mediaSession = MediaSessionCompat(this, "AudioService").apply {
             isActive = true
             setFlags(MediaSessionCompat.FLAG_HANDLES_MEDIA_BUTTONS or MediaSessionCompat.FLAG_HANDLES_TRANSPORT_CONTROLS)
-            setMediaButtonReceiver(mediaButtonReceiver)
+
+            setMediaButtonReceiver(PendingIntent.getBroadcast(
+                this@AudioServiceFromUrl, 0,
+                Intent(Intent.ACTION_MEDIA_BUTTON),
+                PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE)
+            )
         }
+
+
 
 
 
@@ -82,6 +84,7 @@ class AudioServiceFromUrl : Service() {
         videoViews = intent?.getStringExtra("viewNumber").toString()
         videoDate = intent?.getStringExtra("videoDate").toString()
         durationFromActivity = intent?.getStringExtra("duration").toString()
+        exoPlayerDuration = intent?.getLongExtra("exoPlayerDuration", exoPlayer?.duration!!)!!
 
 
 
@@ -160,7 +163,7 @@ class AudioServiceFromUrl : Service() {
                         MediaMetadataCompat.METADATA_KEY_ALBUM,
                         "unknown album"
                     )
-                    .putLong(MediaMetadataCompat.METADATA_KEY_DURATION, exoPlayer?.duration!!)
+                    .putLong(MediaMetadataCompat.METADATA_KEY_DURATION, exoPlayerDuration)
 
 
                 getBitmapFromUrl("https://img.youtube.com/vi/$videoId/0.jpg") { bitmap ->
@@ -207,7 +210,7 @@ class AudioServiceFromUrl : Service() {
                 MediaMetadataCompat.METADATA_KEY_ALBUM,
                 "unknown album"
             )
-            .putLong(MediaMetadataCompat.METADATA_KEY_DURATION, exoPlayer?.duration!!)
+            .putLong(MediaMetadataCompat.METADATA_KEY_DURATION, exoPlayerDuration)
 
 
         getBitmapFromUrl("https://img.youtube.com/vi/$videoId/0.jpg") { bitmap ->
@@ -225,7 +228,7 @@ class AudioServiceFromUrl : Service() {
         }
 
 
-        when (intent?.action) {
+        when (intent.action) {
 
             ACTION_START -> {
 
@@ -249,7 +252,7 @@ class AudioServiceFromUrl : Service() {
                         MediaMetadataCompat.METADATA_KEY_ALBUM,
                         "unknown album"
                     )
-                    .putLong(MediaMetadataCompat.METADATA_KEY_DURATION, exoPlayer?.duration!!)
+                    .putLong(MediaMetadataCompat.METADATA_KEY_DURATION, exoPlayerDuration)
 
 
                 getBitmapFromUrl("https://img.youtube.com/vi/$videoId/0.jpg") { bitmap ->

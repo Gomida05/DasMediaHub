@@ -35,7 +35,6 @@
 
     <application
         android:name=".MainApplication"
-
         android:allowBackup="true"
         android:dataExtractionRules="@xml/data_extraction_rules"
         android:enableOnBackInvokedCallback="true"
@@ -108,7 +107,9 @@
                 <action android:name="com.das.forui.ACTION_CONTROL_MEDIA" />
             </intent-filter>
         </receiver>
-        <receiver android:name=".mediacontroller.ForUiMediaButtonReceiver" android:enabled="true" android:exported="true">
+
+        <receiver android:name=".mediacontroller.ForUiMediaButtonReceiver"
+            android:enabled="true" android:exported="true">
             <intent-filter>
                 <action android:name="android.intent.action.MEDIA_BUTTON" />
             </intent-filter>

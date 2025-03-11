@@ -3,12 +3,8 @@ package com.das.forui.ui.viewer
 
 import android.annotation.SuppressLint
 import android.app.AlertDialog
-import android.content.Context.AUDIO_SERVICE
 import android.content.Intent
 import android.content.pm.ActivityInfo
-import android.media.AudioAttributes
-import android.media.AudioFocusRequest
-import android.media.AudioManager
 import android.os.Build
 import android.os.Bundle
 import android.util.Log
@@ -84,6 +80,8 @@ import java.time.ZonedDateTime
 import java.time.format.DateTimeFormatter
 import java.util.Locale
 import com.das.forui.MainActivity.Youtuber.pythonInstant
+import com.google.android.exoplayer2.trackselection.DefaultTrackSelector
+import com.google.android.exoplayer2.trackselection.TrackSelectionParameters
 import kotlinx.coroutines.CoroutineScope
 
 
@@ -92,8 +90,6 @@ class ViewerFragment: Fragment() {
     private lateinit var videoURL: String
     private lateinit var videoTitle: String
     private lateinit var videoID: String
-    private lateinit var audioManager: AudioManager
-    private var audioFocusRequest: AudioFocusRequest? = null
     private lateinit var playerView: PlayerView
     private var _binding: VideoViewerBinding? = null
     var isPlaying = false
@@ -106,6 +102,9 @@ class ViewerFragment: Fragment() {
     private val fastForwardInterval: Long = 10000
     private val rewindInterval: Long = 10000
     private lateinit var channelThumbnail: String
+    private lateinit var channelName: String
+    private lateinit var dateOfVideo: String
+    private lateinit var viewNumber: String
 
     override fun onCreateView(
         inflater: LayoutInflater,
@@ -134,9 +133,9 @@ class ViewerFragment: Fragment() {
         videoTitle = arguments?.getString("View_Title").toString()
         videoURL = arguments?.getString("View_URL").toString()
         channelThumbnail = arguments?.getString("channel_Thumbnails").toString()
-        var viewNumber = arguments?.getString("View_Number")
-        var dateOfVideo = arguments?.getString("dateOfVideo").toString()
-        var channelName = arguments?.getString("channelName").toString()
+        viewNumber = arguments?.getString("View_Number").toString()
+        dateOfVideo = arguments?.getString("dateOfVideo").toString()
+        channelName = arguments?.getString("channelName").toString()
         duration = arguments?.getString("duration").toString()
 
 
@@ -281,7 +280,6 @@ class ViewerFragment: Fragment() {
                 .setTitle("Descriptions")
                 .setMessage(descriptions)
                 .setNegativeButton("Close") { _, _ ->
-
                 }
                 .show()
         }
@@ -295,14 +293,12 @@ class ViewerFragment: Fragment() {
                         action = AudioServiceFromUrl.ACTION_START
                         putExtra("videoId", videoID)
                         putExtra("media_url", url)
-                        putExtra("title", binding.giveMeTitle.text)
-                        putExtra(
-                            "channelName",
-                            binding.giveMeViewChannelName.text
-                        )
-                        putExtra("viewNumber", binding.giveMeViewNumber.text)
-                        putExtra("videoDate", binding.giveMeViewDate.text)
+                        putExtra("title", videoTitle)
+                        putExtra("channelName", channelName)
+                        putExtra("viewNumber",viewNumber)
+                        putExtra("videoDate", dateOfVideo)
                         putExtra("duration", duration)
+                        putExtra("exoPlayerDuration", exoPlayer?.duration!!)
                     }
                     activity?.startService(playIntent)
                 }
@@ -628,6 +624,12 @@ class ViewerFragment: Fragment() {
     private fun playVideo(uri: String) {
         try {
             if (isAdded) {
+                val trackSelector = DefaultTrackSelector(requireContext())
+                val trackSelectionParameters = TrackSelectionParameters.Builder()
+                    .setMaxVideoBitrate(100_000_000)
+                    .build()
+                trackSelector.setParameters(trackSelectionParameters)
+
                 CoroutineScope(Dispatchers.IO).launch {
                     val mainFile = pythonInstant.getModule("main")
                     val variable = mainFile["get_video_url"]
@@ -648,7 +650,7 @@ class ViewerFragment: Fragment() {
                             playerView.player = exoPlayer
                             exoPlayer?.prepare()
                             exoPlayer?.play()
-                            requestAudioFocus()
+                            MainActivity().requestAudioFocusFromMain(requireContext(), exoPlayer)
                         }
                     } else {
                         withContext(Dispatchers.Main) {
@@ -697,82 +699,23 @@ class ViewerFragment: Fragment() {
             val newPosition = currentPosition - rewindInterval
             it.seekTo(newPosition)
         }
-    }
 
-    private val audioFocusChangeListener = AudioManager.OnAudioFocusChangeListener { focusChange ->
-
-        when (focusChange) {
-            AudioManager.AUDIOFOCUS_GAIN -> {
-                // Audio focus gained, resume playback if it was paused
-                if (exoPlayer?.playWhenReady == false) {
-                    exoPlayer?.playWhenReady=true
-                }
-            }
-            AudioManager.AUDIOFOCUS_LOSS -> {
-                if (exoPlayer?.playWhenReady == true) {
-                    exoPlayer?.pause()
-                }
-            }
-            AudioManager.AUDIOFOCUS_LOSS_TRANSIENT -> {
-                // Temporarily lost audio focus (e.g., incoming call), pause playback
-                if (exoPlayer?.playWhenReady == true) {
-                    exoPlayer?.pause()
-                }
-            }
-            AudioManager.AUDIOFOCUS_LOSS_TRANSIENT_CAN_DUCK -> {
-                // Lost audio focus but can duck (e.g., lower volume)
-                if (exoPlayer?.playWhenReady == true) {
-                    exoPlayer?.volume = 0.1f // Lower volume when focus is lost transiently
-                }
-            }
-        }
     }
 
 
 
-    private fun requestAudioFocus() {
-
-        audioManager = requireContext().getSystemService(AUDIO_SERVICE) as AudioManager
-
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
-            val audioAttributes = AudioAttributes.Builder()
-                .setUsage(AudioAttributes.USAGE_MEDIA)
-                .setContentType(AudioAttributes.CONTENT_TYPE_MUSIC)
-                .build()
-
-            audioFocusRequest = AudioFocusRequest.Builder(AudioManager.AUDIOFOCUS_GAIN)
-                .setAudioAttributes(audioAttributes)
-                .setOnAudioFocusChangeListener(audioFocusChangeListener)
-                .build()
-
-            val focusRequestResult = audioManager.requestAudioFocus(audioFocusRequest!!)
-            if (focusRequestResult == AudioManager.AUDIOFOCUS_REQUEST_FAILED) {
-                Log.e("AudioService", "Failed to gain audio focus")
-            }
-        } else {
-            // For older versions, use the deprecated method
-            val result = audioManager.requestAudioFocus(
-                audioFocusChangeListener,
-                AudioManager.STREAM_MUSIC,
-                AudioManager.AUDIOFOCUS_GAIN
-            )
-            if (result == AudioManager.AUDIOFOCUS_REQUEST_FAILED) {
-                Log.e("AudioService", "Failed to gain audio focus")
-            }
-        }
-    }
 
 
     private fun releaseAudioFocus() {
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
-            audioFocusRequest?.let {
-                audioManager.abandonAudioFocusRequest(it)
+//            audioFocusRequest?.let {
+//                audioManager.abandonAudioFocusRequest(it)
                 Log.d("AudioService", "Audio focus released for API >= 26")
-            } ?: run {
+//            } ?: run {
                 Log.w("AudioService", "audioFocusRequest is null, cannot release focus")
-            }
+//            }
         } else {
-            audioManager.abandonAudioFocus(audioFocusChangeListener)
+//            audioManager.abandonAudioFocus(audioFocusChangeListener)
             Log.d("AudioService", "Audio focus released for API < 26")
         }
     }
@@ -918,7 +861,7 @@ class ViewerFragment: Fragment() {
                 if (playWhenReady) {
                     isPlaying = true
                     println("service playing")
-                    requestAudioFocus()
+                    MainActivity().requestAudioFocusFromMain(requireContext(), exoPlayer)
                 } else {
                     isPlaying = false
                     println("service pausing")

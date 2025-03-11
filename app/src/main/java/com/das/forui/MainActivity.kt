@@ -1,7 +1,7 @@
+@file:Suppress("DEPRECATION")
 package com.das.forui
 
 import android.Manifest.permission.POST_NOTIFICATIONS
-import android.annotation.SuppressLint
 import android.app.NotificationChannel
 import android.app.NotificationManager
 import android.app.PictureInPictureParams
@@ -10,9 +10,11 @@ import android.content.Intent
 import android.content.Intent.EXTRA_STREAM
 import android.content.Intent.EXTRA_TEXT
 import android.content.pm.PackageManager
+import android.media.AudioManager
 import android.media.MediaScannerConnection
 import android.net.Uri
 import android.os.Build
+import android.os.Build.VERSION_CODES.TIRAMISU
 import android.os.Bundle
 import android.util.Log
 import android.util.Rational
@@ -34,6 +36,7 @@ import com.das.forui.MainActivity.Youtuber.PLAY_HERE_VIDEO
 import com.das.forui.MainActivity.Youtuber.pythonInstant
 import com.das.forui.databased.PathSaver
 import com.das.forui.databinding.ActivityMainBinding
+import com.google.android.exoplayer2.ExoPlayer
 import com.google.android.gms.ads.AdRequest
 import com.google.android.gms.ads.AdView
 import com.google.android.gms.ads.MobileAds
@@ -52,7 +55,6 @@ import java.util.regex.Pattern
 
 
 class MainActivity : AppCompatActivity() {
-
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -89,7 +91,7 @@ class MainActivity : AppCompatActivity() {
         super.onStart()
         createNotificationChannel()
 
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+        if (Build.VERSION.SDK_INT >= TIRAMISU) {
             if (ContextCompat.checkSelfPermission(this, POST_NOTIFICATIONS)
                 != PackageManager.PERMISSION_GRANTED
             ) {
@@ -299,6 +301,7 @@ class MainActivity : AppCompatActivity() {
 
 
 
+
     fun downloadMusic(receivedLink: String, title: String, context: Context) {
         val path = PathSaver().getMusicDownloadPath(context)
         println("given path \n$path")
@@ -351,7 +354,7 @@ class MainActivity : AppCompatActivity() {
         }
     }
 
-    @SuppressLint("MissingPermission")
+
     fun downloadCompleted(message: String) {
 
 
@@ -365,10 +368,18 @@ class MainActivity : AppCompatActivity() {
             .setGroup("message")
             .build()
         val notificationManager = NotificationManagerCompat.from(this@MainActivity)
+        if (ActivityCompat.checkSelfPermission(
+                this,
+                POST_NOTIFICATIONS
+            ) != PackageManager.PERMISSION_GRANTED
+        ) {
+            ActivityCompat.requestPermissions(this, arrayOf(POST_NOTIFICATIONS), 0)
+            return
+        }
         notificationManager.notify(notificationId, notification)
     }
 
-    @SuppressLint("MissingPermission")
+
     fun alertUserError(message: String?) {
         // Use applicationContext to ensure global access
         val context = application.applicationContext
@@ -392,8 +403,15 @@ class MainActivity : AppCompatActivity() {
             .setCategory(NotificationCompat.CATEGORY_SERVICE) // Heads-up notification
             .build()
 
-        // Get the NotificationManager system service and display the notification
         val notificationManager = NotificationManagerCompat.from(context)
+        if (ActivityCompat.checkSelfPermission(
+                this,
+                POST_NOTIFICATIONS
+            ) != PackageManager.PERMISSION_GRANTED
+        ) {
+            ActivityCompat.requestPermissions(this, arrayOf(POST_NOTIFICATIONS), 0)
+            return
+        }
         notificationManager.notify(1001, notification)  // Unique ID for your notification
     }
 
@@ -424,11 +442,8 @@ class MainActivity : AppCompatActivity() {
     fun isValidYoutubeURL(youTubeUrl: String): Boolean {
         try {
             val trimmedUrl = youTubeUrl.trim()
-            val cleanedUrl = if (trimmedUrl.endsWith("&feature=shared")) {
-                trimmedUrl.removeSuffix("&feature=shared")
-            } else {
-                trimmedUrl
-            }
+            val cleanedUrl = if (trimmedUrl.endsWith("&feature=shared")) trimmedUrl.removeSuffix("&feature=shared") else trimmedUrl
+
             val url = URL(cleanedUrl)
 
             val host = url.host
@@ -454,6 +469,55 @@ class MainActivity : AppCompatActivity() {
 
 
 
+    fun requestAudioFocusFromMain(context: Context, exoPlayer: ExoPlayer?) {
+
+        val audioManager = context.getSystemService(AUDIO_SERVICE) as AudioManager
+
+        val audioFocusRequest = AudioManager.OnAudioFocusChangeListener { focusChange ->
+            when (focusChange) {
+                AudioManager.AUDIOFOCUS_LOSS -> {
+                    // Pause playback when losing focus
+                    exoPlayer?.playWhenReady = false
+                }
+                AudioManager.AUDIOFOCUS_GAIN -> {
+                    // Resume playback when gaining focus
+                    exoPlayer?.playWhenReady = true
+                    exoPlayer?.volume = 1.0f
+                }
+                AudioManager.AUDIOFOCUS_LOSS_TRANSIENT -> {
+                    // Pause temporarily (e.g., during a phone call)
+                    exoPlayer?.playWhenReady = false
+                }
+                AudioManager.AUDIOFOCUS_LOSS_TRANSIENT_CAN_DUCK -> {
+                    // Can continue playing but with lower volume
+                    exoPlayer?.volume = 0.1f  // Reduce volume
+                }
+            }
+        }
+
+
+        val result = audioManager.requestAudioFocus(
+            audioFocusRequest,
+            AudioManager.STREAM_MUSIC,
+            AudioManager.AUDIOFOCUS_GAIN
+        )
+
+        if (result != AudioManager.AUDIOFOCUS_REQUEST_GRANTED) {
+
+        }
+        when (exoPlayer?.isPlaying){
+            true ->{
+
+            }
+            false ->{
+
+            }
+
+            else -> {
+
+            }
+        }
+    }
 
 
 

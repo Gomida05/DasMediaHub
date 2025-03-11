@@ -1,5 +1,4 @@
 <?xml version="1.0" encoding="utf-8"?>
-
 <androidx.constraintlayout.widget.ConstraintLayout xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto"
     xmlns:tools="http://schemas.android.com/tools"
@@ -14,6 +13,7 @@
         android:layout_height="220dp"
         android:background="@color/black"
         app:auto_show="true"
+        android:drawingCacheQuality="high"
         android:keepScreenOn="true"
         app:controller_layout_id="@layout/customed_control"
         app:layout_constraintEnd_toEndOf="parent"

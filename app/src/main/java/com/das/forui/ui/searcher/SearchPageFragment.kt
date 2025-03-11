@@ -1,7 +1,6 @@
 package com.das.forui.ui.searcher
 
 import android.app.AlertDialog
-import android.content.Intent.EXTRA_TEXT
 import android.database.Cursor
 import android.os.Bundle
 import android.view.LayoutInflater
@@ -78,12 +77,6 @@ class SearchPageFragment : Fragment() {
         }
 
         return binding.root
-    }
-
-
-    override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
-        super.onViewCreated(view, savedInstanceState)
-
     }
 
 
