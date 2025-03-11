@@ -1,3 +1,4 @@
+@file:Suppress("DEPRECATION")
 package com.das.forui.ui.home
 
 
@@ -73,11 +74,13 @@ class HomeFragment : Fragment() {
                     val intent = Intent(requireContext(), MyService::class.java)
                     requireContext().startService(intent)
                 }
-                .setNegativeButton("BannerAds") { _, _ -> (activity as MainActivity).startBanner(true) }
-                .setNeutralButton("Test Notification"){_,_ -> testNotification()}
+                .setNegativeButton("BannerAds") { _, _ ->
+                    (activity as MainActivity).startBanner(
+                        true
+                    )
+                }
+                .setNeutralButton("Test Notification") { _, _ -> testNotification() }
                 .show()
-//            (activity as MainActivity).createMediaNotification("This for notification test")
-
         }
         binding.downloadList.setOnClickListener {
             findNavController().navigate(R.id.nav_Downloads)

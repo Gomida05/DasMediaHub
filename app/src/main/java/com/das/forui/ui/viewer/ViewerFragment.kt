@@ -58,7 +58,6 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.core.content.ContextCompat
 import androidx.fragment.app.Fragment
-import androidx.lifecycle.lifecycleScope
 import androidx.navigation.fragment.findNavController
 import coil.compose.AsyncImage
 import coil.request.ImageRequest
@@ -85,6 +84,7 @@ import java.time.ZonedDateTime
 import java.time.format.DateTimeFormatter
 import java.util.Locale
 import com.das.forui.MainActivity.Youtuber.pythonInstant
+import kotlinx.coroutines.CoroutineScope
 
 
 class ViewerFragment: Fragment() {
@@ -186,7 +186,7 @@ class ViewerFragment: Fragment() {
 
         } else {
             if (isAdded && _binding!= null) {
-                viewLifecycleOwner.lifecycleScope.launch {
+                CoroutineScope(Dispatchers.IO).launch {
                     val videoDetails = (activity as MainActivity).callPythonSearchWithLink(videoID)
 
                     withContext(Dispatchers.Main) {
@@ -628,7 +628,7 @@ class ViewerFragment: Fragment() {
     private fun playVideo(uri: String) {
         try {
             if (isAdded) {
-                viewLifecycleOwner.lifecycleScope.launch {
+                CoroutineScope(Dispatchers.IO).launch {
                     val mainFile = pythonInstant.getModule("main")
                     val variable = mainFile["get_video_url"]
                     val result = variable?.call("https://www.youtube.com/watch?v=$uri").toString()

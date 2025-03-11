@@ -15,11 +15,9 @@ import android.widget.TextView
 import androidx.activity.OnBackPressedCallback
 import androidx.core.net.toUri
 import androidx.fragment.app.Fragment
-import androidx.navigation.findNavController
 import androidx.navigation.fragment.findNavController
 import com.bumptech.glide.Glide
 import com.das.forui.MainActivity
-import com.das.forui.MainActivity.Youtuber.PLAY_HERE_AUDIO
 import com.das.forui.MainActivity.Youtuber.PLAY_HERE_VIDEO
 import com.das.forui.services.MyService
 import com.das.forui.R
@@ -224,7 +222,7 @@ class DownloadsPageFragment: Fragment() {
 
             Glide.with(context)
                 .load(downloadedLists.thumbnailUri)
-                .placeholder(R.mipmap.ic_launcher_ofme)
+                .placeholder(R.drawable.music_note_24dp)
                 .centerCrop()
                 .into(thumbnailImageView)
             return view

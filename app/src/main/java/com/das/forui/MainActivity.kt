@@ -7,6 +7,7 @@ import android.app.NotificationManager
 import android.app.PictureInPictureParams
 import android.content.Context
 import android.content.Intent
+import android.content.Intent.EXTRA_STREAM
 import android.content.Intent.EXTRA_TEXT
 import android.content.pm.PackageManager
 import android.media.MediaScannerConnection
@@ -44,6 +45,7 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import java.io.File
+import java.lang.System.currentTimeMillis
 import java.net.URL
 import java.util.regex.Pattern
 
@@ -121,77 +123,102 @@ class MainActivity : AppCompatActivity() {
     override fun onNewIntent(intent: Intent) {
         super.onNewIntent(intent)
         setIntent(intent)
-        if (intent.action == Intent.ACTION_SEND && intent.type.toString().startsWith("text/")) {
-            val sharedText = intent.getStringExtra(EXTRA_TEXT).toString()
-            sharedText.let {
-                if (isValidYoutubeURL(it)) {
-                    val videoId = Youtuber.extractor(it)
-                    val bundle = Bundle().apply {
-                        putString("View_ID", videoId)
-                        putString("View_URL", "https://www.youtube.com/watch?v=$videoId")
-                    }
 
-                    findNavController(R.id.nav_host_fragment_activity_main).navigate(
-                        R.id.nav_video_viewer,
-                        bundle
-                    )
-                } else if (it.startsWith("DownloadsPageFr")) {
-                    findNavController(R.id.nav_host_fragment_activity_main).navigate(R.id.nav_Downloads)
-                } else {
-                    val bundle = Bundle().apply {
-                        putString(EXTRA_TEXT, it)
-                    }
-                    findNavController(R.id.nav_host_fragment_activity_main).navigate(
-                        R.id.nav_searcher,
-                        bundle
-                    )
-                }
+        if (intent.action == Intent.ACTION_SEND) {
+            val intentType = intent.type.toString()
+            if (intentType.startsWith("text/")){
+                newTextIntent(intent.getStringExtra(EXTRA_TEXT).toString())
+            }
+            else if (intentType.startsWith("video/"))
+            {
+                newReceivedMediaTypeVideo(intent)
+            }
+            else if (intentType.startsWith("audio/"))
+            {
+                newReceivedMediaTypeAudio(intent)
             }
         } else if (intent.action == Intent.ACTION_VIEW) {
-            val mediaUri: Uri? = intent.data
-            mediaUri?.let {
-                val mimeType = contentResolver.getType(it) ?: ""
-                if (mimeType.startsWith("video/")) {
-                    val bundle = Bundle().apply {
-                        putString(PLAY_HERE_VIDEO, intent.dataString)
-                    }
-                    findNavController(R.id.nav_host_fragment_activity_main).navigate(
-                        R.id.nav_fullscreen,
-                        bundle
-                    )
-                } else if (mimeType.startsWith("audio/")) {
-                    val bundle = Bundle().apply {
-                        putString(PLAY_HERE_AUDIO, intent.dataString)
-                    }
-                    findNavController(R.id.nav_host_fragment_activity_main).navigate(
-                        R.id.nav_fullscreen,
-                        bundle
-                    )
-                } else {
-                    showDialogs("Unsupported media type")
-                }
-            }
+            newMediaIntent(intent.data)
         }
-        else if (intent.action == PLAY_HERE_VIDEO) {
-            val bundle = Bundle().apply {
-                putString(PLAY_HERE_VIDEO, intent.dataString)
-            }
-            findNavController(R.id.nav_host_fragment_activity_main).navigate(
-                R.id.nav_fullscreen,
-                bundle
-            )
-        } else if (intent.action == PLAY_HERE_AUDIO) {
-            val bundle = Bundle().apply {
-                putString(PLAY_HERE_AUDIO, intent.dataString)
-            }
-            findNavController(R.id.nav_host_fragment_activity_main).navigate(
-                R.id.nav_fullscreen,
-                bundle
-            )
-        }
+
     }
 
 
+    private fun newReceivedMediaTypeVideo(myIntent: Intent){
+
+        @Suppress("DEPRECATION")
+        val videoUri: Uri? = myIntent.getParcelableExtra(EXTRA_STREAM)
+        val bundle = Bundle().apply {
+            putString(PLAY_HERE_VIDEO, videoUri.toString())
+        }
+        findNavController(R.id.nav_host_fragment_activity_main).navigate(
+            R.id.nav_fullscreen,
+            bundle
+        )
+    }
+
+    private fun newReceivedMediaTypeAudio(myIntent: Intent){
+        @Suppress("DEPRECATION")
+        val audioUri: Uri? = myIntent.getParcelableExtra(EXTRA_STREAM)
+        val bundle = Bundle().apply {
+            putString(PLAY_HERE_AUDIO, audioUri.toString())
+        }
+        findNavController(R.id.nav_host_fragment_activity_main).navigate(
+            R.id.nav_fullscreen,
+            bundle
+        )
+    }
+
+    private fun newMediaIntent(mediaUri: Uri?){
+        mediaUri?.let {
+            val mimeType = contentResolver.getType(it) ?: ""
+            if (mimeType.startsWith("video/")) {
+                val bundle = Bundle().apply {
+                    putString(PLAY_HERE_VIDEO, intent.dataString)
+                }
+                findNavController(R.id.nav_host_fragment_activity_main).navigate(
+                    R.id.nav_fullscreen,
+                    bundle
+                )
+            } else if (mimeType.startsWith("audio/")) {
+                val bundle = Bundle().apply {
+                    putString(PLAY_HERE_AUDIO, intent.dataString)
+                }
+                findNavController(R.id.nav_host_fragment_activity_main).navigate(
+                    R.id.nav_fullscreen,
+                    bundle
+                )
+            } else {
+                showDialogs("Unsupported media type")
+            }
+        }
+    }
+    private fun newTextIntent(sharedText: String) {
+        sharedText.let {
+            if (isValidYoutubeURL(it)) {
+                val videoId = Youtuber.extractor(it)
+                val bundle = Bundle().apply {
+                    putString("View_ID", videoId)
+                    putString("View_URL", "https://www.youtube.com/watch?v=$videoId")
+                }
+
+                findNavController(R.id.nav_host_fragment_activity_main).navigate(
+                    R.id.nav_video_viewer,
+                    bundle
+                )
+            } else if (it.startsWith("DownloadsPageFr")) {
+                findNavController(R.id.nav_host_fragment_activity_main).navigate(R.id.nav_Downloads)
+            } else {
+                val bundle = Bundle().apply {
+                    putString(EXTRA_TEXT, it)
+                }
+                findNavController(R.id.nav_host_fragment_activity_main).navigate(
+                    R.id.nav_searcher,
+                    bundle
+                )
+            }
+        }
+    }
 
 
 
@@ -304,11 +331,7 @@ class MainActivity : AppCompatActivity() {
                                     null,
                                     null
                                 )
-                                println("filler is here \n $path")
-
-                                justAlertUser("$title has been downloaded successfully go check it out!")
-                                Log.e("MainActivity", "here is it \n${file}")
-                                Log.d("MainActivity", "File scan initiated for ")
+                                downloadCompleted("$title has been downloaded successfully go check it out!")
                                 forToast =
                                     "$title has been downloaded successfully go check it out!"
                             } else {
@@ -329,29 +352,20 @@ class MainActivity : AppCompatActivity() {
     }
 
     @SuppressLint("MissingPermission")
-    private fun justAlertUser(message: String?) {
-        // Use applicationContext to ensure global access
-        val context = application.applicationContext
+    fun downloadCompleted(message: String) {
 
-        // Create the notification
-        val notification = NotificationCompat.Builder(context, "error_searching")
+
+        val notificationId = currentTimeMillis().toInt()
+        val notification = NotificationCompat.Builder(this, "error_searching")
             .setContentTitle("Download Finished")
             .setContentText(message)
-            .setSmallIcon(R.mipmap.ic_launcher_ofme)
-            .setOngoing(true)
-            .setAutoCancel(false)
-            .setPriority(NotificationCompat.PRIORITY_HIGH)
-            .setStyle(
-                NotificationCompat.BigTextStyle()
-                    .setBigContentTitle("Download Finished")
-
-            )
-            .setCategory(NotificationCompat.CATEGORY_SERVICE) // Heads-up notification
+            .setSmallIcon(R.mipmap.icon)
+            .setPriority(NotificationCompat.PRIORITY_DEFAULT)
+            .setGroupSummary(false)
+            .setGroup("message")
             .build()
-
-        // Get the NotificationManager system service and display the notification
-        val notificationManager = NotificationManagerCompat.from(context)
-        notificationManager.notify(1001, notification)  // Unique ID for your notification
+        val notificationManager = NotificationManagerCompat.from(this@MainActivity)
+        notificationManager.notify(notificationId, notification)
     }
 
     @SuppressLint("MissingPermission")
