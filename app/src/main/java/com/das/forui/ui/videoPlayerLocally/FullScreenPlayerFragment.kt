@@ -1,25 +1,26 @@
 @file:Suppress("DEPRECATION", "SourceLockedOrientationActivity")
 package com.das.forui.ui.videoPlayerLocally
 
+
 import android.content.pm.ActivityInfo
+import android.net.Uri
 import android.os.Bundle
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
-import android.widget.ImageButton
-import android.widget.Toast
 import androidx.activity.OnBackPressedCallback
 import androidx.core.net.toUri
 import androidx.fragment.app.Fragment
 import androidx.navigation.fragment.findNavController
 import com.das.forui.MainActivity
-import com.das.forui.MainActivity.Youtuber.PLAY_HERE_AUDIO
-import com.das.forui.MainActivity.Youtuber.PLAY_HERE_VIDEO
-import com.das.forui.R
+import com.das.forui.databased.PathSaver
 import com.das.forui.databinding.FullScreenPlayerBinding
+import com.das.forui.objectsAndData.ForUIKeyWords.MEDIA_TITLE
+import com.das.forui.objectsAndData.ForUIKeyWords.PLAY_HERE_VIDEO
 import com.google.android.exoplayer2.ExoPlayer
 import com.google.android.exoplayer2.MediaItem
-import com.google.android.exoplayer2.MediaItem.fromUri
+import com.google.android.exoplayer2.MediaMetadata
+import java.io.File
 
 
 class FullScreenPlayerFragment: Fragment() {
@@ -41,28 +42,30 @@ class FullScreenPlayerFragment: Fragment() {
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
         (activity as MainActivity).hideBottomNav()
+        exoPlayer?.release()
         exoPlayer = ExoPlayer.Builder(requireContext()).build()
 
-        (activity as MainActivity).requestedOrientation = ActivityInfo.SCREEN_ORIENTATION_SENSOR_LANDSCAPE
+
 
         val videoUri = arguments?.getString(PLAY_HERE_VIDEO)
-        val audioUri = arguments?.getString(PLAY_HERE_AUDIO)
+        val title = arguments?.getString(MEDIA_TITLE)
+
         if (!videoUri.isNullOrEmpty()){
-            playVideo(
-                fromUri(videoUri.toUri())
-            )
-        }
-        else if(!audioUri.isNullOrEmpty()){
+            (activity as MainActivity).requestedOrientation = ActivityInfo.SCREEN_ORIENTATION_SENSOR
+            val exoMetadata = MediaMetadata.Builder()
+                .setTitle(title)
+                .setMediaType(MediaMetadata.MEDIA_TYPE_VIDEO)
+                .build()
 
-            playAudio(
-                fromUri(audioUri.toUri())
-            )
+            val mediaItem = MediaItem.Builder()
+                .setMediaId(videoUri.toString())
+                .setUri(videoUri)
+                .setMediaMetadata(exoMetadata)
+                .build()
+
+            playVideo(mediaItem)
         }
 
-
-        view.findViewById<ImageButton>(R.id.exo_of_fullscreen).setOnClickListener{
-            Toast.makeText(requireContext(), "coming soon!", Toast.LENGTH_SHORT).show()
-        }
 
         activity?.onBackPressedDispatcher?.addCallback(object : OnBackPressedCallback(true) {
 
@@ -95,30 +98,23 @@ class FullScreenPlayerFragment: Fragment() {
             it.prepare()
             it.play()
         }
+        exoPlayer?.addMediaItems(
+            fetchDataFromDatabase(
+                PathSaver().getVideosDownloadPath(
+                    requireContext()))
+        )
         MainActivity().requestAudioFocusFromMain(requireContext(), exoPlayer)
     }
 
-    private fun playAudio(mediaItem: MediaItem) {
-        showSystemUI()
-        val playerView = binding.startVideoPlayerLocally
-        playerView.player = exoPlayer
-        playerView.setBackgroundResource(R.drawable.music_note_24dp)
-        playerView.keepScreenOn = false
-        exoPlayer?.let {
-            it.setMediaItem(mediaItem)
-            it.prepare()
-            it.play()
-        }
-        MainActivity().requestAudioFocusFromMain(requireContext(), exoPlayer)
-    }
+
 
 
 
 
     private fun hideSystemUI() {
 
-        
-        activity?.window?.decorView?.systemUiVisibility = (
+
+        (activity as MainActivity).window.decorView.systemUiVisibility = (
                 View.SYSTEM_UI_FLAG_FULLSCREEN or
                         View.SYSTEM_UI_FLAG_HIDE_NAVIGATION or
                         View.SYSTEM_UI_FLAG_IMMERSIVE_STICKY
@@ -130,6 +126,46 @@ class FullScreenPlayerFragment: Fragment() {
     private fun showSystemUI() {
         
         (activity as MainActivity).window.decorView.systemUiVisibility = View.SYSTEM_UI_FLAG_VISIBLE
+    }
+
+
+    private fun fetchDataFromDatabase(
+        pathLocation: String
+    ): MutableList<MediaItem> {
+        val fileLists = mutableListOf<MediaItem>().apply {
+            clear()
+        }
+
+
+
+        val pathOfVideos = File(pathLocation)
+        if (pathOfVideos.exists()) {
+            val fileNames = arrayOfNulls<String>(pathOfVideos.listFiles()!!.size)
+            val pathOfVideosUris = arrayOfNulls<Uri?>(pathOfVideos.listFiles()!!.size)
+            pathOfVideos.listFiles()!!.mapIndexed { index, item ->
+                fileNames[index] = item?.name
+                pathOfVideosUris[index] = item?.toUri()
+
+            }
+            fileNames.zip(pathOfVideosUris).forEach { (fileName, videoUri) ->
+                if (videoUri != null && fileName != null) {
+                    val exoMetadata = MediaMetadata.Builder()
+                        .setTitle(fileName)
+                        .setMediaType(MediaMetadata.MEDIA_TYPE_VIDEO)
+                        .build()
+
+                    fileLists.add(
+                        MediaItem.Builder()
+                            .setMediaId(videoUri.toString())
+                            .setUri(videoUri)
+                            .setMediaMetadata(exoMetadata)
+                            .build()
+                    )
+                }
+            }
+        }
+        return fileLists
+
     }
 
 

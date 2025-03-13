@@ -18,11 +18,14 @@ import androidx.fragment.app.Fragment
 import androidx.navigation.fragment.findNavController
 import com.bumptech.glide.Glide
 import com.das.forui.MainActivity
-import com.das.forui.MainActivity.Youtuber.PLAY_HERE_VIDEO
 import com.das.forui.services.MyService
 import com.das.forui.R
 import com.das.forui.databased.PathSaver
 import com.das.forui.databinding.FragmentDownloadsBinding
+import com.das.forui.objectsAndData.ForUIKeyWords.ACTION_START
+import com.das.forui.objectsAndData.ForUIKeyWords.MEDIA_TITLE
+import com.das.forui.objectsAndData.ForUIKeyWords.PLAY_HERE_VIDEO
+import com.das.forui.services.BackGroundPlayer
 import java.io.File
 import java.text.SimpleDateFormat
 import java.util.Date
@@ -34,6 +37,7 @@ class DownloadsPageFragment: Fragment() {
     private val binding get() = _binding!!
     private lateinit var adapter: DownloadedArrayAdapter
     private val ids = mutableListOf<Uri>()
+    private var typeFile: Int = 1
 
     override fun onCreateView(
         inflater: LayoutInflater,
@@ -50,14 +54,42 @@ class DownloadsPageFragment: Fragment() {
         (activity as MainActivity).hideBottomNav()
 
         binding.downloadedHistory.adapter = adapter
-
-        fetchDataFromDatabase()
+        fetchDataFromDatabase(
+            PathSaver().getVideosDownloadPath(requireContext()),
+            1
+        )
 
 
     }
 
     override fun onStart() {
         super.onStart()
+
+
+        val videoPath = PathSaver().getVideosDownloadPath(requireContext())
+        val audioPath = PathSaver().getAudioDownloadPath(requireContext())
+
+        binding.listVideos.setOnClickListener {
+            binding.listVideos.isEnabled = false
+            binding.listAudios.isEnabled = true
+            adapter.clear()
+            fetchDataFromDatabase(
+                videoPath,
+                1
+            )
+            typeFile = 1
+        }
+
+        binding.listAudios.setOnClickListener {
+            binding.listAudios.isEnabled = false
+            binding.listVideos.isEnabled = true
+            adapter.clear()
+            fetchDataFromDatabase(
+                audioPath,0
+            )
+            typeFile = 0
+        }
+
         binding.back.setOnClickListener {
             findNavController().navigateUp()
         }
@@ -73,17 +105,31 @@ class DownloadsPageFragment: Fragment() {
             val selectedItem = adapter.getItem(position) // Get the item clicked in the list
 
             val filePath = selectedItem?.pathOfVideo
+            val title = selectedItem?.title
 
             println("here is the file name: $filePath")
+            if (typeFile == 1) {
+                val bundle = Bundle().apply {
+                    putString(PLAY_HERE_VIDEO, filePath.toString())
+                    putString(MEDIA_TITLE, title)
+                }
+                findNavController().navigate(
+                    R.id.nav_fullscreen,
+                    bundle
 
-            val bundle = Bundle().apply {
-                putString(PLAY_HERE_VIDEO, filePath.toString())
+                )
+            }else {
+
+                val playIntent = Intent(requireContext(), BackGroundPlayer::class.java).apply {
+                    action = ACTION_START
+                    putExtra("media_id", filePath.toString())
+                    putExtra("media_url", filePath.toString())
+                    putExtra("title", title)
+                }
+                activity?.startService(playIntent)
+
             }
-            findNavController().navigate(
-                R.id.nav_fullscreen,
-                bundle
 
-            )
 
         }
 
@@ -111,13 +157,16 @@ class DownloadsPageFragment: Fragment() {
 
 
 
-    private fun fetchDataFromDatabase() {
+    private fun fetchDataFromDatabase(
+        pathLocation: String,
+        fileType: Int
+    ) {
 
         val downloadedListData = mutableListOf<DownloadedListData>()
         val urls = mutableListOf<String>()
 
         ids.clear()
-        val pathOfVideos = File(PathSaver().getVideosDownloadPath(requireContext())!!)
+        val pathOfVideos = File(pathLocation)
         if (pathOfVideos.exists()) {
             val fileNames = arrayOfNulls<String>(pathOfVideos.listFiles()!!.size)
             val pathOfVideosUris = arrayOfNulls<Uri?>(pathOfVideos.listFiles()!!.size)
@@ -138,7 +187,8 @@ class DownloadsPageFragment: Fragment() {
                             pathOfVideo = videoUri,
                             thumbnailUri = videoUri,
                             dateTime = formattedDate,
-                            fileSize = fileSizeFormatted
+                            fileSize = fileSizeFormatted,
+                            type = fileType
                         )
                     )
                     videoUri.let { url ->
@@ -157,6 +207,7 @@ class DownloadsPageFragment: Fragment() {
         }
 
     }
+
 
 
     private fun formatDate(timestamp: Long): String {
@@ -191,7 +242,8 @@ class DownloadsPageFragment: Fragment() {
         val pathOfVideo: Uri,
         val thumbnailUri: Uri,
         val dateTime: String,
-        val fileSize: String
+        val fileSize: String,
+        val type: Int
     )
 
     private class DownloadedArrayAdapter(
@@ -220,13 +272,19 @@ class DownloadsPageFragment: Fragment() {
 //            duration.text= downloadedLists.duration
 
 
+
             Glide.with(context)
                 .load(downloadedLists.thumbnailUri)
-                .placeholder(R.drawable.music_note_24dp)
+                .placeholder(
+                    if (downloadedLists.type == 1) R.drawable.smart_display_24dp
+                    else
+                    R.drawable.music_note_24dp
+                )
                 .centerCrop()
                 .into(thumbnailImageView)
             return view
         }
+
 
         fun removeItem(position: Int, videoId: Uri) {
             File(videoId.path!!).delete()

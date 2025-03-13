@@ -7,6 +7,7 @@ import android.content.Context
 import android.content.Intent
 import android.net.Uri
 import android.os.Bundle
+import android.util.Log
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
@@ -52,8 +53,8 @@ import com.das.forui.databinding.FragmentSettingsBinding
 class SettingsFragment : Fragment() {
 
   private var _binding: FragmentSettingsBinding? = null
-  private val folderPickerRequestCode= 1
-  private val folderPickerForMyVideo= 2
+  private val folderPickerRequestCode= 0
+  private val folderPickerForMyVideo= 1
   private val binding get() = _binding!!
 
   override fun onCreateView(
@@ -259,22 +260,18 @@ class SettingsFragment : Fragment() {
       path
     }
   }
+
   @Deprecated("Deprecated in Java")
   override fun onActivityResult(requestCode: Int, resultCode: Int, data: Intent?) {
     super.onActivityResult(requestCode, resultCode, data)
-
+    val uri: Uri = data?.data!!
     if (requestCode == folderPickerRequestCode && resultCode == Activity.RESULT_OK) {
-      val uri: Uri = data?.data!!
 
-      // Now, get the path or perform other operations using DocumentFile
-      val folderPath = getFolderPathFromUri(requireContext(), uri, "audio")
-      println("Folder Path: $folderPath")
+      getFolderPathFromUri(requireContext(), uri, "audio")
     }
     else if (requestCode == folderPickerForMyVideo && resultCode == Activity.RESULT_OK) {
-      val uri: Uri = data?.data!!
-      // Now, get the path or perform other operations using DocumentFile
-      val folderPath = getFolderPathFromUri(requireContext(), uri, "video")
-      println("Folder Path: $folderPath")
+
+      getFolderPathFromUri(requireContext(), uri, "video")
 
     }
   }
@@ -283,24 +280,25 @@ class SettingsFragment : Fragment() {
 
 
   private fun getFolderPathFromUri(context: Context, uri: Uri, type: String): String? {
-    var path: String? = null
+    val path = uri.path
 
     try {
-      // Use DocumentFile to interact with the directory URI
+
       val documentFile = DocumentFile.fromTreeUri(context, uri)
 
-      // Check if the URI represents a valid directory
-      if (documentFile != null && documentFile.isDirectory) {
-        // The path is not directly accessible for tree URIs, but we can extract it using the URI path
-        path = uri.path
-        println("Selected Folder Path: $path")
-        val pather="/storage/emulated/0/${extractFolderPath(path.toString())}"
-        if (type=="video"){
-          PathSaver().setMoviesDownloadPath(requireContext(), pather)
-        }else{
-          PathSaver().setMusicDownloadPath(requireContext(), pather)
-        }
 
+      if (documentFile != null && documentFile.isDirectory) {
+
+        val pather="/storage/emulated/0/${extractFolderPath(path.toString())}"
+        if (type == "video") {
+
+          PathSaver().setMoviesDownloadPath(requireContext(), pather)
+
+        } else if (type == "audio") {
+
+          PathSaver().setAudioDownloadPath(requireContext(), pather)
+
+        }
       } else {
         println("URI is not a directory or invalid")
       }

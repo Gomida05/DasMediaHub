@@ -6,7 +6,7 @@ import android.content.SharedPreferences
 
 class PathSaver {
 
-    fun getMusicDownloadPath(context: Context): String? {
+    fun getAudioDownloadPath(context: Context): String {
 
         val sharedPref: SharedPreferences = context.getSharedPreferences("AppPreferences", Context.MODE_PRIVATE)
         var downloadPath = sharedPref.getString("download_path1", null)
@@ -17,16 +17,17 @@ class PathSaver {
             editor.putString("download_path1", downloadPath)
             editor.apply()
         }
-        return downloadPath
+        println("here is the path\n$downloadPath")
+        return downloadPath.toString()
     }
 
     private fun getMusicDefaultDownloadPath(): String {
         return "/storage/emulated/0/Music/ForUI"
     }
 
-    fun setMusicDownloadPath(context: Context, path: String) {
-        val sharedPref: SharedPreferences =
-            context.getSharedPreferences("AppPreferences", Context.MODE_PRIVATE)
+    fun setAudioDownloadPath(context: Context, path: String) {
+        println("Here is new saved path: $path")
+        val sharedPref: SharedPreferences = context.getSharedPreferences("AppPreferences", Context.MODE_PRIVATE)
         with(sharedPref.edit()) {
             // Replace the old path with the new one
             putString("download_path1", path)
@@ -34,7 +35,7 @@ class PathSaver {
         }
     }
 
-    fun getVideosDownloadPath(context: Context): String? {
+    fun getVideosDownloadPath(context: Context): String {
 
         val sharedPref: SharedPreferences = context.getSharedPreferences("AppPreferences", Context.MODE_PRIVATE)
         var downloadPath = sharedPref.getString("download_path2", null)
@@ -45,12 +46,14 @@ class PathSaver {
             editor.putString("download_path2", downloadPath)
             editor.apply()
         }
-        return downloadPath
+        println("here is the path\n$downloadPath")
+        return downloadPath.toString()
     }
 
 
     fun setMoviesDownloadPath(context: Context, path: String) {
         println("hello there\n$path")
+        println("Here is new saved path: $path")
         val sharedPref: SharedPreferences =context.getSharedPreferences("AppPreferences", Context.MODE_PRIVATE)
         with(sharedPref.edit()) {
             // Replace the old path with the new one

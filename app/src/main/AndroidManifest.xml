@@ -134,6 +134,11 @@
 
         <meta-data android:name="wakelock" android:value="1"/>
 
+        <service android:name=".services.BackGroundPlayer"
+            android:enabled="true"
+            android:exported="false"
+            android:foregroundServiceType="mediaPlayback"/>
+
         <service
             android:name=".services.AudioServiceFromUrl"
             android:enabled="true"

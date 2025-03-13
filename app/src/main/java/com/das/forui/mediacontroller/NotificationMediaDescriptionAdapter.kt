@@ -1,5 +1,4 @@
 @file:Suppress("DEPRECATION")
-
 package com.das.forui.mediacontroller
 
 import android.app.Notification
@@ -16,12 +15,12 @@ import com.bumptech.glide.Glide
 import com.bumptech.glide.request.target.CustomTarget
 import com.bumptech.glide.request.transition.Transition
 import com.das.forui.R
-import com.das.forui.services.AudioServiceFromUrl.Companion.ACTION_ADD_TO_WATCH_LATER
-import com.das.forui.services.AudioServiceFromUrl.Companion.ACTION_KILL
-import com.das.forui.services.AudioServiceFromUrl.Companion.ACTION_NEXT
-import com.das.forui.services.AudioServiceFromUrl.Companion.ACTION_PAUSE
-import com.das.forui.services.AudioServiceFromUrl.Companion.ACTION_PLAY
-import com.das.forui.services.AudioServiceFromUrl.Companion.ACTION_PREVIOUS
+import com.das.forui.objectsAndData.ForUIKeyWords.ACTION_ADD_TO_WATCH_LATER
+import com.das.forui.objectsAndData.ForUIKeyWords.ACTION_KILL
+import com.das.forui.objectsAndData.ForUIKeyWords.ACTION_NEXT
+import com.das.forui.objectsAndData.ForUIKeyWords.ACTION_PAUSE
+import com.das.forui.objectsAndData.ForUIKeyWords.ACTION_PLAY
+import com.das.forui.objectsAndData.ForUIKeyWords.ACTION_PREVIOUS
 import com.google.android.exoplayer2.Player
 import com.google.android.exoplayer2.ui.PlayerNotificationManager
 

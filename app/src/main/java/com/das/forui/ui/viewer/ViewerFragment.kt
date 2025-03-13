@@ -80,6 +80,7 @@ import java.time.ZonedDateTime
 import java.time.format.DateTimeFormatter
 import java.util.Locale
 import com.das.forui.MainActivity.Youtuber.pythonInstant
+import com.das.forui.objectsAndData.ForUIKeyWords.ACTION_START
 import com.google.android.exoplayer2.trackselection.DefaultTrackSelector
 import com.google.android.exoplayer2.trackselection.TrackSelectionParameters
 import kotlinx.coroutines.CoroutineScope
@@ -290,7 +291,7 @@ class ViewerFragment: Fragment() {
                 .setTitle("Do you want to play it in the background?")
                 .setPositiveButton("yes") { _, _ ->
                     val playIntent = Intent(requireContext(), AudioServiceFromUrl::class.java).apply {
-                        action = AudioServiceFromUrl.ACTION_START
+                        action = ACTION_START
                         putExtra("videoId", videoID)
                         putExtra("media_url", url)
                         putExtra("title", videoTitle)

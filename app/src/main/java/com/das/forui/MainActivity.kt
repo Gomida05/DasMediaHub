@@ -31,11 +31,11 @@ import androidx.navigation.ui.AppBarConfiguration
 import androidx.navigation.ui.setupActionBarWithNavController
 import androidx.navigation.ui.setupWithNavController
 import com.chaquo.python.Python.getInstance
-import com.das.forui.MainActivity.Youtuber.PLAY_HERE_AUDIO
-import com.das.forui.MainActivity.Youtuber.PLAY_HERE_VIDEO
 import com.das.forui.MainActivity.Youtuber.pythonInstant
 import com.das.forui.databased.PathSaver
 import com.das.forui.databinding.ActivityMainBinding
+import com.das.forui.objectsAndData.ForUIKeyWords.PLAY_HERE_AUDIO
+import com.das.forui.objectsAndData.ForUIKeyWords.PLAY_HERE_VIDEO
 import com.google.android.exoplayer2.ExoPlayer
 import com.google.android.gms.ads.AdRequest
 import com.google.android.gms.ads.AdView
@@ -303,7 +303,7 @@ class MainActivity : AppCompatActivity() {
 
 
     fun downloadMusic(receivedLink: String, title: String, context: Context) {
-        val path = PathSaver().getMusicDownloadPath(context)
+        val path = PathSaver().getAudioDownloadPath(context)
         println("given path \n$path")
         createSingleDirectory(path.toString())
         try {
@@ -355,7 +355,7 @@ class MainActivity : AppCompatActivity() {
     }
 
 
-    fun downloadCompleted(message: String) {
+    private fun downloadCompleted(message: String) {
 
 
         val notificationId = currentTimeMillis().toInt()
@@ -561,8 +561,6 @@ class MainActivity : AppCompatActivity() {
 
     object Youtuber{
         val pythonInstant = getInstance()
-        const val PLAY_HERE_VIDEO = "com.das.forui.PLAY_HERE_VIDEO"
-        const val PLAY_HERE_AUDIO = "com.das.forui.PLAY_HERE_AUDIO"
         fun extractor(url: String): String? {
             val regex= "(?<=v=|/)([a-zA-Z0-9_-]{11})(?=&|\$|/)"
             val pattern= Regex(regex)

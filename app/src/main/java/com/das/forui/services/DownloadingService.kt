@@ -101,7 +101,7 @@ class DownloadingService(private val channelId: String) : Service() {
 
 
     private fun downloadMusic(received: String, title: String, context: Context) {
-        val path = PathSaver().getMusicDownloadPath(context)
+        val path = PathSaver().getAudioDownloadPath(context)
         MainActivity().createSingleDirectory(path.toString())
         try {
             val py = Python.getInstance()

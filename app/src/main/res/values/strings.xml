@@ -35,4 +35,6 @@
     <string name="progressbar_is_invisible">ProgressBar is invisible!</string>
     <string name="more_options">More Options</string>
     <string name="notification_channel_name">myMediaPlayer\n</string>
+    <string name="videos">Videos</string>
+    <string name="audios">Audios</string>
 </resources>
