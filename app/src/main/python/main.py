@@ -17,8 +17,20 @@ def get_video_url(video_url: str):
 # get_video_url("https://www.youtube.com/watch?v=buC8fFeYjXw&list=WL&index=4")
 # get_video_url("https://www.youtube.com/watch?v=I6Veu_3O3UE")
 
+def get_audio_url(media_url):
+    
+    try:
+        # data = []
+        # for i in media_url:
+        yt = YouTube(media_url)
+        stream = yt.streams.get_audio_only()
+        
+        return stream.url
+    except Exception as e:
+        print(f"error in url {e}")
+        return False
 
-
+# print(get_audio_url("I6Veu_3O3UE"))
 def Searcher(inputer:str):
 
     try:

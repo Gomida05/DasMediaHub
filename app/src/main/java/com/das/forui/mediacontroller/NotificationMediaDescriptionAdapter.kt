@@ -9,6 +9,7 @@ import android.content.Intent
 import android.graphics.Bitmap
 import android.graphics.drawable.Drawable
 import android.support.v4.media.session.MediaControllerCompat
+import android.support.v4.media.session.MediaSessionCompat
 import android.widget.Toast
 import androidx.core.app.NotificationCompat
 import com.bumptech.glide.Glide
@@ -17,10 +18,7 @@ import com.bumptech.glide.request.transition.Transition
 import com.das.forui.R
 import com.das.forui.objectsAndData.ForUIKeyWords.ACTION_ADD_TO_WATCH_LATER
 import com.das.forui.objectsAndData.ForUIKeyWords.ACTION_KILL
-import com.das.forui.objectsAndData.ForUIKeyWords.ACTION_NEXT
-import com.das.forui.objectsAndData.ForUIKeyWords.ACTION_PAUSE
-import com.das.forui.objectsAndData.ForUIKeyWords.ACTION_PLAY
-import com.das.forui.objectsAndData.ForUIKeyWords.ACTION_PREVIOUS
+import com.google.android.exoplayer2.ExoPlayer
 import com.google.android.exoplayer2.Player
 import com.google.android.exoplayer2.ui.PlayerNotificationManager
 
@@ -41,9 +39,10 @@ class NotificationMediaDescriptionAdapter(private val context: Context, private 
         player: Player,
         callback: PlayerNotificationManager.BitmapCallback
     ): Bitmap? {
+        val iconUrl = metadataCompat.metadata.description.iconUri
         Glide.with(context)
             .asBitmap()
-            .load("https://img.youtube.com/vi/S9bCLPwzSC0/0.jpg")
+            .load("https://img.youtube.com/vi/${iconUrl}/0.jpg")
             .into(object : CustomTarget<Bitmap>() {
 
                 override fun onResourceReady(resource: Bitmap, transition: Transition<in Bitmap>?) {
@@ -66,29 +65,7 @@ class NotificationCustomActions(private val context: Context): PlayerNotificatio
         context: Context,
         instanceId: Int
     ): MutableMap<String, NotificationCompat.Action> {
-        val playAction = NotificationCompat.Action(
-            R.drawable.play_arrow_24dp, // Play icon
-            "Play", // Label for the action
-            createPendingIntent(context, ACTION_PLAY) // PendingIntent for the action
-        )
 
-        val pauseAction = NotificationCompat.Action(
-            R.drawable.pause_icon, // Pause icon
-            "Pause", // Label for the action
-            createPendingIntent(context, ACTION_PAUSE) // PendingIntent for the action
-        )
-
-        val nextAction = NotificationCompat.Action(
-            R.drawable.skip_next_24dp, // Next icon
-            "Next", // Label for the action
-            createPendingIntent(context, ACTION_NEXT) // PendingIntent for the action
-        )
-
-        val previousAction = NotificationCompat.Action(
-            R.drawable.skip_previous_24dp, // Previous icon
-            "Previous", // Label for the action
-            createPendingIntent(context, ACTION_PREVIOUS) // PendingIntent for the action
-        )
         val addToWatchLater = NotificationCompat.Action(
             R.drawable.favorite,
             "Fav",
@@ -102,37 +79,24 @@ class NotificationCustomActions(private val context: Context): PlayerNotificatio
         )
 
         return mutableMapOf(
-            ACTION_PLAY to playAction,
-            ACTION_PAUSE to pauseAction,
-            ACTION_NEXT to nextAction,
-            ACTION_PREVIOUS to previousAction,
             ACTION_ADD_TO_WATCH_LATER to addToWatchLater,
             ACTION_KILL to killAction
         )
     }
 
     override fun getCustomActions(player: Player): MutableList<String> {
-        return mutableListOf(ACTION_PLAY, ACTION_PAUSE, ACTION_NEXT, ACTION_PREVIOUS, ACTION_KILL)
+        return mutableListOf(ACTION_ADD_TO_WATCH_LATER, ACTION_KILL)
     }
+
 
     override fun onCustomAction(player: Player, action: String, intent: Intent) {
         when (action) {
-            ACTION_PLAY -> {
-                player.pause()
-            }
-            ACTION_PAUSE -> {
-                player.play()
-            }
-            ACTION_PREVIOUS -> {
-                player.seekToPrevious()
-            }
-            ACTION_NEXT -> {
-            }
             ACTION_ADD_TO_WATCH_LATER -> {
             }
             ACTION_KILL -> {
                 val notificationManager = context.getSystemService(NotificationManager::class.java)
                 player.release()
+                notificationManager.cancel(1)
             }
         }
     }
@@ -147,11 +111,14 @@ class NotificationCustomActions(private val context: Context): PlayerNotificatio
     }
 }
 
-class NotificationListenerService(private val player: Player): PlayerNotificationManager.NotificationListener{
+class NotificationListenerService(private val player: ExoPlayer?,
+    private val mediaSessionCompat: MediaSessionCompat
+): PlayerNotificationManager.NotificationListener{
 
     override fun onNotificationCancelled(notificationId: Int, dismissedByUser: Boolean) {
-        player.release()
         super.onNotificationCancelled(notificationId, dismissedByUser)
+        player?.release()
+        mediaSessionCompat.release()
     }
 
 
@@ -160,7 +127,6 @@ class NotificationListenerService(private val player: Player): PlayerNotificatio
         notification: Notification,
         ongoing: Boolean
     ) {
-
         super.onNotificationPosted(notificationId, notification, true)
     }
 }

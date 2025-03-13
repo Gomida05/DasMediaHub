@@ -76,18 +76,18 @@ class HomeFragment : Fragment() {
         }
     }
 
-    @Suppress("DEPRECATION")
+
     private fun testNotification() {
 
         val mediaSession = MediaSessionCompat(requireContext(), "AudioService").apply {
             isActive = true
         }
         val mediaUrl = "https://rr3---sn-aigl6nzr.googlevideo.com/videoplayback?expire=1741146025&ei=SXPHZ-uiBp_cp-oPmJ6oOA&ip=2a04%3A4a43%3A970f%3Af786%3Ab549%3A3c62%3Aaf7f%3A8463&id=o-AHpFoqcWYooHEtR8fdzMqNg14ZmoWMRt5uOmkTjWYfg5&itag=140&source=youtube&requiressl=yes&xpc=EgVo2aDSNQ%3D%3D&gcr=gb&bui=AUWDL3y9tiVtF8Bfu9EFtaoYPczHvw8c9SHqKTrOJmf8BovfYAf1nBYzf_2N9vAg0PuXDyLisRCYTF4N&spc=RjZbSUIYvd_LsSZKVlOjytWRh-CWPYjHICRGS64xcgFqUJTQ7w&vprv=1&mime=audio%2Fmp4&rqh=1&gir=yes&clen=15664401&dur=967.854&lmt=1726962904598921&keepalive=yes&fexp=24350590,24350602,24350737,24350827,24350961,24351173,24351284,24351341,24351346,51326932&c=ANDROID_VR&txp=5532434&sparams=expire%2Cei%2Cip%2Cid%2Citag%2Csource%2Crequiressl%2Cxpc%2Cgcr%2Cbui%2Cspc%2Cvprv%2Cmime%2Crqh%2Cgir%2Cclen%2Cdur%2Clmt&sig=AJfQdSswRgIhAOifGjTT0IdRaFmBAZod968stKAZmd__o-5SWjZt12I7AiEAy6eDrkzsOe4MvGGvRRzIahc5jO2v8kmk4Q1RC0FuDcU%3D&redirect_counter=1&cm2rm=sn-uigxx03-ajtl7l&rrc=80&req_id=d7352f1fc7fea3ee&cms_redirect=yes&cmsv=e&met=1741124433,&mh=8E&mm=29&mn=sn-aigl6nzr&ms=rdu&mt=1741123305&mv=u&mvi=3&pl=58&rms=rdu,au&lsparams=met,mh,mm,mn,ms,mv,mvi,pl,rms&lsig=AFVRHeAwRgIhAJIfNqmguexocXYDDKhMK9NN-XYytT2duAVnZckuLrWjAiEAjqIaAGkKDLF_QKytSKVMdrOAoJnhbx-QbcFcV3p6Hbc%3D"
-        val exoPlayer = ExoPlayer.Builder(requireContext()).build().apply {
-            setMediaItem(MediaItem.fromUri(mediaUrl))
-            prepare()
-            play()
-        }
+        val exoPlayer = ExoPlayer.Builder(requireContext())
+            .build()
+
+        exoPlayer.setMediaItem(MediaItem.fromUri(mediaUrl))
+
 
 
         val metadata = MediaMetadataCompat.Builder()
@@ -102,6 +102,20 @@ class HomeFragment : Fragment() {
             .build()
         mediaSession.setMetadata(metadata)
 
+        mediaSession.setCallback(
+            object : MediaSessionCompat.Callback() {
+                override fun onPlay() {
+                    super.onPlay()
+                    exoPlayer.play()
+                }
+
+                override fun onPause() {
+                    super.onPause()
+                    exoPlayer.pause()
+                }
+            }
+        )
+
         val mediaSessionMe = MediaControllerCompat(requireContext(), mediaSession)
 
         val notificationMediaNotificationManager =
@@ -114,7 +128,11 @@ class HomeFragment : Fragment() {
                 )
                 .setChannelImportance(NotificationUtil.IMPORTANCE_HIGH)
                 .setCustomActionReceiver(NotificationCustomActions(requireContext()))
-                .setNotificationListener(NotificationListenerService(exoPlayer))
+                .setNotificationListener(
+                    NotificationListenerService(exoPlayer,
+                    mediaSession
+                    )
+                )
                 .build()
 
         mediaSession.setPlaybackState(
@@ -122,10 +140,11 @@ class HomeFragment : Fragment() {
                 .setState(PlaybackStateCompat.STATE_PLAYING, exoPlayer.currentPosition,
                     1F
                 )
-                .setActions(PlaybackStateCompat.ACTION_PLAY or
-                        PlaybackStateCompat.ACTION_SKIP_TO_NEXT or
-                        PlaybackStateCompat.ACTION_SKIP_TO_PREVIOUS or
-                        PlaybackStateCompat.ACTION_SEEK_TO
+                .setActions(
+                    PlaybackStateCompat.ACTION_PLAY_PAUSE or
+                            PlaybackStateCompat.ACTION_SKIP_TO_NEXT or
+                            PlaybackStateCompat.ACTION_SKIP_TO_PREVIOUS or
+                            PlaybackStateCompat.ACTION_SEEK_TO
                 )
                 .addCustomAction(
                     ACTION_ADD_TO_WATCH_LATER, "myFavButton",

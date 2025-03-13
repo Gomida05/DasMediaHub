@@ -2,13 +2,13 @@ package com.das.forui.ui.watch_later
 
 import android.app.AlertDialog
 import android.content.Context
+import android.content.Intent
 import android.database.Cursor
 import android.os.Bundle
 import android.util.Log
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
-import android.widget.AdapterView
 import android.widget.ArrayAdapter
 import android.widget.ImageView
 import android.widget.TextView
@@ -16,9 +16,13 @@ import androidx.fragment.app.Fragment
 import androidx.navigation.fragment.findNavController
 import com.bumptech.glide.Glide
 import com.das.forui.MainActivity
+import com.das.forui.MainApplication
 import com.das.forui.R
 import com.das.forui.databased.DatabaseFavorite
 import com.das.forui.databinding.FragmentWatchLaterBinding
+import com.das.forui.objectsAndData.ForUIKeyWords.ACTION_START
+import com.das.forui.services.AudioServiceFromUrl
+import com.das.forui.ui.viewer.ViewerFragment
 
 class WatchLaterFragment: Fragment() {
     private var _binding: FragmentWatchLaterBinding? = null
@@ -49,25 +53,61 @@ class WatchLaterFragment: Fragment() {
     override fun onStart() {
         super.onStart()
 
-        binding.listView.setOnItemLongClickListener(object : AdapterView.OnItemLongClickListener {
-            override fun onItemLongClick(
-                parent: AdapterView<*>?,
-                view: View?,
-                position: Int,
-                id: Long
-            ): Boolean {
+        binding.listView.setOnItemLongClickListener { _, _, position, _ ->
+            val selectedIds = adapter.getItem(position)
+
+            val selectedId = ids[position]
+            if (selectedIds != null) {
+                val selectedData = ViewerFragment.Video(
+                    selectedId,
+                    selectedIds.title,
+                    selectedIds.viewer,
+                    selectedIds.dateTime,
+                    selectedIds.duration,
+                    selectedIds.channelName,
+                    ""
+                )
                 AlertDialog.Builder(requireContext())
                     .setTitle("Are you sure you want to remove this item?")
                     .setPositiveButton("Yes") { _, _ ->
-                        val selectedId = ids[position]
                         adapter.removeItem(position, selectedId)
                     }
                     .setNegativeButton("No") { _, _ -> }
-                    .show()
-                return true
+                    .setNeutralButton(
+                        "Background"
+                    ) { _, _ ->
+                        MainApplication().getListItemsStreamUrls(
+                            selectedData,
+                            onSuccess = { result ->
+                                val playIntent =
+                                    Intent(
+                                        requireContext(),
+                                        AudioServiceFromUrl::class.java
+                                    ).apply {
+                                        action = ACTION_START
+                                        putExtra("videoId", selectedId)
+                                        putExtra("media_url", result.audioUrl)
+                                        putExtra("title", selectedData.title)
+                                        putExtra("channelName", selectedData.channelName)
+                                        putExtra("viewNumber", selectedData.views)
+                                        putExtra("videoDate", selectedData.dateOfVideo)
+                                        putExtra("duration", selectedData.duration)
+                                    }
+                                activity?.startService(playIntent)
+                            },
+                            onFailure = { errorMessage ->
+                                // Handle the error (e.g., show a dialog with the error message)
+                                println("Error: $errorMessage")
+                            }
+                        )
+                    }.show()
+                true
+            }
+            else{
+                false
             }
         }
-        )
+
         binding.listView.setOnItemClickListener { _, _, position, _ ->
             onClickListListener(ids[position])
         }

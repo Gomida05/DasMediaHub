@@ -1,6 +1,7 @@
 package com.das.forui.ui.result
 
 import android.app.AlertDialog
+import android.content.Intent
 import android.os.Bundle
 import android.view.LayoutInflater
 import android.view.View
@@ -56,7 +57,11 @@ import com.bumptech.glide.Glide
 import com.das.forui.MainActivity
 import com.das.forui.databinding.FragmentResultBinding
 import com.das.forui.MainActivity.Youtuber.pythonInstant
+import com.das.forui.MainApplication
 import com.das.forui.R
+import com.das.forui.objectsAndData.ForUIKeyWords.ACTION_START
+import com.das.forui.services.AudioServiceFromUrl
+import com.das.forui.ui.viewer.ViewerFragment.Video
 import com.google.gson.Gson
 import com.google.gson.reflect.TypeToken
 import kotlinx.coroutines.Dispatchers
@@ -205,8 +210,10 @@ class ResultFragment : Fragment() {
                     },
                     onLongClick = {
                         imageViewer(
-                            videoId,
-                            title
+                            Video(
+                                videoId, title, viewsNumber, dateOfVideo,
+                                duration, channelName, channelThumbnails
+                            )
                         )
                     }
                 )
@@ -314,8 +321,10 @@ class ResultFragment : Fragment() {
                         IconButton(
                             onClick = {
                              imageViewer(
-                                 videoId,
-                                 title
+                                 Video(
+                                     videoId, title, viewsNumber, dateOfVideo,
+                                     duration, channelName, channelThumbnails
+                                 )
                              )
                             }
 
@@ -346,8 +355,8 @@ class ResultFragment : Fragment() {
     }
 
 
-    private fun imageViewer(selectedID: String, title: String) {
-        val thumbnailUrl = "https://img.youtube.com/vi/$selectedID/0.jpg"
+    private fun imageViewer(selectedItem: Video) {
+        val thumbnailUrl = "https://img.youtube.com/vi/${selectedItem.videoId}/0.jpg"
         val inflater = LayoutInflater.from(context)
         val dialogView = inflater.inflate(R.layout.dialog_with_image, null)
         val imageView: ImageView = dialogView.findViewById(R.id.dialog_image)
@@ -362,16 +371,41 @@ class ResultFragment : Fragment() {
             .setView(dialogView)
             .setPositiveButton("Video") { _, _ ->
                 (activity as MainActivity).downloadVideo(
-                    selectedID,
-                    title,
+                    selectedItem.videoId,
+                    selectedItem.title,
                     requireContext()
                 )
             }
             .setNegativeButton("Music") { _, _ ->
                 (activity as MainActivity).downloadMusic(
-                    selectedID,
-                    title,
+                    selectedItem.videoId,
+                    selectedItem.title,
                     requireContext()
+                )
+            }
+            .setNeutralButton(
+                "Background"
+            ) { _, _, ->
+                MainApplication().getListItemsStreamUrls(
+                    selectedItem,
+                    onSuccess = { result ->
+                        val playIntent =
+                            Intent(requireContext(), AudioServiceFromUrl::class.java).apply {
+                                action = ACTION_START
+                                putExtra("videoId", selectedItem.videoId)
+                                putExtra("media_url", result.audioUrl)
+                                putExtra("title", selectedItem.title)
+                                putExtra("channelName", selectedItem.channelName)
+                                putExtra("viewNumber", selectedItem.views)
+                                putExtra("videoDate", selectedItem.dateOfVideo)
+                                putExtra("duration", selectedItem.duration)
+                            }
+                        activity?.startService(playIntent)
+                    },
+                    onFailure = { errorMessage ->
+                        // Handle the error (e.g., show a dialog with the error message)
+                        println("Error: $errorMessage")
+                    }
                 )
             }.show()
     }

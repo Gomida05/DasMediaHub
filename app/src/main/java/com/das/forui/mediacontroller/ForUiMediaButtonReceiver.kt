@@ -11,7 +11,7 @@ import com.das.forui.services.AudioServiceFromUrl
 class ForUiMediaButtonReceiver : BroadcastReceiver() {
 
     override fun onReceive(context: Context, intent: Intent) {
-        val exoPlayer = AudioServiceFromUrl().exoPlayer
+        val exoPlayer = AudioServiceFromUrl().exoPlayerOfAudioServiceFromUrl
         val mediaSession = AudioServiceFromUrl().mediaSession
         val videoId = AudioServiceFromUrl().videoId
         val action = intent.action

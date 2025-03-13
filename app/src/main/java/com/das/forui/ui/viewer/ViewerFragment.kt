@@ -80,6 +80,7 @@ import java.time.ZonedDateTime
 import java.time.format.DateTimeFormatter
 import java.util.Locale
 import com.das.forui.MainActivity.Youtuber.pythonInstant
+import com.das.forui.MainApplication
 import com.das.forui.objectsAndData.ForUIKeyWords.ACTION_START
 import com.google.android.exoplayer2.trackselection.DefaultTrackSelector
 import com.google.android.exoplayer2.trackselection.TrackSelectionParameters
@@ -299,7 +300,6 @@ class ViewerFragment: Fragment() {
                         putExtra("viewNumber",viewNumber)
                         putExtra("videoDate", dateOfVideo)
                         putExtra("duration", duration)
-                        putExtra("exoPlayerDuration", exoPlayer?.duration!!)
                     }
                     activity?.startService(playIntent)
                 }
@@ -491,7 +491,11 @@ class ViewerFragment: Fragment() {
                         )
                     },
                     onLongClick = {
-                        imageViewer(videoId, title)
+                        imageViewer(
+                            Video(
+                            videoId, title, viewsNumber, dateOfVideo,
+                            duration, channelName, channelThumbnails
+                        ))
                     }
                 ),
             shape = RoundedCornerShape(1)
@@ -606,7 +610,12 @@ class ViewerFragment: Fragment() {
                     }
                     IconButton(
                         onClick = {
-                            imageViewer(videoId, title)
+                            imageViewer(
+                                Video(
+                                    videoId, title, viewsNumber, dateOfVideo,
+                                    duration, channelName, channelThumbnails
+                                )
+                            )
                         }
 
                     ) {
@@ -789,8 +798,8 @@ class ViewerFragment: Fragment() {
 
 
 
-    private fun imageViewer(selectedID: String, title: String) {
-        val thumbnailUrl = "https://img.youtube.com/vi/$selectedID/0.jpg"
+    private fun imageViewer(selectedItem: Video) {
+        val thumbnailUrl = "https://img.youtube.com/vi/${selectedItem.videoId}/0.jpg"
         val inflater = LayoutInflater.from(context)
         val dialogView = inflater.inflate(R.layout.dialog_with_image, null)
         val imageView: ImageView = dialogView.findViewById(R.id.dialog_image)
@@ -800,23 +809,50 @@ class ViewerFragment: Fragment() {
             .error(R.drawable.close)
             .centerCrop()
             .into(imageView)
+
         AlertDialog.Builder(context)
-            .setTitle("Do you want to download it as video or audio?")
+            .setTitle("Do you want to download it as video or audio? or play it in background")
             .setView(dialogView)
             .setPositiveButton("Video") { _, _ ->
                 (activity as MainActivity).downloadVideo(
-                    selectedID,
-                    title,
+                    selectedItem.videoId,
+                    selectedItem.title,
                     requireContext()
                 )
             }
             .setNegativeButton("Music") { _, _ ->
                 (activity as MainActivity).downloadMusic(
-                    selectedID,
-                    title,
+                    selectedItem.videoId,
+                    selectedItem.title,
                     requireContext()
                 )
-            }.show()
+            }
+            .setNeutralButton(
+                "Background"
+            ) { _, _ ->
+                MainApplication().getListItemsStreamUrls(
+                    selectedItem,
+                    onSuccess = { result ->
+                        val playIntent = Intent(requireContext(), AudioServiceFromUrl::class.java).apply {
+                            action = ACTION_START
+                            putExtra("videoId", selectedItem.videoId)
+                            putExtra("media_url", result.audioUrl)
+                            putExtra("title", selectedItem.title)
+                            putExtra("channelName", selectedItem.channelName)
+                            putExtra("viewNumber",selectedItem.views)
+                            putExtra("videoDate", selectedItem.dateOfVideo)
+                            putExtra("duration", selectedItem.duration)
+                        }
+                        activity?.startService(playIntent)
+                    },
+                    onFailure = { errorMessage ->
+                        // Handle the error (e.g., show a dialog with the error message)
+                        println("Error: $errorMessage")
+                    }
+                )
+
+            }
+            .show()
     }
 
 
