@@ -18,9 +18,11 @@ import android.os.IBinder
 import android.support.v4.media.MediaMetadataCompat
 import android.support.v4.media.session.MediaSessionCompat
 import android.util.Log
+import android.view.KeyEvent
 import androidx.core.app.NotificationCompat
 import androidx.core.net.toUri
 import androidx.media.app.NotificationCompat.MediaStyle
+import androidx.media.session.MediaButtonReceiver
 import com.das.forui.MainActivity
 import com.das.forui.R.drawable
 import com.das.forui.databased.PathSaver
@@ -112,6 +114,14 @@ class BackGroundPlayer: Service() {
                         exoPlayer?.shuffleModeEnabled!!
                     )
                 )
+                mediaSession.setMetadata(
+                    mediaMetaDetails(
+                        exoPlayer?.currentMediaItem?.mediaMetadata?.title!!.toString(),
+                        exoPlayer?.currentMediaItem?.requestMetadata?.mediaUri.toString(),
+                        exoPlayer?.duration!!
+                    )
+                )
+                createMediaNotification()
             }
 
             override fun onPositionDiscontinuity(
@@ -138,6 +148,14 @@ class BackGroundPlayer: Service() {
                 if (playbackState == Player.STATE_ENDED) {
                     mediaSession.setPlaybackState(
                         BackgroundPlayerStates().setStateToPaused(
+                            exoPlayer?.currentPosition!!,
+                            exoPlayer?.shuffleModeEnabled!!
+                        )
+                    )
+                }
+                if (playbackState == Player.STATE_BUFFERING){
+                    mediaSession.setPlaybackState(
+                        BackgroundPlayerStates().setStateToLoading(
                             exoPlayer?.currentPosition!!,
                             exoPlayer?.shuffleModeEnabled!!
                         )
@@ -172,16 +190,17 @@ class BackGroundPlayer: Service() {
                             exoPlayer?.shuffleModeEnabled!!
                         )
                     )
-                }
 
 
-                mediaSession.setMetadata(
-                    mediaMetaDetails(
-                        exoPlayer?.currentMediaItem?.mediaMetadata?.title.toString(),
-                        mediaUri,
-                        exoPlayer?.duration!!
+
+                    mediaSession.setMetadata(
+                        mediaMetaDetails(
+                            exoPlayer?.currentMediaItem?.mediaMetadata?.title.toString(),
+                            mediaUri,
+                            exoPlayer?.duration!!
+                        )
                     )
-                )
+                }
 
             }
 
@@ -213,7 +232,17 @@ class BackGroundPlayer: Service() {
                             exoPlayer?.shuffleModeEnabled!!
                         )
                     )
-                }else{
+                }
+                if (!isPlaying && exoPlayer?.isLoading!!) {
+                    mediaSession.setPlaybackState(
+                        BackgroundPlayerStates().setStateToLoading(
+                            exoPlayer?.currentPosition!!,
+                            exoPlayer?.shuffleModeEnabled!!
+                        )
+                    )
+                }
+                if (!isPlaying && !exoPlayer?.isLoading!!){
+
                     mediaSession.setPlaybackState(
                         BackgroundPlayerStates().setStateToPaused(
                             exoPlayer?.currentPosition!!,
@@ -295,6 +324,7 @@ class BackGroundPlayer: Service() {
 
 
 
+        MediaButtonReceiver.handleIntent(mediaSession, intent)
         val notifications = createMediaNotification()
         startForeground(1, notifications)
         return START_STICKY
@@ -552,7 +582,8 @@ class BackGroundPlayer: Service() {
 
         override fun onCustomAction(action: String?, extras: Bundle?) {
             super.onCustomAction(action, extras)
-            if (action.toString() == SET_SHUFFLE_MODE){
+            val actions = action.toString()
+            if (actions == SET_SHUFFLE_MODE){
                 exoPlayer?.shuffleModeEnabled = exoPlayer?.shuffleModeEnabled != true
 
                 mediaSession.setPlaybackState(
@@ -562,16 +593,59 @@ class BackGroundPlayer: Service() {
                     )
                 )
             }
-            if (action.toString() == ACTION_KILL){
+            if (action == ACTION_KILL){
                 exoPlayer?.let {
                     it.stop()
                     it.release()
                 }
+                mediaSession.release()
+                exoPlayer?.release()
                 stopSelf()
                 val notificationManager = getSystemService(NotificationManager::class.java)
                 notificationManager?.cancel(1)
 
             }
+        }
+
+
+        override fun onMediaButtonEvent(mediaButtonEvent: Intent?): Boolean {
+            mediaButtonEvent?.let {
+
+                if (it.action == Intent.ACTION_MEDIA_BUTTON) {
+                    // Extract the key event from the intent
+                    val keyEvent: KeyEvent? = it.getParcelableExtra(Intent.EXTRA_KEY_EVENT)
+                    keyEvent?.let { event ->
+                        when (event.keyCode) {
+
+                            KeyEvent.KEYCODE_MEDIA_PAUSE ->{
+                                exoPlayer?.pause()
+                            }
+
+                            KeyEvent.KEYCODE_MEDIA_PLAY ->{
+                                exoPlayer?.play()
+                            }
+
+                            KeyEvent.KEYCODE_MEDIA_NEXT -> {
+                                onSkipToNext()
+                                return true
+                            }
+
+                            KeyEvent.KEYCODE_MEDIA_PREVIOUS -> {
+                                exoPlayer?.seekToPrevious()
+                                return true
+                            }
+
+                            else -> {
+                                return true
+                            }
+                        }
+                    }
+                }
+            }
+            // If the event is not handled, call the superclass method
+            return super.onMediaButtonEvent(mediaButtonEvent)
+
+
         }
 
 
@@ -618,10 +692,15 @@ class BackGroundPlayer: Service() {
     }
 
 
-
+    override fun stopService(name: Intent?): Boolean {
+        mediaSession.release()
+        exoPlayer?.release()
+        return super.stopService(name)
+    }
 
     override fun onDestroy() {
         super.onDestroy()
+        mediaSession.release()
         exoPlayer?.release()
     }
 }
