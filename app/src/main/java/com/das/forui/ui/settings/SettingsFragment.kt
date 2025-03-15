@@ -1,13 +1,11 @@
 @file:Suppress("DEPRECATION")
 package com.das.forui.ui.settings
 
-
 import android.app.Activity
 import android.content.Context
 import android.content.Intent
 import android.net.Uri
 import android.os.Bundle
-import android.util.Log
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
@@ -17,6 +15,7 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.ArrowForward
 import androidx.compose.material.icons.filled.Folder
@@ -26,7 +25,6 @@ import androidx.compose.material.icons.filled.Update
 import androidx.compose.material.icons.filled.VideoLibrary
 import androidx.compose.material3.Button
 import androidx.compose.material3.AlertDialog
-import androidx.compose.material3.ButtonColors
 import androidx.compose.material3.Icon
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
@@ -37,7 +35,7 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.platform.ViewCompositionStrategy
 import androidx.compose.ui.unit.dp
@@ -45,6 +43,7 @@ import androidx.compose.ui.unit.sp
 import androidx.documentfile.provider.DocumentFile
 import androidx.fragment.app.Fragment
 import androidx.navigation.fragment.findNavController
+import com.das.forui.CustomTheme
 import com.das.forui.MainActivity
 import com.das.forui.databased.PathSaver
 import com.das.forui.R
@@ -66,43 +65,48 @@ class SettingsFragment : Fragment() {
 
     _binding = FragmentSettingsBinding.inflate(inflater, container, false)
 
-    binding.settingsListFromComposeView.apply {
-      setViewCompositionStrategy(ViewCompositionStrategy.DisposeOnViewTreeLifecycleDestroyed)
-      setContent {
-        ListSettingsItem()
-      }
-    }
+
     return binding.root
   }
 
 
+  override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
+    super.onViewCreated(view, savedInstanceState)
+    binding.settingsListFromComposeView.apply {
+      setViewCompositionStrategy(ViewCompositionStrategy.DisposeOnViewTreeLifecycleDestroyed)
+      setContent {
+        CustomTheme {
+          ListSettingsItem()
+        }
+      }
+    }
+  }
 
   @Composable
   private fun ListSettingsItem() {
     val settingsResults = remember { mutableStateOf<List<SettingsDataClass>>(emptyList()) }
 
-      val item = listOf(
-        "Setting for searchList",
-        "HeadLine",
-        "Change Downloading Location",
-        "Check for update",
-        "About Us"
-      )
-      val leftIcons = listOf(
-        Icons.Default.ManageSearch,
-        Icons.Default.VideoLibrary,
-        Icons.Default.Folder,
-        Icons.Default.Update,
-        Icons.Default.Info
-      )
-      val rightIcons = listOf(
-        Icons.Default.ArrowForward,
-        Icons.Default.ArrowForward,
-        Icons.Default.ArrowForward,
-        Icons.Default.ArrowForward,
-        Icons.Default.ArrowForward
-      )
-
+    val item = listOf(
+      "Setting for searchList",
+      "HeadLine",
+      "Change Downloading Location",
+      "Check for update",
+      "About Us"
+    )
+    val leftIcons = listOf(
+      Icons.Default.ManageSearch,
+      Icons.Default.VideoLibrary,
+      Icons.Default.Folder,
+      Icons.Default.Update,
+      Icons.Default.Info
+    )
+    val rightIcons = listOf(
+      Icons.Default.ArrowForward,
+      Icons.Default.ArrowForward,
+      Icons.Default.ArrowForward,
+      Icons.Default.ArrowForward,
+      Icons.Default.ArrowForward
+    )
     val allItems = item.zip(leftIcons).zip(rightIcons) { titleIconPair, rightIcon ->
       SettingsDataClass(
         title = titleIconPair.first,
@@ -110,17 +114,19 @@ class SettingsFragment : Fragment() {
         rightIcon = rightIcon
       )
     }
+    settingsResults.value = allItems
+
     LazyColumn(
       modifier = Modifier
     ) {
-      settingsResults.value = allItems
+
       items(settingsResults.value) { settingsItem ->
         CategoryItems(
           title = settingsItem.title,
           leftHandIcon = settingsItem.leftIcon,
           rightHandIcon = settingsItem.rightIcon
 
-          )
+        )
       }
     }
   }
@@ -135,8 +141,8 @@ class SettingsFragment : Fragment() {
 
       Button(
         onClick = {showAlertDialog = true},
-        colors = ButtonColors(Color.Black, Color.White, Color.Red, Color.Blue),
         modifier = Modifier
+          .clip(RoundedCornerShape(1))
           .fillMaxWidth()
           .height(80.dp)
           .padding(top = 2.dp, bottom = 2.dp)

@@ -6,7 +6,7 @@ import com.das.forui.R
 import com.das.forui.databased.DatabaseFavorite
 import com.das.forui.objectsAndData.ForUIKeyWords.ACTION_ADD_TO_WATCH_LATER
 import com.das.forui.objectsAndData.ForUIKeyWords.ACTION_KILL
-import com.das.forui.ui.viewer.ViewerFragment.Video
+import com.das.forui.objectsAndData.VideosListData
 
 class MediaSessionPlaybackState(private val context: Context) {
 
@@ -80,7 +80,7 @@ class MediaSessionPlaybackState(private val context: Context) {
 
     fun addItOrRemoveFromDB(
         currentPosition: Long,
-        video: Video
+        videosListData: VideosListData
     ): PlaybackStateCompat{
         val db = DatabaseFavorite(context)
         val playbackSate = PlaybackStateCompat.Builder()
@@ -94,8 +94,8 @@ class MediaSessionPlaybackState(private val context: Context) {
                         PlaybackStateCompat.ACTION_SEEK_TO
             )
             .setBufferedPosition(currentPosition)
-        if (isAddedToTheDataBased(video.videoId)){
-            db.deleteWatchUrl(video.videoId)
+        if (isAddedToTheDataBased(videosListData.videoId)){
+            db.deleteWatchUrl(videosListData.videoId)
             playbackSate
                 .addCustomAction(ACTION_ADD_TO_WATCH_LATER, "myFavButton", R.drawable.un_favorite_icon)
                 .addCustomAction(ACTION_KILL, "myStopButton", R.drawable.stop_circle_24dp)
@@ -103,8 +103,8 @@ class MediaSessionPlaybackState(private val context: Context) {
         }
         else{
             db.insertData(
-                video.videoId, video.title, video.dateOfVideo,
-                video.views, video.channelName, video.duration
+                videosListData.videoId, videosListData.title, videosListData.dateOfVideo,
+                videosListData.views, videosListData.channelName, videosListData.duration
             )
             playbackSate
                 .addCustomAction(ACTION_ADD_TO_WATCH_LATER, "myFavButton", R.drawable.favorite)

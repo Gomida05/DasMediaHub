@@ -252,7 +252,7 @@ class MainActivity : AppCompatActivity() {
     fun downloadVideo(link: String, title: String, contexts: Context) {
         val path = PathSaver().getVideosDownloadPath(contexts)
 //                createSingleDirectory("/storage/emulated/0/Movies/ForUI")
-        createSingleDirectory(path.toString())
+        createSingleDirectory(path)
         try {
             var forToast: String
             val mainFile = pythonInstant.getModule("main")
@@ -305,7 +305,7 @@ class MainActivity : AppCompatActivity() {
     fun downloadMusic(receivedLink: String, title: String, context: Context) {
         val path = PathSaver().getAudioDownloadPath(context)
         println("given path \n$path")
-        createSingleDirectory(path.toString())
+        createSingleDirectory(path)
         try {
             var forToast: String
             val mainFile = pythonInstant.getModule("main")
@@ -373,7 +373,9 @@ class MainActivity : AppCompatActivity() {
                 POST_NOTIFICATIONS
             ) != PackageManager.PERMISSION_GRANTED
         ) {
-            ActivityCompat.requestPermissions(this, arrayOf(POST_NOTIFICATIONS), 0)
+            if (Build.VERSION.SDK_INT >= TIRAMISU) {
+                ActivityCompat.requestPermissions(this, arrayOf(POST_NOTIFICATIONS), 0)
+            }
             return
         }
         notificationManager.notify(notificationId, notification)
@@ -409,7 +411,9 @@ class MainActivity : AppCompatActivity() {
                 POST_NOTIFICATIONS
             ) != PackageManager.PERMISSION_GRANTED
         ) {
-            ActivityCompat.requestPermissions(this, arrayOf(POST_NOTIFICATIONS), 0)
+            if (Build.VERSION.SDK_INT >= TIRAMISU) {
+                ActivityCompat.requestPermissions(this, arrayOf(POST_NOTIFICATIONS), 0)
+            }
             return
         }
         notificationManager.notify(1001, notification)  // Unique ID for your notification
@@ -568,4 +572,7 @@ class MainActivity : AppCompatActivity() {
             return match?.groups?.get(1)?.value
         }
     }
+
+
+
 }

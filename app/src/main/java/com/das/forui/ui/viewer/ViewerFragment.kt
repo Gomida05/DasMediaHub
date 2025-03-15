@@ -33,7 +33,6 @@ import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.MoreVert
-import androidx.compose.material3.Card
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
@@ -45,9 +44,11 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.rememberVectorPainter
 import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.ViewCompositionStrategy
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
@@ -59,14 +60,15 @@ import coil.compose.AsyncImage
 import coil.request.ImageRequest
 import com.bumptech.glide.Glide
 import com.bumptech.glide.load.resource.bitmap.CircleCrop
+import com.das.forui.CustomTheme
 import com.das.forui.services.AudioServiceFromUrl
 import com.das.forui.DownloaderClass
 import com.das.forui.MainActivity
 import com.das.forui.R
 import com.das.forui.databased.DatabaseFavorite
 import com.das.forui.databinding.VideoViewerBinding
-import com.das.forui.ui.viewer.GlobalVideoList.listOfVideos
-import com.das.forui.ui.viewer.GlobalVideoList.previousVideos
+import com.das.forui.ui.viewer.GlobalVideoList.listOfVideosListData
+import com.das.forui.ui.viewer.GlobalVideoList.previousVideosListData
 import com.google.android.exoplayer2.ExoPlayer
 import com.google.android.exoplayer2.MediaItem
 import com.google.android.exoplayer2.Player
@@ -82,6 +84,7 @@ import java.util.Locale
 import com.das.forui.MainActivity.Youtuber.pythonInstant
 import com.das.forui.MainApplication
 import com.das.forui.objectsAndData.ForUIKeyWords.ACTION_START
+import com.das.forui.objectsAndData.VideosListData
 import com.google.android.exoplayer2.trackselection.DefaultTrackSelector
 import com.google.android.exoplayer2.trackselection.TrackSelectionParameters
 import kotlinx.coroutines.CoroutineScope
@@ -120,7 +123,7 @@ class ViewerFragment: Fragment() {
 
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
-        listOfVideos.clear()
+        listOfVideosListData.clear()
         (activity as MainActivity).hideBottomNav()
         videoID = arguments?.getString("View_ID").toString()
         playerView = binding.videoPlayerLocally
@@ -175,9 +178,11 @@ class ViewerFragment: Fragment() {
             binding.myComposeView2.apply {
                 setViewCompositionStrategy(ViewCompositionStrategy.DisposeOnViewTreeLifecycleDestroyed)
                 setContent {
-                    SuggestedVideos(
-                        videoTitle
-                    )
+                    CustomTheme {
+                        SuggestedVideos(
+                            videoTitle
+                        )
+                    }
                 }
             }
             Glide.with(requireContext())
@@ -208,9 +213,11 @@ class ViewerFragment: Fragment() {
                             binding.myComposeView2.apply {
                                 setViewCompositionStrategy(ViewCompositionStrategy.DisposeOnViewTreeLifecycleDestroyed)
                                 setContent {
-                                    SuggestedVideos(
-                                        videoTitle
-                                    )
+                                    CustomTheme {
+                                        SuggestedVideos(
+                                            videoTitle
+                                        )
+                                    }
                                 }
                             }
                         }
@@ -376,22 +383,22 @@ class ViewerFragment: Fragment() {
 
 
 
-    private fun playThisOne(gotIndex: Int = 1, videoDetails: Video = listOfVideos[gotIndex]){
+    private fun playThisOne(gotIndex: Int = 1, videosListDataDetails: VideosListData = listOfVideosListData[gotIndex]){
         exoPlayer?.let {
             it.stop()
             it.release()
         }
         val bundle = Bundle().apply {
-            putString("View_ID", videoDetails.videoId)
-            putString("View_URL", "https://www.youtube.com/watch?v=${videoDetails.videoId}")
-            putString("View_Title", videoDetails.title)
-            putString("View_Number", videoDetails.views)
-            putString("dateOfVideo", videoDetails.dateOfVideo)
-            putString("channelName", videoDetails.channelName)
-            putString("duration", videoDetails.duration)
-            putString("channel_Thumbnails", videoDetails.channelThumbnailsUrl)
+            putString("View_ID", videosListDataDetails.videoId)
+            putString("View_URL", "https://www.youtube.com/watch?v=${videosListDataDetails.videoId}")
+            putString("View_Title", videosListDataDetails.title)
+            putString("View_Number", videosListDataDetails.views)
+            putString("dateOfVideo", videosListDataDetails.dateOfVideo)
+            putString("channelName", videosListDataDetails.channelName)
+            putString("duration", videosListDataDetails.duration)
+            putString("channel_Thumbnails", videosListDataDetails.channelThumbnailsUrl)
         }
-        previousVideos.add(videoDetails)
+        previousVideosListData.add(videosListDataDetails)
         findNavController().run {
             popBackStack()
             navigate(R.id.nav_video_viewer, bundle)
@@ -404,7 +411,7 @@ class ViewerFragment: Fragment() {
     @Composable
     fun SuggestedVideos( titleVideo: String) {
 
-        val searchResults = remember { mutableStateOf<List<Video>>(emptyList()) }
+        val searchResults = remember { mutableStateOf<List<VideosListData>>(emptyList()) }
         val isLoading = remember { mutableStateOf(true) }
 
 
@@ -422,6 +429,16 @@ class ViewerFragment: Fragment() {
 
 
         Scaffold{ paddingValues ->
+//            AndroidView(
+//                { context ->
+//
+//                    LayoutInflater.from(context)
+//                        .inflate(android.R.layout.activity_list_item, null)
+//                        .apply {                     // Nested Scroll Interop will be Enabled when                     // nested scroll is enabled for the root view                     ViewCompat. setNestedScrollingEnabled(this, true)                 }         }
+//                        }
+//                }
+//            )
+
             Box(
                 modifier = Modifier
                     .fillMaxSize()
@@ -451,7 +468,7 @@ class ViewerFragment: Fragment() {
                                     videoThumbnailURL = searchItem.videoId,
                                     channelThumbnails = searchItem.channelThumbnailsUrl
                                     )
-                                listOfVideos.add(searchItem)
+                                listOfVideosListData.add(searchItem)
 
                             }
                         }
@@ -474,17 +491,18 @@ class ViewerFragment: Fragment() {
         videoThumbnailURL: String,
         channelThumbnails: String
     ){
-        val context= requireContext()
+        val context= LocalContext.current
 
 
-        Card(
+        Box(
             modifier = Modifier
+                .clip(RoundedCornerShape(1))
                 .fillMaxWidth()
                 .padding(bottom = 3.dp, top = 3.dp)
                 .combinedClickable(
                     onClick = {
                         playThisOne(
-                            videoDetails = Video(
+                            videosListDataDetails = VideosListData(
                                 videoId, title, viewsNumber, dateOfVideo,
                                 duration, channelName, channelThumbnails
                             )
@@ -492,13 +510,12 @@ class ViewerFragment: Fragment() {
                     },
                     onLongClick = {
                         imageViewer(
-                            Video(
+                            VideosListData(
                             videoId, title, viewsNumber, dateOfVideo,
                             duration, channelName, channelThumbnails
                         ))
                     }
-                ),
-            shape = RoundedCornerShape(1)
+                )
         ) {
             Column (
                 modifier = Modifier
@@ -525,10 +542,9 @@ class ViewerFragment: Fragment() {
                         color = Color.White,
                         textAlign = TextAlign.Center,
                         modifier = Modifier
-                            .width(40.dp)
                             .padding(end = 3.dp, bottom = 3.dp)
                             .align(Alignment.BottomEnd)
-                            .background(Color.DarkGray, RoundedCornerShape(5.dp))
+                            .background(Color(0xCC2C2B2B), RoundedCornerShape(5.dp))
                     )
                 }
 
@@ -611,7 +627,7 @@ class ViewerFragment: Fragment() {
                     IconButton(
                         onClick = {
                             imageViewer(
-                                Video(
+                                VideosListData(
                                     videoId, title, viewsNumber, dateOfVideo,
                                     duration, channelName, channelThumbnails
                                 )
@@ -798,7 +814,7 @@ class ViewerFragment: Fragment() {
 
 
 
-    private fun imageViewer(selectedItem: Video) {
+    private fun imageViewer(selectedItem: VideosListData) {
         val thumbnailUrl = "https://img.youtube.com/vi/${selectedItem.videoId}/0.jpg"
         val inflater = LayoutInflater.from(context)
         val dialogView = inflater.inflate(R.layout.dialog_with_image, null)
@@ -935,28 +951,18 @@ class ViewerFragment: Fragment() {
     }
 
 
-    private fun callPythonSearchSuggestion(inputText: String): List<Video>? {
+    private fun callPythonSearchSuggestion(inputText: String): List<VideosListData>? {
         return try {
 
             val mainFile = pythonInstant.getModule("main")
             val getResultFromPython = mainFile["Searcher"]?.call(inputText).toString()
-            val videoListType = object : TypeToken<List<Video>>() {}.type
-            Gson().fromJson(getResultFromPython, videoListType)
+            val videosListDataListType = object : TypeToken<List<VideosListData>>() {}.type
+            Gson().fromJson(getResultFromPython, videosListDataListType)
         } catch (e: Exception) {
             e.printStackTrace()
             return null
         }
     }
-
-    data class Video(
-        val videoId: String,
-        val title: String,
-        val views: String,
-        val dateOfVideo: String,
-        val duration: String,
-        val channelName: String,
-        val channelThumbnailsUrl: String
-    )
 
 
 
@@ -976,6 +982,6 @@ class ViewerFragment: Fragment() {
 }
 
 object GlobalVideoList {
-    val listOfVideos = mutableListOf<ViewerFragment.Video>()
-    val previousVideos = mutableListOf<ViewerFragment.Video>()
+    val listOfVideosListData = mutableListOf<VideosListData>()
+    val previousVideosListData = mutableListOf<VideosListData>()
 }

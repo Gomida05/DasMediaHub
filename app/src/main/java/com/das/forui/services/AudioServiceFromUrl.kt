@@ -31,7 +31,7 @@ import com.das.forui.mediacontroller.MediaSessionPlaybackState
 import com.das.forui.objectsAndData.ForUIKeyWords.ACTION_ADD_TO_WATCH_LATER
 import com.das.forui.objectsAndData.ForUIKeyWords.ACTION_KILL
 import com.das.forui.objectsAndData.ForUIKeyWords.ACTION_START
-import com.das.forui.ui.viewer.ViewerFragment.Video
+import com.das.forui.objectsAndData.VideosListData
 import com.google.android.exoplayer2.ExoPlayer
 import com.google.android.exoplayer2.MediaItem
 import com.google.android.exoplayer2.PlaybackException
@@ -91,7 +91,7 @@ class AudioServiceFromUrl : Service() {
 
 
 
-        val mediaDetails = Video(
+        val mediaDetails = VideosListData(
             videoId, title,
             videoDate, videoViews,
             durationFromActivity, channelName,
@@ -370,7 +370,7 @@ class AudioServiceFromUrl : Service() {
 
 
     inner class MyMediaSessionCallBack(
-        private val mediaDetails: Video,
+        private val mediaDetails: VideosListData,
     ): MediaSessionCompat.Callback() {
 
 

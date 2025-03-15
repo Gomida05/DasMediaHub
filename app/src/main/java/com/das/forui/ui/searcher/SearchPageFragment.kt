@@ -1,52 +1,46 @@
 package com.das.forui.ui.searcher
 
 import android.app.AlertDialog
+import android.content.Context
 import android.database.Cursor
 import android.os.Bundle
+import android.text.Editable
+import android.text.TextWatcher
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
-import androidx.compose.foundation.background
+import android.view.inputmethod.EditorInfo
+import android.view.inputmethod.InputMethodManager
+import android.widget.ArrayAdapter
+import android.widget.EditText
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
-import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.foundation.text.KeyboardActions
-import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.automirrored.filled.ArrowBack
-import androidx.compose.material.icons.filled.Clear
 import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material3.Button
-import androidx.compose.material3.ButtonColors
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.Text
-import androidx.compose.material3.TextField
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
-import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
-import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.rememberVectorPainter
 import androidx.compose.ui.platform.ViewCompositionStrategy
-import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.fragment.app.Fragment
-import androidx.lifecycle.ViewModel
 import androidx.navigation.fragment.findNavController
+import com.das.forui.CustomTheme
 import com.das.forui.MainActivity
 import com.das.forui.R
 import com.das.forui.databinding.FragmentSearcherBinding
-import androidx.lifecycle.viewmodel.compose.viewModel
 import com.das.forui.MainActivity.Youtuber.extractor
 import com.das.forui.databased.SearchHistoryDB
 
@@ -66,61 +60,58 @@ class SearchPageFragment : Fragment() {
         binding.searchHistoryFromComposeView.apply {
             setViewCompositionStrategy(ViewCompositionStrategy.DisposeOnViewTreeLifecycleDestroyed)
             setContent {
-                ListSearchHistoryItem()
-            }
-        }
-        binding.editTextCompose.apply {
-            setViewCompositionStrategy(ViewCompositionStrategy.DisposeOnViewTreeLifecycleDestroyed)
-            setContent {
-                ShowTextField()
+                CustomTheme {
+                    ListSearchHistoryItem()
+                }
             }
         }
 
+        val suggestions = listOf("Apple", "Banana", "Cherry", "Date", "Grape", "Kiwi", "Lemon", "Mango", "Peach", "Plum")
+
+        val adapter = ArrayAdapter(requireContext(), android.R.layout.simple_dropdown_item_1line, suggestions)
+
+        binding.mySearchTextInput.setAdapter(adapter)
         return binding.root
     }
 
-
-    @Composable
-    private fun ShowTextField() {
-        val searchViewModel: SearchViewModel = viewModel()
-
-        TextField(
-            value = searchViewModel.searchText,
-            onValueChange = { searchViewModel.updateSearchText(it) },
-            shape = RoundedCornerShape(17.dp),
-            singleLine = true,
-            placeholder = { Text(text = "Enter search text") },
-            keyboardOptions = KeyboardOptions.Default.copy(
-                imeAction = ImeAction.Search
-            ),
-            keyboardActions = KeyboardActions(
-                onSearch = {
-                    keyEvent(searchViewModel.searchText)
-                }
-            ),
-            trailingIcon = {
-                if (searchViewModel.searchText.isNotEmpty()) {
-                    IconButton(onClick = {
-                        searchViewModel.updateSearchText("")
-                    }) {
-                        Icon(Icons.Default.Clear, contentDescription = "Clear Text")
-                    }
-                }
-            },
-            leadingIcon = {
-                Button(onClick = {
-                    findNavController().navigateUp()
-                },
-                    colors = ButtonColors(Color.Black, Color.White, Color.Unspecified, Color.Unspecified),
-                    modifier = Modifier
-                ) {
-                    Icon(Icons.AutoMirrored.Default.ArrowBack, contentDescription = "navigator")
-                }
-            },
-            modifier = Modifier
-                .background(Color(0xFF03DAC5), RoundedCornerShape(15.dp))
-        )
+    override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
+        super.onViewCreated(view, savedInstanceState)
+        showKeyboard(binding.mySearchTextInput)
     }
+    override fun onStart() {
+        super.onStart()
+
+        binding.exitSearch.setOnClickListener{
+            findNavController().navigateUp()
+        }
+
+
+
+        val textInput = binding.mySearchTextInput
+        textInput.setOnEditorActionListener { _, actionId, _ ->
+            if (actionId == EditorInfo.IME_ACTION_SEARCH && textInput.text.isNotBlank()) {
+                // Call the function that handles the search action
+                keyEvent(textInput.text.toString())
+                hideKeyboard(binding.mySearchTextInput)
+                true
+            } else {
+                false
+            }
+        }
+
+        textInput.addTextChangedListener(TextWatcherListener())
+
+        if (textInput.text.isNotEmpty()){
+            binding.clearText.visibility = View.GONE
+        }
+
+        binding.clearText.setOnClickListener { i->
+            textInput.text.clear()
+            i.visibility = View.GONE
+        }
+    }
+
+
 
 
 
@@ -140,9 +131,9 @@ class SearchPageFragment : Fragment() {
             items(settingsResults.value) { settingsItem ->
                 CategoryItems(
                     title = settingsItem,
-                    onDelete = {
+                    onDelete = { title->
                         // Show the confirmation dialog
-                        SearchHistoryDB(requireContext()).deleteSearchList(settingsItem)
+                        SearchHistoryDB(requireContext()).deleteSearchList(title)
                         settingsResults.value = settingsResults.value.filter { it != settingsItem }
                         // Call the database function to delete
                     }
@@ -152,19 +143,17 @@ class SearchPageFragment : Fragment() {
     }
 
     @Composable
-    private fun CategoryItems(title : String, onDelete: () -> Unit){
+    private fun CategoryItems(title : String, onDelete: (title: String) -> Unit){
 
         Button(
             onClick = {
-                SearchViewModel().updateSearchText(title)
+                binding.mySearchTextInput.setText(title)
                 goSearch(title)
             },
-            colors = ButtonColors(Color.Black, Color.White, Color.Red, Color.Blue),
             modifier = Modifier
                 .fillMaxWidth()
                 .height(60.dp)
                 .padding(top = 2.dp, bottom = 2.dp)
-                .background(Color.Black, RoundedCornerShape(20.dp))
         ) {
             Box(
             modifier = Modifier.fillMaxWidth()
@@ -181,7 +170,7 @@ class SearchPageFragment : Fragment() {
                         AlertDialog.Builder(requireContext())
                             .setTitle("Are you sure you want to remove it from the list?")
                             .setPositiveButton("Yes") { _, _ ->
-                                onDelete()
+                                onDelete(title)
                             }
                             .setNegativeButton("No") { _, _ ->
                             }
@@ -263,10 +252,26 @@ class SearchPageFragment : Fragment() {
 
     }
 
+    private fun showKeyboard(editText: EditText) {
+        editText.requestFocus()
+
+        // Get the InputMethodManager service
+        val imm = requireContext().getSystemService(Context.INPUT_METHOD_SERVICE) as InputMethodManager
+
+        // Show the soft keyboard
+        imm.showSoftInput(editText, InputMethodManager.SHOW_IMPLICIT)
+    }
 
 
+    private fun hideKeyboard(editText: EditText) {
+        val imm = requireContext().getSystemService(Context.INPUT_METHOD_SERVICE) as InputMethodManager
+        imm.hideSoftInputFromWindow(editText.windowToken, 0)
+    }
     override fun onResume() {
         super.onResume()
+        if (binding.mySearchTextInput.text.isNotEmpty()){
+            binding.clearText.visibility = View.VISIBLE
+        }
         (activity as MainActivity).hideBottomNav()
     }
 
@@ -274,15 +279,36 @@ class SearchPageFragment : Fragment() {
         super.onDestroyView()
         _binding = null
     }
-}
 
 
-class SearchViewModel : ViewModel() {
 
-    var searchText by mutableStateOf("")
+    private inner class TextWatcherListener: TextWatcher {
+        override fun beforeTextChanged(
+            charSequence: CharSequence?,
+            start: Int,
+            count: Int,
+            after: Int
+        ) {
 
-    fun updateSearchText(newText: String) {
-        searchText = newText
+        }
 
+        override fun onTextChanged(
+            charSequence: CharSequence?,
+            start: Int,
+            before: Int,
+            count: Int
+        ) {
+
+
+        }
+
+        override fun afterTextChanged(editable: Editable?) {
+
+            if (editable?.isEmpty() == true) {
+                binding.clearText.visibility = View.GONE
+            } else {
+                binding.clearText.visibility = View.VISIBLE
+            }
+        }
     }
 }

@@ -66,11 +66,13 @@
             </intent-filter>
 
             <intent-filter
-                android:autoVerify="true"
+                android:autoVerify="false"
                 android:label="@string/start_service">
+
                 <action android:name="android.intent.action.VIEW"/>
                 <category android:name="android.intent.category.DEFAULT"/>
                 <category android:name="android.intent.category.BROWSABLE" />
+
                 <data android:scheme="https" android:host="myfirstpythontokotlinasbackend.onrender.com"
                     android:pathPrefix="/YouTube Downloader"/>
             </intent-filter>
@@ -101,19 +103,7 @@
 
         </activity>
 
-        <receiver android:name=".MediaControlFullScreenBroadcast"
-            android:exported="false">
-            <intent-filter>
-                <action android:name="com.das.forui.ACTION_CONTROL_MEDIA" />
-            </intent-filter>
-        </receiver>
 
-        <receiver android:name=".mediacontroller.ForUiMediaButtonReceiver"
-            android:enabled="true" android:exported="true">
-            <intent-filter>
-                <action android:name="android.intent.action.MEDIA_BUTTON" />
-            </intent-filter>
-        </receiver>
 
 
         <receiver
@@ -193,6 +183,10 @@
         <meta-data
             android:name="com.google.android.gms.ads.APPLICATION_ID"
             android:value="ca-app-pub-9927433152706283~9773801908"/>
+
+        <meta-data
+            android:name="firebase_performance_logcat_enabled"
+            android:value="true" />
 
     </application>
 

@@ -1,7 +1,6 @@
 package com.das.forui.ui.watch_later
 
 import android.app.AlertDialog
-import android.content.Context
 import android.content.Intent
 import android.database.Cursor
 import android.os.Bundle
@@ -9,107 +8,89 @@ import android.util.Log
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
-import android.widget.ArrayAdapter
-import android.widget.ImageView
-import android.widget.TextView
+import androidx.compose.foundation.ExperimentalFoundationApi
+import androidx.compose.foundation.background
+import androidx.compose.foundation.combinedClickable
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.MoreVert
+import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
+import androidx.compose.material3.Scaffold
+import androidx.compose.material3.Text
+import androidx.compose.material3.TopAppBar
+import androidx.compose.material3.TopAppBarDefaults
+import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.ui.Alignment
+import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.vector.rememberVectorPainter
+import androidx.compose.ui.input.nestedscroll.nestedScroll
+import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.ViewCompositionStrategy
+import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import androidx.fragment.app.Fragment
 import androidx.navigation.fragment.findNavController
-import com.bumptech.glide.Glide
+import coil.compose.AsyncImage
+import coil.request.ImageRequest
+import com.das.forui.CustomTheme
 import com.das.forui.MainActivity
 import com.das.forui.MainApplication
 import com.das.forui.R
 import com.das.forui.databased.DatabaseFavorite
+import com.das.forui.databased.SearchHistoryDB
 import com.das.forui.databinding.FragmentWatchLaterBinding
 import com.das.forui.objectsAndData.ForUIKeyWords.ACTION_START
+import com.das.forui.objectsAndData.SavedVideosListData
+import com.das.forui.objectsAndData.VideosListData
 import com.das.forui.services.AudioServiceFromUrl
-import com.das.forui.ui.viewer.ViewerFragment
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.withContext
 
 class WatchLaterFragment: Fragment() {
     private var _binding: FragmentWatchLaterBinding? = null
     private val binding get() = _binding!!
     private lateinit var duration: String
-    private lateinit var adapter: WatchLaterAdapter
-    private val ids = mutableListOf<String>()
     override fun onCreateView(
         inflater: LayoutInflater,
         container: ViewGroup?,
         savedInstanceState: Bundle?
     ): View {
         _binding = FragmentWatchLaterBinding.inflate(inflater, container, false)
-        adapter = WatchLaterAdapter(requireContext(), mutableListOf())
+
+
+
         return binding.root
     }
 
 
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
-
-        binding.listView.adapter = adapter
-        fetchDataFromDatabase()
-
-
-    }
-
-    override fun onStart() {
-        super.onStart()
-
-        binding.listView.setOnItemLongClickListener { _, _, position, _ ->
-            val selectedIds = adapter.getItem(position)
-
-            val selectedId = ids[position]
-            if (selectedIds != null) {
-                val selectedData = ViewerFragment.Video(
-                    selectedId,
-                    selectedIds.title,
-                    selectedIds.viewer,
-                    selectedIds.dateTime,
-                    selectedIds.duration,
-                    selectedIds.channelName,
-                    ""
-                )
-                AlertDialog.Builder(requireContext())
-                    .setTitle("Are you sure you want to remove this item?")
-                    .setPositiveButton("Yes") { _, _ ->
-                        adapter.removeItem(position, selectedId)
-                    }
-                    .setNegativeButton("No") { _, _ -> }
-                    .setNeutralButton(
-                        "Background"
-                    ) { _, _ ->
-                        MainApplication().getListItemsStreamUrls(
-                            selectedData,
-                            onSuccess = { result ->
-                                val playIntent =
-                                    Intent(
-                                        requireContext(),
-                                        AudioServiceFromUrl::class.java
-                                    ).apply {
-                                        action = ACTION_START
-                                        putExtra("videoId", selectedId)
-                                        putExtra("media_url", result.audioUrl)
-                                        putExtra("title", selectedData.title)
-                                        putExtra("channelName", selectedData.channelName)
-                                        putExtra("viewNumber", selectedData.views)
-                                        putExtra("videoDate", selectedData.dateOfVideo)
-                                        putExtra("duration", selectedData.duration)
-                                    }
-                                activity?.startService(playIntent)
-                            },
-                            onFailure = { errorMessage ->
-                                // Handle the error (e.g., show a dialog with the error message)
-                                println("Error: $errorMessage")
-                            }
-                        )
-                    }.show()
-                true
+        binding.listViewCompose.apply {
+            setViewCompositionStrategy(ViewCompositionStrategy.DisposeOnViewTreeLifecycleDestroyed)
+            setContent {
+                CustomTheme {
+                    ListFavVideos()
+                }
             }
-            else{
-                false
-            }
-        }
-
-        binding.listView.setOnItemClickListener { _, _, position, _ ->
-            onClickListListener(ids[position])
         }
     }
 
@@ -139,7 +120,287 @@ class WatchLaterFragment: Fragment() {
         }
     }
 
-    private fun fetchDataFromDatabase() {
+
+    @OptIn(ExperimentalMaterial3Api::class)
+    @Composable
+    fun ListFavVideos() {
+
+        val searchResults = remember { mutableStateOf<List<SavedVideosListData>>(emptyList()) }
+
+        val scrollBehavior = TopAppBarDefaults.enterAlwaysScrollBehavior()
+
+
+        LaunchedEffect(Unit) {
+            val result = withContext(Dispatchers.IO) {
+                fetchDataFromDatabase()
+            }
+            searchResults.value = result ?: emptyList()
+
+        }
+
+        Scaffold(
+            modifier = Modifier
+                .nestedScroll(scrollBehavior.nestedScrollConnection),
+            topBar = {
+                TopAppBar(
+                    scrollBehavior = scrollBehavior,
+                    actions = {
+                        Text(
+                            "List of videos",
+                            textAlign = TextAlign.Center,
+                            fontSize = 20.sp,
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .align(Alignment.CenterVertically)
+                                .padding(start = 15.dp, end = 5.dp, bottom = 1.dp, top = 1.dp)
+                        )
+                    },
+                    title = {}
+                )
+            }
+        ){ paddingValues ->
+            Box(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .padding(paddingValues),
+                contentAlignment = Alignment.Center,
+            ) {
+                if (searchResults.value.isNotEmpty()) {
+                    LazyColumn {
+                        items(searchResults.value) { searchItem ->
+                            CategoryItems(searchItem) { videoId ->
+                                SearchHistoryDB(requireContext()).deleteSearchList(videoId)
+                                searchResults.value =
+                                    searchResults.value.filter { it != searchItem }
+
+                            }
+
+                        }
+                    }
+                }
+            }
+        }
+    }
+
+    @OptIn(ExperimentalFoundationApi::class)
+    @Composable
+    private fun CategoryItems(
+        selectedItem: SavedVideosListData,
+        onDelete: (videoId: String) -> Unit
+    ){
+        val videoId  = selectedItem.watchUrl
+        val title  = selectedItem.title
+        val viewsNumber  = selectedItem.viewer
+        val dateOfVideo  = selectedItem.dateTime
+        val channelName  = selectedItem.channelName
+        val duration  = selectedItem.duration
+        val videoThumbnailURL  = selectedItem.thumbnailUrl
+        val channelThumbnails  = selectedItem.channelName
+
+        val context= LocalContext.current
+
+
+
+
+        Box(
+            modifier = Modifier
+                .fillMaxWidth()
+                .clip(RoundedCornerShape(1))
+                .padding(bottom = 3.dp, top = 3.dp)
+                .combinedClickable(
+                    onClick = {
+                        onClickListListener(videoId)
+                    },
+                    onLongClick = {
+
+                        AlertDialog.Builder(requireContext())
+                            .setTitle("Are you sure you want to remove it from the list?")
+                            .setPositiveButton("Yes") { _, _ ->
+                                onDelete(title)
+                            }
+                            .setNegativeButton("No") { _, _ ->
+                            }
+                            .show()
+
+                    }
+                )
+        ) {
+            Column (
+                modifier = Modifier
+                    .height(260.dp)
+                    .fillMaxWidth()
+
+            ) {
+                Box {
+                    AsyncImage(
+                        model = ImageRequest.Builder(context)
+                            .data(videoThumbnailURL)
+                            .crossfade(true)
+                            .build(),
+                        contentDescription = "Category Image",
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .height(210.dp),
+                        alignment = Alignment.Center,
+                        contentScale = ContentScale.Crop
+                    )
+                    Text(
+                        text = duration,
+                        maxLines = 1,
+                        color = Color.White,
+                        textAlign = TextAlign.Justify,
+                        modifier = Modifier
+                            .height(25.dp)
+                            .padding(end = 6.dp, bottom = 3.dp)
+                            .align(Alignment.BottomEnd)
+                            .background(Color(0xCC2C2B2B), RoundedCornerShape(25))
+                    )
+                }
+
+                Row(
+                    modifier = Modifier
+                        .fillMaxSize()
+                ) {
+
+
+                    IconButton(
+                        onClick = {
+                            AlertDialog.Builder(context)
+                                .setTitle("This feature is currently under development!!!")
+                                .setPositiveButton("Okay") { _, _ -> }
+                                .setIcon(R.drawable.setting)
+                                .setMessage("Thank you for understanding!")
+                                .setIcon(R.mipmap.ic_launcher)
+                                .show()
+                        }
+                    ) {
+                        AsyncImage(
+                            model = ImageRequest.Builder(context)
+                                .data(channelThumbnails)
+                                .crossfade(true)
+                                .error(
+                                    R.mipmap.ic_launcher
+                                )
+                                .build(),
+                            contentDescription = "Category Image",
+                            modifier = Modifier
+                                .fillMaxSize(),
+                            alignment = Alignment.Center,
+                            contentScale = ContentScale.Crop
+                        )
+                    }
+                    Column(
+                        modifier = Modifier
+                            .width(285.dp)
+                            .padding(3.dp)
+                    ) {
+
+
+                        Text(
+                            text = title,
+                            maxLines = 1,
+                            fontSize = 15.sp,
+                            textAlign = TextAlign.Start,
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .padding(start = 2.dp)
+                        )
+                        Row {
+                            Text(
+                                text = channelName,
+                                maxLines = 1,
+                                fontSize = 12.sp,
+                                textAlign = TextAlign.Start,
+                                modifier = Modifier
+                                    .width(112.dp)
+                                    .padding(start = 2.dp)
+                            )
+                            Text(
+                                text = viewsNumber,
+                                maxLines = 1,
+                                fontSize = 12.sp,
+                                textAlign = TextAlign.Center,
+                                modifier = Modifier
+                                    .width(55.dp)
+                                    .padding(start = 5.dp, end = 5.dp)
+                            )
+                            Text(
+                                text = dateOfVideo,
+                                maxLines = 1,
+                                fontSize = 12.sp,
+                                textAlign = TextAlign.Center,
+                                modifier = Modifier
+                                    .width(100.dp)
+                                    .padding(start = 2.dp)
+                            )
+                        }
+
+                    }
+                    IconButton(
+                        onClick = {
+                            imageViewer(
+                                selectedItem
+                            ) { selectedId ->
+                                onDelete(selectedId)
+                            }
+                        }
+
+                    ) {
+                        Icon(
+                            painter = rememberVectorPainter(Icons.Default.MoreVert),
+                            contentDescription = "Back"
+                        )
+                    }
+                }
+            }
+        }
+    }
+
+
+
+    private fun imageViewer(selectedData: SavedVideosListData, deleteTheItem: (selectedId: String) -> Unit){
+
+
+            AlertDialog.Builder(requireContext())
+                .setTitle("Are you sure you want to remove this item?")
+                .setPositiveButton("Yes") { _, _ ->
+                    deleteTheItem(selectedData.watchUrl)
+                }
+                .setNegativeButton("No") { _, _ -> }
+                .setNeutralButton(
+                    "Background"
+                ) { _, _ ->
+                    MainApplication().getListItemsStreamUrls(
+                        VideosListData(
+                            selectedData.watchUrl, selectedData.title, selectedData.viewer,
+                            selectedData.dateTime, selectedData.duration, selectedData.channelName, ""
+                        ),
+                        onSuccess = { result ->
+                            val playIntent =
+                                Intent(
+                                    requireContext(),
+                                    AudioServiceFromUrl::class.java
+                                ).apply {
+                                    action = ACTION_START
+                                    putExtra("videoId", selectedData.watchUrl)
+                                    putExtra("media_url", result.audioUrl)
+                                    putExtra("title", selectedData.title)
+                                    putExtra("channelName", selectedData.channelName)
+                                    putExtra("viewNumber", selectedData.viewer)
+                                    putExtra("videoDate", selectedData.dateTime)
+                                    putExtra("duration", selectedData.duration)
+                                }
+                            activity?.startService(playIntent)
+                        },
+                        onFailure = { errorMessage ->
+                            // Handle the error (e.g., show a dialog with the error message)
+                            println("Error: $errorMessage")
+                        }
+                    )
+                }.show()
+    }
+
+    private fun fetchDataFromDatabase(): MutableList<SavedVideosListData>? {
         val dbHelper = DatabaseFavorite(requireContext())
         val cursor: Cursor? = dbHelper.getResults()
         if(!dbHelper.isTableEmpty()){
@@ -150,8 +411,7 @@ class WatchLaterFragment: Fragment() {
         }
         Log.d("WatchLater", "Query executed, cursor count: ${cursor?.count ?: "null"}")
         val urls = mutableListOf<String>()
-        val watchLaterLists= mutableListOf<WatchLaterList>()
-        ids.clear()
+        val savedVideosListData= mutableListOf<SavedVideosListData>()
         try {
             cursor?.let {
                 while (it.moveToNext()) {
@@ -161,10 +421,10 @@ class WatchLaterFragment: Fragment() {
                     val dateTime = it.getString(it.getColumnIndexOrThrow("videoDate"))
                     val channelName = it.getString(it.getColumnIndexOrThrow("videoChannelName"))
                     duration = it.getString(it.getColumnIndexOrThrow("duration"))
-                    watchLaterLists.add(
-                        WatchLaterList(
+                    savedVideosListData.add(
+                        SavedVideosListData(
                             title,
-                            "https://www.youtube.com/watch?v=$watchUrl",
+                            watchUrl,
                             "https://img.youtube.com/vi/$watchUrl/0.jpg",
                             viewerNumber,
                             dateTime,
@@ -172,71 +432,23 @@ class WatchLaterFragment: Fragment() {
                             channelName
                     )
                     )
-                    watchUrl?.let { url ->
+                    watchUrl?.let { _ ->
                         urls.add(title)
-                        ids.add(url)
                     }
                 }
                 it.close()
             }
 
-            if (watchLaterLists.isNotEmpty()) {
-                adapter.clear()
-                adapter.addAll(watchLaterLists)
-                adapter.notifyDataSetChanged()
-            } else {
-//            Log.e("DownloadsFragment", "URLs list is empty or null")
-            }
+            return savedVideosListData
         }catch (e:Exception){
             (activity as MainActivity).alertUserError(e.message.toString())
+            return null
         }
     }
 
 
 
 
-    private data class WatchLaterList(val title: String, val watchUrl: String, val thumbnailUrl: String, val viewer: String, val dateTime: String, val duration: String, val channelName: String)
-
-    private class WatchLaterAdapter(
-        context: Context,
-        private val watchLaterLists: MutableList<WatchLaterList>
-    ) : ArrayAdapter<WatchLaterList>(context, R.layout.watch_later_list, watchLaterLists) {
-
-        override fun getView(position: Int, convertView: View?, parent: ViewGroup): View {
-            val view = convertView ?: LayoutInflater.from(context).inflate(R.layout.watch_later_list, parent, false)
-
-            val watchLaterLists = getItem(position) ?: return view
-            val titleTextView: TextView = view.findViewById(R.id.Watch_video_list_name)
-            val thumbnailImageView: ImageView = view.findViewById(R.id.Watch_big_thumbnailUrl)
-            val dateShow: TextView = view.findViewById(R.id.Watch_video_list_data)
-            val duration: TextView = view.findViewById(R.id.Watch_video_list_duration)
-            val channelName: TextView = view.findViewById(R.id.Watch_video_list_channelName)
-            val viewer: TextView = view.findViewById(R.id.Watch_video_list_view)
-
-
-            titleTextView.text = watchLaterLists.title
-            viewer.text= watchLaterLists.viewer
-            dateShow.text= watchLaterLists.dateTime
-            duration.text= watchLaterLists.duration
-            channelName.text= watchLaterLists.channelName
-
-
-            Glide.with(context)
-                .load(watchLaterLists.thumbnailUrl)
-                .placeholder(R.mipmap.ic_launcher_ofme)
-                .centerCrop()
-                .into(thumbnailImageView)
-            return view
-
-        }
-
-        fun removeItem(position: Int, videoId: String) {
-            val dbHelper = DatabaseFavorite(context)
-            dbHelper.deleteWatchUrl(videoId)
-            watchLaterLists.removeAt(position)
-            notifyDataSetChanged()
-        }
-    }
 
 
 }

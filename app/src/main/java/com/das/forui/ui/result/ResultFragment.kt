@@ -26,7 +26,6 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.MoreVert
 import androidx.compose.material.icons.outlined.Search
 import androidx.compose.material3.Button
-import androidx.compose.material3.Card
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
@@ -41,6 +40,7 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.rememberVectorPainter
 import androidx.compose.ui.input.nestedscroll.nestedScroll
@@ -54,6 +54,7 @@ import androidx.navigation.fragment.findNavController
 import coil.compose.AsyncImage
 import coil.request.ImageRequest
 import com.bumptech.glide.Glide
+import com.das.forui.CustomTheme
 import com.das.forui.MainActivity
 import com.das.forui.databinding.FragmentResultBinding
 import com.das.forui.MainActivity.Youtuber.pythonInstant
@@ -61,7 +62,7 @@ import com.das.forui.MainApplication
 import com.das.forui.R
 import com.das.forui.objectsAndData.ForUIKeyWords.ACTION_START
 import com.das.forui.services.AudioServiceFromUrl
-import com.das.forui.ui.viewer.ViewerFragment.Video
+import com.das.forui.objectsAndData.VideosListData
 import com.google.gson.Gson
 import com.google.gson.reflect.TypeToken
 import kotlinx.coroutines.Dispatchers
@@ -84,7 +85,9 @@ class ResultFragment : Fragment() {
             setViewCompositionStrategy(ViewCompositionStrategy.DisposeOnViewTreeLifecycleDestroyed)
             setContent {
                 val text = arguments?.getString("EXTRA_TEXT").toString()
-                ResultViewerPage(text)
+                CustomTheme {
+                    ResultViewerPage(text)
+                }
             }
         }
         return binding.root
@@ -119,12 +122,14 @@ class ResultFragment : Fragment() {
                     title = {
                     },
                     actions = {
-                        Button(onClick = {
-                            findNavController().navigateUp()
-                                         },
+
+                        Button(
+                            onClick = {
+                                findNavController().navigateUp()
+                            },
                             modifier = Modifier
                                 .fillMaxWidth()
-                                .padding(start = 12.dp, end=12.dp, bottom = 1.dp, top = 1.dp)
+                                .padding(start = 12.dp, end = 12.dp, bottom = 1.dp, top = 1.dp)
                         ) {
                             Icon(
                                 painter = rememberVectorPainter(Icons.Outlined.Search),
@@ -132,6 +137,7 @@ class ResultFragment : Fragment() {
                             )
                             Text("$data")
                         }
+
                     }
                 )
             }
@@ -189,9 +195,9 @@ class ResultFragment : Fragment() {
     ){
         val context= requireContext()
 
-        Card(
-            shape = RoundedCornerShape(1),
+        Box(
             modifier = Modifier
+                .clip(RoundedCornerShape(1))
                 .fillMaxWidth()
                 .padding(bottom = 3.dp, top = 3.dp)
                 .combinedClickable (
@@ -210,7 +216,7 @@ class ResultFragment : Fragment() {
                     },
                     onLongClick = {
                         imageViewer(
-                            Video(
+                            VideosListData(
                                 videoId, title, viewsNumber, dateOfVideo,
                                 duration, channelName, channelThumbnails
                             )
@@ -243,10 +249,9 @@ class ResultFragment : Fragment() {
                         color = Color.White,
                         textAlign = TextAlign.Center,
                         modifier = Modifier
-                            .width(40.dp)
                             .padding(end = 3.dp, bottom = 3.dp)
                             .align(Alignment.BottomEnd)
-                            .background(Color.DarkGray, RoundedCornerShape(5.dp))
+                            .background(Color(0xCC2C2B2B), RoundedCornerShape(5.dp))
                     )
                 }
                 Row(
@@ -321,7 +326,7 @@ class ResultFragment : Fragment() {
                         IconButton(
                             onClick = {
                              imageViewer(
-                                 Video(
+                                 VideosListData(
                                      videoId, title, viewsNumber, dateOfVideo,
                                      duration, channelName, channelThumbnails
                                  )
@@ -355,7 +360,7 @@ class ResultFragment : Fragment() {
     }
 
 
-    private fun imageViewer(selectedItem: Video) {
+    private fun imageViewer(selectedItem: VideosListData) {
         val thumbnailUrl = "https://img.youtube.com/vi/${selectedItem.videoId}/0.jpg"
         val inflater = LayoutInflater.from(context)
         val dialogView = inflater.inflate(R.layout.dialog_with_image, null)
@@ -385,7 +390,7 @@ class ResultFragment : Fragment() {
             }
             .setNeutralButton(
                 "Background"
-            ) { _, _, ->
+            ) { _, _ ->
                 MainApplication().getListItemsStreamUrls(
                     selectedItem,
                     onSuccess = { result ->

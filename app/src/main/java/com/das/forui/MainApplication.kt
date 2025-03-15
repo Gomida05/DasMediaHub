@@ -4,7 +4,8 @@ import android.app.Application
 import com.chaquo.python.Python
 import com.chaquo.python.android.AndroidPlatform
 import com.das.forui.MainActivity.Youtuber.pythonInstant
-import com.das.forui.ui.viewer.ViewerFragment
+import com.das.forui.objectsAndData.ItemsStreamUrlsForMediaItemData
+import com.das.forui.objectsAndData.VideosListData
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
@@ -24,21 +25,21 @@ class MainApplication: Application() {
 
 
     fun getListItemsStreamUrls(
-        data: ViewerFragment.Video,
-        onSuccess: (MediaItemDetails) -> Unit,
+        data: VideosListData,
+        onSuccess: (ItemsStreamUrlsForMediaItemData) -> Unit,
         onFailure: (String) -> Unit
     ) {
         CoroutineScope(Dispatchers.IO).launch {
             val mainFile = pythonInstant.getModule("main")
             val variable = mainFile["get_audio_url"]
-            var details: MediaItemDetails?
+            var details: ItemsStreamUrlsForMediaItemData?
 
             val result = variable?.call("https://www.youtube.com/watch?v=${data.videoId}").toString()
 
             if (result != "False") {
                 // Switch to the main thread for UI updates
                 withContext(Dispatchers.Main) {
-                    details = MediaItemDetails(
+                    details = ItemsStreamUrlsForMediaItemData(
                         result,
                         data.videoId,
                         data.title,
@@ -59,15 +60,4 @@ class MainApplication: Application() {
             }
         }
     }
-
-    data class MediaItemDetails(
-        val audioUrl: String,
-        val videoId: String,
-        val title: String,
-        val views: String,
-        val dateOfVideo: String,
-        val duration: String,
-        val channelName: String,
-        val channelThumbnailsUrl: String
-    )
 }

@@ -5,5 +5,5 @@ plugins {
     id("com.chaquo.python") version "16.0.0" apply false
     id("com.google.gms.google-services") version "4.4.2" apply false
     id("org.jetbrains.kotlin.plugin.compose") version "2.0.10" apply false
-
+    id("com.google.firebase.firebase-perf") version "1.4.2" apply false
 }

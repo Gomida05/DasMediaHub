@@ -54,16 +54,6 @@ class BackGroundPlayer: Service() {
         audioManager = getSystemService(AudioManager::class.java)
         exoPlayer = ExoPlayer.Builder(this).build()
 
-        mediaSession = MediaSessionCompat(this, "BackGroundPlayer").apply {
-            isActive = true
-            setFlags(MediaSessionCompat.FLAG_HANDLES_MEDIA_BUTTONS or MediaSessionCompat.FLAG_HANDLES_TRANSPORT_CONTROLS)
-
-            setMediaButtonReceiver(PendingIntent.getBroadcast(
-                this@BackGroundPlayer, 0,
-                Intent(Intent.ACTION_MEDIA_BUTTON),
-                PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE)
-            )
-        }
 
 
 
@@ -74,6 +64,16 @@ class BackGroundPlayer: Service() {
 
     }
     override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
+        mediaSession = MediaSessionCompat(this, "BackGroundPlayer").apply {
+            isActive = true
+            setFlags(MediaSessionCompat.FLAG_HANDLES_MEDIA_BUTTONS or MediaSessionCompat.FLAG_HANDLES_TRANSPORT_CONTROLS)
+
+            setMediaButtonReceiver(PendingIntent.getBroadcast(
+                this@BackGroundPlayer, 0,
+                Intent(Intent.ACTION_MEDIA_BUTTON),
+                PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE)
+            )
+        }
 
         val mediaUri = intent?.getStringExtra("media_url").orEmpty()
         val title =  intent?.getStringExtra("title").toString()
@@ -698,9 +698,4 @@ class BackGroundPlayer: Service() {
         return super.stopService(name)
     }
 
-    override fun onDestroy() {
-        super.onDestroy()
-        mediaSession.release()
-        exoPlayer?.release()
-    }
 }

@@ -5,10 +5,19 @@ plugins {
     id("com.chaquo.python") version "16.0.0"
     id("com.google.gms.google-services")
     id("org.jetbrains.kotlin.plugin.compose")
+    id("com.google.firebase.firebase-perf")
 }
 
 
 android {
+    signingConfigs {
+        getByName("debug") {
+            storeFile = file("C:\\Users\\esrom\\my-release-key.jks")
+            storePassword = "Esrom@11"
+            keyAlias = "2005"
+            keyPassword = "Esrom@11"
+        }
+    }
     namespace = "com.das.forui"
     compileSdk = 35
 
@@ -17,7 +26,7 @@ android {
         minSdk = 24
         targetSdk = 35
         versionCode = 1
-        versionName = "1.05"
+        versionName = "1.09"
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
         flavorDimensions.add("pyVersion")
         ndk {
@@ -38,6 +47,7 @@ android {
             )
         }
     }
+
 
 
     kotlinOptions {
@@ -128,10 +138,13 @@ dependencies {
 //    implementation("com.google.android.exoplayer:extension-youtube:2.18.0")
     implementation("com.google.code.gson:gson:2.10.1")
     implementation("androidx.swiperefreshlayout:swiperefreshlayout:1.1.0")
-    implementation("com.google.android.gms:play-services-ads:24.0.0")
+    implementation("com.google.android.gms:play-services-ads:24.1.0")
     implementation("com.google.firebase:firebase-messaging:24.1.0")
     implementation(platform("com.google.firebase:firebase-bom:33.10.0"))
     implementation("com.google.firebase:firebase-analytics")
+    
+    implementation("com.google.firebase:firebase-perf")
+
     implementation("com.github.bumptech.glide:glide:4.16.0")
     implementation("androidx.compose.runtime:runtime-android:1.7.8")
     implementation("androidx.core:core-ktx:1.15.0")
@@ -140,7 +153,7 @@ dependencies {
     implementation("androidx.constraintlayout:constraintlayout:2.2.1")
     implementation("androidx.lifecycle:lifecycle-livedata-ktx:2.8.7")
     implementation("androidx.lifecycle:lifecycle-viewmodel-ktx:2.8.7")
-    implementation("androidx.navigation:navigation-fragment-ktx:2.8.8")
+    implementation("androidx.navigation:navigation-fragment-ktx:2.8.9")
     //noinspection GradleDependency
     implementation("androidx.navigation:navigation-ui-ktx:2.8.4")
     implementation("androidx.work:work-runtime-ktx:2.10.0")

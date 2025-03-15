@@ -25,10 +25,14 @@ class SearchHistoryDB(context: Context) : SQLiteOpenHelper(context, DATABASE_NAM
         return db.rawQuery("SELECT * FROM results", null) }
     private fun isWatchUrlExist(url: String): Boolean {
         val db = this.readableDatabase
-        val cursor = db.rawQuery("SELECT 1 FROM results WHERE title = ?", arrayOf(url.let {
-            it.trimEnd()
-            it.trimStart()
-        }))
+        val cursor = db.rawQuery("SELECT 1 FROM results WHERE title = ?",
+            arrayOf(
+                url.let {
+                    it.trimEnd()
+                    it.trimStart()
+                }
+            )
+        )
 
         val exists = cursor.count > 0
         cursor.close()
@@ -42,18 +46,21 @@ class SearchHistoryDB(context: Context) : SQLiteOpenHelper(context, DATABASE_NAM
         val db = this.writableDatabase
 
         try {
-            // Log the trimmed item to ensure correct value
-            Log.d("Database", "Attempting to delete item: '${selectedItem}'")
+            if (isWatchUrlExist(selectedItem)) {
+                // Log the trimmed item to ensure correct value
+                Log.d("Database", "Attempting to delete item: '${selectedItem}'")
 
-            val rowsDeleted = db.delete(
-                "results",
-                "title = ?",
-                arrayOf(selectedItem)
-            )
+                val rowsDeleted = db.delete(
+                    "results",
+                    "title = ?",
+                    arrayOf(selectedItem)
+                )
 
-            db.close()
-            Log.d("Database", "Rows deleted: $rowsDeleted")
-            return rowsDeleted
+                db.close()
+                Log.d("Database", "Rows deleted: $rowsDeleted")
+                return rowsDeleted
+            }
+            return 0
         } catch (e: Exception) {
             Log.e("Database", "Error deleting item: ${e.message}")
             return 0
@@ -67,13 +74,14 @@ class SearchHistoryDB(context: Context) : SQLiteOpenHelper(context, DATABASE_NAM
         if(isWatchUrlExist(title)){
             return false
         }
-        title.let{
-            it.trimEnd()
-            it.trimStart()
-        }
+
         val db = this.writableDatabase
         val contentValues = ContentValues().apply {
-            put("title", title)
+            put("title", title.apply {
+                trimEnd()
+                trimStart()
+            }
+            )
         }
         val result = db.insert("results", null, contentValues)
         db.close()
