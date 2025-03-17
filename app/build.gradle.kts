@@ -10,14 +10,14 @@ plugins {
 
 
 android {
-    signingConfigs {
-        getByName("debug") {
-            storeFile = file("C:\\Users\\esrom\\my-release-key.jks")
-            storePassword = "Esrom@11"
-            keyAlias = "2005"
-            keyPassword = "Esrom@11"
-        }
-    }
+//    signingConfigs {
+//        getByName("debug") {
+//            storeFile = file("C:\\Users\\esrom\\my-release-key.jks")
+//            storePassword = "Esrom@11"
+//            keyAlias = "2005"
+//            keyPassword = "Esrom@11"
+//        }
+//    }
     namespace = "com.das.forui"
     compileSdk = 35
 

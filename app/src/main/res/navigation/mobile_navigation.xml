@@ -45,4 +45,9 @@
         android:id="@+id/nav_fullscreen"
         android:name="com.das.forui.ui.videoPlayerLocally.FullScreenPlayerFragment"
         tools:layout="@layout/full_screen_player"/>
+
+    <fragment
+        android:id="@+id/nav_userSetting"
+        android:name="com.das.forui.ui.userSettings.UserSetting"
+        tools:layout="@layout/fragment_user_setting"/>
 </navigation>

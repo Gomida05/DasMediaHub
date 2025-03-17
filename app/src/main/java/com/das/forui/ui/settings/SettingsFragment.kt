@@ -181,7 +181,7 @@ class SettingsFragment : Fragment() {
 
     when (title) {
       "Setting for searchList" -> {
-        findNavController().navigate(R.id.nav_result)
+        findNavController().navigate(R.id.nav_userSetting)
       }
 
       "HeadLine" -> {
