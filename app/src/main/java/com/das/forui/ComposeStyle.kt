@@ -25,8 +25,8 @@ fun CustomTheme(content: @Composable () -> Unit) {
 
     val customShapes = Shapes(
         small = RoundedCornerShape(4.dp),
-        medium = RoundedCornerShape(8.dp),
-        large = RoundedCornerShape(16.dp)
+        medium = RoundedCornerShape(6.dp),
+        large = RoundedCornerShape(8.dp)
     )
     val customFontFamily = FontFamily.Default
 

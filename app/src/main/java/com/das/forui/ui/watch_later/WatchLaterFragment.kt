@@ -75,15 +75,6 @@ class WatchLaterFragment: Fragment() {
         savedInstanceState: Bundle?
     ): View {
         _binding = FragmentWatchLaterBinding.inflate(inflater, container, false)
-
-
-
-        return binding.root
-    }
-
-
-    override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
-        super.onViewCreated(view, savedInstanceState)
         binding.listViewCompose.apply {
             setViewCompositionStrategy(ViewCompositionStrategy.DisposeOnViewTreeLifecycleDestroyed)
             setContent {
@@ -92,7 +83,12 @@ class WatchLaterFragment: Fragment() {
                 }
             }
         }
+
+
+        return binding.root
     }
+
+
 
 
     private fun onClickListListener(selectedId: String){
@@ -131,9 +127,9 @@ class WatchLaterFragment: Fragment() {
 
 
         LaunchedEffect(Unit) {
-            val result = withContext(Dispatchers.IO) {
+            val result =
                 fetchDataFromDatabase()
-            }
+
             searchResults.value = result ?: emptyList()
 
         }

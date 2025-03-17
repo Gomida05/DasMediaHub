@@ -87,6 +87,7 @@ import com.das.forui.objectsAndData.ForUIKeyWords.ACTION_START
 import com.das.forui.objectsAndData.VideosListData
 import com.google.android.exoplayer2.trackselection.DefaultTrackSelector
 import com.google.android.exoplayer2.trackselection.TrackSelectionParameters
+import com.google.android.material.bottomnavigation.BottomNavigationView
 import kotlinx.coroutines.CoroutineScope
 
 
@@ -124,7 +125,7 @@ class ViewerFragment: Fragment() {
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
         listOfVideosListData.clear()
-        (activity as MainActivity).hideBottomNav()
+        (activity as MainActivity).findViewById<BottomNavigationView>(R.id.nav_view).visibility = View.GONE
         videoID = arguments?.getString("View_ID").toString()
         playerView = binding.videoPlayerLocally
 
@@ -285,12 +286,13 @@ class ViewerFragment: Fragment() {
         }
 
         binding.giveMeTitle.setOnClickListener {
-            AlertDialog.Builder(requireContext())
-                .setTitle("Descriptions")
-                .setMessage(descriptions)
-                .setNegativeButton("Close") { _, _ ->
-                }
-                .show()
+            activity?.recreate()
+//            AlertDialog.Builder(requireContext())
+//                .setTitle("Descriptions")
+//                .setMessage(descriptions)
+//                .setNegativeButton("Close") { _, _ ->
+//                }
+//                .show()
         }
 
 

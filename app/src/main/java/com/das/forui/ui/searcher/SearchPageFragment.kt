@@ -2,6 +2,7 @@ package com.das.forui.ui.searcher
 
 import android.app.AlertDialog
 import android.content.Context
+import android.content.Intent.EXTRA_TEXT
 import android.database.Cursor
 import android.os.Bundle
 import android.text.Editable
@@ -77,6 +78,9 @@ class SearchPageFragment : Fragment() {
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
         showKeyboard(binding.mySearchTextInput)
+        val revivedString = arguments?.getString(EXTRA_TEXT)
+
+        binding.mySearchTextInput.setText(revivedString)
     }
     override fun onStart() {
         super.onStart()

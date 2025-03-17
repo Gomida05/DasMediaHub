@@ -1,6 +1,7 @@
 package com.das.forui.ui.userSettings
 
-import android.content.res.Configuration
+import android.content.res.Configuration.UI_MODE_NIGHT_MASK
+import android.content.res.Configuration.UI_MODE_NIGHT_YES
 import android.os.Bundle
 import android.view.LayoutInflater
 import android.view.View
@@ -31,18 +32,19 @@ class UserSetting: Fragment() {
         binding.goBack.setOnClickListener{
             findNavController().navigateUp()
         }
-        binding.toggleButton.setOnClickListener {
+        binding.toggleButton.setOnClickListener{
             changeTheme()
         }
     }
 
     private fun changeTheme() {
-        val isDarkMode = resources.configuration.uiMode == Configuration.UI_MODE_NIGHT_YES
-        if (isDarkMode) {
+        val isDarkMode =  resources.configuration.uiMode and UI_MODE_NIGHT_MASK
+        if (isDarkMode == UI_MODE_NIGHT_YES) {
             AppCompatDelegate.setDefaultNightMode(AppCompatDelegate.MODE_NIGHT_NO)
         } else {
             AppCompatDelegate.setDefaultNightMode(AppCompatDelegate.MODE_NIGHT_YES)
         }
+        activity?.recreate()
     }
 
 
