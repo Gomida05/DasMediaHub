@@ -42,7 +42,9 @@ import com.das.forui.CustomTheme
 import com.das.forui.MainActivity
 import com.das.forui.R
 import com.das.forui.databinding.FragmentSearcherBinding
-import com.das.forui.MainActivity.Youtuber.extractor
+import com.das.forui.MainApplication.Youtuber.extractor
+import com.das.forui.MainApplication
+import com.das.forui.MainApplication.Youtuber.isValidYoutubeURL
 import com.das.forui.databased.SearchHistoryDB
 
 
@@ -204,7 +206,7 @@ class SearchPageFragment : Fragment() {
         val bundle = Bundle().apply { putString("EXTRA_TEXT", editTextText) }
 
         try {
-            if ((activity as MainActivity).isValidYoutubeURL(editTextText)) {
+            if (isValidYoutubeURL(editTextText)) {
                 val videoId = extractor(editTextText)
                 val bundled = bundle.apply {
                     putString("View_ID", videoId)

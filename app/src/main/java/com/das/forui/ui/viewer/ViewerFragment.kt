@@ -5,9 +5,10 @@ import android.annotation.SuppressLint
 import android.app.AlertDialog
 import android.content.Intent
 import android.content.pm.ActivityInfo
-import android.os.Build
 import android.os.Bundle
-import android.util.Log
+import android.text.SpannableString
+import android.text.method.LinkMovementMethod
+import android.text.style.URLSpan
 import android.view.GestureDetector
 import android.view.LayoutInflater
 import android.view.MotionEvent
@@ -54,6 +55,7 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.core.content.ContextCompat
+import androidx.core.view.setPadding
 import androidx.fragment.app.Fragment
 import androidx.navigation.fragment.findNavController
 import coil.compose.AsyncImage
@@ -78,15 +80,14 @@ import com.google.gson.reflect.TypeToken
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
-import java.time.ZonedDateTime
-import java.time.format.DateTimeFormatter
-import java.util.Locale
-import com.das.forui.MainActivity.Youtuber.pythonInstant
 import com.das.forui.MainApplication
+import com.das.forui.MainApplication.Youtuber.pythonInstant
 import com.das.forui.objectsAndData.ForUIKeyWords.ACTION_START
 import com.das.forui.objectsAndData.VideosListData
+import com.google.android.exoplayer2.MediaMetadata
 import com.google.android.exoplayer2.trackselection.DefaultTrackSelector
 import com.google.android.exoplayer2.trackselection.TrackSelectionParameters
+import com.google.android.exoplayer2.util.MimeTypes
 import com.google.android.material.bottomnavigation.BottomNavigationView
 import kotlinx.coroutines.CoroutineScope
 
@@ -111,6 +112,7 @@ class ViewerFragment: Fragment() {
     private lateinit var channelName: String
     private lateinit var dateOfVideo: String
     private lateinit var viewNumber: String
+    private var startFrom: Long? = null
 
     override fun onCreateView(
         inflater: LayoutInflater,
@@ -121,13 +123,22 @@ class ViewerFragment: Fragment() {
         return  binding.root
     }
 
+    override fun onViewStateRestored(savedInstanceState: Bundle?) {
+        super.onViewStateRestored(savedInstanceState)
+
+        startFrom = savedInstanceState?.getLong("startFrom", -1L)
+        println("here is the saved instance: $startFrom")
+    }
+
 
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
         listOfVideosListData.clear()
-        (activity as MainActivity).findViewById<BottomNavigationView>(R.id.nav_view).visibility = View.GONE
+
+        activity?.findViewById<BottomNavigationView>(R.id.nav_view)?.visibility = View.GONE
         videoID = arguments?.getString("View_ID").toString()
         playerView = binding.videoPlayerLocally
+
 
         playVideo("https://www.youtube.com/watch?v=$videoID")
 
@@ -153,8 +164,8 @@ class ViewerFragment: Fragment() {
         setTitle.visibility = View.GONE
         binding.videoPlayerLocally.layoutParams.height = videoPlayerHeight
         val drawable = ContextCompat.getDrawable(requireContext(), R.drawable.fullscreen_24dp)
-        (activity as MainActivity).findViewById<ImageButton>(R.id.exofullscreen)
-            .setImageDrawable(drawable)
+        activity?.findViewById<ImageButton>(R.id.exofullscreen)
+            ?.setImageDrawable(drawable)
         isFullScreen = false
         showSystemUI()
 
@@ -192,7 +203,7 @@ class ViewerFragment: Fragment() {
                 .into(binding.channelImageVideoView)
 
         } else {
-            if (isAdded && _binding!= null) {
+            if (isAdded && _binding != null) {
                 CoroutineScope(Dispatchers.IO).launch {
                     val videoDetails = (activity as MainActivity).callPythonSearchWithLink(videoID)
 
@@ -205,7 +216,7 @@ class ViewerFragment: Fragment() {
                             descriptions = videoDetails["description"].toString()
                             viewNumber = formatViews(views.toLong())
                             channelName = channel
-                            dateOfVideo = formatDate(date)
+                            dateOfVideo = MainApplication().formatDate(date)
                             binding.giveMeTitle.text = videoTitle
                             setTitle.text = videoTitle
                             binding.giveMeViewNumber.text = viewNumber
@@ -240,12 +251,12 @@ class ViewerFragment: Fragment() {
                     if (isFullScreen) {
                         toggleFullScreen()
                     } else {
-                        exoPlayer?.playWhenReady = false
-                        releaseAudioFocus()
+                        exoPlayer?.pause()
                         findNavController().navigateUp()
                     }
                 }
-            })
+            }
+        )
 
 
 
@@ -255,7 +266,6 @@ class ViewerFragment: Fragment() {
                 toggleFullScreen()
             } else {
                 exoPlayer?.stop()
-                releaseAudioFocus()
                 findNavController().navigateUp()
             }
         }
@@ -286,13 +296,35 @@ class ViewerFragment: Fragment() {
         }
 
         binding.giveMeTitle.setOnClickListener {
-            activity?.recreate()
-//            AlertDialog.Builder(requireContext())
-//                .setTitle("Descriptions")
-//                .setMessage(descriptions)
-//                .setNegativeButton("Close") { _, _ ->
-//                }
-//                .show()
+            val urlPattern = """https?://\S+""".toRegex()
+
+            val matches = urlPattern.findAll(descriptions)
+
+            val spannable = SpannableString(descriptions)
+
+            matches.forEach { match ->
+                val url = match.value
+                val startIndex = match.range.first
+                val endIndex = match.range.last + 1
+                spannable.setSpan(URLSpan(url), startIndex, endIndex, 0)
+            }
+
+            val textView = TextView(requireContext()).apply {
+                text = spannable
+                textSize = 14F
+                movementMethod = LinkMovementMethod.getInstance()
+                setPadding(15)
+                setTextColor(binding.giveMeTitle.textColors)
+            }
+//            textView.setBackgroundColor(com.google.android.material.R.attr.backgroundColor)
+
+
+            AlertDialog.Builder(requireContext())
+                .setTitle("Descriptions")
+                .setView(textView)
+                .setNegativeButton("Close") { _, _ ->
+                }
+                .show()
         }
 
 
@@ -671,13 +703,27 @@ class ViewerFragment: Fragment() {
                             }
                             println("Video URL for ExoPlayer: $url")
                             exoPlayer = ExoPlayer.Builder(requireContext()).build()
-//                        val subtitleUri = listOf(MediaItem.Subtitle("${requireContext().cacheDir}/subtitles.vtt".toUri(), MimeTypes.TEXT_VTT, "en"))
-                            val mediaItem = MediaItem.fromUri(url)
-//                        setSubtitles(subtitleUri)
+                            val mediaItem = MediaItem.Builder()
+                                .setUri(url)
+                                .setMimeType(MimeTypes.VIDEO_MP4)
+                                .setMediaMetadata(
+                                    MediaMetadata.Builder()
+                                        .setTitle(videoTitle)
+                                        .setMediaType(MediaMetadata.MEDIA_TYPE_VIDEO)
+                                        .setDescription(descriptions)
+                                        .build()
+                                )
+                                .build()
                             exoPlayer?.setMediaItem(mediaItem)
                             playerView.player = exoPlayer
-                            exoPlayer?.prepare()
-                            exoPlayer?.play()
+                            exoPlayer?.let {
+                                it.prepare()
+                                it.play()
+                            }
+                            if (startFrom != null) {
+                                exoPlayer?.seekTo(startFrom!!)
+                            }
+
                             MainActivity().requestAudioFocusFromMain(requireContext(), exoPlayer)
                         }
                     } else {
@@ -688,10 +734,7 @@ class ViewerFragment: Fragment() {
                     }
                 }
             }
-
-
-        }
-         catch (e: Exception) {
+        } catch (e: Exception) {
             println("error found in this ${e.message}")
             (activity as MainActivity).showDialogs("found an error here ${e.message}")
         }
@@ -733,20 +776,6 @@ class ViewerFragment: Fragment() {
 
 
 
-
-    private fun releaseAudioFocus() {
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
-//            audioFocusRequest?.let {
-//                audioManager.abandonAudioFocusRequest(it)
-                Log.d("AudioService", "Audio focus released for API >= 26")
-//            } ?: run {
-                Log.w("AudioService", "audioFocusRequest is null, cannot release focus")
-//            }
-        } else {
-//            audioManager.abandonAudioFocus(audioFocusChangeListener)
-            Log.d("AudioService", "Audio focus released for API < 26")
-        }
-    }
 
 
 
@@ -796,20 +825,7 @@ class ViewerFragment: Fragment() {
             else -> views.toString()
         }
     }
-    private fun formatDate(dateStr: String): String {
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
-            val inputFormatter = DateTimeFormatter.ISO_OFFSET_DATE_TIME
 
-            val zonedDateTime = ZonedDateTime.parse(dateStr, inputFormatter)
-
-            val outputFormatter = DateTimeFormatter.ofPattern("dd MMM yyyy", Locale.ENGLISH)
-
-            return zonedDateTime.format(outputFormatter)
-        }
-        else{
-            return dateStr
-        }
-    }
 
 
 
@@ -920,7 +936,6 @@ class ViewerFragment: Fragment() {
                 } else {
                     isPlaying = false
                     println("service pausing")
-                    releaseAudioFocus()
                 }
             }
 
@@ -974,9 +989,15 @@ class ViewerFragment: Fragment() {
     }
 
 
+
+    override fun onSaveInstanceState(outState: Bundle) {
+        super.onSaveInstanceState(outState)
+        outState.putLong("startFrom", exoPlayer?.currentPosition!!)
+    }
+
     override fun onDestroyView() {
         super.onDestroyView()
-        releaseAudioFocus()
+        exoPlayer?.release()
         binding.giveMeTitle.text= ""
         (activity as MainActivity).showBottomNav()
         _binding = null

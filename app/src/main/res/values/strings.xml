@@ -37,4 +37,8 @@
     <string name="notification_channel_name">myMediaPlayer\n</string>
     <string name="videos">Videos</string>
     <string name="audios">Audios</string>
+    <string name="LightMode">Light Mode</string>
+    <string name="DarkMode">Dark Mode</string>
+    <string name="setDefault">Auto</string>
+    <string name="change_theme_mode">Change Theme Mode</string>
 </resources>

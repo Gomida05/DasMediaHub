@@ -2,6 +2,7 @@
 package com.das.forui.ui.settings
 
 import android.app.Activity
+import android.app.AlertDialog
 import android.content.Context
 import android.content.Intent
 import android.net.Uri
@@ -24,18 +25,13 @@ import androidx.compose.material.icons.filled.Folder
 import androidx.compose.material.icons.filled.Info
 import androidx.compose.material.icons.filled.ManageSearch
 import androidx.compose.material.icons.filled.Update
-import androidx.compose.material.icons.filled.VideoLibrary
 import androidx.compose.material3.Button
-import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Icon
 import androidx.compose.material3.Text
-import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
-import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.vector.ImageVector
@@ -87,20 +83,17 @@ class SettingsFragment : Fragment() {
 
     val item = listOf(
       "Setting for searchList",
-      "HeadLine",
       "Change Downloading Location",
       "Check for update",
       "About Us"
     )
     val leftIcons = listOf(
       Icons.Default.ManageSearch,
-      Icons.Default.VideoLibrary,
       Icons.Default.Folder,
       Icons.Default.Update,
       Icons.Default.Info
     )
     val rightIcons = listOf(
-      Icons.Default.ArrowForward,
       Icons.Default.ArrowForward,
       Icons.Default.ArrowForward,
       Icons.Default.ArrowForward,
@@ -115,94 +108,93 @@ class SettingsFragment : Fragment() {
     }
     settingsResults.value = allItems
 
-    LazyColumn(
-      modifier = Modifier
-    ) {
+    LazyColumn{
 
       items(settingsResults.value) { settingsItem ->
         CategoryItems(
           title = settingsItem.title,
           leftHandIcon = settingsItem.leftIcon,
           rightHandIcon = settingsItem.rightIcon
-
         )
+
       }
+
     }
+
   }
 
-    @Composable
-    fun CategoryItems(
-      title: String,
-      leftHandIcon: ImageVector,
-      rightHandIcon: ImageVector
-    ){
-      var showAlertDialog by remember { mutableStateOf(false) }
-      val interactionSource = remember { MutableInteractionSource() }
 
-      Button(
-        onClick = {showAlertDialog = true},
-        interactionSource = interactionSource,
-        elevation = ButtonDefaults.buttonElevation(
-          defaultElevation = 50.dp
-        ),
-        modifier = Modifier
-          .focusable(interactionSource = interactionSource)
-          .hoverable(interactionSource = interactionSource)
-          .fillMaxWidth()
-          .height(80.dp)
-          .padding(top = 2.dp, bottom = 2.dp)
-      ) {
-        if (showAlertDialog){
-          GotClicks(title)
-        }
-        Box(
-          modifier = Modifier.fillMaxWidth()
-        ) {
-          Icon(
-            imageVector = leftHandIcon,
-            "",
-            modifier = Modifier.align(Alignment.CenterStart)
-          )
-          Text(
-            text = title,
-            fontSize = 16.sp,
-            modifier = Modifier.align(Alignment.Center)
-          )
-          Icon(
-            rightHandIcon,
-            "",
-            modifier = Modifier.align(Alignment.CenterEnd)
-          )
-        }
-
-      }
-
-    }
 
 
   @Composable
-  private fun GotClicks(title: String){
+  fun CategoryItems(
+    title: String,
+    leftHandIcon: ImageVector,
+    rightHandIcon: ImageVector
+  ){
 
+    val interactionSource = remember { MutableInteractionSource() }
+
+
+    Button(
+      onClick = {
+        gotClicks(title)
+      },
+      interactionSource = interactionSource,
+      elevation = ButtonDefaults.buttonElevation(
+        defaultElevation = 50.dp
+      ),
+      modifier = Modifier
+        .focusable(interactionSource = interactionSource)
+        .hoverable(interactionSource = interactionSource)
+        .fillMaxWidth()
+        .height(80.dp)
+        .padding(top = 2.dp, bottom = 2.dp)
+    ) {
+
+
+      Box(
+        modifier = Modifier.fillMaxWidth()
+      ) {
+        Icon(
+          imageVector = leftHandIcon,
+          "",
+          modifier = Modifier.align(Alignment.CenterStart)
+        )
+        Text(
+          text = title,
+          fontSize = 16.sp,
+          modifier = Modifier.align(Alignment.Center)
+        )
+        Icon(
+          rightHandIcon,
+          "",
+          modifier = Modifier.align(Alignment.CenterEnd)
+        )
+      }
+
+    }
+
+  }
+
+
+  private fun gotClicks(title: String){
 
     when (title) {
-      "Setting for searchList" -> {
+      "More" -> {
         findNavController().navigate(R.id.nav_userSetting)
       }
 
-      "HeadLine" -> {
-
-      }
-
       "Change Downloading Location" -> {
-        AlertDialogPathChoose(true)
-      }
-
-      "About Us" -> {
-        goToWeb()
+        alertDialogPathChoose()
       }
 
       "Check for update" -> {
         (activity as MainActivity).showDialogs("coming soon")
+      }
+
+      "About Us" -> {
+        goToWeb()
       }
     }
   }
@@ -216,44 +208,19 @@ class SettingsFragment : Fragment() {
 
 
 
-  @Composable
-  private fun AlertDialogPathChoose(soTruOrFalse: Boolean) {
 
-    var openDialog by remember { mutableStateOf(soTruOrFalse) }
+  private fun alertDialogPathChoose(){
 
+    AlertDialog.Builder(requireContext())
+      .setMessage("Which location do you want to change it please select on of them")
+      .setNegativeButton("Video's") { _, _ ->
+        openFolderPicker(folderPickerForMyVideo)
+      }
+      .setPositiveButton("Audio's") { _, _ ->
+        openFolderPicker(folderPickerRequestCode)
+      }
+      .show()
 
-    if (openDialog) {
-      AlertDialog(
-        onDismissRequest = { openDialog = false },
-        title = { Text("Which location do you want to change it please select on of them") },
-        confirmButton = {
-          TextButton(
-            onClick = {
-              openFolderPicker(folderPickerForMyVideo)
-              // Handle the confirm button action
-            }
-          ) {
-            Text("Video's")
-          }
-          TextButton(
-            onClick = {
-              openFolderPicker(folderPickerRequestCode)
-            }
-          ) {
-            Text("Audio's")
-          }
-        },
-        dismissButton = {
-          TextButton(
-            onClick = {
-              openDialog = false
-            }
-          ) {
-            Text("Cancel")
-          }
-        }
-      )
-    }
   }
   
   private fun openFolderPicker(code: Int) {

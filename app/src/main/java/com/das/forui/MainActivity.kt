@@ -5,11 +5,14 @@ import android.Manifest.permission.POST_NOTIFICATIONS
 import android.app.NotificationChannel
 import android.app.NotificationManager
 import android.app.PictureInPictureParams
+import android.app.UiModeManager
 import android.content.Context
 import android.content.Intent
 import android.content.Intent.EXTRA_STREAM
 import android.content.Intent.EXTRA_TEXT
+import android.content.SharedPreferences
 import android.content.pm.PackageManager
+import android.content.res.Configuration
 import android.media.AudioManager
 import android.media.MediaScannerConnection
 import android.net.Uri
@@ -21,6 +24,7 @@ import android.util.Rational
 import android.view.View
 import android.widget.Toast
 import androidx.appcompat.app.AppCompatActivity
+import androidx.appcompat.app.AppCompatDelegate
 import androidx.core.app.ActivityCompat
 import androidx.core.app.NotificationCompat
 import androidx.core.app.NotificationManagerCompat
@@ -30,8 +34,9 @@ import androidx.navigation.fragment.NavHostFragment
 import androidx.navigation.ui.AppBarConfiguration
 import androidx.navigation.ui.setupActionBarWithNavController
 import androidx.navigation.ui.setupWithNavController
-import com.chaquo.python.Python.getInstance
-import com.das.forui.MainActivity.Youtuber.pythonInstant
+import com.das.forui.MainApplication.Youtuber.extractor
+import com.das.forui.MainApplication.Youtuber.isValidYoutubeURL
+import com.das.forui.MainApplication.Youtuber.pythonInstant
 import com.das.forui.databased.PathSaver
 import com.das.forui.databinding.ActivityMainBinding
 import com.das.forui.objectsAndData.ForUIKeyWords.PLAY_HERE_AUDIO
@@ -49,8 +54,6 @@ import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import java.io.File
 import java.lang.System.currentTimeMillis
-import java.net.URL
-import java.util.regex.Pattern
 
 
 
@@ -66,7 +69,6 @@ class MainActivity : AppCompatActivity() {
 
 
         onNewIntent(intent)
-
 
         setupActionBarWithNavController(
             findNavController(R.id.nav_host_fragment_activity_main),
@@ -199,7 +201,7 @@ class MainActivity : AppCompatActivity() {
     private fun newTextIntent(sharedText: String) {
         sharedText.let {
             if (isValidYoutubeURL(it)) {
-                val videoId = Youtuber.extractor(it)
+                val videoId = extractor(it)
                 val bundle = Bundle().apply {
                     putString("View_ID", videoId)
                     putString("View_URL", "https://www.youtube.com/watch?v=$videoId")
@@ -444,36 +446,6 @@ class MainActivity : AppCompatActivity() {
 
 
 
-    fun isValidYoutubeURL(youTubeUrl: String): Boolean {
-        try {
-            val trimmedUrl = youTubeUrl.trim()
-            val cleanedUrl = if (trimmedUrl.endsWith("&feature=shared")) trimmedUrl.removeSuffix("&feature=shared") else trimmedUrl
-
-            val url = URL(cleanedUrl)
-
-            val host = url.host
-            if (host == "www.youtube.com" || host == "youtube.com") {
-                val videoPattern = Pattern.compile("^/watch\\?v=([A-Za-z0-9_-]{11})$")
-                val matcher = videoPattern.matcher(url.path + "?" + url.query)  // Combine path and query
-                return matcher.matches()
-            } else if (host == "youtu.be") {
-                // Shortened YouTube URL (youtu.be/VIDEO_ID)
-                val videoPattern = Pattern.compile("^/([A-Za-z0-9_-]{11})$")
-                val matcher = videoPattern.matcher(url.path)  // Check the path only
-                return matcher.matches()
-            }
-
-            // If not youtube.com or youtu.be, return false
-            return false
-        } catch (e: Exception) {
-            println("yes with me3 ${e.message}")
-//            alertUserError(e.message)
-            return false
-        }
-    }
-
-
-
     fun requestAudioFocusFromMain(context: Context, exoPlayer: ExoPlayer?) {
 
         val audioManager = context.getSystemService(AUDIO_SERVICE) as AudioManager
@@ -510,17 +482,13 @@ class MainActivity : AppCompatActivity() {
         if (result != AudioManager.AUDIOFOCUS_REQUEST_GRANTED) {
 
         }
-        when (exoPlayer?.isPlaying){
+        when (exoPlayer?.isPlaying!!){
             true ->{
 
             }
             false ->{
-
             }
 
-            else -> {
-
-            }
         }
     }
 
@@ -562,17 +530,25 @@ class MainActivity : AppCompatActivity() {
         }
     }
 
+    override fun onConfigurationChanged(newConfig: Configuration) {
+        super.onConfigurationChanged(newConfig)
+        val myNewConfig = newConfig.uiMode and Configuration.UI_MODE_NIGHT_MASK
+        val currentUiMode = resources.configuration.uiMode and Configuration.UI_MODE_NIGHT_MASK
+        val sharedPref: SharedPreferences = getSharedPreferences("AppPreferences", Context.MODE_PRIVATE)
 
+        val uiModeType = sharedPref.getInt("isNightModeOn", currentUiMode)
 
-    object Youtuber{
-        val pythonInstant = getInstance()
-        fun extractor(url: String): String? {
-            val regex= "(?<=v=|/)([a-zA-Z0-9_-]{11})(?=&|\$|/)"
-            val pattern= Regex(regex)
-            val match=pattern.find((url))
-            return match?.groups?.get(1)?.value
+        if (myNewConfig != currentUiMode && uiModeType == UiModeManager.MODE_NIGHT_AUTO) {
+            if (myNewConfig == Configuration.UI_MODE_NIGHT_YES) {
+                AppCompatDelegate.setDefaultNightMode(AppCompatDelegate.MODE_NIGHT_NO)
+            } else {
+                AppCompatDelegate.setDefaultNightMode(AppCompatDelegate.MODE_NIGHT_YES)
+            }
+            this.recreate()
         }
     }
+
+
 
 
 

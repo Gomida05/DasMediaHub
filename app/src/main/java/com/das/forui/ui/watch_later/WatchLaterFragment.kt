@@ -4,7 +4,6 @@ import android.app.AlertDialog
 import android.content.Intent
 import android.database.Cursor
 import android.os.Bundle
-import android.util.Log
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
@@ -24,6 +23,7 @@ import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.MoreVert
+import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
@@ -68,14 +68,14 @@ import kotlinx.coroutines.withContext
 class WatchLaterFragment: Fragment() {
     private var _binding: FragmentWatchLaterBinding? = null
     private val binding get() = _binding!!
-    private lateinit var duration: String
+
     override fun onCreateView(
         inflater: LayoutInflater,
         container: ViewGroup?,
         savedInstanceState: Bundle?
     ): View {
         _binding = FragmentWatchLaterBinding.inflate(inflater, container, false)
-        binding.listViewCompose.apply {
+        binding.root.apply {
             setViewCompositionStrategy(ViewCompositionStrategy.DisposeOnViewTreeLifecycleDestroyed)
             setContent {
                 CustomTheme {
@@ -91,30 +91,7 @@ class WatchLaterFragment: Fragment() {
 
 
 
-    private fun onClickListListener(selectedId: String){
-        try {
-            val dbHelper = DatabaseFavorite(requireContext())
-            val viewNumber = dbHelper.getViewNumber(selectedId)
-            val datVideo = dbHelper.getVideoDate(selectedId)
-            val videoChannel = dbHelper.getVideoChannelName(selectedId)
-            duration= dbHelper.getDuration(selectedId).toString()
-            val title= dbHelper.getVideoTitle(selectedId)
-            val bundle = Bundle().apply {
-                putString("View_ID", selectedId)
-                putString("View_URL", "https://www.youtube.com/watch?v=$selectedId")
-                putString("View_Title", title)
-                putString("View_Number", viewNumber)
-                putString("dateOfVideo", datVideo)
-                putString("channelName", videoChannel)
-                putString("duration", duration)
-            }
-            findNavController().navigate(R.id.nav_video_viewer, bundle)
-//            Toast.makeText(context, selectedItem, Toast.LENGTH_SHORT).show()
-//            (activity as MainActivity).playMedia(requireContext(), selectedId)
-        } catch (e: Exception) {
-            (activity as MainActivity).alertUserError(e.message.toString())
-        }
-    }
+
 
 
     @OptIn(ExperimentalMaterial3Api::class)
@@ -122,16 +99,16 @@ class WatchLaterFragment: Fragment() {
     fun ListFavVideos() {
 
         val searchResults = remember { mutableStateOf<List<SavedVideosListData>>(emptyList()) }
-
+        val isLoading = remember { mutableStateOf(true) }
         val scrollBehavior = TopAppBarDefaults.enterAlwaysScrollBehavior()
 
-
         LaunchedEffect(Unit) {
-            val result =
+            isLoading.value = true
+            val result = withContext(Dispatchers.IO){
                 fetchDataFromDatabase()
-
+            }
             searchResults.value = result ?: emptyList()
-
+            isLoading.value = false
         }
 
         Scaffold(
@@ -161,16 +138,27 @@ class WatchLaterFragment: Fragment() {
                     .padding(paddingValues),
                 contentAlignment = Alignment.Center,
             ) {
-                if (searchResults.value.isNotEmpty()) {
-                    LazyColumn {
-                        items(searchResults.value) { searchItem ->
-                            CategoryItems(searchItem) { videoId ->
-                                SearchHistoryDB(requireContext()).deleteSearchList(videoId)
-                                searchResults.value =
-                                    searchResults.value.filter { it != searchItem }
+                if (isLoading.value) {
+                    CircularProgressIndicator(modifier = Modifier.align(Alignment.Center))
+                }else {
+                    if (searchResults.value.isEmpty()) {
+
+                        Text(
+                            text = "You haven't saved any videos yet. Save some videos to create your collection!",
+                            fontSize = 25.sp,
+                            textAlign = TextAlign.Center
+                        )
+                    } else {
+                        LazyColumn {
+                            items(searchResults.value) { searchItem ->
+                                CategoryItems(searchItem) { videoId ->
+                                    SearchHistoryDB(requireContext()).deleteSearchList(videoId)
+                                    searchResults.value =
+                                        searchResults.value.filter { it != searchItem }
+
+                                }
 
                             }
-
                         }
                     }
                 }
@@ -353,60 +341,79 @@ class WatchLaterFragment: Fragment() {
     }
 
 
+    private fun onClickListListener(selectedId: String){
+        try {
+            val dbHelper = DatabaseFavorite(requireContext())
+            val viewNumber = dbHelper.getViewNumber(selectedId)
+            val datVideo = dbHelper.getVideoDate(selectedId)
+            val videoChannel = dbHelper.getVideoChannelName(selectedId)
+            val ourDuration= dbHelper.getDuration(selectedId).toString()
+            val title= dbHelper.getVideoTitle(selectedId)
+            val bundle = Bundle().apply {
+                putString("View_ID", selectedId)
+                putString("View_URL", "https://www.youtube.com/watch?v=$selectedId")
+                putString("View_Title", title)
+                putString("View_Number", viewNumber)
+                putString("dateOfVideo", datVideo)
+                putString("channelName", videoChannel)
+                putString("duration", ourDuration)
+            }
+            findNavController().navigate(R.id.nav_video_viewer, bundle)
+//            Toast.makeText(context, selectedItem, Toast.LENGTH_SHORT).show()
+//            (activity as MainActivity).playMedia(requireContext(), selectedId)
+        } catch (e: Exception) {
+            (activity as MainActivity).alertUserError(e.message.toString())
+        }
+    }
 
-    private fun imageViewer(selectedData: SavedVideosListData, deleteTheItem: (selectedId: String) -> Unit){
 
 
-            AlertDialog.Builder(requireContext())
-                .setTitle("Are you sure you want to remove this item?")
-                .setPositiveButton("Yes") { _, _ ->
-                    deleteTheItem(selectedData.watchUrl)
-                }
-                .setNegativeButton("No") { _, _ -> }
-                .setNeutralButton(
-                    "Background"
-                ) { _, _ ->
-                    MainApplication().getListItemsStreamUrls(
-                        VideosListData(
-                            selectedData.watchUrl, selectedData.title, selectedData.viewer,
-                            selectedData.dateTime, selectedData.duration, selectedData.channelName, ""
-                        ),
-                        onSuccess = { result ->
-                            val playIntent =
-                                Intent(
-                                    requireContext(),
-                                    AudioServiceFromUrl::class.java
-                                ).apply {
-                                    action = ACTION_START
-                                    putExtra("videoId", selectedData.watchUrl)
-                                    putExtra("media_url", result.audioUrl)
-                                    putExtra("title", selectedData.title)
-                                    putExtra("channelName", selectedData.channelName)
-                                    putExtra("viewNumber", selectedData.viewer)
-                                    putExtra("videoDate", selectedData.dateTime)
-                                    putExtra("duration", selectedData.duration)
-                                }
-                            activity?.startService(playIntent)
-                        },
-                        onFailure = { errorMessage ->
-                            // Handle the error (e.g., show a dialog with the error message)
-                            println("Error: $errorMessage")
-                        }
-                    )
-                }.show()
+    private fun imageViewer(selectedData: SavedVideosListData, deleteTheItem: (selectedId: String) -> Unit) {
+
+
+        AlertDialog.Builder(requireContext())
+            .setTitle("Are you sure you want to remove this item?")
+            .setPositiveButton("Yes") { _, _ ->
+                deleteTheItem(selectedData.watchUrl)
+            }
+            .setNegativeButton("No") { _, _ -> }
+            .setNeutralButton(
+                "Background"
+            ) { _, _ ->
+                MainApplication().getListItemsStreamUrls(
+                    VideosListData(
+                        selectedData.watchUrl, selectedData.title, selectedData.viewer,
+                        selectedData.dateTime, selectedData.duration, selectedData.channelName, ""
+                    ),
+                    onSuccess = { result ->
+                        val playIntent =
+                            Intent(
+                                requireContext(),
+                                AudioServiceFromUrl::class.java
+                            ).apply {
+                                action = ACTION_START
+                                putExtra("videoId", selectedData.watchUrl)
+                                putExtra("media_url", result.audioUrl)
+                                putExtra("title", selectedData.title)
+                                putExtra("channelName", selectedData.channelName)
+                                putExtra("viewNumber", selectedData.viewer)
+                                putExtra("videoDate", selectedData.dateTime)
+                                putExtra("duration", selectedData.duration)
+                            }
+                        activity?.startService(playIntent)
+                    },
+                    onFailure = { errorMessage ->
+                        // Handle the error (e.g., show a dialog with the error message)
+                        println("Error: $errorMessage")
+                    }
+                )
+            }.show()
     }
 
     private fun fetchDataFromDatabase(): MutableList<SavedVideosListData>? {
         val dbHelper = DatabaseFavorite(requireContext())
         val cursor: Cursor? = dbHelper.getResults()
-        if(!dbHelper.isTableEmpty()){
-            binding.informUserWatchLater.visibility= View.GONE
-        }
-        else{
-            binding.informUserWatchLater.visibility= View.VISIBLE
-        }
-        Log.d("WatchLater", "Query executed, cursor count: ${cursor?.count ?: "null"}")
-        val urls = mutableListOf<String>()
+
         val savedVideosListData= mutableListOf<SavedVideosListData>()
         try {
             cursor?.let {
@@ -416,7 +423,7 @@ class WatchLaterFragment: Fragment() {
                     val viewerNumber = it.getString(it.getColumnIndexOrThrow("viewNumber"))
                     val dateTime = it.getString(it.getColumnIndexOrThrow("videoDate"))
                     val channelName = it.getString(it.getColumnIndexOrThrow("videoChannelName"))
-                    duration = it.getString(it.getColumnIndexOrThrow("duration"))
+                    val myDuration = it.getString(it.getColumnIndexOrThrow("duration"))
                     savedVideosListData.add(
                         SavedVideosListData(
                             title,
@@ -424,13 +431,10 @@ class WatchLaterFragment: Fragment() {
                             "https://img.youtube.com/vi/$watchUrl/0.jpg",
                             viewerNumber,
                             dateTime,
-                            duration,
+                            myDuration,
                             channelName
                     )
                     )
-                    watchUrl?.let { _ ->
-                        urls.add(title)
-                    }
                 }
                 it.close()
             }
@@ -443,8 +447,9 @@ class WatchLaterFragment: Fragment() {
     }
 
 
-
-
-
+    override fun onDestroy() {
+        super.onDestroy()
+        _binding = null
+    }
 
 }

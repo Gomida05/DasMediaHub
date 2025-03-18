@@ -1,15 +1,19 @@
 package com.das.forui.ui.userSettings
 
-import android.content.res.Configuration.UI_MODE_NIGHT_MASK
-import android.content.res.Configuration.UI_MODE_NIGHT_YES
+import android.app.UiModeManager
+import android.content.Context
+import android.content.SharedPreferences
 import android.os.Bundle
+import android.view.Gravity
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
+import android.widget.PopupMenu
 import androidx.appcompat.app.AppCompatDelegate
 import androidx.fragment.app.Fragment
 import androidx.navigation.fragment.findNavController
 import com.das.forui.databinding.FragmentUserSettingBinding
+import com.das.forui.R
 
 class UserSetting: Fragment() {
     private var _binding: FragmentUserSettingBinding? = null
@@ -26,25 +30,56 @@ class UserSetting: Fragment() {
 
     }
 
+
+
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
 
         binding.goBack.setOnClickListener{
             findNavController().navigateUp()
         }
-        binding.toggleButton.setOnClickListener{
-            changeTheme()
+
+        binding.themeMenuButton.setOnClickListener{
+            val popupMenu = PopupMenu(requireContext(), it).apply {
+                gravity = Gravity.END
+                menuInflater.inflate(R.menu.theme_menu, this.menu)
+            }
+
+
+
+            popupMenu.setOnMenuItemClickListener { item ->
+                when (item.itemId) {
+                    R.id.change_toDarkMode -> {
+
+                        changeTheme(UiModeManager.MODE_NIGHT_YES)
+                        true
+                    }
+                    R.id.change_toLightMode -> {
+                        changeTheme(UiModeManager.MODE_NIGHT_NO)
+                        true
+                    }
+                    R.id.setDefault -> {
+                        // Handle reset to default
+                        changeTheme(AppCompatDelegate.MODE_NIGHT_FOLLOW_SYSTEM)
+                        true
+                    }
+                    else -> false
+                }
+            }
+
+            popupMenu.show()
+
         }
+
     }
 
-    private fun changeTheme() {
-        val isDarkMode =  resources.configuration.uiMode and UI_MODE_NIGHT_MASK
-        if (isDarkMode == UI_MODE_NIGHT_YES) {
-            AppCompatDelegate.setDefaultNightMode(AppCompatDelegate.MODE_NIGHT_NO)
-        } else {
-            AppCompatDelegate.setDefaultNightMode(AppCompatDelegate.MODE_NIGHT_YES)
+    private fun changeTheme(setUiMode: Int) {
+        val sharedPref: SharedPreferences = requireContext().getSharedPreferences("AppPreferences", Context.MODE_PRIVATE)
+        with(sharedPref.edit()) {
+            putInt("isNightModeOn", setUiMode)
+            apply()
         }
-        activity?.recreate()
+        AppCompatDelegate.setDefaultNightMode(setUiMode)
     }
 
 

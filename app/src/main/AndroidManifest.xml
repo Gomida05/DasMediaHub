@@ -47,6 +47,7 @@
         tools:targetApi="35">
 
 
+
         <activity
             android:name=".MainActivity"
             android:exported="true"
@@ -54,10 +55,10 @@
             android:resizeableActivity="true"
             android:supportsPictureInPicture="true"
             android:theme="@style/Theme.ForUI"
-            android:configChanges="uiMode|screenSize|orientation|screenLayout|smallestScreenSize|keyboardHidden|colorMode"
+            android:configChanges="screenSize|orientation|screenLayout|smallestScreenSize|keyboardHidden|colorMode"
             android:screenOrientation="portrait"
             android:windowSoftInputMode="stateVisible|adjustResize"
-            tools:ignore="DiscouragedApi,LockedOrientationActivity">
+            tools:ignore=",DiscouragedApi,LockedOrientationActivity">
 
 
             <intent-filter>
@@ -66,7 +67,7 @@
             </intent-filter>
 
             <intent-filter
-                android:autoVerify="false"
+                android:autoVerify="true"
                 android:label="@string/start_service">
 
                 <action android:name="android.intent.action.VIEW"/>

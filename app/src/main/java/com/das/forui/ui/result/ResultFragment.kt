@@ -57,7 +57,7 @@ import com.bumptech.glide.Glide
 import com.das.forui.CustomTheme
 import com.das.forui.MainActivity
 import com.das.forui.databinding.FragmentResultBinding
-import com.das.forui.MainActivity.Youtuber.pythonInstant
+import com.das.forui.MainApplication.Youtuber.pythonInstant
 import com.das.forui.MainApplication
 import com.das.forui.R
 import com.das.forui.objectsAndData.ForUIKeyWords.ACTION_START
@@ -81,7 +81,7 @@ class ResultFragment : Fragment() {
     ): View {
         _binding = FragmentResultBinding.inflate(inflater, container, false)
 
-        binding.myComposeView.apply {
+        binding.root.apply {
             setViewCompositionStrategy(ViewCompositionStrategy.DisposeOnViewTreeLifecycleDestroyed)
             setContent {
                 val text = arguments?.getString("EXTRA_TEXT").toString()
@@ -161,17 +161,7 @@ class ResultFragment : Fragment() {
                     } else {
                         LazyColumn(modifier = Modifier) {
                             items(searchResults.value) { searchItem ->
-                                CategoryItems(
-                                    videoId = searchItem.videoId,
-                                    title = searchItem.title,
-                                    viewsNumber = searchItem.views,
-                                    dateOfVideo = searchItem.dateOfVideo,
-                                    channelName = searchItem.channelName,
-                                    duration = searchItem.duration,
-                                    videoThumbnailURL = searchItem.videoId,
-                                    channelThumbnails = searchItem.channelThumbnailsUrl,
-
-                                    )
+                                CategoryItems(searchItem)
                             }
                         }
                     }
@@ -184,15 +174,16 @@ class ResultFragment : Fragment() {
     @OptIn(ExperimentalFoundationApi::class)
     @Composable
     fun CategoryItems(
-        videoId: String,
-        title: String,
-        viewsNumber: String,
-        dateOfVideo: String,
-        channelName: String,
-        duration: String,
-        videoThumbnailURL: String,
-        channelThumbnails: String
+        searchItem: SearchResultFromMain
     ){
+        val videoId = searchItem.videoId
+        val title = searchItem.title
+        val viewsNumber = searchItem.views
+        val dateOfVideo = searchItem.dateOfVideo
+        val channelName = searchItem.channelName
+        val duration = searchItem.duration
+        val videoThumbnailURL = searchItem.videoId
+        val channelThumbnails = searchItem.channelThumbnailsUrl
         val context= requireContext()
 
         Box(

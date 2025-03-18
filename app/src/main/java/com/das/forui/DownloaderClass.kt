@@ -9,6 +9,7 @@ import android.content.Intent
 import android.net.Uri
 import android.os.Build
 import android.os.Environment
+import android.view.View
 import androidx.core.app.NotificationCompat
 import com.das.forui.databased.PathSaver
 import java.io.File
@@ -19,7 +20,7 @@ class DownloaderClass(val context: Context) {
 
     fun downloadVideo(url: String, title: String, type: String) {
         try {
-            val pathVideo = PathSaver().getVideosDownloadPath(context).toString()
+            val pathVideo = PathSaver().getVideosDownloadPath(context)
             createSingleDirectory(pathVideo)
 
             createNotificationChannel()
@@ -35,6 +36,7 @@ class DownloaderClass(val context: Context) {
                 .setDescription("Video download in progress")
                 .setDestinationInExternalPublicDir(Environment.DIRECTORY_MOVIES, "$title.$type")
                 .setAllowedNetworkTypes(DownloadManager.Request.NETWORK_WIFI or DownloadManager.Request.NETWORK_MOBILE)
+                .setNotificationVisibility(View.GONE)
                 .setAllowedOverMetered(true)
 
             val downloadManager = context.getSystemService(Context.DOWNLOAD_SERVICE) as DownloadManager
