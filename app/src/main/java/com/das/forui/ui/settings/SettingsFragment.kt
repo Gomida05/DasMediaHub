@@ -82,7 +82,7 @@ class SettingsFragment : Fragment() {
     val settingsResults = remember { mutableStateOf<List<SettingsDataClass>>(emptyList()) }
 
     val item = listOf(
-      "Setting for searchList",
+      "More",
       "Change Downloading Location",
       "Check for update",
       "About Us"
