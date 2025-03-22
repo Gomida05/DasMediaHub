@@ -1,8 +1,8 @@
 package com.das.forui.ui.watch_later
 
 import android.app.AlertDialog
+import android.app.Application
 import android.content.Intent
-import android.database.Cursor
 import android.os.Bundle
 import android.view.LayoutInflater
 import android.view.View
@@ -33,7 +33,7 @@ import androidx.compose.material3.TopAppBar
 import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
-import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -50,6 +50,7 @@ import androidx.compose.ui.unit.sp
 import androidx.fragment.app.Fragment
 import androidx.navigation.fragment.findNavController
 import coil.compose.AsyncImage
+import coil.request.CachePolicy
 import coil.request.ImageRequest
 import com.das.forui.CustomTheme
 import com.das.forui.MainActivity
@@ -62,8 +63,7 @@ import com.das.forui.objectsAndData.ForUIKeyWords.ACTION_START
 import com.das.forui.objectsAndData.SavedVideosListData
 import com.das.forui.objectsAndData.VideosListData
 import com.das.forui.services.AudioServiceFromUrl
-import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.withContext
+
 
 class WatchLaterFragment: Fragment() {
     private var _binding: FragmentWatchLaterBinding? = null
@@ -75,6 +75,12 @@ class WatchLaterFragment: Fragment() {
         savedInstanceState: Bundle?
     ): View {
         _binding = FragmentWatchLaterBinding.inflate(inflater, container, false)
+
+        return binding.root
+    }
+
+    override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
+        super.onViewCreated(view, savedInstanceState)
         binding.root.apply {
             setViewCompositionStrategy(ViewCompositionStrategy.DisposeOnViewTreeLifecycleDestroyed)
             setContent {
@@ -83,14 +89,7 @@ class WatchLaterFragment: Fragment() {
                 }
             }
         }
-
-
-        return binding.root
     }
-
-
-
-
 
 
 
@@ -98,17 +97,15 @@ class WatchLaterFragment: Fragment() {
     @Composable
     fun ListFavVideos() {
 
-        val searchResults = remember { mutableStateOf<List<SavedVideosListData>>(emptyList()) }
-        val isLoading = remember { mutableStateOf(true) }
+        val application = LocalContext.current.applicationContext as Application
+
+        val viewModel = WatchLaterViewModel(application)
         val scrollBehavior = TopAppBarDefaults.enterAlwaysScrollBehavior()
+        val searchResults by viewModel.searchResults
+        val isLoading by viewModel.isLoading
 
         LaunchedEffect(Unit) {
-            isLoading.value = true
-            val result = withContext(Dispatchers.IO){
-                fetchDataFromDatabase()
-            }
-            searchResults.value = result ?: emptyList()
-            isLoading.value = false
+            viewModel.fetchData()
         }
 
         Scaffold(
@@ -138,10 +135,10 @@ class WatchLaterFragment: Fragment() {
                     .padding(paddingValues),
                 contentAlignment = Alignment.Center,
             ) {
-                if (isLoading.value) {
+                if (isLoading) {
                     CircularProgressIndicator(modifier = Modifier.align(Alignment.Center))
                 }else {
-                    if (searchResults.value.isEmpty()) {
+                    if (searchResults.isEmpty()) {
 
                         Text(
                             text = "You haven't saved any videos yet. Save some videos to create your collection!",
@@ -150,12 +147,12 @@ class WatchLaterFragment: Fragment() {
                         )
                     } else {
                         LazyColumn {
-                            items(searchResults.value) { searchItem ->
+                            items(searchResults, key = {it.watchUrl}) { searchItem ->
                                 CategoryItems(searchItem) { videoId ->
+                                    // Remove item from the list
+                                    viewModel.removeSearchItem(searchItem)
+                                    // Remove the item from the database or perform other side-effects
                                     SearchHistoryDB(requireContext()).deleteSearchList(videoId)
-                                    searchResults.value =
-                                        searchResults.value.filter { it != searchItem }
-
                                 }
 
                             }
@@ -184,7 +181,14 @@ class WatchLaterFragment: Fragment() {
         val context= LocalContext.current
 
 
-
+        val imageRequest = remember {
+            ImageRequest.Builder(context)
+                .data(videoThumbnailURL)
+                .crossfade(true)
+                .memoryCachePolicy(CachePolicy.ENABLED)
+                .diskCachePolicy(CachePolicy.ENABLED)
+                .build()
+        }
 
         Box(
             modifier = Modifier
@@ -217,10 +221,7 @@ class WatchLaterFragment: Fragment() {
             ) {
                 Box {
                     AsyncImage(
-                        model = ImageRequest.Builder(context)
-                            .data(videoThumbnailURL)
-                            .crossfade(true)
-                            .build(),
+                        model = imageRequest,
                         contentDescription = "Category Image",
                         modifier = Modifier
                             .fillMaxWidth()
@@ -410,41 +411,7 @@ class WatchLaterFragment: Fragment() {
             }.show()
     }
 
-    private fun fetchDataFromDatabase(): MutableList<SavedVideosListData>? {
-        val dbHelper = DatabaseFavorite(requireContext())
-        val cursor: Cursor? = dbHelper.getResults()
 
-        val savedVideosListData= mutableListOf<SavedVideosListData>()
-        try {
-            cursor?.let {
-                while (it.moveToNext()) {
-                    val watchUrl = it.getString(it.getColumnIndexOrThrow("video_id"))
-                    val title = dbHelper.getVideoTitle(watchUrl).toString()
-                    val viewerNumber = it.getString(it.getColumnIndexOrThrow("viewNumber"))
-                    val dateTime = it.getString(it.getColumnIndexOrThrow("videoDate"))
-                    val channelName = it.getString(it.getColumnIndexOrThrow("videoChannelName"))
-                    val myDuration = it.getString(it.getColumnIndexOrThrow("duration"))
-                    savedVideosListData.add(
-                        SavedVideosListData(
-                            title,
-                            watchUrl,
-                            "https://img.youtube.com/vi/$watchUrl/0.jpg",
-                            viewerNumber,
-                            dateTime,
-                            myDuration,
-                            channelName
-                    )
-                    )
-                }
-                it.close()
-            }
-
-            return savedVideosListData
-        }catch (e:Exception){
-            (activity as MainActivity).alertUserError(e.message.toString())
-            return null
-        }
-    }
 
 
     override fun onDestroy() {

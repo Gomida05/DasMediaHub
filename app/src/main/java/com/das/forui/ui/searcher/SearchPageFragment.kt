@@ -43,7 +43,6 @@ import com.das.forui.MainActivity
 import com.das.forui.R
 import com.das.forui.databinding.FragmentSearcherBinding
 import com.das.forui.MainApplication.Youtuber.extractor
-import com.das.forui.MainApplication
 import com.das.forui.MainApplication.Youtuber.isValidYoutubeURL
 import com.das.forui.databased.SearchHistoryDB
 

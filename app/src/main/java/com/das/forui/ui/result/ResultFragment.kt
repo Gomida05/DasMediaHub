@@ -36,7 +36,7 @@ import androidx.compose.material3.TopAppBar
 import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
-import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -52,21 +52,19 @@ import androidx.compose.ui.unit.sp
 import androidx.fragment.app.Fragment
 import androidx.navigation.fragment.findNavController
 import coil.compose.AsyncImage
+import coil.request.CachePolicy
 import coil.request.ImageRequest
 import com.bumptech.glide.Glide
 import com.das.forui.CustomTheme
 import com.das.forui.MainActivity
 import com.das.forui.databinding.FragmentResultBinding
-import com.das.forui.MainApplication.Youtuber.pythonInstant
 import com.das.forui.MainApplication
 import com.das.forui.R
 import com.das.forui.objectsAndData.ForUIKeyWords.ACTION_START
+import com.das.forui.objectsAndData.SearchResultFromMain
 import com.das.forui.services.AudioServiceFromUrl
 import com.das.forui.objectsAndData.VideosListData
-import com.google.gson.Gson
-import com.google.gson.reflect.TypeToken
-import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.withContext
+
 
 class ResultFragment : Fragment() {
 
@@ -96,18 +94,13 @@ class ResultFragment : Fragment() {
 
     @OptIn(ExperimentalMaterial3Api::class)
     @Composable
-    fun ResultViewerPage(data: String?) {
-        val searchResults = remember { mutableStateOf<List<SearchResultFromMain>>(emptyList()) }
-        val isLoading = remember { mutableStateOf(true) }
-        LaunchedEffect(data) {
-            if (!data.isNullOrEmpty()) {
-                isLoading.value = true
+    fun ResultViewerPage(data: String, viewModel: ResultViewModel = ResultViewModel()) {
+        val isLoading by viewModel.isLoading
+        val searchResults by viewModel.searchResults
 
-                val result = withContext(Dispatchers.IO) {
-                    callPythonForSearchVideos(data)
-                }
-                searchResults.value = result ?: emptyList()
-                isLoading.value = false
+        LaunchedEffect(data) {
+            if (data.isNotEmpty()) {
+                viewModel.fetchSuggestions(data)
             }
         }
 
@@ -135,7 +128,7 @@ class ResultFragment : Fragment() {
                                 painter = rememberVectorPainter(Icons.Outlined.Search),
                                 contentDescription = "Back"
                             )
-                            Text("$data")
+                            Text(data)
                         }
 
                     }
@@ -149,10 +142,10 @@ class ResultFragment : Fragment() {
                     .padding(paddingValues),
                 contentAlignment = Alignment.Center,
             ) {
-                if (isLoading.value) {
+                if (isLoading) {
                     CircularProgressIndicator(modifier = Modifier.align(Alignment.Center))
                 } else {
-                    if (searchResults.value.isEmpty()) {
+                    if (searchResults.isEmpty()) {
                         Text(
                             text = "No results found",
                             fontSize = 18.sp,
@@ -160,7 +153,7 @@ class ResultFragment : Fragment() {
                         )
                     } else {
                         LazyColumn(modifier = Modifier) {
-                            items(searchResults.value) { searchItem ->
+                            items(searchResults, key = {it.videoId}) { searchItem ->
                                 CategoryItems(searchItem)
                             }
                         }
@@ -186,6 +179,15 @@ class ResultFragment : Fragment() {
         val channelThumbnails = searchItem.channelThumbnailsUrl
         val context= requireContext()
 
+
+        val imageRequest = remember {
+            ImageRequest.Builder(context)
+                .data("https://img.youtube.com/vi/$videoThumbnailURL/0.jpg")
+                .crossfade(true)
+                .memoryCachePolicy(CachePolicy.ENABLED)
+                .diskCachePolicy(CachePolicy.ENABLED)
+                .build()
+        }
         Box(
             modifier = Modifier
                 .clip(RoundedCornerShape(1))
@@ -223,10 +225,7 @@ class ResultFragment : Fragment() {
             ) {
                 Box {
                     AsyncImage(
-                        model = ImageRequest.Builder(context)
-                            .data("https://img.youtube.com/vi/$videoThumbnailURL/0.jpg")
-                            .crossfade(true)
-                            .build(),
+                        model = imageRequest,
                         contentDescription = "Category Image",
                         modifier = Modifier
                             .fillMaxWidth()
@@ -337,19 +336,6 @@ class ResultFragment : Fragment() {
 
 
 
-    private fun callPythonForSearchVideos(inputText: String): List<SearchResultFromMain>? {
-        return try {
-            val mainFile = pythonInstant.getModule("main")
-            val variable = mainFile["Searcher"]?.call(inputText).toString()
-            val videoListType = object : TypeToken<List<SearchResultFromMain>>() {}.type
-            val videoList: List<SearchResultFromMain> = Gson().fromJson(variable, videoListType)
-            videoList
-        } catch (e: Exception) {
-            e.printStackTrace()
-            return null
-        }
-    }
-
 
     private fun imageViewer(selectedItem: VideosListData) {
         val thumbnailUrl = "https://img.youtube.com/vi/${selectedItem.videoId}/0.jpg"
@@ -408,15 +394,6 @@ class ResultFragment : Fragment() {
 
 
 
-    data class SearchResultFromMain(
-        val videoId: String,
-        val title: String,
-        val views: String,
-        val dateOfVideo: String,
-        val duration: String,
-        val channelName: String,
-        val channelThumbnailsUrl: String
-    )
 
     override fun onResume() {
         super.onResume()

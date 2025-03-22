@@ -46,8 +46,6 @@ import com.google.android.gms.ads.AdRequest
 import com.google.android.gms.ads.AdView
 import com.google.android.gms.ads.MobileAds
 import com.google.android.material.bottomnavigation.BottomNavigationView
-import com.google.gson.Gson
-import com.google.gson.reflect.TypeToken
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
@@ -115,8 +113,10 @@ class MainActivity : AppCompatActivity() {
                 Log.d("AppStartup", "Mobile Ads initialization took: ${elapsedTime / 1_000_000} ms")
                 val adRequest = AdRequest.Builder().build()
                 mAdView.loadAd(adRequest)
+                mAdView.visibility = View.VISIBLE
             } else {
-                mAdView.destroy()
+//                mAdView.destroy()
+                mAdView.visibility = View.GONE
                 }
         } catch (e: Exception) {
                 Log.e("MainActivity", "Error destroying AdView: ${e.message}")
@@ -228,33 +228,9 @@ class MainActivity : AppCompatActivity() {
 
 
 
-
-
-
-
-
-    fun callPythonSearchWithLink(inputText: String): Map<String, Any>? {
-        return try {
-            val mainFile = pythonInstant.getModule("main")
-            val variable = mainFile["SearchWithLink"]
-            val result = variable?.call("https://www.youtube.com/watch?v=$inputText")
-            println("python: $result")
-            val jsonString = result.toString()
-            // Use Gson to parse the JSON string into a Map
-            val resultMapType = object : TypeToken<Map<String, Any>>() {}.type
-            val resultMap: Map<String, Any> = Gson().fromJson(jsonString, resultMapType)
-            resultMap
-
-        } catch (e: Exception) {
-            e.printStackTrace()
-            return null
-        }
-    }
-
-
     fun downloadVideo(link: String, title: String, contexts: Context) {
         val path = PathSaver().getVideosDownloadPath(contexts)
-//                createSingleDirectory("/storage/emulated/0/Movies/ForUI")
+
         createSingleDirectory(path)
         try {
             var forToast: String

@@ -78,27 +78,6 @@ class MainApplication: Application() {
 
 
 
-
-    /**
-     * Returns data format like this dd/MMM/yyyy ENGLISH
-     */
-    fun formatDate(dateStr: String): String {
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
-            val inputFormatter = DateTimeFormatter.ISO_OFFSET_DATE_TIME
-
-            val zonedDateTime = ZonedDateTime.parse(dateStr, inputFormatter)
-
-            val outputFormatter = DateTimeFormatter.ofPattern("dd MMM yyyy", Locale.ENGLISH)
-
-            return zonedDateTime.format(outputFormatter)
-        }
-        else{
-            return dateStr
-        }
-    }
-
-
-
     object Youtuber {
         val pythonInstant = getInstance()
         fun extractor(url: String): String? {
@@ -135,6 +114,33 @@ class MainApplication: Application() {
                 println("yes with me3 ${e.message}")
 //            alertUserError(e.message)
                 return false
+            }
+        }
+
+        /**
+         * Returns data format like this dd/MMM/yyyy ENGLISH
+         */
+        fun formatDate(dateStr: String): String {
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+                val inputFormatter = DateTimeFormatter.ISO_OFFSET_DATE_TIME
+
+                val zonedDateTime = ZonedDateTime.parse(dateStr, inputFormatter)
+
+                val outputFormatter = DateTimeFormatter.ofPattern("dd MMM yyyy", Locale.ENGLISH)
+
+                return zonedDateTime.format(outputFormatter)
+            }
+            else{
+                return dateStr
+            }
+        }
+
+        fun formatViews(views: Long): String {
+            return when {
+                views >= 1_000_000_000 -> "%.1fB".format(views / 1_000_000_000.0)
+                views >= 1_000_000 -> "%.1fM".format(views / 1_000_000.0)
+                views >= 1_000 -> "%.1fK".format(views / 1_000.0)
+                else -> views.toString()
             }
         }
     }

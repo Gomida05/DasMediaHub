@@ -10,30 +10,28 @@ import android.os.Bundle
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
-import androidx.compose.foundation.focusable
-import androidx.compose.foundation.hoverable
-import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.ArrowForward
 import androidx.compose.material.icons.filled.Folder
 import androidx.compose.material.icons.filled.Info
 import androidx.compose.material.icons.filled.ManageSearch
 import androidx.compose.material.icons.filled.Update
-import androidx.compose.material3.Button
-import androidx.compose.material3.ButtonDefaults
+import androidx.compose.material3.Card
 import androidx.compose.material3.Icon
+import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.platform.ViewCompositionStrategy
 import androidx.compose.ui.unit.dp
@@ -46,6 +44,7 @@ import com.das.forui.MainActivity
 import com.das.forui.databased.PathSaver
 import com.das.forui.R
 import com.das.forui.databinding.FragmentSettingsBinding
+
 
 class SettingsFragment : Fragment() {
 
@@ -108,7 +107,7 @@ class SettingsFragment : Fragment() {
     }
     settingsResults.value = allItems
 
-    LazyColumn{
+    LazyColumn {
 
       items(settingsResults.value) { settingsItem ->
         CategoryItems(
@@ -133,37 +132,34 @@ class SettingsFragment : Fragment() {
     rightHandIcon: ImageVector
   ){
 
-    val interactionSource = remember { MutableInteractionSource() }
-
-
-    Button(
+    Card(
       onClick = {
         gotClicks(title)
       },
-      interactionSource = interactionSource,
-      elevation = ButtonDefaults.buttonElevation(
-        defaultElevation = 50.dp
-      ),
       modifier = Modifier
-        .focusable(interactionSource = interactionSource)
-        .hoverable(interactionSource = interactionSource)
         .fillMaxWidth()
-        .height(80.dp)
         .padding(top = 2.dp, bottom = 2.dp)
+        .clip(RoundedCornerShape(30))
+
     ) {
 
 
-      Box(
-        modifier = Modifier.fillMaxWidth()
+      Box (
+        modifier = Modifier
+          .fillMaxWidth()
+          .align(Alignment.CenterHorizontally)
+          .padding(35.dp)
       ) {
         Icon(
           imageVector = leftHandIcon,
           "",
-          modifier = Modifier.align(Alignment.CenterStart)
+          modifier = Modifier
+            .align(Alignment.CenterStart)
         )
         Text(
           text = title,
           fontSize = 16.sp,
+          style = MaterialTheme.typography.headlineSmall,
           modifier = Modifier.align(Alignment.Center)
         )
         Icon(
