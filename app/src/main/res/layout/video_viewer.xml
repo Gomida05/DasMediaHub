@@ -55,8 +55,9 @@
             android:gravity="center"
             android:orientation="horizontal"
             app:layout_constraintBottom_toTopOf="@+id/buttonHolder"
-            app:layout_constraintTop_toBottomOf="@+id/give_me_title"
-            tools:layout_editor_absoluteX="0dp">
+            app:layout_constraintEnd_toEndOf="parent"
+            app:layout_constraintStart_toStartOf="parent"
+            app:layout_constraintTop_toBottomOf="@+id/give_me_title">
 
             <ImageButton
                 android:id="@+id/channelImageVideoView"
@@ -64,9 +65,9 @@
                 android:layout_height="34dp"
                 android:layout_gravity="start"
                 android:layout_marginEnd="8dp"
-                app:cornerRadius="80dp"
                 android:background="@drawable/shaper_of_image"
                 android:tooltipText="@string/channel_profile_image"
+                app:cornerRadius="80dp"
                 tools:ignore="ContentDescription"
                 tools:targetApi="o" />
 
@@ -180,7 +181,8 @@
             android:layout_height="395dp"
             android:layout_marginBottom="4dp"
             app:layout_constraintBottom_toBottomOf="parent"
-            tools:layout_editor_absoluteX="0dp"/>
+            app:layout_constraintEnd_toEndOf="parent"
+            app:layout_constraintStart_toStartOf="parent" />
 
 
     </androidx.constraintlayout.widget.ConstraintLayout>

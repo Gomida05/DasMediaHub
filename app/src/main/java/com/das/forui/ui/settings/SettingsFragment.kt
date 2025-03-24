@@ -1,4 +1,4 @@
-@file:Suppress("DEPRECATION")
+
 package com.das.forui.ui.settings
 
 import android.app.Activity
@@ -17,10 +17,10 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.ArrowForward
+import androidx.compose.material.icons.automirrored.filled.ArrowForward
+import androidx.compose.material.icons.automirrored.filled.ManageSearch
 import androidx.compose.material.icons.filled.Folder
 import androidx.compose.material.icons.filled.Info
-import androidx.compose.material.icons.filled.ManageSearch
 import androidx.compose.material.icons.filled.Update
 import androidx.compose.material3.Card
 import androidx.compose.material3.Icon
@@ -87,16 +87,17 @@ class SettingsFragment : Fragment() {
       "About Us"
     )
     val leftIcons = listOf(
-      Icons.Default.ManageSearch,
+      Icons.AutoMirrored.Default.ManageSearch,
       Icons.Default.Folder,
       Icons.Default.Update,
       Icons.Default.Info
     )
+
     val rightIcons = listOf(
-      Icons.Default.ArrowForward,
-      Icons.Default.ArrowForward,
-      Icons.Default.ArrowForward,
-      Icons.Default.ArrowForward
+      Icons.AutoMirrored.Default.ArrowForward,
+      Icons.AutoMirrored.Default.ArrowForward,
+      Icons.AutoMirrored.Default.ArrowForward,
+      Icons.AutoMirrored.Default.ArrowForward
     )
     val allItems = item.zip(leftIcons).zip(rightIcons) { titleIconPair, rightIcon ->
       SettingsDataClass(
@@ -219,6 +220,7 @@ class SettingsFragment : Fragment() {
 
   }
   
+  @Suppress("DEPRECATION")
   private fun openFolderPicker(code: Int) {
     // Create an intent to pick a folder
     val intent = Intent(Intent.ACTION_OPEN_DOCUMENT_TREE)
@@ -235,6 +237,7 @@ class SettingsFragment : Fragment() {
     }
   }
 
+  @Suppress("DEPRECATION")
   @Deprecated("Deprecated in Java")
   override fun onActivityResult(requestCode: Int, resultCode: Int, data: Intent?) {
     super.onActivityResult(requestCode, resultCode, data)

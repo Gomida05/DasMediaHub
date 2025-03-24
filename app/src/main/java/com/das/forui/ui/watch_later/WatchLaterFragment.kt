@@ -57,7 +57,6 @@ import com.das.forui.MainActivity
 import com.das.forui.MainApplication
 import com.das.forui.R
 import com.das.forui.databased.DatabaseFavorite
-import com.das.forui.databased.SearchHistoryDB
 import com.das.forui.databinding.FragmentWatchLaterBinding
 import com.das.forui.objectsAndData.ForUIKeyWords.ACTION_START
 import com.das.forui.objectsAndData.SavedVideosListData
@@ -79,6 +78,7 @@ class WatchLaterFragment: Fragment() {
         return binding.root
     }
 
+
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
         binding.root.apply {
@@ -90,7 +90,6 @@ class WatchLaterFragment: Fragment() {
             }
         }
     }
-
 
 
     @OptIn(ExperimentalMaterial3Api::class)
@@ -148,12 +147,7 @@ class WatchLaterFragment: Fragment() {
                     } else {
                         LazyColumn {
                             items(searchResults, key = {it.watchUrl}) { searchItem ->
-                                CategoryItems(searchItem) { videoId ->
-                                    // Remove item from the list
-                                    viewModel.removeSearchItem(searchItem)
-                                    // Remove the item from the database or perform other side-effects
-                                    SearchHistoryDB(requireContext()).deleteSearchList(videoId)
-                                }
+                                CategoryItems(searchItem, viewModel)
 
                             }
                         }
@@ -167,7 +161,7 @@ class WatchLaterFragment: Fragment() {
     @Composable
     private fun CategoryItems(
         selectedItem: SavedVideosListData,
-        onDelete: (videoId: String) -> Unit
+        viewModel: WatchLaterViewModel
     ){
         val videoId  = selectedItem.watchUrl
         val title  = selectedItem.title
@@ -176,7 +170,7 @@ class WatchLaterFragment: Fragment() {
         val channelName  = selectedItem.channelName
         val duration  = selectedItem.duration
         val videoThumbnailURL  = selectedItem.thumbnailUrl
-        val channelThumbnails  = selectedItem.channelName
+        val channelThumbnails  = selectedItem.channelThumbnail
 
         val context= LocalContext.current
 
@@ -204,7 +198,8 @@ class WatchLaterFragment: Fragment() {
                         AlertDialog.Builder(requireContext())
                             .setTitle("Are you sure you want to remove it from the list?")
                             .setPositiveButton("Yes") { _, _ ->
-                                onDelete(title)
+                                DatabaseFavorite(context).deleteWatchUrl(videoId)
+                                viewModel.removeSearchItem(selectedItem)
                             }
                             .setNegativeButton("No") { _, _ ->
                             }
@@ -326,7 +321,8 @@ class WatchLaterFragment: Fragment() {
                             imageViewer(
                                 selectedItem
                             ) { selectedId ->
-                                onDelete(selectedId)
+                                DatabaseFavorite(context).deleteWatchUrl(selectedId)
+                                viewModel.removeSearchItem(selectedItem)
                             }
                         }
 
@@ -350,6 +346,7 @@ class WatchLaterFragment: Fragment() {
             val videoChannel = dbHelper.getVideoChannelName(selectedId)
             val ourDuration= dbHelper.getDuration(selectedId).toString()
             val title= dbHelper.getVideoTitle(selectedId)
+            val channelThumbnail = dbHelper.getChannelNameThumbnail(selectedId)
             val bundle = Bundle().apply {
                 putString("View_ID", selectedId)
                 putString("View_URL", "https://www.youtube.com/watch?v=$selectedId")
@@ -358,6 +355,7 @@ class WatchLaterFragment: Fragment() {
                 putString("dateOfVideo", datVideo)
                 putString("channelName", videoChannel)
                 putString("duration", ourDuration)
+                putString("channel_Thumbnails", channelThumbnail)
             }
             findNavController().navigate(R.id.nav_video_viewer, bundle)
 //            Toast.makeText(context, selectedItem, Toast.LENGTH_SHORT).show()

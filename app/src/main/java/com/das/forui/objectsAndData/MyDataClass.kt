@@ -37,7 +37,8 @@ data class SavedVideosListData(
     val viewer: String,
     val dateTime: String,
     val duration: String,
-    val channelName: String
+    val channelName: String,
+    val channelThumbnail: String
 )
 
 data class ItemsStreamUrlsForMediaItemData(

@@ -23,16 +23,7 @@ class DatabaseFavorite(context: Context) : SQLiteOpenHelper(context, DATABASE_NA
         return db.rawQuery("SELECT * FROM results", null) }
 
 
-    fun isTableEmpty(): Boolean {
-        val db = readableDatabase
-        val query = "SELECT * FROM results LIMIT 1"
-        val cursor = db.rawQuery(query, null)
 
-        cursor.use {
-            return !it.moveToFirst()
-        }
-
-    }
 
     fun isWatchUrlExist(url: String): Boolean {
         val db = this.readableDatabase
@@ -50,7 +41,8 @@ class DatabaseFavorite(context: Context) : SQLiteOpenHelper(context, DATABASE_NA
 
     fun insertData(
         videoId: String, title: String, videoDate:String, videoViewCount:String,
-        videoChannelName:String, duration:String): Boolean {
+        videoChannelName:String, duration:String,
+        channelThumbnail: String): Boolean {
         if(isWatchUrlExist(videoId)){
             return false
         }
@@ -62,6 +54,7 @@ class DatabaseFavorite(context: Context) : SQLiteOpenHelper(context, DATABASE_NA
             put("videoDate", videoDate)
             put("videoChannelName", videoChannelName)
             put("duration", duration)
+            put("channelThumbnail", channelThumbnail)
         }
 
 
@@ -176,6 +169,30 @@ class DatabaseFavorite(context: Context) : SQLiteOpenHelper(context, DATABASE_NA
         return viewNumber
     }
 
+    fun getChannelNameThumbnail(videoId: String): String? {
+        val db = this.readableDatabase
+        val cursor = db.rawQuery(
+            "SELECT channelThumbnail FROM results WHERE video_id = ?",
+            arrayOf(videoId)
+        )
+
+        var viewNumber: String? = null
+        if (cursor.moveToFirst()) {
+            // Get column index for viewNumber
+            val viewNumberColumnIndex = cursor.getColumnIndex("channelThumbnail")
+
+            // Check if the column index is valid (>= 0)
+            if (viewNumberColumnIndex >= 0) {
+                viewNumber = cursor.getString(viewNumberColumnIndex)
+            } else {
+                Log.e("Database", "Column 'viewNumber' not found.")
+            }
+        }
+        cursor.close()
+        db.close()
+        return viewNumber
+    }
+
     fun getDuration(videoId: String): String?{
         val db = this.readableDatabase
         val cursor = db.rawQuery(
@@ -215,10 +232,10 @@ class DatabaseFavorite(context: Context) : SQLiteOpenHelper(context, DATABASE_NA
         return rowsDeleted
     }
     companion object {
-        const val DATABASE_VERSION = 1
+        const val DATABASE_VERSION = 2
         const val DATABASE_NAME = "favorites.db"
         const val SQL_CREATE_ENTRIES =
-            """ CREATE TABLE IF NOT EXISTS results ( video_id TEXT PRIMARY KEY, title TEXT NOT NULL, viewNumber TEXT NOT NULL, videoDate TEXT NOT NULL, videoChannelName TEXT NOT NULL, duration TEXT NOT NULL) """
+            """ CREATE TABLE IF NOT EXISTS results ( video_id TEXT PRIMARY KEY, title TEXT NOT NULL, viewNumber TEXT NOT NULL, videoDate TEXT NOT NULL, videoChannelName TEXT NOT NULL, duration TEXT NOT NULL, channelThumbnail TEXT NOT NULL) """
 
         const val SQL_DELETE_ENTRIES = "DROP TABLE IF EXISTS results"
     }

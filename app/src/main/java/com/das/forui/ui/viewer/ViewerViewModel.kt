@@ -48,7 +48,7 @@ class ViewerViewModel : ViewModel() {
                 if (result != "False") {
                     _videoUrl.postValue(result)
                 } else {
-                    _error.postValue("Something went wrong $result")
+                    _error.postValue("Please check your internet connection")
                 }
             } catch (e: Exception) {
                 _error.postValue("Error: ${e.message}")

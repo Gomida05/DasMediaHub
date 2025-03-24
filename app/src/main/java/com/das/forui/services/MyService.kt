@@ -10,6 +10,7 @@ import android.os.IBinder
 import androidx.core.app.NotificationCompat
 import com.das.forui.MainActivity
 import com.das.forui.R
+import com.das.forui.objectsAndData.ForUIKeyWords.ACTION_KILL
 
 class MyService : Service() {
     private val channelId = "ForegroundServiceChannel"
@@ -24,10 +25,22 @@ class MyService : Service() {
     }
 
     override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
+
+        if (intent?.action == ACTION_KILL){
+            stopSelf()
+            stopForeground(true)
+        }
         val mainIntent = Intent(this, MainActivity::class.java)
         val pendingIntent = PendingIntent.getActivity(
             this,
             0, mainIntent, PendingIntent.FLAG_MUTABLE
+        )
+        val deleteIntent = Intent(this, MyService::class.java).apply {
+            action = ACTION_KILL
+        }
+        val deletePendingIntent = PendingIntent.getActivity(
+            this,
+            0, deleteIntent, PendingIntent.FLAG_MUTABLE
         )
 
         val notification = NotificationCompat.Builder(this, channelId)
@@ -37,6 +50,7 @@ class MyService : Service() {
             .setOngoing(true)
             .setAutoCancel(false)
             .setContentIntent(pendingIntent)
+            .setDeleteIntent(deletePendingIntent)
             .setPriority(NotificationCompat.PRIORITY_HIGH)
             .setStyle(NotificationCompat.BigTextStyle().setBigContentTitle("hello there").setSummaryText("this is for service that service is running in the background"))
             .setCategory(NotificationCompat.CATEGORY_SERVICE)// This line makes it a heads-up notification

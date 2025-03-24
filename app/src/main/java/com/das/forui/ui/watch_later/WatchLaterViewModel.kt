@@ -49,6 +49,7 @@ class WatchLaterViewModel(application: Application) : AndroidViewModel(applicati
                     val dateTime = it.getString(it.getColumnIndexOrThrow("videoDate"))
                     val channelName = it.getString(it.getColumnIndexOrThrow("videoChannelName"))
                     val myDuration = it.getString(it.getColumnIndexOrThrow("duration"))
+                    val channelThumbnail = it.getString(it.getColumnIndexOrThrow("channelThumbnail"))
                     savedVideosListData.add(
                         SavedVideosListData(
                             title,
@@ -57,7 +58,8 @@ class WatchLaterViewModel(application: Application) : AndroidViewModel(applicati
                             viewerNumber,
                             dateTime,
                             myDuration,
-                            channelName
+                            channelName,
+                            channelThumbnail
                         )
                     )
                 }

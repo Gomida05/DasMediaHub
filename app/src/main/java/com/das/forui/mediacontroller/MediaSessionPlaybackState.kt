@@ -104,8 +104,8 @@ class MediaSessionPlaybackState(private val context: Context) {
         else{
             db.insertData(
                 videosListData.videoId, videosListData.title, videosListData.dateOfVideo,
-                videosListData.views, videosListData.channelName, videosListData.duration
-            )
+                videosListData.views, videosListData.channelName, videosListData.duration,
+                videosListData.channelThumbnailsUrl)
             playbackSate
                 .addCustomAction(ACTION_ADD_TO_WATCH_LATER, "myFavButton", R.drawable.favorite)
                 .addCustomAction(ACTION_KILL, "myStopButton", R.drawable.stop_circle_24dp)

@@ -28,6 +28,7 @@ import androidx.compose.material3.IconButton
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.MutableState
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
@@ -136,19 +137,14 @@ class SearchPageFragment : Fragment() {
             items(settingsResults.value) { settingsItem ->
                 CategoryItems(
                     title = settingsItem,
-                    onDelete = { title->
-                        // Show the confirmation dialog
-                        SearchHistoryDB(requireContext()).deleteSearchList(title)
-                        settingsResults.value = settingsResults.value.filter { it != settingsItem }
-                        // Call the database function to delete
-                    }
+                    settingsResults
                 )
             }
         }
     }
 
     @Composable
-    private fun CategoryItems(title : String, onDelete: (title: String) -> Unit){
+    private fun CategoryItems(title: String, settingsResults: MutableState<List<String>>){
 
         Button(
             onClick = {
@@ -175,7 +171,8 @@ class SearchPageFragment : Fragment() {
                         AlertDialog.Builder(requireContext())
                             .setTitle("Are you sure you want to remove it from the list?")
                             .setPositiveButton("Yes") { _, _ ->
-                                onDelete(title)
+                                SearchHistoryDB(requireContext()).deleteSearchList(title)
+                                settingsResults.value = settingsResults.value.filter { it != title }
                             }
                             .setNegativeButton("No") { _, _ ->
                             }

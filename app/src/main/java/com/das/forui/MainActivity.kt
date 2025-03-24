@@ -458,14 +458,6 @@ class MainActivity : AppCompatActivity() {
         if (result != AudioManager.AUDIOFOCUS_REQUEST_GRANTED) {
 
         }
-        when (exoPlayer?.isPlaying!!){
-            true ->{
-
-            }
-            false ->{
-            }
-
-        }
     }
 
 

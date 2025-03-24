@@ -5,7 +5,6 @@ import android.content.Context
 import android.database.Cursor
 import android.database.sqlite.SQLiteDatabase
 import android.database.sqlite.SQLiteOpenHelper
-import android.util.Log
 
 
 class SearchHistoryDB(context: Context) : SQLiteOpenHelper(context, DATABASE_NAME, null, DATABASE_VERSION) {
@@ -45,26 +44,18 @@ class SearchHistoryDB(context: Context) : SQLiteOpenHelper(context, DATABASE_NAM
     fun deleteSearchList(selectedItem: String): Int {
         val db = this.writableDatabase
 
-        try {
-            if (isWatchUrlExist(selectedItem)) {
-                // Log the trimmed item to ensure correct value
-                Log.d("Database", "Attempting to delete item: '${selectedItem}'")
 
-                val rowsDeleted = db.delete(
-                    "results",
-                    "title = ?",
-                    arrayOf(selectedItem)
-                )
+        val rowsDeleted = db.delete(
+            "results",
+            "title = ?",
+            arrayOf(selectedItem.apply {
+                trimEnd()
+                trimStart()
+            })
+        )
 
-                db.close()
-                Log.d("Database", "Rows deleted: $rowsDeleted")
-                return rowsDeleted
-            }
-            return 0
-        } catch (e: Exception) {
-            Log.e("Database", "Error deleting item: ${e.message}")
-            return 0
-        }
+        db.close()
+        return rowsDeleted
     }
 
 
@@ -80,8 +71,7 @@ class SearchHistoryDB(context: Context) : SQLiteOpenHelper(context, DATABASE_NAM
             put("title", title.apply {
                 trimEnd()
                 trimStart()
-            }
-            )
+            })
         }
         val result = db.insert("results", null, contentValues)
         db.close()
@@ -90,7 +80,7 @@ class SearchHistoryDB(context: Context) : SQLiteOpenHelper(context, DATABASE_NAM
 
 
     companion object {
-        const val DATABASE_VERSION = 1
+        const val DATABASE_VERSION = 2
         const val DATABASE_NAME = "search_history.db"
         const val SQL_CREATE_ENTRIES =
             """ CREATE TABLE IF NOT EXISTS results ( title TEXT PRIMARY KEY) """

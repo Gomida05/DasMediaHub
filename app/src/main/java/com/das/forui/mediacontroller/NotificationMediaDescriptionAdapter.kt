@@ -10,7 +10,6 @@ import android.graphics.Bitmap
 import android.graphics.drawable.Drawable
 import android.support.v4.media.session.MediaControllerCompat
 import android.support.v4.media.session.MediaSessionCompat
-import android.widget.Toast
 import androidx.core.app.NotificationCompat
 import com.bumptech.glide.Glide
 import com.bumptech.glide.request.target.CustomTarget
@@ -50,7 +49,7 @@ class NotificationMediaDescriptionAdapter(private val context: Context, private 
                 }
 
                 override fun onLoadCleared(placeholder: Drawable?) {
-                    Toast.makeText(context, "Well well well", Toast.LENGTH_SHORT).show()
+//                    Toast.makeText(context, "Well well well", Toast.LENGTH_SHORT).show()
                 }
 
             }
@@ -95,11 +94,12 @@ class NotificationCustomActions(private val context: Context): PlayerNotificatio
             }
             ACTION_KILL -> {
                 val notificationManager = context.getSystemService(NotificationManager::class.java)
-                player.release()
                 notificationManager.cancel(1)
             }
         }
     }
+
+
     private fun createPendingIntent(context: Context, action: String): PendingIntent {
         val intent = Intent(action)
         return PendingIntent.getService(
@@ -116,9 +116,9 @@ class NotificationListenerService(private val player: ExoPlayer?,
 ): PlayerNotificationManager.NotificationListener{
 
     override fun onNotificationCancelled(notificationId: Int, dismissedByUser: Boolean) {
-        super.onNotificationCancelled(notificationId, dismissedByUser)
-        player?.release()
         mediaSessionCompat.release()
+        super.onNotificationCancelled(notificationId, dismissedByUser)
+
     }
 
 
