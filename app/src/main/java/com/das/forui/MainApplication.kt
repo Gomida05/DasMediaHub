@@ -40,39 +40,45 @@ class MainApplication: Application() {
 
 
 
+
+
     fun getListItemsStreamUrls(
         data: VideosListData,
         onSuccess: (ItemsStreamUrlsForMediaItemData) -> Unit,
         onFailure: (String) -> Unit
     ) {
-        CoroutineScope(Dispatchers.IO).launch {
-            val mainFile = pythonInstant.getModule("main")
-            val variable = mainFile["get_audio_url"]
-            var details: ItemsStreamUrlsForMediaItemData?
+        try{
+            CoroutineScope(Dispatchers.IO).launch {
+                val mainFile = pythonInstant.getModule("main")
+                val variable = mainFile["get_audio_url"]
+                var details: ItemsStreamUrlsForMediaItemData?
 
-            val result = variable?.call("https://www.youtube.com/watch?v=${data.videoId}").toString()
+                val result = variable?.call("https://www.youtube.com/watch?v=${data.videoId}").toString()
 
-            if (result != "False") {
-                // Switch to the main thread for UI updates
-                withContext(Dispatchers.Main) {
-                    details = ItemsStreamUrlsForMediaItemData(
-                        result,
-                        data.videoId,
-                        data.title,
-                        data.views,
-                        data.dateOfVideo,
-                        data.duration,
-                        data.channelName,
-                        data.channelThumbnailsUrl
-                    )
-                    // Call the success callback
-                    details?.let { onSuccess(it) }
-                }
-            } else {
-                withContext(Dispatchers.Main) {
-                    onFailure("Something went wrong with result: $result")
+                if (result != "False") {
+                    // Switch to the main thread for UI updates
+                    withContext(Dispatchers.Main) {
+                        details = ItemsStreamUrlsForMediaItemData(
+                            result,
+                            data.videoId,
+                            data.title,
+                            data.views,
+                            data.dateOfVideo,
+                            data.duration,
+                            data.channelName,
+                            data.channelThumbnailsUrl
+                        )
+                        // Call the success callback
+                        details?.let { onSuccess(it) }
+                    }
+                } else {
+                    withContext(Dispatchers.Main) {
+                        onFailure("Something went wrong with result: $result")
+                    }
                 }
             }
+        }catch (e: Exception){
+            onFailure("Something went wrong with result: ${e.message}")
         }
     }
 
@@ -99,7 +105,7 @@ class MainApplication: Application() {
                 if (host == "www.youtube.com" || host == "youtube.com") {
                     val videoPattern = Pattern.compile("^/watch\\?v=([A-Za-z0-9_-]{11})$")
                     val matcher =
-                        videoPattern.matcher(url.path + "?" + url.query)  // Combine path and query
+                        videoPattern.matcher(url.path + "?" + url.query)
                     return matcher.matches()
                 } else if (host == "youtu.be") {
                     // Shortened YouTube URL (youtu.be/VIDEO_ID)

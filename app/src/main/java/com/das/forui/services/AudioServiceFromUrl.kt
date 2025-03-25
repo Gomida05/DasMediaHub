@@ -41,7 +41,7 @@ import com.google.android.exoplayer2.Player
 class AudioServiceFromUrl : Service() {
 
     private val channelId = "MediaYouTubePlayer"
-    var exoPlayerOfAudioServiceFromUrl: ExoPlayer? = null
+    private var exoPlayerOfAudioServiceFromUrl: ExoPlayer? = null
     lateinit var mediaSession: MediaSessionCompat
     private lateinit var audioManager: AudioManager
     private lateinit var mediaUrl: String
@@ -154,7 +154,7 @@ class AudioServiceFromUrl : Service() {
 
         MediaButtonReceiver.handleIntent(mediaSession, intent)
         val notifications = createMediaNotification()
-        startForeground(1, notifications)
+        startForeground(25, notifications)
 
 
 
@@ -176,9 +176,10 @@ class AudioServiceFromUrl : Service() {
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
             val serviceChannel = NotificationChannel(
                 channelId,
-                "Foreground Service Channel",
+                "Media Player",
                 NotificationManager.IMPORTANCE_HIGH
             ).apply {
+                group = "MNGC"
                 enableLights(false)
             }
             val manager = getSystemService(NotificationManager::class.java)
@@ -231,7 +232,7 @@ class AudioServiceFromUrl : Service() {
             .build()
 
 
-        getSystemService(NotificationManager::class.java).notify(1, notification)
+        getSystemService(NotificationManager::class.java).notify(25, notification)
         return notification
     }
 

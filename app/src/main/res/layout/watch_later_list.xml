@@ -128,8 +128,6 @@
         android:layout_width="38dp"
         android:layout_height="38dp"
         android:layout_marginTop="25dp"
-        android:src="@mipmap/ic_launcher_ofme"
-        android:background="@drawable/shaper_of_image"
         app:layout_constraintBottom_toBottomOf="parent"
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintHorizontal_bias="0.042"

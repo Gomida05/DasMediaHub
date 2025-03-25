@@ -83,6 +83,7 @@ import com.google.android.exoplayer2.util.MimeTypes
 import com.google.android.material.bottomnavigation.BottomNavigationView
 
 
+
 class ViewerFragment: Fragment() {
     private lateinit var duration: String
     private lateinit var videoURL: String
@@ -112,34 +113,16 @@ class ViewerFragment: Fragment() {
         savedInstanceState: Bundle?
     ): View {
         _binding = VideoViewerBinding.inflate(inflater, container, false)
-        return binding.root
-    }
-
-
-    override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
-        super.onViewCreated(view, savedInstanceState)
-
-
-        listOfVideosListData.clear()
-
-        activity?.findViewById<BottomNavigationView>(R.id.nav_view)?.visibility = View.GONE
-        startFrom = savedInstanceState?.getLong("startFrom", -1L)
-
         viewModel = ViewModelProvider(this)[ViewerViewModel::class.java]
 
-        videoID = arguments?.getString("View_ID").toString()
         playerView = binding.videoPlayerLocally
+        videoID = arguments?.getString("View_ID").toString()
 
 
         viewModel.videoUrl.observe(viewLifecycleOwner) { url ->
             playVideo(url)
         }
-        viewModel.error.observe(viewLifecycleOwner) { error ->
-            (activity as MainActivity).showDialogs(error)
-        }
-
         viewModel.loadVideoUrl(videoID)
-
         videoTitle = arguments?.getString("View_Title").toString()
         videoURL = arguments?.getString("View_URL").toString()
         channelThumbnail = arguments?.getString("channel_Thumbnails").toString()
@@ -147,25 +130,6 @@ class ViewerFragment: Fragment() {
         dateOfVideo = arguments?.getString("dateOfVideo").toString()
         channelName = arguments?.getString("channelName").toString()
         duration = arguments?.getString("duration").toString()
-
-        val setTitle = view.findViewById<TextView>(R.id.set_title_over_view)
-
-
-        val videoPlayerHeight = resources.getDimensionPixelSize(R.dimen.video_player_height)
-        binding.hideThese.visibility = View.VISIBLE
-
-        @SuppressLint("SourceLockedOrientationActivity")
-        (activity as MainActivity).requestedOrientation = ActivityInfo.SCREEN_ORIENTATION_PORTRAIT
-        setTitle.visibility = View.GONE
-        binding.videoPlayerLocally.layoutParams.height = videoPlayerHeight
-        val drawable = ContextCompat.getDrawable(requireContext(), R.drawable.fullscreen_24dp)
-        activity?.findViewById<ImageButton>(R.id.exofullscreen)
-            ?.setImageDrawable(drawable)
-        isFullScreen = false
-        showSystemUI()
-
-
-
 
         viewModel.videoDetails.observe(viewLifecycleOwner) { details ->
             // Update UI when new video details are received
@@ -195,6 +159,48 @@ class ViewerFragment: Fragment() {
         }
         viewModel.fetchVideoDetails(videoID)
 
+        return binding.root
+    }
+
+
+    override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
+        super.onViewCreated(view, savedInstanceState)
+
+        listOfVideosListData.clear()
+
+        activity?.findViewById<BottomNavigationView>(R.id.nav_view)?.visibility = View.GONE
+        startFrom = savedInstanceState?.getLong("startFrom", -1L)
+
+
+        viewModel.error.observe(viewLifecycleOwner) { error ->
+            (activity as MainActivity).showDialogs(error)
+        }
+
+
+
+
+
+        val setTitle = view.findViewById<TextView>(R.id.set_title_over_view)
+
+
+        val videoPlayerHeight = resources.getDimensionPixelSize(R.dimen.video_player_height)
+        binding.hideThese.visibility = View.VISIBLE
+
+        @SuppressLint("SourceLockedOrientationActivity")
+        (activity as MainActivity).requestedOrientation = ActivityInfo.SCREEN_ORIENTATION_PORTRAIT
+        setTitle.visibility = View.GONE
+        binding.videoPlayerLocally.layoutParams.height = videoPlayerHeight
+        val drawable = ContextCompat.getDrawable(requireContext(), R.drawable.fullscreen_24dp)
+        activity?.findViewById<ImageButton>(R.id.exofullscreen)
+            ?.setImageDrawable(drawable)
+        isFullScreen = false
+        showSystemUI()
+
+
+
+
+
+
 
 
         val buttonSaver = binding.savedToWatchLater
@@ -205,7 +211,7 @@ class ViewerFragment: Fragment() {
             val icon = ContextCompat.getDrawable(requireContext(), newIcon)
             buttonSaver.setCompoundDrawablesWithIntrinsicBounds(null, icon, null, null)
         }
-        (activity as MainActivity).onBackPressedDispatcher.addCallback(
+        activity?.onBackPressedDispatcher?.addCallback(
             viewLifecycleOwner,
             object : OnBackPressedCallback(true) {
                 override fun handleOnBackPressed() {
@@ -314,7 +320,7 @@ class ViewerFragment: Fragment() {
                 .setPositiveButton("Okay") { _, _ -> }
                 .setIcon(R.drawable.setting)
                 .setMessage("Thank you for understanding!")
-                .setIcon(R.mipmap.ic_launcher)
+                .setIcon(R.mipmap.under_development)
                 .show()
         }
 
@@ -323,9 +329,11 @@ class ViewerFragment: Fragment() {
 
 
         binding.downloadAsAudio.setOnClickListener {
+            (activity as MainActivity).showDialogs("Downloading has started")
             (activity as MainActivity).downloadMusic(videoID, videoTitle, requireContext())
         }
         binding.downloadAsVideo.setOnClickListener {
+            (activity as MainActivity).showDialogs("Downloading has started")
             DownloaderClass(requireContext()).downloadVideo(url, videoTitle, "mp4")
         }
 
@@ -459,10 +467,11 @@ class ViewerFragment: Fragment() {
                                         .load(channelThumbnail)
                                         .transform(CircleCrop())
                                         .into(binding.channelImageVideoView)
-                                }
-                                CategoryItems(searchItem)
+                                }else {
+                                    CategoryItems(searchItem)
 
-                                listOfVideosListData.add(searchItem)
+                                    listOfVideosListData.add(searchItem)
+                                }
 
                             }
                         }
@@ -555,7 +564,7 @@ class ViewerFragment: Fragment() {
                                 .setPositiveButton("Okay") { _, _ -> }
                                 .setIcon(R.drawable.setting)
                                 .setMessage("Thank you for understanding!")
-                                .setIcon(R.mipmap.ic_launcher)
+                                .setIcon(R.mipmap.under_development)
                                 .show()
                         }
                     ) {

@@ -3,7 +3,6 @@ plugins {
     id("com.android.application")
     id("org.jetbrains.kotlin.android")
     id("com.chaquo.python") version "16.0.0"
-    id("com.google.gms.google-services")
     id("org.jetbrains.kotlin.plugin.compose")
     id("com.google.firebase.firebase-perf")
 }
@@ -26,7 +25,7 @@ android {
         minSdk = 24
         targetSdk = 35
         versionCode = 1
-        versionName = "1.10"
+        versionName = "1.11"
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
         flavorDimensions.add("pyVersion")
         ndk {
@@ -90,11 +89,6 @@ chaquopy {
 
 
 dependencies {
-//    implementation("com.squareup.okhttp3:okhttp:4.9.3")
-//    implementation("com.squareup.okhttp3:logging-interceptor:4.9.3")
-//    implementation("com.google.android.gms:play-services-measurement-api:23.5.0")
-//    implementation("com.github.ssundar:YouTubeExtractor")
-//    implementation("com.github.HaarigerHarald:android-youtubeExtractor:v2.1.0")
 
 
     //ImageLoader
@@ -135,12 +129,11 @@ dependencies {
     implementation("androidx.legacy:legacy-support-v4:1.0.0")
     implementation("androidx.media:media:1.7.0")
     implementation("androidx.appcompat:appcompat:1.7.0")
-//    implementation("com.google.android.exoplayer:extension-youtube:2.18.0")
+
     implementation("com.google.code.gson:gson:2.10.1")
     implementation("androidx.swiperefreshlayout:swiperefreshlayout:1.1.0")
-    implementation("com.google.android.gms:play-services-ads:24.1.0")
-    implementation("com.google.firebase:firebase-messaging:24.1.0")
-    implementation(platform("com.google.firebase:firebase-bom:33.10.0"))
+    implementation("com.google.firebase:firebase-messaging:24.1.1")
+    implementation(platform("com.google.firebase:firebase-bom:33.11.0"))
     implementation("com.google.firebase:firebase-analytics")
     
     implementation("com.google.firebase:firebase-perf")

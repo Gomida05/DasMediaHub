@@ -3,6 +3,7 @@ package com.das.forui
 
 import android.Manifest.permission.POST_NOTIFICATIONS
 import android.app.NotificationChannel
+import android.app.NotificationChannelGroup
 import android.app.NotificationManager
 import android.app.PictureInPictureParams
 import android.app.UiModeManager
@@ -42,9 +43,6 @@ import com.das.forui.databinding.ActivityMainBinding
 import com.das.forui.objectsAndData.ForUIKeyWords.PLAY_HERE_AUDIO
 import com.das.forui.objectsAndData.ForUIKeyWords.PLAY_HERE_VIDEO
 import com.google.android.exoplayer2.ExoPlayer
-import com.google.android.gms.ads.AdRequest
-import com.google.android.gms.ads.AdView
-import com.google.android.gms.ads.MobileAds
 import com.google.android.material.bottomnavigation.BottomNavigationView
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
@@ -91,7 +89,8 @@ class MainActivity : AppCompatActivity() {
     override fun onStart() {
         super.onStart()
         createNotificationChannel()
-
+        createGroupNotificationChannel()
+        createMediaGroupNotificationChannel()
         if (Build.VERSION.SDK_INT >= TIRAMISU) {
             if (ContextCompat.checkSelfPermission(this, POST_NOTIFICATIONS)
                 != PackageManager.PERMISSION_GRANTED
@@ -102,27 +101,6 @@ class MainActivity : AppCompatActivity() {
     }
 
 
-
-    fun startBanner(startOrStop: Boolean){
-        try {
-            MobileAds.initialize(this@MainActivity) { }
-            val mAdView: AdView = findViewById(R.id.adView)
-            if (startOrStop) {
-                val startTime = System.nanoTime()
-                val elapsedTime = System.nanoTime() - startTime
-                Log.d("AppStartup", "Mobile Ads initialization took: ${elapsedTime / 1_000_000} ms")
-                val adRequest = AdRequest.Builder().build()
-                mAdView.loadAd(adRequest)
-                mAdView.visibility = View.VISIBLE
-            } else {
-//                mAdView.destroy()
-                mAdView.visibility = View.GONE
-                }
-        } catch (e: Exception) {
-                Log.e("MainActivity", "Error destroying AdView: ${e.message}")
-        }
-
-    }
 
 
     override fun onNewIntent(intent: Intent) {
@@ -338,7 +316,7 @@ class MainActivity : AppCompatActivity() {
 
 
         val notificationId = currentTimeMillis().toInt()
-        val notification = NotificationCompat.Builder(this, "error_searching")
+        val notification = NotificationCompat.Builder(this, "download_channel")
             .setContentTitle("Download Finished")
             .setContentText(message)
             .setSmallIcon(R.mipmap.icon)
@@ -360,6 +338,43 @@ class MainActivity : AppCompatActivity() {
         notificationManager.notify(notificationId, notification)
     }
 
+    private fun createMediaGroupNotificationChannel() {
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+            val serviceChannel = NotificationChannelGroup(
+                "MNGC",
+                "MediaPlayer notifications"
+            )
+            val manager = getSystemService(NotificationManager::class.java)
+            manager?.createNotificationChannelGroup(serviceChannel)
+        }
+    }
+    private fun createGroupNotificationChannel(){
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+            val serviceChannel = NotificationChannelGroup(
+                "NGC",
+                "Download notification"
+            )
+
+
+            val downloadChannelId = "download_channel"
+            val downloadChannelName = "Downloads"
+            val downloadChannel = NotificationChannel(
+                downloadChannelId,
+                downloadChannelName,
+                NotificationManager.IMPORTANCE_LOW // Set the importance level based on your needs
+            )
+            downloadChannel.apply {
+                group = "NGC"
+                description = "This channel is for download notifications"
+            }
+
+
+            val manager = getSystemService(NotificationManager::class.java)
+            manager?.createNotificationChannelGroup(serviceChannel)
+            manager?.createNotificationChannel(downloadChannel)
+        }
+    }
+
 
     fun alertUserError(message: String?) {
         // Use applicationContext to ensure global access
@@ -375,6 +390,7 @@ class MainActivity : AppCompatActivity() {
             .addAction(R.drawable.play_arrow_24dp,"Play", null)
             .addAction(R.drawable.stop_circle_24dp, "Stop", null)
             .setAutoCancel(false)
+            .setGroup("NGC")
             .setPriority(NotificationCompat.PRIORITY_HIGH)
             .setStyle(
                 NotificationCompat.BigTextStyle()
@@ -464,7 +480,7 @@ class MainActivity : AppCompatActivity() {
 
 
 
-    fun createSingleDirectory(directoryPath: String) {
+    private fun createSingleDirectory(directoryPath: String) {
         val dir = File(directoryPath)
         if (dir.mkdir()) {
         } else {

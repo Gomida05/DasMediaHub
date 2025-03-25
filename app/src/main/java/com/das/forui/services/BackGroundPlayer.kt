@@ -40,7 +40,7 @@ import java.io.File
 
 class BackGroundPlayer: Service() {
 
-    private val channelId = "MediaYouTubePlayer"
+    private val channelId = "MusicPlayerNotification"
     private var exoPlayer: ExoPlayer? = null
     lateinit var mediaSession: MediaSessionCompat
     private lateinit var audioManager: AudioManager
@@ -326,7 +326,7 @@ class BackGroundPlayer: Service() {
 
         MediaButtonReceiver.handleIntent(mediaSession, intent)
         val notifications = createMediaNotification()
-        startForeground(1, notifications)
+        startForeground(95, notifications)
         return START_STICKY
     }
 
@@ -343,10 +343,13 @@ class BackGroundPlayer: Service() {
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
             val serviceChannel = NotificationChannel(
                 channelId,
-                "Foreground Service Channel",
-                NotificationManager.IMPORTANCE_HIGH
+                "Local Music Player",
+                NotificationManager.IMPORTANCE_DEFAULT
             ).apply {
+                group = "MNGC"
                 enableLights(false)
+                enableVibration(false)
+                setSound(null, null)
             }
 
             val manager = getSystemService(NotificationManager::class.java)
@@ -383,17 +386,11 @@ class BackGroundPlayer: Service() {
         val notification= NotificationCompat.Builder(this, channelId)
             .setContentIntent(pendingIntent)
             .setSmallIcon(drawable.music_note_24dp)
-            .setLargeIcon(
-                BitmapFactory.decodeResource(resources, drawable.music_note_24dp)
-            )
             .setStyle(mediaStyle)
-            .setPriority(NotificationCompat.PRIORITY_HIGH)
-            .setVisibility(NotificationCompat.VISIBILITY_PUBLIC)
-
             .build()
 
 
-        getSystemService(NotificationManager::class.java).notify(1, notification)
+        getSystemService(NotificationManager::class.java).notify(95, notification)
         return notification
     }
 
@@ -490,8 +487,8 @@ class BackGroundPlayer: Service() {
             )
             .putLong(MediaMetadataCompat.METADATA_KEY_DURATION, duration)
 
-            .putBitmap(
-                    MediaMetadataCompat.METADATA_KEY_ALBUM_ART,
+//            .putBitmap(
+            .putBitmap(MediaMetadataCompat.METADATA_KEY_DISPLAY_ICON,
                     BitmapFactory.decodeResource(resources, drawable.music_note_24dp)
             )
         return metadata.build()
@@ -648,6 +645,11 @@ class BackGroundPlayer: Service() {
 
         }
 
+        override fun onStop() {
+            super.onStop()
+            mediaSession.release()
+        }
+
 
     }
 
@@ -696,6 +698,12 @@ class BackGroundPlayer: Service() {
         mediaSession.release()
         exoPlayer?.release()
         return super.stopService(name)
+    }
+
+    override fun onDestroy() {
+        mediaSession.release()
+        exoPlayer?.release()
+        super.onDestroy()
     }
 
 }

@@ -81,7 +81,7 @@ class WatchLaterFragment: Fragment() {
 
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
-        binding.root.apply {
+        binding.myComposeViewLater.apply {
             setViewCompositionStrategy(ViewCompositionStrategy.DisposeOnViewTreeLifecycleDestroyed)
             setContent {
                 CustomTheme {
@@ -250,7 +250,7 @@ class WatchLaterFragment: Fragment() {
                                 .setPositiveButton("Okay") { _, _ -> }
                                 .setIcon(R.drawable.setting)
                                 .setMessage("Thank you for understanding!")
-                                .setIcon(R.mipmap.ic_launcher)
+                                .setIcon(R.mipmap.under_development)
                                 .show()
                         }
                     ) {
@@ -259,7 +259,7 @@ class WatchLaterFragment: Fragment() {
                                 .data(channelThumbnails)
                                 .crossfade(true)
                                 .error(
-                                    R.mipmap.ic_launcher
+                                    R.mipmap.under_development
                                 )
                                 .build(),
                             contentDescription = "Category Image",

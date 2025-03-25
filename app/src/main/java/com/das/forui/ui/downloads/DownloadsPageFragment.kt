@@ -11,13 +11,11 @@ import android.view.ViewGroup
 import android.widget.ArrayAdapter
 import android.widget.ImageView
 import android.widget.TextView
-import androidx.activity.OnBackPressedCallback
 import androidx.fragment.app.Fragment
 import androidx.fragment.app.viewModels
 import androidx.navigation.fragment.findNavController
 import com.bumptech.glide.Glide
 import com.das.forui.MainActivity
-import com.das.forui.services.MyService
 import com.das.forui.R
 import com.das.forui.databased.PathSaver
 import com.das.forui.databinding.FragmentDownloadsBinding
@@ -50,12 +48,6 @@ class DownloadsPageFragment: Fragment() {
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
         (activity as MainActivity).hideBottomNav()
-
-//        binding.downloadedHistory.adapter = adapter
-//        fetchDataFromDatabase(
-//            PathSaver().getVideosDownloadPath(requireContext()),
-//            1
-//        )
 
         downloadsPageViewModel.downloadedListData.observe(viewLifecycleOwner) { data ->
             adapter.clear()
@@ -99,11 +91,8 @@ class DownloadsPageFragment: Fragment() {
             findNavController().navigateUp()
         }
 
-        binding.button2.setOnClickListener {
-            (activity as MainActivity).startBanner(false)
-            val intent = Intent(requireContext(), MyService::class.java)
-            requireContext().stopService(intent)
-
+        binding.downloadedSettings.setOnClickListener {
+            (activity as MainActivity).showDialogs("Coming soon!")
         }
 
         binding.downloadedHistory.setOnItemClickListener { _, _, position, _ ->
@@ -150,14 +139,6 @@ class DownloadsPageFragment: Fragment() {
                 .show()
             true
         }
-
-
-        activity?.onBackPressedDispatcher?.addCallback(object : OnBackPressedCallback(true){
-            override fun handleOnBackPressed() {
-               findNavController().navigateUp()
-            }
-        }
-        )
     }
 
 

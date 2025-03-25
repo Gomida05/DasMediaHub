@@ -1,4 +1,4 @@
-@file:Suppress("DEPRECATION", "SourceLockedOrientationActivity")
+@file:Suppress("DEPRECATION")
 package com.das.forui.ui.videoPlayerLocally
 
 
