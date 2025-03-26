@@ -45,7 +45,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.rememberVectorPainter
 import androidx.compose.ui.input.nestedscroll.nestedScroll
 import androidx.compose.ui.layout.ContentScale
-import androidx.compose.ui.platform.ViewCompositionStrategy
+import androidx.compose.ui.platform.ComposeView
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -57,7 +57,6 @@ import coil.request.ImageRequest
 import com.bumptech.glide.Glide
 import com.das.forui.CustomTheme
 import com.das.forui.MainActivity
-import com.das.forui.databinding.FragmentResultBinding
 import com.das.forui.MainApplication
 import com.das.forui.R
 import com.das.forui.objectsAndData.ForUIKeyWords.ACTION_START
@@ -68,19 +67,13 @@ import com.das.forui.objectsAndData.VideosListData
 
 class ResultFragment : Fragment() {
 
-    private var _binding: FragmentResultBinding? = null
-    private val binding get() = _binding!!
-
 
     override fun onCreateView(
         inflater: LayoutInflater,
         container: ViewGroup?,
         savedInstanceState: Bundle?
     ): View {
-        _binding = FragmentResultBinding.inflate(inflater, container, false)
-
-        binding.root.apply {
-            setViewCompositionStrategy(ViewCompositionStrategy.DisposeOnViewTreeLifecycleDestroyed)
+        return ComposeView(requireContext()).apply {
             setContent {
                 val text = arguments?.getString("EXTRA_TEXT").toString()
                 CustomTheme {
@@ -88,7 +81,6 @@ class ResultFragment : Fragment() {
                 }
             }
         }
-        return binding.root
     }
 
 
@@ -401,8 +393,4 @@ class ResultFragment : Fragment() {
     }
 
 
-    override fun onDestroyView() {
-        super.onDestroyView()
-        _binding = null
-    }
 }

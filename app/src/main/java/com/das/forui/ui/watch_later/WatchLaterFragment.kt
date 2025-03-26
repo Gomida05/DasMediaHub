@@ -42,6 +42,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.rememberVectorPainter
 import androidx.compose.ui.input.nestedscroll.nestedScroll
 import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.platform.ComposeView
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.ViewCompositionStrategy
 import androidx.compose.ui.text.style.TextAlign
@@ -57,7 +58,6 @@ import com.das.forui.MainActivity
 import com.das.forui.MainApplication
 import com.das.forui.R
 import com.das.forui.databased.DatabaseFavorite
-import com.das.forui.databinding.FragmentWatchLaterBinding
 import com.das.forui.objectsAndData.ForUIKeyWords.ACTION_START
 import com.das.forui.objectsAndData.SavedVideosListData
 import com.das.forui.objectsAndData.VideosListData
@@ -65,23 +65,12 @@ import com.das.forui.services.AudioServiceFromUrl
 
 
 class WatchLaterFragment: Fragment() {
-    private var _binding: FragmentWatchLaterBinding? = null
-    private val binding get() = _binding!!
-
     override fun onCreateView(
         inflater: LayoutInflater,
         container: ViewGroup?,
         savedInstanceState: Bundle?
     ): View {
-        _binding = FragmentWatchLaterBinding.inflate(inflater, container, false)
-
-        return binding.root
-    }
-
-
-    override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
-        super.onViewCreated(view, savedInstanceState)
-        binding.myComposeViewLater.apply {
+        return ComposeView(requireContext()).apply {
             setViewCompositionStrategy(ViewCompositionStrategy.DisposeOnViewTreeLifecycleDestroyed)
             setContent {
                 CustomTheme {
@@ -90,6 +79,7 @@ class WatchLaterFragment: Fragment() {
             }
         }
     }
+
 
 
     @OptIn(ExperimentalMaterial3Api::class)
@@ -408,13 +398,4 @@ class WatchLaterFragment: Fragment() {
                 )
             }.show()
     }
-
-
-
-
-    override fun onDestroy() {
-        super.onDestroy()
-        _binding = null
-    }
-
 }

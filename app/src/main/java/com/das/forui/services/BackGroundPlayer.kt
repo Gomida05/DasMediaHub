@@ -14,7 +14,9 @@ import android.media.AudioManager
 import android.net.Uri
 import android.os.Build
 import android.os.Bundle
+import android.os.Handler
 import android.os.IBinder
+import android.os.Looper
 import android.support.v4.media.MediaMetadataCompat
 import android.support.v4.media.session.MediaSessionCompat
 import android.util.Log
@@ -79,17 +81,7 @@ class BackGroundPlayer: Service() {
         val title =  intent?.getStringExtra("title").toString()
         mediaId = intent?.getStringExtra("media_id").toString()
 
-        val exoMetadata = MediaMetadata.Builder()
-            .setTitle(title)
-            .setMediaType(MediaMetadata.MEDIA_TYPE_MUSIC)
-            .build()
-        val mediaItem = MediaItem.Builder()
-            .setMediaId(mediaId)
-            .setUri(mediaUri.toUri())
-            .setMediaMetadata(exoMetadata)
-            .build()
 
-        exoPlayer?.setMediaItem(mediaItem)
 
 
 
@@ -296,13 +288,29 @@ class BackGroundPlayer: Service() {
         when (intent?.action) {
 
             ACTION_START -> {
+                val exoMetadata = MediaMetadata.Builder()
+                    .setTitle(title)
+                    .setMediaType(MediaMetadata.MEDIA_TYPE_MUSIC)
+                    .build()
+                val mediaItem = MediaItem.Builder()
+                    .setMediaId(mediaId)
+                    .setUri(mediaUri.toUri())
+                    .setMediaMetadata(exoMetadata)
+                    .build()
 
-                exoPlayer?.prepare()
-                exoPlayer?.play()
+                exoPlayer?.apply {
+                    setMediaItem(mediaItem)
+                    prepare()
+                    play()
+                }
+                val handler = Handler(Looper.getMainLooper())
+                handler.postDelayed({
+                    exoPlayer?.setMediaItems(
+                        fetchDataFromFolder(title)
+                    )
+                }, 3000)
 
-                exoPlayer?.setMediaItems(
-                    fetchDataFromFolder()
-                )
+
 
                 mediaSession.setPlaybackState(
                     BackgroundPlayerStates().setStateToPlaying(
@@ -387,6 +395,7 @@ class BackGroundPlayer: Service() {
             .setContentIntent(pendingIntent)
             .setSmallIcon(drawable.music_note_24dp)
             .setStyle(mediaStyle)
+            .setSilent(true)
             .build()
 
 
@@ -654,7 +663,7 @@ class BackGroundPlayer: Service() {
     }
 
 
-    private fun fetchDataFromFolder(): MutableList<MediaItem> {
+    private fun fetchDataFromFolder(currentMediaTitle: String): MutableList<MediaItem> {
         val fileLists = mutableListOf<MediaItem>().apply {
             clear()
         }
@@ -674,7 +683,7 @@ class BackGroundPlayer: Service() {
 
             }
             fileNames.zip(pathOfVideosUris).forEach { (fileName, videoUri) ->
-                if (videoUri != null && fileName != null) {
+                if (videoUri != null && fileName != null && currentMediaTitle != fileName) {
                     val exoMetadata = MediaMetadata.Builder()
                         .setTitle(fileName)
                         .setMediaType(MediaMetadata.MEDIA_TYPE_MUSIC)

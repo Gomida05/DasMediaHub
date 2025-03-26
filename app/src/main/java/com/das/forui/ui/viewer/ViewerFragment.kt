@@ -142,7 +142,7 @@ class ViewerFragment: Fragment() {
 
             // Update suggested videos with the new title
             binding.myComposeView2.apply {
-                setViewCompositionStrategy(ViewCompositionStrategy.DisposeOnViewTreeLifecycleDestroyed)
+                setViewCompositionStrategy(ViewCompositionStrategy.DisposeOnLifecycleDestroyed(this@ViewerFragment))
                 setContent {
                     CustomTheme {
                         SuggestedVideos(details.title)
