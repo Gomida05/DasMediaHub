@@ -22,7 +22,6 @@ class ResultViewModel: ViewModel() {
 
     fun fetchSuggestions(inputText: String) {
         viewModelScope.launch(Dispatchers.IO) {
-            _isLoading.value = true
             val result = callPythonForSearchVideos(inputText)
             withContext(Dispatchers.Main) {
                 _searchResults.value = result ?: emptyList()

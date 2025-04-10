@@ -5,6 +5,7 @@ import android.appwidget.AppWidgetManager
 import android.appwidget.AppWidgetProvider
 import android.content.Context
 import android.content.Intent
+import android.os.Bundle
 import android.widget.RemoteViews
 
 class WidgetProvider: AppWidgetProvider() {
@@ -31,7 +32,7 @@ class WidgetProvider: AppWidgetProvider() {
 
 
 
-            val views: RemoteViews = RemoteViews(
+            val views = RemoteViews(
                 context.applicationContext.packageName,
                 R.layout.loading_appwidget
             ).apply {
@@ -41,6 +42,19 @@ class WidgetProvider: AppWidgetProvider() {
             appWidgetManager.updateAppWidget(appWidgetId, views)
 
         }
+    }
+
+    override fun onAppWidgetOptionsChanged(
+        context: Context?,
+        appWidgetManager: AppWidgetManager?,
+        appWidgetId: Int,
+        newOptions: Bundle?
+    ) {
+        super.onAppWidgetOptionsChanged(context, appWidgetManager, appWidgetId, newOptions)
+    }
+
+    override fun onRestored(context: Context?, oldWidgetIds: IntArray?, newWidgetIds: IntArray?) {
+        super.onRestored(context, oldWidgetIds, newWidgetIds)
     }
 
     override fun onDeleted(context: Context?, appWidgetIds: IntArray?) {

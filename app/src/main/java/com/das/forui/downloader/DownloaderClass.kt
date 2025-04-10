@@ -1,4 +1,4 @@
-package com.das.forui
+package com.das.forui.downloader
 
 import android.app.DownloadManager
 import android.app.NotificationChannel
@@ -11,6 +11,8 @@ import android.os.Build
 import android.os.Environment
 import android.view.View
 import androidx.core.app.NotificationCompat
+import com.das.forui.MainActivity
+import com.das.forui.R
 import com.das.forui.databased.PathSaver
 import java.io.File
 
@@ -70,6 +72,13 @@ class DownloaderClass(val context: Context) {
                                             .setOngoing(false)
                                         notificationManager.notify(notificationId, builder.build())
                                     }
+                                }
+                                if (bytesDownloaded == bytesTotal) {
+                                    // When download is finished, show the completed notification
+                                    builder.setContentText("Download complete")
+                                        .setProgress(0, 0, false)
+                                        .setOngoing(false)
+                                    notificationManager.notify(notificationId, builder.build())
                                 }
                             }
                         }

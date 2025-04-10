@@ -1,84 +1,66 @@
-@file:Suppress("DEPRECATION")
 package com.das.forui.ui.videoPlayerLocally
 
+import android.annotation.SuppressLint
+import android.app.Activity
 import android.content.pm.ActivityInfo
 import android.net.Uri
-import android.os.Bundle
-import android.view.LayoutInflater
-import android.view.View
-import android.view.ViewGroup
+import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.padding
+import androidx.compose.material3.Scaffold
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.remember
-import androidx.compose.ui.platform.ComposeView
+import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
-import androidx.compose.ui.platform.ViewCompositionStrategy
 import androidx.compose.ui.viewinterop.AndroidView
 import androidx.core.net.toUri
-import androidx.fragment.app.Fragment
+import androidx.media3.common.MediaItem
+import androidx.media3.common.MediaMetadata
 import com.das.forui.MainActivity
 import com.das.forui.databased.PathSaver
-import com.das.forui.objectsAndData.ForUIKeyWords.MEDIA_TITLE
-import com.das.forui.objectsAndData.ForUIKeyWords.PLAY_HERE_VIDEO
-import com.google.android.exoplayer2.ExoPlayer
-import com.google.android.exoplayer2.MediaItem
-import com.google.android.exoplayer2.MediaMetadata
-import com.google.android.exoplayer2.ui.StyledPlayerView
+import androidx.media3.exoplayer.ExoPlayer
+import androidx.media3.ui.PlayerView
 import java.io.File
 
 
-class FullScreenPlayerFragment: Fragment() {
 
 
 
-    override fun onCreateView(
-        inflater: LayoutInflater,
-        container: ViewGroup?,
-        savedInstanceState: Bundle?
-    ): View? {
 
 
-        return ComposeView(requireContext()).apply {
-            val videoUri = arguments?.getString(PLAY_HERE_VIDEO)
-            val title = arguments?.getString(MEDIA_TITLE)
-            setViewCompositionStrategy(ViewCompositionStrategy.Default)
-            setContent {
-                val exoMetadata = MediaMetadata.Builder()
-                    .setTitle(title)
-                    .setMediaType(MediaMetadata.MEDIA_TYPE_VIDEO)
-                    .build()
-
-                val mediaItem = MediaItem.Builder()
-                    .setMediaId(videoUri.toString())
-                    .setUri(videoUri)
-                    .setMediaMetadata(exoMetadata)
-                    .build()
-                ExoPlayerUI(mediaItem)
-            }
-        }
-    }
-
-    override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
-        super.onViewCreated(view, savedInstanceState)
-        (activity as MainActivity).hideBottomNav()
 
 
-        hideSystemUI()
-        (activity as MainActivity).requestedOrientation = ActivityInfo.SCREEN_ORIENTATION_SENSOR
 
-
-    }
-
+    @SuppressLint("SourceLockedOrientationActivity")
     @Composable
-    private fun ExoPlayerUI(mediaItem: MediaItem) {
+    fun ExoPlayerUI(
+        videoUri: String
+    ) {
+
         val mContext = LocalContext.current
+        val activity = mContext as? Activity
+
+        activity?.requestedOrientation = ActivityInfo.SCREEN_ORIENTATION_UNSPECIFIED
+
+        val exoMetadata = MediaMetadata.Builder()
+            .setTitle("mediaTitle")
+            .setMediaType(MediaMetadata.MEDIA_TYPE_VIDEO)
+            .build()
+
+        val mediaItem = MediaItem.Builder()
+            .setMediaId(videoUri)
+            .setUri(videoUri)
+            .setMediaMetadata(exoMetadata)
+            .build()
+
+
 
         val mExoPlayer = remember(mContext) {
             ExoPlayer.Builder(mContext).build().apply {
                 setMediaItem(mediaItem)
                 playWhenReady = true
                 prepare()
-                MainActivity().requestAudioFocusFromMain(requireContext(), this)
+                MainActivity().requestAudioFocusFromMain(mContext, this)
             }
         }
         mExoPlayer.addMediaItems(
@@ -88,21 +70,31 @@ class FullScreenPlayerFragment: Fragment() {
             )
         )
 
+
         // Ensure the ExoPlayer is released when composable is disposed
         DisposableEffect(mExoPlayer) {
             onDispose {
                 mExoPlayer.release()
-                showSystemUI()
                 activity?.requestedOrientation = ActivityInfo.SCREEN_ORIENTATION_PORTRAIT
             }
         }
+        Scaffold(
+            modifier = Modifier
+                .fillMaxSize()
+        ) { paddingValue->
 
 
-        AndroidView(factory = { context ->
-            StyledPlayerView(context).apply {
+        AndroidView(
+            factory = { context ->
+
+            PlayerView(context).apply {
                 player = mExoPlayer
-            }
-        })
+            } },
+            modifier = Modifier
+                .fillMaxSize()
+                .padding(paddingValue)
+            )
+        }
 
     }
 
@@ -110,34 +102,17 @@ class FullScreenPlayerFragment: Fragment() {
 
 
 
-    private fun hideSystemUI() {
 
 
-        (activity as MainActivity).window.decorView.systemUiVisibility = (
-                View.SYSTEM_UI_FLAG_FULLSCREEN or
-                        View.SYSTEM_UI_FLAG_HIDE_NAVIGATION or
-                        View.SYSTEM_UI_FLAG_IMMERSIVE_STICKY
-                )
-
-    }
 
 
-    private fun showSystemUI() {
-        
-        (activity as MainActivity).window.decorView.systemUiVisibility = View.SYSTEM_UI_FLAG_VISIBLE
-    }
-
-
-    private fun fetchDataFromDatabase(
-        pathLocation: String,
-        currentMediaTitle: String
-    ): MutableList<MediaItem> {
+private fun fetchDataFromDatabase(
+    pathLocation: String,
+    currentMediaTitle: String
+): MutableList<MediaItem> {
         val fileLists = mutableListOf<MediaItem>().apply {
             clear()
         }
-
-
-
         val pathOfVideos = File(pathLocation)
         if (pathOfVideos.exists()) {
             val fileNames = arrayOfNulls<String>(pathOfVideos.listFiles()!!.size)
@@ -170,14 +145,3 @@ class FullScreenPlayerFragment: Fragment() {
 
 
 
-    override fun onDestroy() {
-        super.onDestroy()
-
-        (activity as MainActivity).requestedOrientation = ActivityInfo.SCREEN_ORIENTATION_PORTRAIT
-
-//        exoPlayer?.let {
-//            it.stop()
-//            it.release()
-//        }
-    }
-}

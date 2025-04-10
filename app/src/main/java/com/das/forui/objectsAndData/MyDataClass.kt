@@ -1,6 +1,7 @@
 package com.das.forui.objectsAndData
 
 import android.net.Uri
+import androidx.compose.ui.graphics.vector.ImageVector
 
 
 data class DownloadedListData(
@@ -61,4 +62,19 @@ data class SearchResultFromMain(
     val duration: String,
     val channelName: String,
     val channelThumbnailsUrl: String
+)
+
+
+data class MyBottomNavData(
+    val title: String,
+    val selectedIcon: ImageVector,
+    val unselectedIcon: ImageVector
+)
+
+
+data class SettingsDataClass (
+    val title: String,
+    val leftIcon: ImageVector,
+    val rightIcon: ImageVector
+
 )

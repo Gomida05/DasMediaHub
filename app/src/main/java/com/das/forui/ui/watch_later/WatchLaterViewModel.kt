@@ -22,7 +22,6 @@ class WatchLaterViewModel(application: Application) : AndroidViewModel(applicati
     val isLoading: State<Boolean> = _isLoading
 
     fun fetchData() {
-        _isLoading.value = true
         viewModelScope.launch {
             val result = withContext(Dispatchers.IO) {
                 fetchDataFromDatabase()

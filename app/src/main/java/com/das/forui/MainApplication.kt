@@ -1,11 +1,7 @@
 package com.das.forui
 
 import android.app.Application
-import android.content.Context
-import android.content.SharedPreferences
-import android.content.res.Configuration
 import android.os.Build
-import androidx.appcompat.app.AppCompatDelegate
 import com.chaquo.python.Python
 import com.chaquo.python.Python.getInstance
 import com.chaquo.python.android.AndroidPlatform
@@ -31,10 +27,10 @@ class MainApplication: Application() {
             }
         }.start()
 
-        val sharedPref: SharedPreferences = getSharedPreferences("AppPreferences", Context.MODE_PRIVATE)
-        val currentUiMode = resources.configuration.uiMode and Configuration.UI_MODE_NIGHT_MASK
-        val uiModeType = sharedPref.getInt("isNightModeOn", currentUiMode)
-        AppCompatDelegate.setDefaultNightMode(uiModeType)
+//        val sharedPref: SharedPreferences = getSharedPreferences("AppPreferences", Context.MODE_PRIVATE)
+//        val currentUiMode = resources.configuration.uiMode and Configuration.UI_MODE_NIGHT_MASK
+//        val uiModeType = sharedPref.getInt("isNightModeOn", currentUiMode)
+//        AppCompatDelegate.setDefaultNightMode(uiModeType)
     }
 
 

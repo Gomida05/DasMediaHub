@@ -17,7 +17,7 @@ import androidx.compose.ui.unit.sp
 
 @Composable
 fun CustomTheme(content: @Composable () -> Unit) {
-    val lightPrimary = Color(0xFF000000)
+    val lightPrimary = Color.Black
     val lightPrimaryVariant = Color(0xFF000000)
     val lightSecondary = Color(0xFF03DAC5)
 
@@ -34,10 +34,9 @@ fun CustomTheme(content: @Composable () -> Unit) {
         headlineLarge = TextStyle(
             fontFamily = customFontFamily,
             color = if (isSystemInDarkTheme())
-                lightPrimary else whiteColor
-            ,
+                whiteColor else lightPrimary,
             fontWeight = FontWeight.Bold,
-            fontSize = 30.sp
+            fontSize = 40.sp
         ),
         headlineSmall = TextStyle(
             fontFamily = customFontFamily,
@@ -48,11 +47,14 @@ fun CustomTheme(content: @Composable () -> Unit) {
         )
         // Define other text styles like h3, body1, body2, etc.
     )
+
     MaterialTheme(
+
         colorScheme = if (isSystemInDarkTheme()) {
             darkColorScheme(
                 primary = whiteColor,
                 primaryContainer = Color(0xFF000000),
+                onPrimary = Color(0xFF000000),
                 secondary = lightSecondary,
 
                 )
@@ -61,7 +63,8 @@ fun CustomTheme(content: @Composable () -> Unit) {
                 primary = lightPrimary,
                 primaryContainer = lightPrimaryVariant,
                 onPrimary = Color(0xFFFFFFFF),
-                secondary = lightSecondary
+                secondary = lightSecondary,
+
             )
         },
         typography = customTypography,

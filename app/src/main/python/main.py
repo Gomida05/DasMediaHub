@@ -3,7 +3,6 @@ from pytubefix import YouTube, exceptions
 from youtubesearchpython import Video, VideosSearch
 
 
-
 def get_video_url(video_url: str):
     try:
         yt = YouTube(video_url)
@@ -58,21 +57,26 @@ def Searcher(inputer:str):
     
 def SearchWithLink(inputer: str):
     try:
+
         video=Video.getInfo(inputer)
-        data={
-            'videoId': video["id"], 
-            'title': video["title"],
-            'viewNumber': video["viewCount"]["text"],
-            "date":video["publishDate"],
-            'channelName': video['channel']['name'],
-            'description': video['description']
+        
+        data = {
+            'videoId': str(video["id"]), 
+            'title': str(video["title"]),
+            'viewNumber': str(video["viewCount"]["text"]),
+            "date": str(video["publishDate"]),
+            'channelName': str(video["channel"]["name"]),
+            'description': str(video["description"])
             }
-        return json.dumps(data)
+        
+        val = json.dumps(data)
+        return val
     except Exception as e:
         print(f"fff{e}")
         print(f"trackback error {traceback.print_exc()}")
         return e
 # b=SearchWithLink("https://www.youtube.com/watch?v=G4JsH6onYdY")
+# print(b)
 
 # print(b)
 # SearchWithLink("eritrean")

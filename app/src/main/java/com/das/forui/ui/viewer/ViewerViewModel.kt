@@ -1,5 +1,6 @@
 package com.das.forui.ui.viewer
 
+import android.util.Log
 import androidx.compose.runtime.State
 import androidx.compose.runtime.mutableStateOf
 import androidx.lifecycle.LiveData
@@ -12,6 +13,7 @@ import com.das.forui.MainApplication.Youtuber.pythonInstant
 import com.das.forui.objectsAndData.VideoDetails
 import com.das.forui.objectsAndData.VideosListData
 import com.google.gson.Gson
+import com.google.gson.JsonSyntaxException
 import com.google.gson.reflect.TypeToken
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
@@ -19,14 +21,17 @@ import kotlinx.coroutines.withContext
 
 
 class ViewerViewModel : ViewModel() {
-    private val _videoUrl = MutableLiveData<String>()
-    val videoUrl: LiveData<String> = _videoUrl
+    private val _videoUrl = mutableStateOf("")
+    val videoUrl: State<String> = _videoUrl
 
     private val _error = MutableLiveData<String>()
     val error: LiveData<String> = _error
 
-    private val _isLoading = MutableLiveData<Boolean>()
-    val isLoading: LiveData<Boolean> = _isLoading
+    private var _isLoading = mutableStateOf(true)
+    val isLoading: State<Boolean> = _isLoading
+
+    private var _isLoadings = mutableStateOf(true)
+    val isLoadings: State<Boolean> = _isLoadings
 
     private val _videoDetails = MutableLiveData<VideoDetails>()
     val videoDetails: LiveData<VideoDetails> = _videoDetails
@@ -34,11 +39,13 @@ class ViewerViewModel : ViewModel() {
     private val _searchResults = mutableStateOf<List<VideosListData>>(emptyList())
     val searchResults: State<List<VideosListData>> = _searchResults
     private val _isLoadingVideos = mutableStateOf(true)
+
     val isLoadingVideos: State<Boolean> = _isLoadingVideos
+
 
     fun loadVideoUrl(videoId: String) {
         viewModelScope.launch(Dispatchers.IO) {
-            _isLoading.postValue(true)
+            _isLoading.value = true
             try {
 
                 val mainFile = pythonInstant.getModule("main")
@@ -46,14 +53,15 @@ class ViewerViewModel : ViewModel() {
                 val result = variable?.call("https://www.youtube.com/watch?v=$videoId").toString()
 
                 if (result != "False") {
-                    _videoUrl.postValue(result)
+                    _videoUrl.value = result
+
                 } else {
                     _error.postValue("Please check your internet connection")
                 }
             } catch (e: Exception) {
                 _error.postValue("Error: ${e.message}")
             } finally {
-                _isLoading.postValue(false)
+                _isLoading.value = false
             }
         }
     }
@@ -61,21 +69,22 @@ class ViewerViewModel : ViewModel() {
 
     fun fetchVideoDetails(videoId: String) {
         viewModelScope.launch(Dispatchers.IO) {
-            _isLoading.postValue(true)
+            _isLoadings.value = true
 
             try {
                 val videoDetails = callPythonSearchWithLink(videoId)
 
                 if (videoDetails != null) {
-                    val details = VideoDetails(
-                        title = videoDetails["title"].toString(),
-                        viewNumber = formatViews(videoDetails["viewNumber"].toString().toLong()),
-                        date = formatDate(videoDetails["date"].toString()),
-                        channelName = videoDetails["channelName"].toString(),
-                        description = videoDetails["description"].toString()
-                    )
                     withContext(Dispatchers.Main) {
-                        _videoDetails.postValue(details)
+                        _videoDetails.postValue(VideoDetails(
+                            title = videoDetails.title,
+                            viewNumber = formatViews(videoDetails.viewNumber.toLong()),
+                            date = formatDate(videoDetails.date),
+                            channelName = videoDetails.channelName,
+                            description = videoDetails.description
+                        )
+                        )
+                        println("here is one _1: $videoDetails \n also ${_videoDetails.value}")
                     }
 
                 } else {
@@ -89,7 +98,7 @@ class ViewerViewModel : ViewModel() {
                 }
             } finally {
                 withContext(Dispatchers.Main) {
-                    _isLoading.postValue(false)
+                    _isLoadings.value = false
                 }
             }
         }
@@ -107,19 +116,23 @@ class ViewerViewModel : ViewModel() {
         }
     }
 
-    private fun callPythonSearchWithLink(inputText: String): Map<String, Any>? {
+    private fun callPythonSearchWithLink(inputText: String): VideoDetails? {
         return try {
             val mainFile = pythonInstant.getModule("main")
-            val variable = mainFile["SearchWithLink"]
-            val result = variable?.call("https://www.youtube.com/watch?v=$inputText")
+            val variable = mainFile["SearchWithLink"]?.call("https://www.youtube.com/watch?v=$inputText")
+            val result = variable.toString()
             println("python: $result")
 
             // Use Gson to parse the JSON string into a Map
-            val resultMapType = object : TypeToken<Map<String, Any>>() {}.type
-            val resultMap: Map<String, Any> = Gson().fromJson(result.toString(), resultMapType)
+            val resultMapType = object : TypeToken<VideoDetails>() {}.type
+            val resultMap:VideoDetails = Gson().fromJson(result, resultMapType)
             resultMap
 
-        } catch (e: Exception) {
+        }catch (e: JsonSyntaxException){
+            Log.e("JSON Error", "Error parsing JSON ${e.message}")
+            return null
+        }
+        catch (e: Exception) {
             e.printStackTrace()
             return null
         }
@@ -131,11 +144,17 @@ class ViewerViewModel : ViewModel() {
 
             val mainFile = pythonInstant.getModule("main")
             val getResultFromPython = mainFile["Searcher"]?.call(inputText).toString()
+
             val videosListDataListType = object : TypeToken<List<VideosListData>>() {}.type
-            Gson().fromJson(getResultFromPython, videosListDataListType)
+            val result: List<VideosListData>? = Gson().fromJson(getResultFromPython, videosListDataListType)
+            result
+
+        } catch (e: JsonSyntaxException) {
+            Log.e("JSON Error", "Error parsing JSON: ${e.message}")
+            null
         } catch (e: Exception) {
             e.printStackTrace()
-            return null
+            null
         }
     }
 }

@@ -1,4 +1,3 @@
-@file:Suppress("DEPRECATION")
 package com.das.forui.services
 
 import android.app.Service
@@ -14,9 +13,7 @@ import android.media.AudioManager
 import android.net.Uri
 import android.os.Build
 import android.os.Bundle
-import android.os.Handler
 import android.os.IBinder
-import android.os.Looper
 import android.support.v4.media.MediaMetadataCompat
 import android.support.v4.media.session.MediaSessionCompat
 import android.util.Log
@@ -32,11 +29,11 @@ import com.das.forui.mediacontroller.BackgroundPlayerStates
 import com.das.forui.objectsAndData.ForUIKeyWords.ACTION_KILL
 import com.das.forui.objectsAndData.ForUIKeyWords.ACTION_START
 import com.das.forui.objectsAndData.ForUIKeyWords.SET_SHUFFLE_MODE
-import com.google.android.exoplayer2.ExoPlayer
-import com.google.android.exoplayer2.MediaItem
-import com.google.android.exoplayer2.MediaMetadata
-import com.google.android.exoplayer2.PlaybackException
-import com.google.android.exoplayer2.Player
+import androidx.media3.exoplayer.ExoPlayer
+import androidx.media3.common.MediaItem
+import androidx.media3.common.MediaMetadata
+import androidx.media3.common.PlaybackException
+import androidx.media3.common.Player
 import java.io.File
 
 
@@ -57,17 +54,12 @@ class BackGroundPlayer: Service() {
         exoPlayer = ExoPlayer.Builder(this).build()
 
 
-
-
-
-
-
-
-
     }
+
     override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
         mediaSession = MediaSessionCompat(this, "BackGroundPlayer").apply {
             isActive = true
+            @Suppress("DEPRECATION")
             setFlags(MediaSessionCompat.FLAG_HANDLES_MEDIA_BUTTONS or MediaSessionCompat.FLAG_HANDLES_TRANSPORT_CONTROLS)
 
             setMediaButtonReceiver(PendingIntent.getBroadcast(
@@ -95,184 +87,7 @@ class BackGroundPlayer: Service() {
 
 
 
-        exoPlayer?.addListener(object : Player.Listener {
-
-
-            override fun onMediaMetadataChanged(mediaMetadata: MediaMetadata) {
-                super.onMediaMetadataChanged(mediaMetadata)
-                mediaSession.setPlaybackState(
-                    BackgroundPlayerStates().setStateToPlaying(
-                        exoPlayer?.currentPosition!!,
-                        exoPlayer?.shuffleModeEnabled!!
-                    )
-                )
-                mediaSession.setMetadata(
-                    mediaMetaDetails(
-                        exoPlayer?.currentMediaItem?.mediaMetadata?.title!!.toString(),
-                        exoPlayer?.currentMediaItem?.requestMetadata?.mediaUri.toString(),
-                        exoPlayer?.duration!!
-                    )
-                )
-                createMediaNotification()
-            }
-
-            override fun onPositionDiscontinuity(
-                oldPosition: Player.PositionInfo,
-                newPosition: Player.PositionInfo,
-                reason: Int
-            ) {
-                super.onPositionDiscontinuity(oldPosition, newPosition, reason)
-                val currentPosition = newPosition.positionMs
-
-                mediaSession.setPlaybackState(
-                    BackgroundPlayerStates().setStateToPlaying(
-                        currentPosition,
-                        exoPlayer?.shuffleModeEnabled!!
-                    )
-                )
-            }
-
-
-
-            override fun onPlaybackStateChanged(playbackState: Int) {
-                super.onPlaybackStateChanged(playbackState)
-
-                if (playbackState == Player.STATE_ENDED) {
-                    mediaSession.setPlaybackState(
-                        BackgroundPlayerStates().setStateToPaused(
-                            exoPlayer?.currentPosition!!,
-                            exoPlayer?.shuffleModeEnabled!!
-                        )
-                    )
-                }
-                if (playbackState == Player.STATE_BUFFERING){
-                    mediaSession.setPlaybackState(
-                        BackgroundPlayerStates().setStateToLoading(
-                            exoPlayer?.currentPosition!!,
-                            exoPlayer?.shuffleModeEnabled!!
-                        )
-                    )
-                }
-            }
-
-            override fun onPlayWhenReadyChanged(playWhenReady: Boolean, reason: Int) {
-                super.onPlayWhenReadyChanged(playWhenReady, reason)
-                if (playWhenReady) {
-
-                    requestAudioFocusForAudioService()
-                    mediaSession.setPlaybackState(
-                        BackgroundPlayerStates().setStateToPlaying(
-                            exoPlayer?.currentPosition!!,
-                            exoPlayer?.shuffleModeEnabled!!
-                        )
-                    )
-                    mediaSession.setMetadata(
-                        mediaMetaDetails(
-                            exoPlayer?.currentMediaItem?.mediaMetadata?.title.toString(),
-                            mediaUri,
-                            exoPlayer?.duration!!
-                        )
-                    )
-
-                } else {
-                    releaseAudioFocusForAudioService()
-                    mediaSession.setPlaybackState(
-                        BackgroundPlayerStates().setStateToPaused(
-                            exoPlayer?.currentPosition!!,
-                            exoPlayer?.shuffleModeEnabled!!
-                        )
-                    )
-
-
-
-                    mediaSession.setMetadata(
-                        mediaMetaDetails(
-                            exoPlayer?.currentMediaItem?.mediaMetadata?.title.toString(),
-                            mediaUri,
-                            exoPlayer?.duration!!
-                        )
-                    )
-                }
-
-            }
-
-            override fun onPlayerError(error: PlaybackException) {
-                super.onPlayerError(error)
-                mediaSession.setPlaybackState(
-                    BackgroundPlayerStates().setStateToLoading(
-                        error.timestampMs,
-                        exoPlayer?.shuffleModeEnabled!!
-                    )
-                )
-            }
-
-            override fun onIsPlayingChanged(isPlaying: Boolean) {
-                super.onIsPlayingChanged(isPlaying)
-                if (isPlaying){
-                    mediaSession.setMetadata(
-                        mediaMetaDetails(
-                            exoPlayer?.currentMediaItem?.mediaMetadata?.title!!.toString(),
-                            exoPlayer?.currentMediaItem?.mediaId!!,
-                            exoPlayer?.duration!!
-                        )
-                    )
-
-                    // Update playback state
-                    mediaSession.setPlaybackState(
-                        BackgroundPlayerStates().setStateToPlaying(
-                            exoPlayer?.currentPosition!!,
-                            exoPlayer?.shuffleModeEnabled!!
-                        )
-                    )
-                }
-                if (!isPlaying && exoPlayer?.isLoading!!) {
-                    mediaSession.setPlaybackState(
-                        BackgroundPlayerStates().setStateToLoading(
-                            exoPlayer?.currentPosition!!,
-                            exoPlayer?.shuffleModeEnabled!!
-                        )
-                    )
-                }
-                if (!isPlaying && !exoPlayer?.isLoading!!){
-
-                    mediaSession.setPlaybackState(
-                        BackgroundPlayerStates().setStateToPaused(
-                            exoPlayer?.currentPosition!!,
-                            exoPlayer?.shuffleModeEnabled!!
-                        )
-                    )
-                }
-            }
-
-            override fun onIsLoadingChanged(isLoading: Boolean) {
-                super.onIsLoadingChanged(isLoading)
-                if (!isLoading){
-                    mediaSession.setMetadata(
-                        mediaMetaDetails(
-                            exoPlayer?.currentMediaItem?.mediaMetadata?.title!!.toString(),
-                            exoPlayer?.currentMediaItem?.mediaId!!,
-                            exoPlayer?.duration!!
-                        )
-                    )
-
-                    mediaSession.setPlaybackState(
-                        BackgroundPlayerStates().setStateToPlaying(
-                            exoPlayer?.currentPosition!!,
-                            exoPlayer?.shuffleModeEnabled!!
-                        )
-                    )
-                }
-                else{
-                    mediaSession.setPlaybackState(
-                        BackgroundPlayerStates().setStateToLoading(
-                            exoPlayer?.currentPosition!!,
-                            exoPlayer?.shuffleModeEnabled!!
-                        )
-                    )
-                }
-            }
-        }
-        )
+        exoPlayer?.addListener(ExoPlayerListener(mediaUri))
 
 
         mediaSession.setCallback(
@@ -288,6 +103,9 @@ class BackGroundPlayer: Service() {
         when (intent?.action) {
 
             ACTION_START -> {
+
+
+
                 val exoMetadata = MediaMetadata.Builder()
                     .setTitle(title)
                     .setMediaType(MediaMetadata.MEDIA_TYPE_MUSIC)
@@ -297,18 +115,15 @@ class BackGroundPlayer: Service() {
                     .setUri(mediaUri.toUri())
                     .setMediaMetadata(exoMetadata)
                     .build()
-
+                val listMediaItems = fetchDataFromFolder(title)
+                listMediaItems.add(-1, mediaItem)
                 exoPlayer?.apply {
-                    setMediaItem(mediaItem)
+                    setMediaItems(listMediaItems)
                     prepare()
                     play()
                 }
-                val handler = Handler(Looper.getMainLooper())
-                handler.postDelayed({
-                    exoPlayer?.setMediaItems(
-                        fetchDataFromFolder(title)
-                    )
-                }, 3000)
+
+
 
 
 
@@ -352,7 +167,7 @@ class BackGroundPlayer: Service() {
             val serviceChannel = NotificationChannel(
                 channelId,
                 "Local Music Player",
-                NotificationManager.IMPORTANCE_DEFAULT
+                NotificationManager.IMPORTANCE_LOW
             ).apply {
                 group = "MNGC"
                 enableLights(false)
@@ -437,6 +252,7 @@ class BackGroundPlayer: Service() {
 
 
 
+    @Suppress("DEPRECATION")
     private fun releaseAudioFocusForAudioService() {
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
             audioFocusRequest?.let {
@@ -448,6 +264,7 @@ class BackGroundPlayer: Service() {
         }
     }
 
+    @Suppress("DEPRECATION")
     private fun requestAudioFocusForAudioService() {
         audioManager = this.getSystemService(AUDIO_SERVICE) as AudioManager
 
@@ -563,10 +380,6 @@ class BackGroundPlayer: Service() {
         override fun onSkipToNext() {
             super.onSkipToNext()
             exoPlayer?.seekToNext()
-//            Handler(Looper.getMainLooper()).postDelayed({
-                // Update metadata and playback state after the delay
-
-                // Update media session metadata
                 mediaSession.setMetadata(
                     mediaMetaDetails(
                         exoPlayer?.currentMediaItem?.mediaMetadata?.title!!.toString(),
@@ -618,7 +431,8 @@ class BackGroundPlayer: Service() {
             mediaButtonEvent?.let {
 
                 if (it.action == Intent.ACTION_MEDIA_BUTTON) {
-                    // Extract the key event from the intent
+
+                    @Suppress("DEPRECATION")
                     val keyEvent: KeyEvent? = it.getParcelableExtra(Intent.EXTRA_KEY_EVENT)
                     keyEvent?.let { event ->
                         when (event.keyCode) {
@@ -713,6 +527,184 @@ class BackGroundPlayer: Service() {
         mediaSession.release()
         exoPlayer?.release()
         super.onDestroy()
+    }
+
+    private inner class ExoPlayerListener(private val mediaUri: String): Player.Listener {
+
+
+        override fun onMediaMetadataChanged(mediaMetadata: MediaMetadata) {
+            super.onMediaMetadataChanged(mediaMetadata)
+            mediaSession.setPlaybackState(
+                BackgroundPlayerStates().setStateToPlaying(
+                    exoPlayer?.currentPosition!!,
+                    exoPlayer?.shuffleModeEnabled!!
+                )
+            )
+            mediaSession.setMetadata(
+                mediaMetaDetails(
+                    exoPlayer?.currentMediaItem?.mediaMetadata?.title!!.toString(),
+                    exoPlayer?.currentMediaItem?.requestMetadata?.mediaUri.toString(),
+                    exoPlayer?.duration!!
+                )
+            )
+            createMediaNotification()
+        }
+
+        override fun onPositionDiscontinuity(
+            oldPosition: Player.PositionInfo,
+            newPosition: Player.PositionInfo,
+            reason: Int
+        ) {
+            super.onPositionDiscontinuity(oldPosition, newPosition, reason)
+            val currentPosition = newPosition.positionMs
+
+            mediaSession.setPlaybackState(
+                BackgroundPlayerStates().setStateToPlaying(
+                    currentPosition,
+                    exoPlayer?.shuffleModeEnabled!!
+                )
+            )
+        }
+
+
+
+        override fun onPlaybackStateChanged(playbackState: Int) {
+            super.onPlaybackStateChanged(playbackState)
+
+            if (playbackState == Player.STATE_ENDED) {
+                mediaSession.setPlaybackState(
+                    BackgroundPlayerStates().setStateToPaused(
+                        exoPlayer?.currentPosition!!,
+                        exoPlayer?.shuffleModeEnabled!!
+                    )
+                )
+            }
+            if (playbackState == Player.STATE_BUFFERING){
+                mediaSession.setPlaybackState(
+                    BackgroundPlayerStates().setStateToLoading(
+                        exoPlayer?.currentPosition!!,
+                        exoPlayer?.shuffleModeEnabled!!
+                    )
+                )
+            }
+        }
+
+        override fun onPlayWhenReadyChanged(playWhenReady: Boolean, reason: Int) {
+            super.onPlayWhenReadyChanged(playWhenReady, reason)
+            if (playWhenReady) {
+
+                requestAudioFocusForAudioService()
+                mediaSession.setPlaybackState(
+                    BackgroundPlayerStates().setStateToPlaying(
+                        exoPlayer?.currentPosition!!,
+                        exoPlayer?.shuffleModeEnabled!!
+                    )
+                )
+                mediaSession.setMetadata(
+                    mediaMetaDetails(
+                        exoPlayer?.currentMediaItem?.mediaMetadata?.title.toString(),
+                        mediaUri,
+                        exoPlayer?.duration!!
+                    )
+                )
+
+            } else {
+                releaseAudioFocusForAudioService()
+                mediaSession.setPlaybackState(
+                    BackgroundPlayerStates().setStateToPaused(
+                        exoPlayer?.currentPosition!!,
+                        exoPlayer?.shuffleModeEnabled!!
+                    )
+                )
+
+
+
+                mediaSession.setMetadata(
+                    mediaMetaDetails(
+                        exoPlayer?.currentMediaItem?.mediaMetadata?.title.toString(),
+                        mediaUri,
+                        exoPlayer?.duration!!
+                    )
+                )
+            }
+
+        }
+
+        override fun onPlayerError(error: PlaybackException) {
+            super.onPlayerError(error)
+            mediaSession.setPlaybackState(
+                BackgroundPlayerStates().setStateToLoading(
+                    error.timestampMs,
+                    exoPlayer?.shuffleModeEnabled!!
+                )
+            )
+        }
+
+        override fun onIsPlayingChanged(isPlaying: Boolean) {
+            super.onIsPlayingChanged(isPlaying)
+            if (isPlaying){
+                mediaSession.setMetadata(
+                    mediaMetaDetails(
+                        exoPlayer?.currentMediaItem?.mediaMetadata?.title!!.toString(),
+                        exoPlayer?.currentMediaItem?.mediaId!!,
+                        exoPlayer?.duration!!
+                    )
+                )
+
+                // Update playback state
+                mediaSession.setPlaybackState(
+                    BackgroundPlayerStates().setStateToPlaying(
+                        exoPlayer?.currentPosition!!,
+                        exoPlayer?.shuffleModeEnabled!!
+                    )
+                )
+            }
+            if (!isPlaying && exoPlayer?.isLoading!!) {
+                mediaSession.setPlaybackState(
+                    BackgroundPlayerStates().setStateToLoading(
+                        exoPlayer?.currentPosition!!,
+                        exoPlayer?.shuffleModeEnabled!!
+                    )
+                )
+            }
+            if (!isPlaying && !exoPlayer?.isLoading!!){
+
+                mediaSession.setPlaybackState(
+                    BackgroundPlayerStates().setStateToPaused(
+                        exoPlayer?.currentPosition!!,
+                        exoPlayer?.shuffleModeEnabled!!
+                    )
+                )
+            }
+        }
+
+        override fun onIsLoadingChanged(isLoading: Boolean) {
+            super.onIsLoadingChanged(isLoading)
+            if (!isLoading){
+                mediaSession.setMetadata(
+                    mediaMetaDetails(
+                        exoPlayer?.currentMediaItem?.mediaMetadata?.title!!.toString(),
+                        exoPlayer?.currentMediaItem?.mediaId!!,
+                        exoPlayer?.duration!!
+                    )
+                )
+
+                mediaSession.setPlaybackState(
+                    BackgroundPlayerStates().setStateToPlaying(
+                        exoPlayer?.currentPosition!!,
+                        exoPlayer?.shuffleModeEnabled!!
+                    )
+                )
+            }
+            else{
+                mediaSession.setPlaybackState(
+                    BackgroundPlayerStates().setStateToLoading(
+                        exoPlayer?.currentPosition!!,
+                        exoPlayer?.shuffleModeEnabled!!
+                    )
+                )
+            }
+        }
     }
 
 }

@@ -3,9 +3,10 @@ package com.das.forui.ui.downloads
 import android.app.Application
 import androidx.core.net.toUri
 import androidx.lifecycle.AndroidViewModel
-import androidx.lifecycle.MutableLiveData
 import androidx.lifecycle.viewModelScope
 import com.das.forui.objectsAndData.DownloadedListData
+import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.launch
 import java.io.File
 import java.text.SimpleDateFormat
@@ -15,18 +16,19 @@ import java.util.Locale
 
 class DownloadsPageViewModel(application: Application) : AndroidViewModel(application) {
 
-    val downloadedListData = MutableLiveData<List<DownloadedListData>>()
+    private val _downloadedListData = MutableStateFlow<List<DownloadedListData>>(emptyList())
+    val downloadedListData: StateFlow<List<DownloadedListData>> = _downloadedListData
 
     fun fetchDataFromDatabase(pathLocation: String, fileType: Int) {
         viewModelScope.launch {
-            val downloadedListData = mutableListOf<DownloadedListData>()
-            val pathOfVideos = File(pathLocation)
-            if (pathOfVideos.exists()) {
-                pathOfVideos.listFiles()?.forEach { file ->
+            val downloadedList = mutableListOf<DownloadedListData>()
+            val pathOfFiles = File(pathLocation)
+            if (pathOfFiles.exists()) {
+                pathOfFiles.listFiles()?.forEach { file ->
                     val lastModified = file.lastModified()
                     val formattedDate = formatDate(lastModified)
                     val fileSizeFormatted = formatFileSize(file.length())
-                    downloadedListData.add(
+                    downloadedList.add(
                         DownloadedListData(
                             title = file.name,
                             pathOfVideo = file.toUri(),
@@ -37,7 +39,7 @@ class DownloadsPageViewModel(application: Application) : AndroidViewModel(applic
                         )
                     )
                 }
-                this@DownloadsPageViewModel.downloadedListData.postValue(downloadedListData)
+                _downloadedListData.value = downloadedList
             }
         }
     }
