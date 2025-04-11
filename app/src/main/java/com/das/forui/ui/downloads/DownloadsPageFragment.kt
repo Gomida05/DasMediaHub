@@ -4,6 +4,9 @@ import android.app.AlertDialog
 import android.app.Application
 import android.content.Context
 import android.content.Intent
+import android.graphics.Bitmap
+import android.graphics.drawable.Drawable
+import android.media.Image
 import android.media.ThumbnailUtils
 import android.net.Uri
 import android.os.Bundle
@@ -59,6 +62,10 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.navigation.NavController
+import coil.compose.AsyncImage
+import com.bumptech.glide.Glide
+import com.bumptech.glide.request.target.CustomTarget
+import com.bumptech.glide.request.transition.Transition
 import com.das.forui.R
 import com.das.forui.databased.PathSaver
 import com.das.forui.objectsAndData.DownloadedListData
@@ -212,6 +219,18 @@ fun DownloadsPageComposable(navController: NavController) {
         mContext: Context,
         navController: NavController
     ) {
+        var bitmap by remember { mutableStateOf<ImageBitmap?>(null) }
+
+        LaunchedEffect(itemDetails.thumbnailUri) {
+            val glideBitmap = Glide.with(mContext)
+                .asBitmap()
+                .load(itemDetails.thumbnailUri)
+                .submit()
+                .get()
+                .asImageBitmap()
+            bitmap = glideBitmap
+        }
+
         Card(
             onClick = {
                 itemClicked(
@@ -239,11 +258,12 @@ fun DownloadsPageComposable(navController: NavController) {
             ) {
                 if (isVideo) {
                     Image(
-                        bitmap = getVideoThumbnail(itemDetails.thumbnailUri),
-                        "",
+                        bitmap = bitmap ?: ImageBitmap.imageResource(R.drawable.smart_display_24dp),
+                        "loaded thumbnail ${itemDetails.fileSize}",
                         modifier = Modifier
                             .size(65.dp, 65.dp)
-                            .align(Alignment.CenterVertically),
+                            .align(Alignment.CenterVertically)
+                            .clip(RoundedCornerShape(4)),
                         alignment = Alignment.Center,
                         contentScale = ContentScale.Crop
                     )
@@ -366,13 +386,30 @@ fun DownloadsPageComposable(navController: NavController) {
 
 
     @Composable
-    fun getVideoThumbnail(fileUri: Uri): ImageBitmap {
-        @Suppress("DEPRECATION")
-        val videoThumbnail = ThumbnailUtils.createVideoThumbnail(fileUri.path!!, MediaStore.Images.Thumbnails.MINI_KIND)
-        return videoThumbnail?.asImageBitmap()
-            ?: //            val icon = Icons.Default.SmartDisplay
-            ImageBitmap.imageResource(
+    fun getVideoThumbnail(
+        mContext: Context,
+        fileUri: Uri
+    ): ImageBitmap {
+
+        var videoThumbnail by remember { mutableStateOf(ImageBitmap.imageResource(mContext.resources,R.drawable.smart_display_24dp)) }
+        Glide.with(LocalContext.current)
+            .asBitmap()
+            .load(fileUri)
+            .error(
                 R.drawable.smart_display_24dp
             )
+            .into(object : CustomTarget<Bitmap>() {
+                override fun onResourceReady(resource: Bitmap, transition: Transition<in Bitmap>?) {
+                    // Pass the loaded bitmap back via the callback
+                    videoThumbnail = resource.asImageBitmap()
+                }
+
+                override fun onLoadCleared(placeholder: Drawable?) {
+
+                }
+
+            })
+        return videoThumbnail
+
     }
 

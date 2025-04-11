@@ -1,6 +1,5 @@
 package com.das.forui.ui.userSettings
 
-import android.app.Activity
 import android.app.UiModeManager
 import android.content.Context
 import android.content.SharedPreferences
@@ -38,7 +37,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.vector.rememberVectorPainter
 import androidx.compose.ui.platform.LocalContext
 import androidx.navigation.NavController
-import com.das.forui.MainActivity
+
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -149,11 +148,11 @@ fun UserSettingComposable(
                         )
                     },
                     onClick = {
+                        expanded = false
                         changeTheme(
                             mContext,
                             AppCompatDelegate.MODE_NIGHT_FOLLOW_SYSTEM
                         )
-                        expanded = false
                     }
                 )
 
@@ -179,17 +178,18 @@ fun UserSettingComposable(
 
 
 
-private fun changeTheme(
+
+fun changeTheme(
     context: Context,
     setUiMode: Int
-) {
-    val sharedPref: SharedPreferences = context.getSharedPreferences("AppPreferences", Context.MODE_PRIVATE)
+): Int {
+    val sharedPref: SharedPreferences =
+        context.getSharedPreferences("AppPreferences", Context.MODE_PRIVATE)
     with(sharedPref.edit()) {
         putInt("isNightModeOn", setUiMode)
         apply()
-    }
-    AppCompatDelegate.setDefaultNightMode(setUiMode)
-    val activity = context as Activity
-    (activity as MainActivity).recreate()
 
+        AppCompatDelegate.setDefaultNightMode(setUiMode)
+    }
+    return setUiMode
 }

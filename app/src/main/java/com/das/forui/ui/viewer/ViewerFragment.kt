@@ -1,19 +1,21 @@
 package com.das.forui.ui.viewer
 
-import android.app.AlertDialog
 import android.app.PendingIntent
 import android.content.Context
 import android.content.Intent
 import android.graphics.Bitmap
 import android.graphics.BitmapFactory
+import android.graphics.Typeface.BOLD
+import android.graphics.Typeface.ITALIC
 import android.graphics.drawable.Drawable
 import android.media.MediaMetadata
 import android.media.session.MediaSession
 import android.os.Bundle
 import android.text.SpannableString
-import android.text.method.LinkMovementMethod
+import android.text.style.BackgroundColorSpan
+import android.text.style.ForegroundColorSpan
+import android.text.style.StyleSpan
 import android.text.style.URLSpan
-import android.widget.TextView
 import android.widget.Toast
 import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.background
@@ -42,6 +44,7 @@ import androidx.compose.material.icons.filled.MoreVert
 import androidx.compose.material.icons.filled.MusicNote
 import androidx.compose.material.icons.filled.Share
 import androidx.compose.material.icons.filled.SmartDisplay
+import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
 import androidx.compose.material3.Card
 import androidx.compose.material3.Icon
@@ -64,12 +67,18 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.rememberVectorPainter
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.text.AnnotatedString
+import androidx.compose.ui.text.SpanStyle
+import androidx.compose.ui.text.buildAnnotatedString
+import androidx.compose.ui.text.font.FontStyle
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.text.style.TextDecoration
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.viewinterop.AndroidView
 import androidx.compose.ui.window.Dialog
-import androidx.core.view.setPadding
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.media3.common.MediaItem
 import androidx.media3.common.Player
@@ -106,6 +115,9 @@ fun VideoPlayerScreen(
     navController: NavController,
     arguments: Bundle?
 ) {
+
+
+    var showAlertDialog by remember { mutableStateOf(false) }
 
     listOfVideosListData.clear()
     val viewModel: ViewerViewModel = viewModel()
@@ -197,19 +209,7 @@ fun VideoPlayerScreen(
                         duration = videoDuration ?: "0:00",
                         viewModel = viewModel,
                         clickForMore = {
-                            askToPlay(
-                                mContext,
-                                videoUrl,
-                                VideosListData(
-                                    videoID,
-                                    videoTitle.toString(),
-                                    videoViews.toString(),
-                                    videoDate.toString(),
-                                    videoDuration.toString(),
-                                    videoChannelName.toString(),
-                                    videoChannelThumbnails.toString()
-                                )
-                            )
+                            showAlertDialog = true
                         },
                         downloadAsVideo = {
                             Toast.makeText(mContext, "Downloading has started", Toast.LENGTH_SHORT)
@@ -264,6 +264,25 @@ fun VideoPlayerScreen(
             }
         }
 
+    }
+
+    if (showAlertDialog){
+        AskToPlay(
+            mContext,
+            videoUrl,
+            VideosListData(
+                videoID,
+                videoTitle.toString(),
+                videoViews.toString(),
+                videoDate.toString(),
+                videoDuration.toString(),
+                videoChannelName.toString(),
+                videoChannelThumbnails.toString()
+            ),
+            onDismissRequest = {
+                showAlertDialog = false
+            }
+        )
     }
 }
 
@@ -402,222 +421,212 @@ fun VideoDetailsComposable(
         downloadAsMusic: (title: String) -> Unit,
         finished: (title: VideoDetails) ->Unit
     ) {
-        Column(
-            modifier = Modifier
-                .fillMaxSize()
-        ) {
-            val isLoading by viewModel.isLoadings
 
-            val dbForFav = DatabaseFavorite(mContext)
+    var showDescriptionDialog by remember { mutableStateOf(false) }
+        val isLoading by viewModel.isLoadings
 
-            val videoDetails by viewModel.videoDetails.observeAsState()
-            var isSaved by remember { mutableStateOf(
+        val dbForFav = DatabaseFavorite(mContext)
+
+        val videoDetails by viewModel.videoDetails.observeAsState()
+        var isSaved by remember {
+            mutableStateOf(
                 dbForFav.isWatchUrlExist(videoId)
             )
-            }
-            val colorForFavIcon =  if (isSystemInDarkTheme()) Color.Unspecified else Color.White
+        }
+        val colorForFavIcon = if (isSystemInDarkTheme()) Color.Unspecified else Color.White
+
+    Column(
+        modifier = Modifier
+            .fillMaxSize()
+    ) {
 
 
 
+        LaunchedEffect(videoId) {
 
-            LaunchedEffect(videoId) {
-
-                viewModel.fetchVideoDetails(videoId)
-            }
-
+            viewModel.fetchVideoDetails(videoId)
+        }
 
 
-            if (isLoading || videoDetails == null ) {
-                SkeletonLoadingLayout()
 
-            } else {
+        if (isLoading || videoDetails == null) {
+            SkeletonLoadingLayout()
 
-                val title = videoDetails?.title.toString()
-                finished(videoDetails!!)
+        } else {
+
+            val title = videoDetails?.title.toString()
+            finished(videoDetails!!)
+
+            Text(
+                text = title,
+                maxLines = 2,
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .combinedClickable(onClick = {
+                        showDescriptionDialog = true
+                    })
+            )
+//                Spacer(modifier = Modifier.height(5.dp))
+            Row(
+                horizontalArrangement = Arrangement.SpaceEvenly,
+                modifier = Modifier
+                    .fillMaxWidth()
+            ) {
+
+                AsyncImage(
+                    model = ImageRequest.Builder(mContext)
+                        .data(channelThumbnailURL)
+                        .crossfade(true)
+                        .error(R.drawable.accpuntimg)
+                        .build(),
+                    contentDescription = "Category Image",
+                    modifier = Modifier
+                        .size(34.dp, 34.dp)
+                        .clip(RoundedCornerShape(50)),
+                    alignment = Alignment.CenterStart,
+                    contentScale = ContentScale.Crop
+                )
+                Text(
+                    text = videoDetails?.channelName.toString(),
+                    maxLines = 1,
+                    textAlign = TextAlign.Start,
+                    fontSize = 14.sp,
+                    modifier = Modifier
+                        .width(142.dp)
+                        .align(Alignment.CenterVertically)
+                        .padding(bottom = 3.dp)
+                )
 
                 Text(
-                    text = title,
-                    maxLines = 2,
+                    text = videoDetails?.viewNumber.toString(),
+                    maxLines = 1,
+                    fontSize = 13.sp,
+                    textAlign = TextAlign.Center,
                     modifier = Modifier
-                        .fillMaxWidth()
-                        .combinedClickable(onClick = {
-                            val descriptions = videoDetails?.description.toString()
-                            val urlPattern = """https?://\S+""".toRegex()
-
-                            val matches = urlPattern.findAll(descriptions)
-
-                            val spannable = SpannableString(descriptions)
-
-                            matches.forEach { match ->
-                                val url = match.value
-                                val startIndex = match.range.first
-                                val endIndex = match.range.last + 1
-                                spannable.setSpan(URLSpan(url), startIndex, endIndex, 0)
-                            }
-
-                            val textView = TextView(mContext).apply {
-                                text = spannable
-                                textSize = 14F
-                                movementMethod = LinkMovementMethod.getInstance()
-                                setPadding(15)
-                            }
-
-                            AlertDialog.Builder(mContext)
-                                .setTitle("Descriptions")
-                                .setView(textView)
-                                .setNegativeButton("Close") { _, _ ->
-                                }
-                                .show()
-                        })
+                        .wrapContentSize(Alignment.Center)
+                        .width(52.dp)
+                        .padding(bottom = 3.dp)
+                        .align(Alignment.CenterVertically)
                 )
-//                Spacer(modifier = Modifier.height(5.dp))
-                Row(
-                    horizontalArrangement = Arrangement.SpaceEvenly,
+                Text(
+                    text = videoDetails?.date.toString(),
+                    maxLines = 1,
+                    textAlign = TextAlign.Start,
+                    fontSize = 13.sp,
                     modifier = Modifier
-                        .fillMaxWidth()
+                        .padding(bottom = 3.dp)
+                        .align(Alignment.CenterVertically)
+                )
+            }
+            Spacer(modifier = Modifier.height(8.dp))
+            Row(
+                horizontalArrangement = Arrangement.SpaceAround,
+                modifier = Modifier
+                    .fillMaxWidth()
+            ) {
+
+                Button(
+                    onClick = {
+                        val shareIntent = Intent(Intent.ACTION_SEND).apply {
+                            type = "text/plain"
+                            putExtra(
+                                Intent.EXTRA_TEXT,
+                                "https://www.youtube.com/watch?v=${videoId}&feature=shared"
+                            )
+                        }
+
+                        val chooser = Intent.createChooser(shareIntent, "Share via")
+                        mContext.startActivity(chooser)
+                    },
+                    shape = RoundedCornerShape(25)
                 ) {
-
-                    AsyncImage(
-                        model = ImageRequest.Builder(mContext)
-                            .data(channelThumbnailURL)
-                            .crossfade(true)
-                            .error(R.drawable.accpuntimg)
-                            .build(),
-                        contentDescription = "Category Image",
-                        modifier = Modifier
-                            .size(34.dp, 34.dp)
-                            .clip(RoundedCornerShape(50)),
-                        alignment = Alignment.CenterStart,
-                        contentScale = ContentScale.Crop
-                    )
-                    Text(
-                        text = videoDetails?.channelName.toString(),
-                        maxLines = 1,
-                        textAlign = TextAlign.Start,
-                        fontSize = 14.sp,
-                        modifier = Modifier
-                            .width(142.dp)
-                            .align(Alignment.CenterVertically)
-                            .padding(bottom = 3.dp)
-                    )
-
-                    Text(
-                        text = videoDetails?.viewNumber.toString(),
-                        maxLines = 1,
-                        fontSize = 13.sp,
-                        textAlign = TextAlign.Center,
-                        modifier = Modifier
-                            .wrapContentSize(Alignment.Center)
-                            .width(52.dp)
-                            .padding(bottom = 3.dp)
-                            .align(Alignment.CenterVertically)
-                    )
-                    Text(
-                        text = videoDetails?.date.toString(),
-                        maxLines = 1,
-                        textAlign = TextAlign.Start,
-                        fontSize = 13.sp,
-                        modifier = Modifier
-                            .padding(bottom = 3.dp)
-                            .align(Alignment.CenterVertically)
+                    Icon(
+                        painter = rememberVectorPainter(Icons.Default.Share),
+                        ""
                     )
                 }
-                Spacer(modifier = Modifier.height(8.dp))
-                Row(
-                    horizontalArrangement = Arrangement.SpaceAround,
-                    modifier = Modifier
-                        .fillMaxWidth()
-                ) {
-
-                    Button(
-                        onClick = {
-                            val shareIntent = Intent(Intent.ACTION_SEND).apply {
-                                type = "text/plain"
-                                putExtra(Intent.EXTRA_TEXT, "https://www.youtube.com/watch?v=${videoId}&feature=shared")
-                            }
-
-                            val chooser = Intent.createChooser(shareIntent, "Share via")
-                            mContext.startActivity(chooser)
-                        },
-                        shape = RoundedCornerShape(25)
-                    ) {
-                        Icon(
-                            painter = rememberVectorPainter(Icons.Default.Share),
-                            ""
-                        )
-                    }
-                    Button(
-                        onClick = {
-                            if (isSaved){
-                                dbForFav.deleteWatchUrl(videoId)
-                                isSaved = false
-                            }
-                            else{
-                                dbForFav.insertData(
-                                    videoId, title, videoDetails?.date.toString(),
-                                    videoDetails?.viewNumber.toString(), videoDetails?.channelName.toString(),
-                                    duration, channelThumbnailURL
-                                )
-                                isSaved = true
-                            }
-                        },
-                        shape = RoundedCornerShape(25)
-                    ) {
-                        Icon(
-                            painter = rememberVectorPainter(
-                                if (isSaved) {
-                                    Icons.Filled.Favorite
-                                } else {
-                                    Icons.Default.FavoriteBorder
-                                }
-                            ),
-                            contentDescription = if (isSaved) "Saved" else "Not Saved",
-                            tint = if (isSaved) Color.Red else colorForFavIcon
-                        )
-                    }
-                    Button(
-                        onClick = {
-                            downloadAsMusic(title)
-                        },
-                        shape = RoundedCornerShape(25)
-                    ) {
-                        Icon(
-                            painter = rememberVectorPainter(Icons.Default.MusicNote),
-                            ""
-                        )
-                    }
-
-                    Button(
-                        onClick = {
-                            downloadAsVideo(
-                                title
+                Button(
+                    onClick = {
+                        if (isSaved) {
+                            dbForFav.deleteWatchUrl(videoId)
+                            isSaved = false
+                        } else {
+                            dbForFav.insertData(
+                                videoId,
+                                title,
+                                videoDetails?.date.toString(),
+                                videoDetails?.viewNumber.toString(),
+                                videoDetails?.channelName.toString(),
+                                duration,
+                                channelThumbnailURL
                             )
-                        },
-                        shape = RoundedCornerShape(25)
-                    ) {
-                        Icon(
-                            painter = rememberVectorPainter(Icons.Default.SmartDisplay),
-                            ""
-                        )
-                    }
+                            isSaved = true
+                        }
+                    },
+                    shape = RoundedCornerShape(25)
+                ) {
+                    Icon(
+                        painter = rememberVectorPainter(
+                            if (isSaved) {
+                                Icons.Filled.Favorite
+                            } else {
+                                Icons.Default.FavoriteBorder
+                            }
+                        ),
+                        contentDescription = if (isSaved) "Saved" else "Not Saved",
+                        tint = if (isSaved) Color.Red else colorForFavIcon
+                    )
+                }
+                Button(
+                    onClick = {
+                        downloadAsMusic(title)
+                    },
+                    shape = RoundedCornerShape(25)
+                ) {
+                    Icon(
+                        painter = rememberVectorPainter(Icons.Default.MusicNote),
+                        ""
+                    )
+                }
 
-                    Button(
-                        onClick = {
-                            clickForMore()
-                        },
-                        shape = RoundedCornerShape(25)
-                    ) {
-                        Icon(
-                            painter = rememberVectorPainter(Icons.AutoMirrored.Default.More),
-                            ""
+                Button(
+                    onClick = {
+                        downloadAsVideo(
+                            title
                         )
-                    }
+                    },
+                    shape = RoundedCornerShape(25)
+                ) {
+                    Icon(
+                        painter = rememberVectorPainter(Icons.Default.SmartDisplay),
+                        ""
+                    )
+                }
+
+                Button(
+                    onClick = {
+                        clickForMore()
+                    },
+                    shape = RoundedCornerShape(25)
+                ) {
+                    Icon(
+                        painter = rememberVectorPainter(Icons.AutoMirrored.Default.More),
+                        ""
+                    )
                 }
             }
-
-
         }
     }
+
+    if (showDescriptionDialog && !videoDetails?.description.isNullOrEmpty()){
+        ShowDescriptionDialog(
+            videoDetails?.description!!
+        ){
+            showDescriptionDialog = false
+        }
+    }
+
+}
 
 
 
@@ -638,7 +647,7 @@ fun CategoryItems(
     val channelThumbnails = searchItem.channelThumbnailsUrl
 
     var showDialog by remember { mutableStateOf(false) }
-
+    var showInfoDialog by remember { mutableStateOf(false) }
 
     Box(
         modifier = Modifier
@@ -699,13 +708,7 @@ fun CategoryItems(
 
                 IconButton(
                     onClick = {
-                        AlertDialog.Builder(context)
-                            .setTitle("This feature is currently under development!!!")
-                            .setPositiveButton("Okay") { _, _ -> }
-                            .setIcon(R.drawable.setting)
-                            .setMessage("Thank you for understanding!")
-                            .setIcon(R.mipmap.under_development)
-                            .show()
+                        showInfoDialog = true
                     }
                 ) {
                     AsyncImage(
@@ -782,6 +785,13 @@ fun CategoryItems(
         }
     }
 
+    if (showInfoDialog){
+        AlertDialogForUser{
+            showInfoDialog = false
+        }
+
+    }
+
     if (showDialog) {
         ShowAlertDialog(
             mContext = context,
@@ -824,6 +834,53 @@ private fun playThisOne(
 
 }
 
+
+@Composable
+private fun ShowDescriptionDialog(
+    text: String,
+    onDismissRequest: () -> Unit
+){
+
+    val urlPattern = """https?://\S+""".toRegex()
+
+    val matches = urlPattern.findAll(text)
+
+    val spannable = SpannableString(text)
+
+    matches.forEach { match ->
+        val url = match.value
+        val startIndex = match.range.first
+        val endIndex = match.range.last + 1
+        spannable.setSpan(URLSpan(url), startIndex, endIndex, 0)
+    }
+
+    AlertDialog(
+        onDismissRequest = onDismissRequest,
+        title = {
+            Text(
+                "Descriptions"
+            )
+        },
+        text = {
+            Text(
+                text = spannable.toAnnotatedString(),
+                fontSize = 14.sp,
+                modifier = Modifier
+                    .padding(10.dp)
+            )
+        },
+        confirmButton = {
+            TextButton(
+                onClick = onDismissRequest
+            ) {
+                Text("Close")
+            }
+        }
+
+
+    )
+
+}
 @Composable
 private fun ShowAlertDialog(
     mContext: Context,
@@ -873,8 +930,7 @@ private fun ShowAlertDialog(
                             MainApplication().getListItemsStreamUrls(
                                 selectedItem,
                                 onSuccess = { result ->
-                                    val playIntent =
-                                        Intent(mContext, AudioServiceFromUrl::class.java).apply {
+                                    val playIntent = Intent(mContext, AudioServiceFromUrl::class.java).apply {
                                             action = ACTION_START
                                             putExtra("videoId", selectedItem.videoId)
                                             putExtra("media_url", result.audioUrl)
@@ -1094,30 +1150,77 @@ fun SkeletonLoadingLayout() {
     }
 
 
-private fun askToPlay(
+@Composable
+private fun AlertDialogForUser(
+    onDismissRequest: () ->Unit
+){
+    AlertDialog(
+        onDismissRequest= onDismissRequest,
+        title = {
+            Text("This feature is currently under development!!!")
+        },
+        text = {
+            Text("Thank you for understanding!")
+        },
+        icon = {
+            Icon(
+                painter = painterResource(R.mipmap.under_development),
+                ""
+            )
+        },
+        confirmButton = {
+            TextButton(
+                onClick = {
+                    onDismissRequest()
+                },
+                ) {
+                Text("Okay")
+            }
+        }
+    )
+}
+
+
+@Composable
+private fun AskToPlay(
         mContext: Context,
         url: String,
-        video: VideosListData
+        video: VideosListData,
+        onDismissRequest: () -> Unit
 ) {
-
-    AlertDialog.Builder(mContext)
-        .setTitle("Do you want to play it in the background?")
-        .setPositiveButton("yes") { _, _ ->
-            val playIntent =
-                Intent(mContext, AudioServiceFromUrl::class.java).apply {
-                    action = ACTION_START
-                    putExtra("videoId", video.videoId)
-                    putExtra("media_url", url)
-                    putExtra("title", video.title)
-                    putExtra("channelName", video.channelName)
-                    putExtra("viewNumber", video.views)
-                    putExtra("videoDate", video.dateOfVideo)
-                    putExtra("duration", video.duration)
-                }
-            mContext.startService(playIntent)
+    val playIntent = Intent(mContext, AudioServiceFromUrl::class.java).apply {
+            action = ACTION_START
+            putExtra("videoId", video.videoId)
+            putExtra("media_url", url)
+            putExtra("title", video.title)
+            putExtra("channelName", video.channelName)
+            putExtra("viewNumber", video.views)
+            putExtra("videoDate", video.dateOfVideo)
+            putExtra("duration", video.duration)
         }
-        .setNegativeButton("No") { _, _ -> }
-        .show()
+    AlertDialog(
+        onDismissRequest = onDismissRequest,
+        title = {
+            Text("Do you want to play it in the background?")
+        },
+        confirmButton = {
+            TextButton(
+                onClick = {
+                    mContext.startService(playIntent)
+                    onDismissRequest()
+                }
+            ) {
+                Text("yes")
+            }
+        },
+        dismissButton = {
+            TextButton(
+                onClick = onDismissRequest
+            ) {
+                Text("no")
+            }
+        }
+    )
 
 }
 
@@ -1194,4 +1297,54 @@ object GlobalVideoList {
     val listOfVideosListData = mutableListOf<VideosListData>()
     val previousVideosListData = mutableListOf<VideosListData>()
     val bundles = Bundle()
+}
+
+
+fun SpannableString.toAnnotatedString(): AnnotatedString {
+    return buildAnnotatedString {
+        append(this@toAnnotatedString.toString())
+        getSpans(0, length, Any::class.java).forEach { span ->
+            val start = getSpanStart(span)
+            val end = getSpanEnd(span)
+            when (span) {
+                is ForegroundColorSpan -> addStyle(
+                    style = SpanStyle(color = Color(span.foregroundColor)),
+                    start = start,
+                    end = end
+                )
+                is BackgroundColorSpan -> addStyle(
+                    style = SpanStyle(background = Color(span.backgroundColor)),
+                    start = start,
+                    end = end
+                )
+                is StyleSpan -> when (span.style) {
+                    BOLD -> addStyle(
+                        style = SpanStyle(fontWeight = FontWeight.Bold),
+                        start = start,
+                        end = end
+                    )
+                    ITALIC -> addStyle(
+                        style = SpanStyle(fontStyle = FontStyle.Italic),
+                        start = start,
+                        end = end
+                    )
+                    // Add more style span cases as needed
+                }
+                is URLSpan -> {
+                    addStyle(
+                        style = SpanStyle(color = Color.Blue, textDecoration = TextDecoration.Underline),
+                        start = start,
+                        end = end
+                    )
+                    addStringAnnotation(
+                        tag = "link",
+                        annotation = span.url,
+                        start = start,
+                        end = end
+                    )
+                }
+                // Add more span cases as needed
+            }
+        }
+    }
 }
