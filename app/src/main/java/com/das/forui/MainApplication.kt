@@ -6,8 +6,12 @@ import com.chaquo.python.Python
 import com.chaquo.python.Python.getInstance
 import com.chaquo.python.android.AndroidPlatform
 import com.das.forui.MainApplication.Youtuber.pythonInstant
-import com.das.forui.objectsAndData.ItemsStreamUrlsForMediaItemData
-import com.das.forui.objectsAndData.VideosListData
+import com.das.forui.objectsAndData.ForUIKeyWords.YOUTUBE_HOST_1
+import com.das.forui.objectsAndData.ForUIKeyWords.YOUTUBE_HOST_2
+import com.das.forui.objectsAndData.ForUIKeyWords.YOUTUBE_HOST_3
+import com.das.forui.objectsAndData.ForUIKeyWords.YOUTUBE_REGEX
+import com.das.forui.objectsAndData.ForUIDataClass.ItemsStreamUrlsForMediaItemData
+import com.das.forui.objectsAndData.ForUIDataClass.VideosListData
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
@@ -19,23 +23,15 @@ import java.util.Locale
 import java.util.regex.Pattern
 
 class MainApplication: Application() {
+
     override fun onCreate() {
         super.onCreate()
-        Thread {
+        CoroutineScope(Dispatchers.IO).launch {
             if (!Python.isStarted()) {
-                Python.start(AndroidPlatform(this))
+                Python.start(AndroidPlatform(this@MainApplication))
             }
         }.start()
-
-//        val sharedPref: SharedPreferences = getSharedPreferences("AppPreferences", Context.MODE_PRIVATE)
-//        val currentUiMode = resources.configuration.uiMode and Configuration.UI_MODE_NIGHT_MASK
-//        val uiModeType = sharedPref.getInt("isNightModeOn", currentUiMode)
-//        AppCompatDelegate.setDefaultNightMode(uiModeType)
     }
-
-
-
-
 
 
     fun getListItemsStreamUrls(
@@ -43,13 +39,14 @@ class MainApplication: Application() {
         onSuccess: (ItemsStreamUrlsForMediaItemData) -> Unit,
         onFailure: (String) -> Unit
     ) {
-        try{
+        try {
             CoroutineScope(Dispatchers.IO).launch {
                 val mainFile = pythonInstant.getModule("main")
                 val variable = mainFile["get_audio_url"]
                 var details: ItemsStreamUrlsForMediaItemData?
 
-                val result = variable?.call("https://www.youtube.com/watch?v=${data.videoId}").toString()
+                val result =
+                    variable?.call("https://www.youtube.com/watch?v=${data.videoId}").toString()
 
                 if (result != "False") {
                     // Switch to the main thread for UI updates
@@ -73,48 +70,67 @@ class MainApplication: Application() {
                     }
                 }
             }
-        }catch (e: Exception){
+        } catch (e: Exception) {
             onFailure("Something went wrong with result: ${e.message}")
         }
+
     }
+
+
 
 
 
     object Youtuber {
         val pythonInstant = getInstance()
-        fun extractor(url: String): String? {
-            val regex = "(?<=v=|/)([a-zA-Z0-9_-]{11})(?=&|\$|/)"
-            val pattern = Regex(regex)
+
+        /**
+         * Extracts the YouTube video ID from a given URL using a predefined regex.
+         *
+         * @param url Full YouTube URL (e.g., "https://www.youtube.com/watch?v=dQw4w9WgXcQ")
+         * @return Video ID if found, or null if extraction fails.
+         */
+        fun youtubeExtractor(url: String): String? {
+
+            val pattern = Regex(YOUTUBE_REGEX)
             val match = pattern.find((url))
             return match?.groups?.get(1)?.value
         }
 
+        /**
+         * Validates if the provided URL is a valid YouTube video link.
+         *
+         * Supports:
+         * - Standard YouTube URLs (youtube.com/watch?v=...)
+         * - Shortened URLs (youtu.be/VIDEO_ID)
+         *
+         * @param youTubeUrl URL to validate
+         * @return true if the URL is a valid YouTube video link, false otherwise.
+        */
         fun isValidYoutubeURL(youTubeUrl: String): Boolean {
             try {
                 val trimmedUrl = youTubeUrl.trim()
                 val cleanedUrl =
-                    if (trimmedUrl.endsWith("&feature=shared")) trimmedUrl.removeSuffix("&feature=shared") else trimmedUrl
+                    if (trimmedUrl.endsWith("&feature=shared"))
+                    trimmedUrl.removeSuffix("&feature=shared") else trimmedUrl
 
                 val url = URL(cleanedUrl)
 
                 val host = url.host
-                if (host == "www.youtube.com" || host == "youtube.com") {
+                if (host == YOUTUBE_HOST_1 || host == YOUTUBE_HOST_2) {
                     val videoPattern = Pattern.compile("^/watch\\?v=([A-Za-z0-9_-]{11})$")
-                    val matcher =
-                        videoPattern.matcher(url.path + "?" + url.query)
+                    val matcher = videoPattern.matcher("${url.path}?${url.query}")
                     return matcher.matches()
-                } else if (host == "youtu.be") {
+                } else if (host == YOUTUBE_HOST_3) {
                     // Shortened YouTube URL (youtu.be/VIDEO_ID)
                     val videoPattern = Pattern.compile("^/([A-Za-z0-9_-]{11})$")
                     val matcher = videoPattern.matcher(url.path)  // Check the path only
                     return matcher.matches()
                 }
 
-                // If not youtube.com or youtu.be, return false
                 return false
             } catch (e: Exception) {
-                println("yes with me3 ${e.message}")
-//            alertUserError(e.message)
+                println("error on isValidYoutubeUrl: ${e.message}")
+
                 return false
             }
         }
@@ -123,20 +139,36 @@ class MainApplication: Application() {
          * Returns data format like this dd/MMM/yyyy ENGLISH
          */
         fun formatDate(dateStr: String): String {
-            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
-                val inputFormatter = DateTimeFormatter.ISO_OFFSET_DATE_TIME
+            return try {
+                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+                    val inputFormatter = DateTimeFormatter.ISO_OFFSET_DATE_TIME
+                    val zonedDateTime = ZonedDateTime.parse(dateStr, inputFormatter)
+                    val outputFormatter = DateTimeFormatter.ofPattern("dd MMM yyyy", Locale.ENGLISH)
 
-                val zonedDateTime = ZonedDateTime.parse(dateStr, inputFormatter)
+                    zonedDateTime.format(outputFormatter)
+                } else {
+                    val inputFormat =
+                        java.text.SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ssX", Locale.ENGLISH)
+                    val outputFormat = java.text.SimpleDateFormat("dd MMM yyyy", Locale.ENGLISH)
 
-                val outputFormatter = DateTimeFormatter.ofPattern("dd MMM yyyy", Locale.ENGLISH)
-
-                return zonedDateTime.format(outputFormatter)
-            }
-            else{
-                return dateStr
+                    outputFormat.format(inputFormat.parse(dateStr) ?: return dateStr)
+                }
+            } catch (e: Exception) {
+                println("Found an error right here: ${e.message}")
+                dateStr
             }
         }
 
+
+        /**
+         * Converts a number of views into a shortened string format:
+         * - 1,200 → 1.2K
+         * - 1,200,000 → 1.2M
+         * - 1,200,000,000 → 1.2B
+         *
+         * @param views Number of views
+         * @return Formatted string with K, M, or B suffix
+         */
         fun formatViews(views: Long): String {
             return when {
                 views >= 1_000_000_000 -> "%.1fB".format(views / 1_000_000_000.0)

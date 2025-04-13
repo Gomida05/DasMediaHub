@@ -1,10 +1,9 @@
 package com.das.forui.ui.downloads
 
-import android.app.Application
 import androidx.core.net.toUri
-import androidx.lifecycle.AndroidViewModel
+import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import com.das.forui.objectsAndData.DownloadedListData
+import com.das.forui.objectsAndData.ForUIDataClass.DownloadedListData
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.launch
@@ -14,7 +13,7 @@ import java.util.Date
 import java.util.Locale
 
 
-class DownloadsPageViewModel(application: Application) : AndroidViewModel(application) {
+class DownloadsPageViewModel : ViewModel() {
 
     private val _downloadedListData = MutableStateFlow<List<DownloadedListData>>(emptyList())
     val downloadedListData: StateFlow<List<DownloadedListData>> = _downloadedListData

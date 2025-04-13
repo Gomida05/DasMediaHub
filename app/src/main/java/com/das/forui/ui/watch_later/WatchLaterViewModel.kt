@@ -8,7 +8,7 @@ import androidx.compose.runtime.State
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
 import com.das.forui.databased.DatabaseFavorite
-import com.das.forui.objectsAndData.SavedVideosListData
+import com.das.forui.objectsAndData.ForUIDataClass.SavedVideosListData
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext

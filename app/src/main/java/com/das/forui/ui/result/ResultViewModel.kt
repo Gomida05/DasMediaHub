@@ -5,7 +5,7 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.das.forui.MainApplication.Youtuber.pythonInstant
-import com.das.forui.objectsAndData.SearchResultFromMain
+import com.das.forui.objectsAndData.ForUIDataClass.SearchResultFromMain
 import com.google.gson.Gson
 import com.google.gson.reflect.TypeToken
 import kotlinx.coroutines.Dispatchers

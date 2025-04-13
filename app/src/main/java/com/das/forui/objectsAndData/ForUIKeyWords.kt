@@ -6,7 +6,7 @@ object ForUIKeyWords {
     const val ACTION_KILL = "com.das.forui.kill"
     const val ACTION_ADD_TO_WATCH_LATER = "com.das.forui.ACTION_ADD_TO_WATCH_LATER"
     const val PLAY_HERE_VIDEO = "com.das.forui.PLAY_HERE_VIDEO"
-    const val MEDIA_TITLE = "com.das.forui.MEDIA_TITLE"
+
     const val SET_SHUFFLE_MODE = "com.das.forui.SET_SHUFFLE_MODE"
 
     const val NEW_INTENT_FOR_VIEWER = "com.das.forui.NEW_INTENT_FOR_VIEWER"
@@ -16,4 +16,9 @@ object ForUIKeyWords {
 
     const val DOWNLOADER_NOTIFICATION_CHANNEL = "com.das.forui.DOWNLOADER_NOTIFICATION_CHANNEL"
 
+
+    const val YOUTUBE_REGEX = "(?<=v=|/)([a-zA-Z0-9_-]{11})(?=&|\$|/)"
+    const val YOUTUBE_HOST_1 = "www.youtube.com"
+    const val YOUTUBE_HOST_2 = "youtube.com"
+    const val YOUTUBE_HOST_3 = "youtu.be"
 }

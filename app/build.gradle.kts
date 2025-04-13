@@ -70,9 +70,9 @@ android {
             version = "3.13"
         }
     }
-
-
 }
+
+
 chaquopy {
     defaultConfig {
         version = "3.13"
@@ -97,10 +97,10 @@ dependencies {
 
 
     implementation("io.coil-kt:coil-compose:2.2.2")
+    implementation("io.coil-kt:coil-video:2.4.0")
     implementation("androidx.media3:media3-session:1.6.0")
     implementation("androidx.compose.runtime:runtime-livedata:1.7.8")
     implementation("androidx.navigation:navigation-compose:2.8.9")
-    implementation("androidx.compose.material:material:1.7.8")
     implementation("androidx.compose.ui:ui-viewbinding:1.7.8")
 
     //Material 3
@@ -124,7 +124,7 @@ dependencies {
 
     implementation("androidx.lifecycle:lifecycle-viewmodel-compose:2.8.7")
 
-    implementation("androidx.core:core-ktx:1.15.0")
+    implementation("androidx.core:core-ktx:1.16.0")
     implementation("androidx.media:media:1.7.0")
 //    implementation("androidx.appcompat:appcompat:1.7.0")
 
@@ -136,7 +136,7 @@ dependencies {
 
     implementation("com.github.bumptech.glide:glide:4.16.0")
     implementation("androidx.compose.runtime:runtime-android:1.7.8")
-    implementation("androidx.core:core-ktx:1.15.0")
+    implementation("androidx.core:core-ktx:1.16.0")
     implementation("androidx.appcompat:appcompat:1.7.0")
 
     implementation("androidx.constraintlayout:constraintlayout:2.2.1")

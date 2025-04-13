@@ -1,6 +1,5 @@
 package com.das.forui.ui.settings
 
-import android.app.AlertDialog
 import android.content.Context
 import android.content.Intent
 import android.net.Uri
@@ -8,11 +7,10 @@ import android.widget.Toast
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.wrapContentSize
-import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowForward
@@ -21,30 +19,29 @@ import androidx.compose.material.icons.filled.ColorLens
 import androidx.compose.material.icons.filled.Folder
 import androidx.compose.material.icons.filled.Info
 import androidx.compose.material.icons.filled.Update
+import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Card
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.documentfile.provider.DocumentFile
 import androidx.navigation.NavController
-import com.das.forui.databased.PathSaver
-import com.das.forui.objectsAndData.SettingsDataClass
-
+import com.das.forui.databased.PathSaver.setMoviesDownloadPath
+import com.das.forui.databased.PathSaver.setAudioDownloadPath
 
 
 @Composable
@@ -52,51 +49,9 @@ fun SettingsComposable(
   navController: NavController
 ) {
   val context = LocalContext.current
-  val settingsResults = remember { mutableStateOf<List<SettingsDataClass>>(emptyList()) }
 
-  val item = listOf(
-    "Account",
-    "Appearance",
-    "Change Downloading Location",
-    "Check for update",
-    "About Us"
-  )
-  val leftIcons = listOf(
-    Icons.Default.AccountCircle,
-    Icons.Default.ColorLens,
-    Icons.Default.Folder,
-    Icons.Default.Update,
-    Icons.Default.Info
-  )
-
-  val rightIcons = listOf(
-    Icons.AutoMirrored.Default.ArrowForward,
-    Icons.AutoMirrored.Default.ArrowForward,
-    Icons.AutoMirrored.Default.ArrowForward,
-    Icons.AutoMirrored.Default.ArrowForward,
-    Icons.AutoMirrored.Default.ArrowForward
-  )
-  val allItems = item.zip(leftIcons).zip(rightIcons) { titleIconPair, rightIcon ->
-    SettingsDataClass(
-      title = titleIconPair.first,
-      leftIcon = titleIconPair.second,
-      rightIcon = rightIcon
-    )
-  }
-  settingsResults.value = allItems
-  var selectedFolder by remember { mutableIntStateOf(0) }
-
-  if (selectedFolder != 0){
-    SelectFolder(selectedFolder, context)
-  }
-  Scaffold { paddingValue ->
-
-
-    Box(
-      modifier = Modifier
-        .wrapContentSize(Alignment.TopCenter)
-        .padding(paddingValue)
-    ) {
+  Scaffold(
+    topBar = {
       Text(
         text = "Setting",
         style = MaterialTheme.typography.headlineLarge,
@@ -104,30 +59,24 @@ fun SettingsComposable(
         modifier = Modifier
           .fillMaxWidth()
           .padding(top = 50.dp)
-          .align(Alignment.Center)
       )
     }
+  ) { paddingValue ->
 
-    LazyColumn(
+
+
+    Column(
       modifier = Modifier
-        .wrapContentSize(Alignment.Center)
-        .padding(top = 150.dp)
         .fillMaxWidth()
+        .padding(paddingValue)
+        .padding(top = 65.dp)
+        .wrapContentSize(Alignment.Center)
     ) {
-
-      items(settingsResults.value) { settingsItem ->
-        CategoryItems(
-          mContext = context,
-          navController = navController,
-          title = settingsItem.title,
-          leftHandIcon = settingsItem.leftIcon,
-          rightHandIcon = settingsItem.rightIcon,
-          openFileExplore = {
-            selectedFolder = it
-          }
-        )
-
-      }
+      Account(context)
+      Appearance(navController)
+      Change_Downloading_Location(context)
+      Check_for_update(context)
+      About_Us(context)
 
 
     }
@@ -136,48 +85,66 @@ fun SettingsComposable(
 }
 
 
-@Composable
-fun SelectFolder(type: Int, context: Context){
 
-  val selectFor = if (type == 1) "video" else "audio"
-
-  rememberLauncherForActivityResult(
-    contract = ActivityResultContracts.OpenDocumentTree(),
-    onResult = { uri: Uri? ->
-      uri?.let {
-
-        getFolderPathFromUri(context, it, selectFor)
-      }
-    }
-  )
-}
 
 
 
 @Composable
-fun CategoryItems(
-    mContext: Context,
-    navController: NavController,
-    title: String,
-    leftHandIcon: ImageVector,
-    rightHandIcon: ImageVector,
-    openFileExplore: (isForVideos: Int) -> Unit
-  ) {
-
+private fun Account(mContext: Context){
   Card(
     onClick = {
-      gotClicks(
-        mContext,
-        navController,
-        title,
-        openFileExplore = {
-          openFileExplore(it)
-        }
-      )
+      showDialogs(mContext)
     },
     modifier = Modifier
       .fillMaxWidth()
-      .padding(top = 2.dp, bottom = 2.dp)
+      .padding(4.dp)
+      .clip(RoundedCornerShape(25))
+
+  ) {
+
+
+    Box(
+      modifier = Modifier
+        .fillMaxWidth()
+        .align(Alignment.CenterHorizontally)
+        .padding(25.dp)
+    ) {
+      Icon(
+        imageVector = Icons.Default.AccountCircle,
+        "",
+        modifier = Modifier
+          .align(Alignment.CenterStart)
+      )
+      Text(
+        text = "Account",
+        fontSize = 16.sp,
+        style = MaterialTheme.typography.headlineSmall,
+        modifier = Modifier.align(Alignment.Center)
+      )
+      Icon(
+        imageVector = Icons.AutoMirrored.Default.ArrowForward,
+        "",
+        modifier = Modifier.align(Alignment.CenterEnd)
+      )
+    }
+
+  }
+}
+
+
+@Composable
+private fun Change_Downloading_Location(mContext: Context){
+
+
+  var showAlertDialog by remember { mutableStateOf(false) }
+  Card(
+    onClick = {
+      showAlertDialog = true
+
+    },
+    modifier = Modifier
+      .fillMaxWidth()
+      .padding(4.dp)
       .clip(RoundedCornerShape(30))
 
   ) {
@@ -187,66 +154,160 @@ fun CategoryItems(
       modifier = Modifier
         .fillMaxWidth()
         .align(Alignment.CenterHorizontally)
-        .padding(35.dp)
+        .padding(25.dp)
     ) {
       Icon(
-        imageVector = leftHandIcon,
+        imageVector = Icons.Default.Folder,
         "",
         modifier = Modifier
           .align(Alignment.CenterStart)
       )
       Text(
-        text = title,
+        text = "Change Downloading Location",
         fontSize = 16.sp,
         style = MaterialTheme.typography.headlineSmall,
         modifier = Modifier.align(Alignment.Center)
       )
       Icon(
-        rightHandIcon,
+        imageVector = Icons.AutoMirrored.Default.ArrowForward,
         "",
         modifier = Modifier.align(Alignment.CenterEnd)
       )
     }
 
   }
+  FolderPickerDialog(mContext, showAlertDialog, onDismiss = { showAlertDialog = false })
 
 }
 
 
-private fun gotClicks(
-  mContext:Context,
-  navController: NavController,
-  title: String,
-  openFileExplore: (isForVideos: Int) -> Unit
+@Composable
+private fun Check_for_update(mContext: Context){
+  Card(
+    onClick = {
+      showDialogs(mContext)
+    },
+    modifier = Modifier
+      .fillMaxWidth()
+      .padding(4.dp)
+      .clip(RoundedCornerShape(30))
+
   ) {
 
-  when (title) {
-    "Account" -> {
-      showDialogs(mContext,"coming soon")
-    }
 
-    "Change Downloading Location" -> {
-      alertDialogPathChoose(
-        mContext,
-        openFileExplore= {
-          openFileExplore(it)
-        }
+    Box(
+      modifier = Modifier
+        .fillMaxWidth()
+        .align(Alignment.CenterHorizontally)
+        .padding(25.dp)
+    ) {
+      Icon(
+        imageVector = Icons.Default.Update,
+        "",
+        modifier = Modifier
+          .align(Alignment.CenterStart)
+      )
+      Text(
+        text = "Check for update",
+        fontSize = 16.sp,
+        style = MaterialTheme.typography.headlineSmall,
+        modifier = Modifier.align(Alignment.Center)
+      )
+      Icon(
+        imageVector = Icons.AutoMirrored.Default.ArrowForward,
+        "",
+        modifier = Modifier.align(Alignment.CenterEnd)
       )
     }
 
-    "Check for update" -> {
-      showDialogs(mContext,"coming soon")
-    }
-
-    "Appearance" -> {
-      navController.navigate("user Setting")
-    }
-
-    "About Us" -> {
-      goToWeb(mContext)
-    }
   }
 }
+
+@Composable
+private fun Appearance(navController: NavController){
+  Card(
+    onClick = {
+      navController.navigate("user Setting")
+    },
+    modifier = Modifier
+      .fillMaxWidth()
+      .padding(4.dp)
+      .clip(RoundedCornerShape(30))
+
+  ) {
+
+
+    Box(
+      modifier = Modifier
+        .fillMaxWidth()
+        .align(Alignment.CenterHorizontally)
+        .padding(25.dp)
+    ) {
+      Icon(
+        imageVector = Icons.Default.ColorLens,
+        "",
+        modifier = Modifier
+          .align(Alignment.CenterStart)
+      )
+      Text(
+        text = "Appearance",
+        fontSize = 16.sp,
+        style = MaterialTheme.typography.headlineSmall,
+        modifier = Modifier.align(Alignment.Center)
+      )
+      Icon(
+        imageVector = Icons.AutoMirrored.Default.ArrowForward,
+        "",
+        modifier = Modifier.align(Alignment.CenterEnd)
+      )
+    }
+
+  }
+}
+
+@Composable
+private fun About_Us(mContext: Context){
+  Card(
+    onClick = {
+      goToWeb(mContext)
+    },
+    modifier = Modifier
+      .fillMaxWidth()
+      .padding(4.dp)
+      .clip(RoundedCornerShape(30))
+
+  ) {
+
+
+    Box(
+      modifier = Modifier
+        .fillMaxWidth()
+        .align(Alignment.CenterHorizontally)
+        .padding(25.dp)
+    ) {
+      Icon(
+        imageVector = Icons.Default.Info,
+        "",
+        modifier = Modifier
+          .align(Alignment.CenterStart)
+      )
+      Text(
+        text = "About US",
+        fontSize = 16.sp,
+        style = MaterialTheme.typography.headlineSmall,
+        modifier = Modifier.align(Alignment.Center)
+      )
+      Icon(
+        imageVector = Icons.AutoMirrored.Default.ArrowForward,
+        "",
+        modifier = Modifier.align(Alignment.CenterEnd)
+      )
+    }
+
+  }
+}
+
+
 
 
 
@@ -258,32 +319,77 @@ private fun goToWeb(mContext: Context) {
   mContext.startActivity(browserIntent)
 }
 
-private fun showDialogs(context: Context, inputText: String) {
+private fun showDialogs(context: Context, inputText: String = "coming soon") {
   Toast.makeText(context, inputText, Toast.LENGTH_SHORT).show()
 }
 
 
 
-private fun alertDialogPathChoose(
-  mContext: Context,
-  openFileExplore: (isForVideos: Int) ->Unit
-  ){
-
-    AlertDialog.Builder(mContext)
-      .setMessage("Which location do you want to change it please select on of them")
-      .setNegativeButton("Video's") { _, _ ->
-        openFileExplore(1)
-//        openFolderPicker(1)
+@Composable
+fun AlertDialogPathChoose(
+  onDismissRequest: () -> Unit = {},
+  onAudioSelect: () -> Unit,
+  onVideoSelect: () -> Unit
+) {
+  AlertDialog(
+    onDismissRequest = onDismissRequest,
+    title = {
+      Text("Which location do you want to change? Please select one of them:")
+    },
+    confirmButton = {
+      TextButton(onClick = {
+        onAudioSelect()
+        onDismissRequest()
+      }) {
+        Text("Audio's")
       }
-      .setPositiveButton("Audio's") { _, _ ->
-        openFileExplore(0)
-//        openFolderPicker(0)
+    },
+    dismissButton = {
+      TextButton(onClick = {
+        onVideoSelect()
+        onDismissRequest()
+      }) {
+        Text("Video's")
       }
-      .show()
+    }
+  )
+}
 
 
+@Composable
+fun FolderPickerDialog(context: Context, showDialog: Boolean, onDismiss: () -> Unit) {
+
+  val audioPickerLauncher = rememberLauncherForActivityResult(
+    contract = ActivityResultContracts.OpenDocumentTree(),
+    onResult = { uri: Uri? ->
+      uri?.let {
+        getFolderPathFromUri(context, it, "audio")
+      }
+    }
+  )
+
+  val videoPickerLauncher = rememberLauncherForActivityResult(
+    contract = ActivityResultContracts.OpenDocumentTree(),
+    onResult = { uri: Uri? ->
+      uri?.let {
+        getFolderPathFromUri(context, it, "video")
+      }
+    }
+  )
+
+  if (showDialog) {
+
+    AlertDialogPathChoose(
+      onDismissRequest = onDismiss,
+      onAudioSelect = {
+        audioPickerLauncher.launch(null)
+      },
+      onVideoSelect = {
+        videoPickerLauncher.launch(null)
+      }
+    )
   }
-
+}
 
 
 
@@ -314,11 +420,11 @@ private fun alertDialogPathChoose(
         val pather="/storage/emulated/0/${extractFolderPath(path.toString())}"
         if (type == "video") {
 
-          PathSaver().setMoviesDownloadPath(mContext, pather)
+          setMoviesDownloadPath(mContext, pather)
 
         } else if (type == "audio") {
 
-          PathSaver().setAudioDownloadPath(mContext, pather)
+          setAudioDownloadPath(mContext, pather)
 
         }
       } else {
@@ -331,9 +437,3 @@ private fun alertDialogPathChoose(
 
     return path
   }
-
-
-
-
-
-

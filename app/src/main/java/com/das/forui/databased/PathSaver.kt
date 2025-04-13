@@ -4,17 +4,21 @@ import android.content.Context
 import android.content.SharedPreferences
 
 
-class PathSaver {
+object PathSaver {
+
+    private const val AUDIO_KEY = "download_path1"
+    private const val VIDEO_KEY = "download_path2"
+    private const val PREF_NAME = "AppPreferences"
 
     fun getAudioDownloadPath(context: Context): String {
 
-        val sharedPref: SharedPreferences = context.getSharedPreferences("AppPreferences", Context.MODE_PRIVATE)
-        var downloadPath = sharedPref.getString("download_path1", null)
+        val sharedPref: SharedPreferences = context.getSharedPreferences(PREF_NAME, Context.MODE_PRIVATE)
+        var downloadPath = sharedPref.getString(AUDIO_KEY, null)
 
         if (downloadPath == null) {
             downloadPath = getMusicDefaultDownloadPath()
             val editor = sharedPref.edit()
-            editor.putString("download_path1", downloadPath)
+            editor.putString(AUDIO_KEY, downloadPath)
             editor.apply()
         }
         println("here is the path\n$downloadPath")
@@ -27,23 +31,23 @@ class PathSaver {
 
     fun setAudioDownloadPath(context: Context, path: String) {
         println("Here is new saved path: $path")
-        val sharedPref: SharedPreferences = context.getSharedPreferences("AppPreferences", Context.MODE_PRIVATE)
+        val sharedPref: SharedPreferences = context.getSharedPreferences(PREF_NAME, Context.MODE_PRIVATE)
         with(sharedPref.edit()) {
             // Replace the old path with the new one
-            putString("download_path1", path)
+            putString(AUDIO_KEY, path)
             apply()  // Save the change asynchronously
         }
     }
 
     fun getVideosDownloadPath(context: Context): String {
 
-        val sharedPref: SharedPreferences = context.getSharedPreferences("AppPreferences", Context.MODE_PRIVATE)
-        var downloadPath = sharedPref.getString("download_path2", null)
+        val sharedPref: SharedPreferences = context.getSharedPreferences(PREF_NAME, Context.MODE_PRIVATE)
+        var downloadPath = sharedPref.getString(VIDEO_KEY, null)
 
         if (downloadPath == null) {
             downloadPath = getMoviesDefaultDownloadPath()
             val editor = sharedPref.edit()
-            editor.putString("download_path2", downloadPath)
+            editor.putString(VIDEO_KEY, downloadPath)
             editor.apply()
         }
         println("here is the path\n$downloadPath")
@@ -54,10 +58,10 @@ class PathSaver {
     fun setMoviesDownloadPath(context: Context, path: String) {
         println("hello there\n$path")
         println("Here is new saved path: $path")
-        val sharedPref: SharedPreferences =context.getSharedPreferences("AppPreferences", Context.MODE_PRIVATE)
+        val sharedPref: SharedPreferences =context.getSharedPreferences(PREF_NAME, Context.MODE_PRIVATE)
         with(sharedPref.edit()) {
             // Replace the old path with the new one
-            putString("download_path2", path)
+            putString(VIDEO_KEY, path)
             apply()  // Save the change asynchronously
         }
     }

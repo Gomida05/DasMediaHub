@@ -42,209 +42,210 @@ import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.navigation.NavController
-import com.das.forui.MainApplication.Youtuber.extractor
+import com.das.forui.MainApplication.Youtuber.youtubeExtractor
 import com.das.forui.MainApplication.Youtuber.isValidYoutubeURL
 import com.das.forui.databased.SearchHistoryDB
+import com.das.forui.objectsAndData.ForUIKeyWords.NEW_INTENT_FOR_VIEWER
 import com.das.forui.objectsAndData.ForUIKeyWords.NEW_TEXT_FOR_RESULT
 import com.das.forui.ui.viewer.GlobalVideoList.bundles
 
 
 @Composable
-    fun SearchPageCompose(
-        navController: NavController,
-        newText: String
-    ) {
+fun SearchPageCompose(
+    navController: NavController,
+    newText: String
+) {
 
-        val textState = remember { mutableStateOf(newText) }
+    val textState = remember { mutableStateOf(newText) }
 
 
-
-        val context = LocalContext.current
-        Scaffold(
+    val context = LocalContext.current
+    Scaffold(
+        modifier = Modifier
+            .fillMaxSize()
+    ) { padding ->
+        Column(
             modifier = Modifier
                 .fillMaxSize()
-        ) { padding ->
-            Column(
-                modifier = Modifier
-                    .fillMaxSize()
-                    .padding(padding)
-            ) {
+                .padding(padding)
+        ) {
 
-                Spacer(modifier = Modifier.height(16.dp))
-                OutlinedTextField(
-                    value = textState.value,
-                    onValueChange = { newText ->
-                        textState.value = newText
-                    },
-                    placeholder = {
-                        Text(
-                            text = "Enter key words or Insert URL"
-                        )
-                    },
-                    shape = RoundedCornerShape(28),
-                    singleLine = true,
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .height(55.dp)
-                        .align(Alignment.CenterHorizontally)
-                    ,
-
-                    textStyle = MaterialTheme.typography.bodyMedium,
-                    leadingIcon = {
-                        IconButton(
-                            onClick = {
-                                navController.navigateUp()
-                            }
-                        ) {
-                            Icon(
-                                painter = rememberVectorPainter(Icons.AutoMirrored.Default.ArrowBack),
-                                "navigateUpButton"
-                            )
-                        }
-                    },
-                    trailingIcon = {
-                        if (textState.value.isNotEmpty()) {
-                            IconButton(onClick = { textState.value = "" }) {
-                                Icon(
-                                    painter = rememberVectorPainter(Icons.Default.Close),
-                                    contentDescription = "Clear"
-                                )
-                            }
-                        }
-                    },
-                    keyboardOptions = KeyboardOptions(
-                        imeAction = ImeAction.Search,
-                        autoCorrectEnabled = true,
-                        keyboardType = KeyboardType.Text,
-                        showKeyboardOnFocus = true
-                    ),
-                    keyboardActions = KeyboardActions(
-                        onSearch = {
-                            if (textState.value.isNotBlank()) {
-                                keyEvent(
-                                    navController,
-                                    textState.value,
-                                    context
-                                )
-                            }
-                        }
+            Spacer(modifier = Modifier.height(16.dp))
+            OutlinedTextField(
+                value = textState.value,
+                onValueChange = { newText ->
+                    textState.value = newText
+                },
+                placeholder = {
+                    Text(
+                        text = "Enter key words or Insert URL"
                     )
-                )
+                },
+                shape = RoundedCornerShape(28),
+                singleLine = true,
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .height(55.dp)
+                    .align(Alignment.CenterHorizontally),
 
-
-
-                Spacer(modifier = Modifier.height(16.dp))
-
-                val settingsResults = remember { mutableStateOf<List<String>>(emptyList()) }
-
-                LaunchedEffect(Unit) {
-                    settingsResults.value = fetchDataFromDatabase(context)
-                }
-                LazyColumn(
-                    modifier = Modifier
-                ) {
-                    items(settingsResults.value) { settingsItem ->
-                        CategoryItems(
-                            context,
-                            title = settingsItem,
-                            settingsResults,
-                            onButtonClicked = { text ->
-                                textState.value = text
-                                goSearch(context, navController,text)
-                            }
+                textStyle = MaterialTheme.typography.bodyMedium,
+                leadingIcon = {
+                    IconButton(
+                        onClick = {
+                            navController.navigateUp()
+                        }
+                    ) {
+                        Icon(
+                            painter = rememberVectorPainter(Icons.AutoMirrored.Default.ArrowBack),
+                            "navigateUpButton"
                         )
                     }
-                }
-
-
-            }
-
-        }
-
-    }
-
-
-
-
-    @Composable
-    private fun CategoryItems(
-        context: Context,
-        title: String,
-        settingsResults: MutableState<List<String>>,
-        onButtonClicked: (text: String)-> Unit
-    ){
-
-        Button(
-            onClick = {
-                onButtonClicked(title)
-            },
-            modifier = Modifier
-                .fillMaxWidth()
-                .height(60.dp)
-                .padding(top = 2.dp, bottom = 2.dp)
-        ) {
-            Box(
-            modifier = Modifier.fillMaxWidth()
-            ) {
-                Text(
-                    text = title,
-                    fontSize = 16.sp,
-                    modifier = Modifier.align(Alignment.Center)
+                },
+                trailingIcon = {
+                    if (textState.value.isNotEmpty()) {
+                        IconButton(onClick = { textState.value = "" }) {
+                            Icon(
+                                painter = rememberVectorPainter(Icons.Default.Close),
+                                contentDescription = "Clear"
+                            )
+                        }
+                    }
+                },
+                keyboardOptions = KeyboardOptions(
+                    imeAction = ImeAction.Search,
+                    autoCorrectEnabled = true,
+                    keyboardType = KeyboardType.Text,
+                    showKeyboardOnFocus = true
+                ),
+                keyboardActions = KeyboardActions(
+                    onSearch = {
+                        if (textState.value.isNotBlank()) {
+                            keyEvent(
+                                navController,
+                                textState.value,
+                                context
+                            )
+                        }
+                    }
                 )
-
-                IconButton(
-                    onClick = {
-
-                        AlertDialog.Builder(context)
-                            .setTitle("Are you sure you want to remove it from the list?")
-                            .setPositiveButton("Yes") { _, _ ->
-                                SearchHistoryDB(context).deleteSearchList(title)
-                                settingsResults.value = settingsResults.value.filter { it != title }
-                            }
-                            .setNegativeButton("No") { _, _ ->
-                            }
-                            .show()
+            )
 
 
-                    },
-                    modifier = Modifier.align(Alignment.CenterEnd)
-                ) {
-                    Icon(
-                        painter = rememberVectorPainter(Icons.Default.Delete),
-                        ""
+
+            Spacer(modifier = Modifier.height(16.dp))
+
+            val settingsResults = remember { mutableStateOf<List<String>>(emptyList()) }
+
+            LaunchedEffect(Unit) {
+                settingsResults.value = fetchDataFromDatabase(context)
+            }
+            LazyColumn(
+                modifier = Modifier
+            ) {
+                items(settingsResults.value) { settingsItem ->
+                    CategoryItems(
+                        context,
+                        title = settingsItem,
+                        settingsResults,
+                        onButtonClicked = { text ->
+                            textState.value = text
+                            goSearch(context, navController, text)
+                        }
                     )
                 }
             }
 
 
         }
+
     }
 
+}
 
 
 
 
+@Composable
+private fun CategoryItems(
+    context: Context,
+    title: String,
+    settingsResults: MutableState<List<String>>,
+    onButtonClicked: (text: String)-> Unit
+) {
 
-    private fun keyEvent(
-        navController: NavController,
-        editTextText: String,
-        context: Context
+    Button(
+        onClick = {
+            onButtonClicked(title)
+        },
+        modifier = Modifier
+            .fillMaxWidth()
+            .height(60.dp)
+            .padding(top = 2.dp, bottom = 2.dp)
     ) {
-        val bundle = Bundle().apply { putString("EXTRA_TEXT", editTextText) }
+        Box(
+            modifier = Modifier.fillMaxWidth()
+        ) {
+            Text(
+                text = title,
+                fontSize = 16.sp,
+                modifier = Modifier.align(Alignment.Center)
+            )
+
+            IconButton(
+                onClick = {
+
+                    AlertDialog.Builder(context)
+                        .setTitle("Are you sure you want to remove it from the list?")
+                        .setPositiveButton("Yes") { _, _ ->
+                            SearchHistoryDB(context).deleteSearchList(title)
+                            settingsResults.value = settingsResults.value.filter { it != title }
+                        }
+                        .setNegativeButton("No") { _, _ ->
+                        }
+                        .show()
+
+
+                },
+                modifier = Modifier.align(Alignment.CenterEnd)
+            ) {
+                Icon(
+                    painter = rememberVectorPainter(Icons.Default.Delete),
+                    ""
+                )
+            }
+        }
+
+
+    }
+}
+
+
+
+
+
+
+private fun keyEvent(
+    navController: NavController,
+    editTextText: String,
+    context: Context
+) {
+
 
         try {
             if (isValidYoutubeURL(editTextText)) {
-                val videoId = extractor(editTextText)
-                val bundled = bundle.apply {
+                val videoId = youtubeExtractor(editTextText)
+                val bundled = Bundle().apply {
                     putString("View_ID", videoId)
                     putString("View_URL", "https://www.youtube.com/watch?v=$videoId")
                 }
-                navController.navigate("video viewer/$bundled")
+                bundles.putBundle(NEW_INTENT_FOR_VIEWER, bundled)
+                navController.navigate("video viewer")
             } else {
                 SearchHistoryDB(context).insertData(title = editTextText)
                 goSearch(
                     context,
-                    navController,editTextText
+                    navController,
+                    editTextText
                 )
             }
         } catch (e: Exception) {
@@ -269,31 +270,29 @@ private fun showDialogs(context: Context, message: String){
     Toast.makeText(context, message, Toast.LENGTH_SHORT).show()
 }
 
-    private fun fetchDataFromDatabase(
-        context: Context
-    ): List<String> {
-        try {
-            val dbHelper = SearchHistoryDB(context)
+private fun fetchDataFromDatabase(context: Context): List<String> {
+    try {
+        val dbHelper = SearchHistoryDB(context)
 
-            val cursor: Cursor? = dbHelper.getResults()
-            val urls = mutableListOf<String>()
-            cursor?.let {
-                while (it.moveToNext()) {
-                    val title = it.getString(it.getColumnIndexOrThrow("title"))
-                    title?.let { _ ->
-                        urls.add("$title ")
-                    } ?: run {}
-                }
-                it.close()
-            } ?: run {}
+        val cursor: Cursor? = dbHelper.getResults()
+        val urls = mutableListOf<String>()
+        cursor?.let {
+            while (it.moveToNext()) {
+                val title = it.getString(it.getColumnIndexOrThrow("title"))
+                title?.let { _ ->
+                    urls.add("$title ")
+                } ?: run {}
+            }
+            it.close()
+        } ?: run {}
 
-            return urls.toList()
-        }catch (e:Exception){
-            showDialogs(context, e.message.toString())
-        }
-        return listOf("")
-
+        return urls.toList()
+    } catch (e: Exception) {
+        showDialogs(context, e.message.toString())
     }
+    return listOf("")
+
+}
 
 
 

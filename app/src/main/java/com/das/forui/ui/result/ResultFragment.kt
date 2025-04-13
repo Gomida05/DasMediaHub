@@ -60,9 +60,9 @@ import com.das.forui.MainActivity
 import com.das.forui.MainApplication
 import com.das.forui.objectsAndData.ForUIKeyWords.ACTION_START
 import com.das.forui.objectsAndData.ForUIKeyWords.NEW_INTENT_FOR_VIEWER
-import com.das.forui.objectsAndData.SearchResultFromMain
+import com.das.forui.objectsAndData.ForUIDataClass.SearchResultFromMain
 import com.das.forui.services.AudioServiceFromUrl
-import com.das.forui.objectsAndData.VideosListData
+import com.das.forui.objectsAndData.ForUIDataClass.VideosListData
 import com.das.forui.ui.viewer.GlobalVideoList.bundles
 
 
@@ -432,37 +432,4 @@ private fun ShowAlertDialog(
 
 }
 
-
-/*
-private fun imageViewer(
-    context: Context,
-    selectedItem: VideosListData
-) {
-    val thumbnailUrl = "https://img.youtube.com/vi/${selectedItem.videoId}/0.jpg"
-    val inflater = LayoutInflater.from(context)
-    val dialogView = inflater.inflate(R.layout.dialog_with_image, null)
-    val imageView: ImageView = dialogView.findViewById(R.id.dialog_image)
-
-    Glide.with(context)
-        .load(thumbnailUrl)
-        .error(R.drawable.close)
-        .centerCrop()
-        .into(imageView)
-    AlertDialog.Builder(context)
-        .setTitle("Do you want to download it as video or audio?")
-        .setView(dialogView)
-        .setPositiveButton("Video") { _, _ ->
-
-        }
-        .setNegativeButton("Music") { _, _ ->
-
-        }
-        .setNeutralButton(
-            "Background"
-        ) { _, _ ->
-
-        }.show()
-}
-
-*/
 

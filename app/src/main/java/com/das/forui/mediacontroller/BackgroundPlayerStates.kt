@@ -6,7 +6,7 @@ import com.das.forui.R
 import com.das.forui.objectsAndData.ForUIKeyWords.ACTION_KILL
 import com.das.forui.objectsAndData.ForUIKeyWords.SET_SHUFFLE_MODE
 
-class BackgroundPlayerStates {
+object BackgroundPlayerStates {
 
 
     fun setStateToPlaying(currentPosition: Long, shuffleMode: Boolean): PlaybackStateCompat {

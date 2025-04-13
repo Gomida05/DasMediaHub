@@ -24,8 +24,7 @@ import androidx.media.app.NotificationCompat.MediaStyle
 import androidx.media.session.MediaButtonReceiver
 import com.das.forui.MainActivity
 import com.das.forui.R.drawable
-import com.das.forui.databased.PathSaver
-import com.das.forui.mediacontroller.BackgroundPlayerStates
+import com.das.forui.databased.PathSaver.getAudioDownloadPath
 import com.das.forui.objectsAndData.ForUIKeyWords.ACTION_KILL
 import com.das.forui.objectsAndData.ForUIKeyWords.ACTION_START
 import com.das.forui.objectsAndData.ForUIKeyWords.SET_SHUFFLE_MODE
@@ -34,6 +33,9 @@ import androidx.media3.common.MediaItem
 import androidx.media3.common.MediaMetadata
 import androidx.media3.common.PlaybackException
 import androidx.media3.common.Player
+import com.das.forui.mediacontroller.BackgroundPlayerStates.setStateToPaused
+import com.das.forui.mediacontroller.BackgroundPlayerStates.setStateToLoading
+import com.das.forui.mediacontroller.BackgroundPlayerStates.setStateToPlaying
 import java.io.File
 
 
@@ -128,7 +130,7 @@ class BackGroundPlayer: Service() {
 
 
                 mediaSession.setPlaybackState(
-                    BackgroundPlayerStates().setStateToPlaying(
+                    setStateToPlaying(
                         exoPlayer?.currentPosition!!,
                         exoPlayer?.shuffleModeEnabled!!
                     )
@@ -339,7 +341,7 @@ class BackGroundPlayer: Service() {
             requestAudioFocusForAudioService()
             exoPlayer?.play()
             mediaSession.setPlaybackState(
-                BackgroundPlayerStates().setStateToPlaying(
+                setStateToPlaying(
                     exoPlayer?.currentPosition!!,
                     exoPlayer?.shuffleModeEnabled!!
                 )
@@ -352,7 +354,7 @@ class BackGroundPlayer: Service() {
             releaseAudioFocusForAudioService()
             exoPlayer?.pause()
             mediaSession.setPlaybackState(
-                BackgroundPlayerStates().setStateToPaused(
+                setStateToPaused(
                     exoPlayer?.currentPosition!!,
                     exoPlayer?.shuffleModeEnabled!!
                 )
@@ -370,7 +372,7 @@ class BackGroundPlayer: Service() {
             )
             )
             mediaSession.setPlaybackState(
-                BackgroundPlayerStates().setStateToLoading(
+                setStateToLoading(
                     exoPlayer?.currentPosition!!,
                     exoPlayer?.shuffleModeEnabled!!
                 )
@@ -390,7 +392,7 @@ class BackGroundPlayer: Service() {
 
                 // Update playback state
                 mediaSession.setPlaybackState(
-                    BackgroundPlayerStates().setStateToLoading(
+                    setStateToLoading(
                         exoPlayer?.currentPosition!!,
                         exoPlayer?.shuffleModeEnabled!!
                     )
@@ -406,7 +408,7 @@ class BackGroundPlayer: Service() {
                 exoPlayer?.shuffleModeEnabled = exoPlayer?.shuffleModeEnabled != true
 
                 mediaSession.setPlaybackState(
-                    BackgroundPlayerStates().setStateToPlaying(
+                    setStateToPlaying(
                         exoPlayer?.currentPosition!!,
                         exoPlayer?.shuffleModeEnabled!!
                     )
@@ -485,9 +487,9 @@ class BackGroundPlayer: Service() {
 
 
         val pathOfVideos = File(
-            PathSaver()
-                .getAudioDownloadPath(this)
+            getAudioDownloadPath(this)
         )
+
         if (pathOfVideos.exists()) {
             val fileNames = arrayOfNulls<String>(pathOfVideos.listFiles()!!.size)
             val pathOfVideosUris = arrayOfNulls<Uri?>(pathOfVideos.listFiles()!!.size)
@@ -535,7 +537,7 @@ class BackGroundPlayer: Service() {
         override fun onMediaMetadataChanged(mediaMetadata: MediaMetadata) {
             super.onMediaMetadataChanged(mediaMetadata)
             mediaSession.setPlaybackState(
-                BackgroundPlayerStates().setStateToPlaying(
+                setStateToPlaying(
                     exoPlayer?.currentPosition!!,
                     exoPlayer?.shuffleModeEnabled!!
                 )
@@ -559,7 +561,7 @@ class BackGroundPlayer: Service() {
             val currentPosition = newPosition.positionMs
 
             mediaSession.setPlaybackState(
-                BackgroundPlayerStates().setStateToPlaying(
+                setStateToPlaying(
                     currentPosition,
                     exoPlayer?.shuffleModeEnabled!!
                 )
@@ -573,7 +575,7 @@ class BackGroundPlayer: Service() {
 
             if (playbackState == Player.STATE_ENDED) {
                 mediaSession.setPlaybackState(
-                    BackgroundPlayerStates().setStateToPaused(
+                    setStateToPaused(
                         exoPlayer?.currentPosition!!,
                         exoPlayer?.shuffleModeEnabled!!
                     )
@@ -581,7 +583,7 @@ class BackGroundPlayer: Service() {
             }
             if (playbackState == Player.STATE_BUFFERING){
                 mediaSession.setPlaybackState(
-                    BackgroundPlayerStates().setStateToLoading(
+                    setStateToLoading(
                         exoPlayer?.currentPosition!!,
                         exoPlayer?.shuffleModeEnabled!!
                     )
@@ -595,7 +597,7 @@ class BackGroundPlayer: Service() {
 
                 requestAudioFocusForAudioService()
                 mediaSession.setPlaybackState(
-                    BackgroundPlayerStates().setStateToPlaying(
+                    setStateToPlaying(
                         exoPlayer?.currentPosition!!,
                         exoPlayer?.shuffleModeEnabled!!
                     )
@@ -611,7 +613,7 @@ class BackGroundPlayer: Service() {
             } else {
                 releaseAudioFocusForAudioService()
                 mediaSession.setPlaybackState(
-                    BackgroundPlayerStates().setStateToPaused(
+                    setStateToPaused(
                         exoPlayer?.currentPosition!!,
                         exoPlayer?.shuffleModeEnabled!!
                     )
@@ -633,7 +635,7 @@ class BackGroundPlayer: Service() {
         override fun onPlayerError(error: PlaybackException) {
             super.onPlayerError(error)
             mediaSession.setPlaybackState(
-                BackgroundPlayerStates().setStateToLoading(
+                setStateToLoading(
                     error.timestampMs,
                     exoPlayer?.shuffleModeEnabled!!
                 )
@@ -653,7 +655,7 @@ class BackGroundPlayer: Service() {
 
                 // Update playback state
                 mediaSession.setPlaybackState(
-                    BackgroundPlayerStates().setStateToPlaying(
+                    setStateToPlaying(
                         exoPlayer?.currentPosition!!,
                         exoPlayer?.shuffleModeEnabled!!
                     )
@@ -661,7 +663,7 @@ class BackGroundPlayer: Service() {
             }
             if (!isPlaying && exoPlayer?.isLoading!!) {
                 mediaSession.setPlaybackState(
-                    BackgroundPlayerStates().setStateToLoading(
+                    setStateToLoading(
                         exoPlayer?.currentPosition!!,
                         exoPlayer?.shuffleModeEnabled!!
                     )
@@ -670,7 +672,7 @@ class BackGroundPlayer: Service() {
             if (!isPlaying && !exoPlayer?.isLoading!!){
 
                 mediaSession.setPlaybackState(
-                    BackgroundPlayerStates().setStateToPaused(
+                    setStateToPaused(
                         exoPlayer?.currentPosition!!,
                         exoPlayer?.shuffleModeEnabled!!
                     )
@@ -690,7 +692,7 @@ class BackGroundPlayer: Service() {
                 )
 
                 mediaSession.setPlaybackState(
-                    BackgroundPlayerStates().setStateToPlaying(
+                    setStateToPlaying(
                         exoPlayer?.currentPosition!!,
                         exoPlayer?.shuffleModeEnabled!!
                     )
@@ -698,7 +700,7 @@ class BackGroundPlayer: Service() {
             }
             else{
                 mediaSession.setPlaybackState(
-                    BackgroundPlayerStates().setStateToLoading(
+                    setStateToLoading(
                         exoPlayer?.currentPosition!!,
                         exoPlayer?.shuffleModeEnabled!!
                     )

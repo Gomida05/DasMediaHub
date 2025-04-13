@@ -1,19 +1,21 @@
 package com.das.forui.ui.watch_later
 
-import android.app.AlertDialog
 import android.content.Context
 import android.content.Intent
 import android.os.Bundle
 import androidx.compose.foundation.ExperimentalFoundationApi
+import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.combinedClickable
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
@@ -45,6 +47,7 @@ import androidx.compose.ui.graphics.vector.rememberVectorPainter
 import androidx.compose.ui.input.nestedscroll.nestedScroll
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -59,8 +62,8 @@ import com.das.forui.R
 import com.das.forui.databased.DatabaseFavorite
 import com.das.forui.objectsAndData.ForUIKeyWords.ACTION_START
 import com.das.forui.objectsAndData.ForUIKeyWords.NEW_INTENT_FOR_VIEWER
-import com.das.forui.objectsAndData.SavedVideosListData
-import com.das.forui.objectsAndData.VideosListData
+import com.das.forui.objectsAndData.ForUIDataClass.SavedVideosListData
+import com.das.forui.objectsAndData.ForUIDataClass.VideosListData
 import com.das.forui.services.AudioServiceFromUrl
 import com.das.forui.ui.viewer.GlobalVideoList.bundles
 
@@ -141,6 +144,9 @@ private fun CategoryItems(
 ) {
 
     var showDialog by remember { mutableStateOf(false) }
+
+    var showInfoDialog by remember { mutableStateOf(false) }
+
     val videoId = selectedItem.watchUrl
     val title = selectedItem.title
     val viewsNumber = selectedItem.viewer
@@ -176,17 +182,7 @@ private fun CategoryItems(
                     )
                 },
                 onLongClick = {
-
-                    AlertDialog.Builder(context)
-                        .setTitle("Are you sure you want to remove it from the list?")
-                        .setPositiveButton("Yes") { _, _ ->
-                            DatabaseFavorite(context).deleteWatchUrl(videoId)
-                            viewModel.removeSearchItem(selectedItem)
-                        }
-                        .setNegativeButton("No") { _, _ ->
-                        }
-                        .show()
-
+                    showDialog = true
                 }
             )
     ) {
@@ -227,13 +223,7 @@ private fun CategoryItems(
 
                 IconButton(
                     onClick = {
-                        AlertDialog.Builder(context)
-                            .setTitle("This feature is currently under development!!!")
-                            .setPositiveButton("Okay") { _, _ -> }
-                            .setIcon(R.drawable.setting)
-                            .setMessage("Thank you for understanding!")
-                            .setIcon(R.mipmap.under_development)
-                            .show()
+                        showInfoDialog = true
                     }
                 ) {
                     AsyncImage(
@@ -323,8 +313,54 @@ private fun CategoryItems(
             onDismissRequest = {showDialog = false}
         )
     }
+    if (showInfoDialog){
+        InfoDialog{
+            showInfoDialog = false
+        }
+    }
 }
 
+
+@Composable
+private fun InfoDialog(onDismissRequest: () -> Unit){
+
+    AlertDialog(
+        onDismissRequest = onDismissRequest,
+        title = {
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Image(
+                    painter = painterResource(R.mipmap.under_development),
+                    contentDescription = null,
+                    modifier = Modifier
+                        .size(14.dp)
+                )
+                Spacer(modifier = Modifier.width(6.dp))
+                Text(
+                    text ="This feature is currently under development!!!",
+                    fontSize = 16.sp
+                )
+            }
+        },
+        text = {
+            Text(
+                "Thank you!😊",
+                fontSize = 18.sp
+            )
+        },
+        confirmButton = {
+            TextButton(
+                onClick = onDismissRequest
+            ) {
+                Text("Okay")
+            }
+        },
+
+    )
+
+}
 
 private fun onClickListListener(
         context: Context,
@@ -353,7 +389,7 @@ private fun onClickListListener(
         controller.navigate("video viewer")
 
     } catch (e: Exception) {
-        MainActivity().alertUserError(e.message.toString())
+        MainActivity().alertUserError(context, e.message.toString())
     }
 }
 
@@ -377,7 +413,7 @@ private fun ShowAlertDialog(
                 },
 
                 ) {
-                Text("Yes")
+                Text("Remove")
             }
         },
          dismissButton = {
@@ -414,7 +450,7 @@ private fun ShowAlertDialog(
             },
 
         ) {
-            Text("Background")
+            Text("Play in background!")
         }
 
         }

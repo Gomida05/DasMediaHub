@@ -30,7 +30,7 @@ import com.das.forui.mediacontroller.MediaSessionPlaybackState
 import com.das.forui.objectsAndData.ForUIKeyWords.ACTION_ADD_TO_WATCH_LATER
 import com.das.forui.objectsAndData.ForUIKeyWords.ACTION_KILL
 import com.das.forui.objectsAndData.ForUIKeyWords.ACTION_START
-import com.das.forui.objectsAndData.VideosListData
+import com.das.forui.objectsAndData.ForUIDataClass.VideosListData
 import androidx.media3.exoplayer.ExoPlayer
 import androidx.media3.common.MediaItem
 import androidx.media3.common.PlaybackException

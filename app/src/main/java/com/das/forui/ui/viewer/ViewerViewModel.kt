@@ -10,8 +10,8 @@ import androidx.lifecycle.viewModelScope
 import com.das.forui.MainApplication.Youtuber.formatDate
 import com.das.forui.MainApplication.Youtuber.formatViews
 import com.das.forui.MainApplication.Youtuber.pythonInstant
-import com.das.forui.objectsAndData.VideoDetails
-import com.das.forui.objectsAndData.VideosListData
+import com.das.forui.objectsAndData.ForUIDataClass.VideoDetails
+import com.das.forui.objectsAndData.ForUIDataClass.VideosListData
 import com.google.gson.Gson
 import com.google.gson.JsonSyntaxException
 import com.google.gson.reflect.TypeToken
@@ -24,8 +24,8 @@ class ViewerViewModel : ViewModel() {
     private val _videoUrl = mutableStateOf("")
     val videoUrl: State<String> = _videoUrl
 
-    private val _error = MutableLiveData<String>()
-    val error: LiveData<String> = _error
+    private val _error = mutableStateOf("")
+    val error: State<String> = _error
 
     private var _isLoading = mutableStateOf(true)
     val isLoading: State<Boolean> = _isLoading
@@ -45,7 +45,6 @@ class ViewerViewModel : ViewModel() {
 
     fun loadVideoUrl(videoId: String) {
         viewModelScope.launch(Dispatchers.IO) {
-            _isLoading.value = true
             try {
 
                 val mainFile = pythonInstant.getModule("main")
@@ -56,10 +55,10 @@ class ViewerViewModel : ViewModel() {
                     _videoUrl.value = result
 
                 } else {
-                    _error.postValue("Please check your internet connection")
+                    _error.value = "Please check your internet connection"
                 }
             } catch (e: Exception) {
-                _error.postValue("Error: ${e.message}")
+                _error.value = "Error: ${e.message}"
             } finally {
                 _isLoading.value = false
             }
@@ -89,12 +88,12 @@ class ViewerViewModel : ViewModel() {
 
                 } else {
                     withContext(Dispatchers.Main) {
-                        _error.postValue("Failed to fetch video details")
+                        _error.value = "Failed to fetch video details"
                     }
                 }
             } catch (e: Exception) {
                 withContext(Dispatchers.Main) {
-                    _error.postValue("Error fetching video details: ${e.message}")
+                    _error.value = "Error fetching video details: ${e.message}"
                 }
             } finally {
                 withContext(Dispatchers.Main) {

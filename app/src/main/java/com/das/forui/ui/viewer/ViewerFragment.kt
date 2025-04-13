@@ -18,6 +18,7 @@ import android.text.style.StyleSpan
 import android.text.style.URLSpan
 import android.widget.Toast
 import androidx.compose.foundation.ExperimentalFoundationApi
+import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.combinedClickable
 import androidx.compose.foundation.isSystemInDarkTheme
@@ -38,6 +39,7 @@ import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.More
+import androidx.compose.material.icons.filled.Error
 import androidx.compose.material.icons.filled.Favorite
 import androidx.compose.material.icons.filled.FavoriteBorder
 import androidx.compose.material.icons.filled.MoreVert
@@ -47,6 +49,7 @@ import androidx.compose.material.icons.filled.SmartDisplay
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
 import androidx.compose.material3.Card
+import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.Scaffold
@@ -104,8 +107,8 @@ import com.das.forui.mediacontroller.MyExoPlayerCallBack
 import com.das.forui.mediacontroller.MyMediaSessionCallBack
 import com.das.forui.objectsAndData.ForUIKeyWords.ACTION_START
 import com.das.forui.objectsAndData.ForUIKeyWords.NEW_INTENT_FOR_VIEWER
-import com.das.forui.objectsAndData.VideoDetails
-import com.das.forui.objectsAndData.VideosListData
+import com.das.forui.objectsAndData.ForUIDataClass.VideoDetails
+import com.das.forui.objectsAndData.ForUIDataClass.VideosListData
 import com.das.forui.ui.viewer.GlobalVideoList.bundles
 
 
@@ -167,9 +170,10 @@ fun VideoPlayerScreen(
     val isLoading by suggestionViewModel.isLoadingVideos
     val searchResults by suggestionViewModel.searchResults
 
-    LaunchedEffect(videoTitle!!) {
+    LaunchedEffect(videoTitle) {
         if (!videoTitle.isNullOrEmpty()) {
             suggestionViewModel.fetchSuggestions(videoTitle!!)
+
         }
     }
 
@@ -229,7 +233,9 @@ fun VideoPlayerScreen(
                             videoChannelName = it.channelName
                         }
                     )
+
                 }
+
                 if (isLoading) {
                     item {
                         SkeletonSuggestionLoadingLayout()
@@ -301,6 +307,10 @@ private fun ExoPlayerUI(
 
     val videoUrl by viewModel.videoUrl
 
+    val isLoading by viewModel.isLoading
+
+    val isThereError by viewModel.error
+
 
 
 
@@ -311,10 +321,32 @@ private fun ExoPlayerUI(
     val playerNotificationManager = PlayerNotificationManager.Builder(mContext, 22, "MEDIA_PLAYER")
         .build()
 
+    if (isThereError.isNotEmpty()){
+        Box(
+            modifier = Modifier
+                .fillMaxSize()
+        ){
+            Image(
+                imageVector = Icons.Default.Error,
+                "",
+                modifier = Modifier
+                    .fillMaxSize()
+            )
+        }
+        return
+    }
+
+    if (isLoading){
+        Box(
+            modifier = Modifier
+                .fillMaxSize()
+        ){
+            CircularProgressIndicator(modifier = Modifier.align(Alignment.Center))
+        }
+    }
 
 
-
-    if (videoUrl.isNotEmpty()) {
+    if (videoUrl.isNotEmpty() && !isLoading) {
 
         val mExoPlayer = remember(mContext) {
             done(videoUrl)
@@ -399,6 +431,7 @@ private fun ExoPlayerUI(
         )
     }
 
+
 }
 
 
@@ -411,35 +444,34 @@ private fun ExoPlayerUI(
 @OptIn(ExperimentalFoundationApi::class)
 @Composable
 fun VideoDetailsComposable(
-        mContext: Context,
-        videoId: String,
-        channelThumbnailURL: String,
-        duration: String,
-        viewModel: ViewerViewModel,
-        clickForMore: () -> Unit,
-        downloadAsVideo: (videoTitle: String) -> Unit,
-        downloadAsMusic: (title: String) -> Unit,
-        finished: (title: VideoDetails) ->Unit
-    ) {
+    mContext: Context,
+    videoId: String,
+    channelThumbnailURL: String,
+    duration: String,
+    viewModel: ViewerViewModel,
+    clickForMore: () -> Unit,
+    downloadAsVideo: (videoTitle: String) -> Unit,
+    downloadAsMusic: (title: String) -> Unit,
+    finished: (title: VideoDetails) ->Unit
+) {
 
     var showDescriptionDialog by remember { mutableStateOf(false) }
-        val isLoading by viewModel.isLoadings
+    val isLoading by viewModel.isLoadings
 
-        val dbForFav = DatabaseFavorite(mContext)
+    val dbForFav = DatabaseFavorite(mContext)
 
-        val videoDetails by viewModel.videoDetails.observeAsState()
-        var isSaved by remember {
-            mutableStateOf(
-                dbForFav.isWatchUrlExist(videoId)
-            )
-        }
-        val colorForFavIcon = if (isSystemInDarkTheme()) Color.Unspecified else Color.White
+    val videoDetails by viewModel.videoDetails.observeAsState()
+    var isSaved by remember {
+        mutableStateOf(
+            dbForFav.isWatchUrlExist(videoId)
+        )
+    }
+    val colorForFavIcon = if (isSystemInDarkTheme()) Color.Unspecified else Color.White
 
     Column(
         modifier = Modifier
             .fillMaxSize()
     ) {
-
 
 
         LaunchedEffect(videoId) {
@@ -618,10 +650,10 @@ fun VideoDetailsComposable(
         }
     }
 
-    if (showDescriptionDialog && !videoDetails?.description.isNullOrEmpty()){
+    if (showDescriptionDialog) {
         ShowDescriptionDialog(
             videoDetails?.description!!
-        ){
+        ) {
             showDescriptionDialog = false
         }
     }
@@ -839,7 +871,7 @@ private fun playThisOne(
 private fun ShowDescriptionDialog(
     text: String,
     onDismissRequest: () -> Unit
-){
+) {
 
     val urlPattern = """https?://\S+""".toRegex()
 
@@ -879,8 +911,8 @@ private fun ShowDescriptionDialog(
 
 
     )
-
 }
+
 @Composable
 private fun ShowAlertDialog(
     mContext: Context,
@@ -1157,15 +1189,27 @@ private fun AlertDialogForUser(
     AlertDialog(
         onDismissRequest= onDismissRequest,
         title = {
-            Text("This feature is currently under development!!!")
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Image(
+                    painter = painterResource(R.mipmap.under_development),
+                    contentDescription = null,
+                    modifier = Modifier
+                        .size(20.dp)
+                )
+                Spacer(modifier = Modifier.width(6.dp))
+                Text(
+                    text ="This feature is currently under development!!!",
+                    fontSize = 12.sp
+                )
+            }
         },
         text = {
-            Text("Thank you for understanding!")
-        },
-        icon = {
-            Icon(
-                painter = painterResource(R.mipmap.under_development),
-                ""
+            Text(
+                "Thank you!😊",
+                fontSize = 18.sp
             )
         },
         confirmButton = {

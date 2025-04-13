@@ -7,7 +7,9 @@ import android.database.sqlite.SQLiteDatabase
 import android.database.sqlite.SQLiteOpenHelper
 
 
-class SearchHistoryDB(context: Context) : SQLiteOpenHelper(context, DATABASE_NAME, null, DATABASE_VERSION) {
+class SearchHistoryDB(
+    context: Context
+): SQLiteOpenHelper(context, DATABASE_NAME, null, DATABASE_VERSION) {
 
     override fun onCreate(db: SQLiteDatabase) {
         db.execSQL(SQL_CREATE_ENTRIES)
@@ -22,6 +24,7 @@ class SearchHistoryDB(context: Context) : SQLiteOpenHelper(context, DATABASE_NAM
     fun getResults(): Cursor {
         val db = this.readableDatabase
         return db.rawQuery("SELECT * FROM results", null) }
+
     private fun isWatchUrlExist(url: String): Boolean {
         val db = this.readableDatabase
         val cursor = db.rawQuery("SELECT 1 FROM results WHERE title = ?",
@@ -48,10 +51,7 @@ class SearchHistoryDB(context: Context) : SQLiteOpenHelper(context, DATABASE_NAM
         val rowsDeleted = db.delete(
             "results",
             "title = ?",
-            arrayOf(selectedItem.apply {
-                trimEnd()
-                trimStart()
-            })
+            arrayOf(selectedItem)
         )
 
         db.close()
@@ -68,10 +68,7 @@ class SearchHistoryDB(context: Context) : SQLiteOpenHelper(context, DATABASE_NAM
 
         val db = this.writableDatabase
         val contentValues = ContentValues().apply {
-            put("title", title.apply {
-                trimEnd()
-                trimStart()
-            })
+            put("title", title)
         }
         val result = db.insert("results", null, contentValues)
         db.close()

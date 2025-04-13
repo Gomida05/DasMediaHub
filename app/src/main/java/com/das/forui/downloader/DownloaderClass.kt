@@ -13,7 +13,7 @@ import android.view.View
 import androidx.core.app.NotificationCompat
 import com.das.forui.MainActivity
 import com.das.forui.R
-import com.das.forui.databased.PathSaver
+import com.das.forui.databased.PathSaver.getVideosDownloadPath
 import java.io.File
 
 class DownloaderClass(val context: Context) {
@@ -22,7 +22,7 @@ class DownloaderClass(val context: Context) {
 
     fun downloadVideo(url: String, title: String, type: String) {
         try {
-            val pathVideo = PathSaver().getVideosDownloadPath(context)
+            val pathVideo = getVideosDownloadPath(context)
             createSingleDirectory(pathVideo)
 
             createNotificationChannel()
