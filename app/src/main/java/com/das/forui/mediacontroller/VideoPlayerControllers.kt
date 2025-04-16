@@ -1,10 +1,14 @@
 package com.das.forui.mediacontroller
 
 import android.annotation.SuppressLint
+import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.fadeOut
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.material.icons.Icons
@@ -31,6 +35,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.zIndex
 import androidx.media3.common.Player
 import androidx.media3.exoplayer.ExoPlayer
 import androidx.media3.ui.compose.state.rememberNextButtonState
@@ -45,6 +50,46 @@ import java.util.concurrent.TimeUnit
 object VideoPlayerControllers {
 
 
+
+    @Composable
+    fun PlayerControls(
+        mExoPlayer: ExoPlayer,
+        modifier: Modifier = Modifier,
+        isVisible: () -> Boolean,
+        navigateUp: () -> Unit
+    ) {
+
+
+
+        AnimatedVisibility(
+            modifier = modifier
+                .fillMaxSize(),
+            visible = isVisible(),
+            enter = fadeIn(),
+            exit = fadeOut()
+        ) {
+            Column(
+                verticalArrangement = Arrangement.SpaceBetween,
+                modifier = Modifier
+                    .fillMaxSize()
+            ) {
+
+                TopControls(navigateUp = navigateUp)
+                Row(
+                    horizontalArrangement = Arrangement.SpaceAround,
+                    verticalAlignment = Alignment.CenterVertically,
+                    modifier = Modifier.fillMaxWidth()
+                ) {
+                    PreviousButton(mExoPlayer)
+                    PlayPauseButton(mExoPlayer)
+                    NextButton(mExoPlayer)
+
+                }
+
+                BottomControls(player = mExoPlayer, onFullScreen = {  })
+            }
+        }
+    }
     @Composable
     fun PlayPauseButton(player: Player, modifier: Modifier = Modifier) {
         val state = rememberPlayPauseButtonState(player)
@@ -90,13 +135,13 @@ object VideoPlayerControllers {
 
 
     @Composable
-    fun TopControls(navigateUp: ()-> Unit){
-
-
-
+    fun TopControls(
+        navigateUp: ()-> Unit
+    ){
 
         Box(
-            modifier = Modifier.fillMaxWidth()
+            modifier = Modifier
+                .fillMaxWidth()
         ) {
 
             IconButton(
@@ -147,8 +192,13 @@ object VideoPlayerControllers {
         }
 
         Column(modifier = modifier) {
-            Box(modifier = Modifier.fillMaxWidth()) {
-                // Buffer bar
+            Box(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .height(32.dp), // give some height to avoid overlap issues
+                contentAlignment = Alignment.Center
+            ) {
+                // Buffered progress (non-interactive)
                 Slider(
                     value = bufferedPercent.toFloat().coerceIn(0f, 100f),
                     onValueChange = {},
@@ -156,13 +206,17 @@ object VideoPlayerControllers {
                     valueRange = 0f..100f,
                     colors = SliderDefaults.colors(
                         disabledThumbColor = Color.Transparent,
-                        disabledActiveTrackColor = Color.Gray
-                    )
+                        disabledActiveTrackColor = Color.Gray,
+                        disabledInactiveTrackColor = Color.DarkGray
+                    ),
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .zIndex(0f) // put it behind
                 )
 
+                // Playback progress (interactive)
                 if (totalDuration > 0) {
                     Slider(
-                        modifier = Modifier.fillMaxWidth(),
                         value = currentPosition.coerceIn(0, totalDuration).toFloat(),
                         onValueChange = {
                             player.seekTo(it.toLong())
@@ -170,8 +224,12 @@ object VideoPlayerControllers {
                         valueRange = 0f..totalDuration.toFloat(),
                         colors = SliderDefaults.colors(
                             thumbColor = Color(0xFFBB86FC),
-                            activeTickColor = Color(0xFFBB86FC)
-                        )
+                            activeTrackColor = Color(0xFFBB86FC),
+                            inactiveTrackColor = Color.LightGray
+                        ),
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .zIndex(1f) // put it above
                     )
                 }
             }

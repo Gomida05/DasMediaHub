@@ -6,6 +6,7 @@ import android.content.Intent
 import android.graphics.Typeface.BOLD
 import android.graphics.Typeface.ITALIC
 import android.os.Bundle
+import android.os.PowerManager
 import android.text.SpannableString
 import android.text.style.BackgroundColorSpan
 import android.text.style.ForegroundColorSpan
@@ -16,6 +17,7 @@ import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.combinedClickable
+import androidx.compose.foundation.gestures.detectTapGestures
 import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -57,12 +59,14 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.livedata.observeAsState
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.rememberVectorPainter
+import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
@@ -98,16 +102,14 @@ import com.das.forui.ui.viewer.GlobalVideoList.previousVideosListData
 import com.das.forui.MainApplication
 import com.das.forui.databased.DatabaseFavorite
 import com.das.forui.downloader.DownloaderCoroutineWorker
-import com.das.forui.mediacontroller.VideoPlayerControllers.BottomControls
-import com.das.forui.mediacontroller.VideoPlayerControllers.NextButton
-import com.das.forui.mediacontroller.VideoPlayerControllers.PlayPauseButton
-import com.das.forui.mediacontroller.VideoPlayerControllers.PreviousButton
-import com.das.forui.mediacontroller.VideoPlayerControllers.TopControls
+import com.das.forui.mediacontroller.VideoPlayerControllers.PlayerControls
 import com.das.forui.objectsAndData.ForUIKeyWords.ACTION_START
 import com.das.forui.objectsAndData.ForUIKeyWords.NEW_INTENT_FOR_VIEWER
 import com.das.forui.objectsAndData.ForUIDataClass.VideoDetails
 import com.das.forui.objectsAndData.ForUIDataClass.VideosListData
 import com.das.forui.ui.viewer.GlobalVideoList.bundles
+import kotlinx.coroutines.delay
+import kotlinx.coroutines.launch
 
 
 @Composable
@@ -191,7 +193,6 @@ fun VideoPlayerScreen(
                 ExoPlayerUI(
                     navController,
                     currentId = videoID,
-                    title = videoTitle.toString(),
                     viewModel = viewModel,
                     done = {videoUrl= it},
                     onFullScreen = { }
@@ -305,7 +306,6 @@ fun startDownloading(context: Context, fileUrl: String, title: String){
 private fun ExoPlayerUI(
     navController: NavController,
     currentId: String,
-    title: String,
     viewModel: ViewerViewModel,
     done: (url: String) ->Unit,
     onFullScreen: ()-> Unit
@@ -318,6 +318,11 @@ private fun ExoPlayerUI(
 
     val isThereError by viewModel.error
 
+    val powerManager = mContext.getSystemService(Context.POWER_SERVICE) as PowerManager
+    @Suppress("DEPRECATION")
+    val wakeLock = powerManager.newWakeLock(PowerManager.SCREEN_BRIGHT_WAKE_LOCK or PowerManager.ACQUIRE_CAUSES_WAKEUP, "MyApp:VideoPlayer")
+
+    // Acquire the wake lock when the video is playing
 
 
 
@@ -365,27 +370,63 @@ private fun ExoPlayerUI(
                 addListener(MyExoPlayerListener(navController))
             }
         }
+        var controlsVisible by remember { mutableStateOf(true) }
+        val coroutineScope = rememberCoroutineScope()
+
+        fun startAutoHideTimer() {
+            coroutineScope.launch {
+                delay(4000) // 3 seconds
+                controlsVisible = false
+            }
+        }
 
 
+        LaunchedEffect(Unit) {
+            startAutoHideTimer()
+        }
 
 
-
+        // Auto-hide after 3 seconds of visibility
         DisposableEffect(mExoPlayer) {
             onDispose {
                 mExoPlayer.release()
-//                playerNotificationManager.setPlayer(null)
+                if (wakeLock.isHeld) {
+                    wakeLock.release()
+                }
             }
         }
 
 
         val presentationState = rememberPresentationState(mExoPlayer)
-        val videoSize = presentationState.videoSizeDp
 
+        LaunchedEffect(mExoPlayer.isPlaying) {
+            if (mExoPlayer.isPlaying) {
+                val videoDurationMs = mExoPlayer.duration / 1000
+                if (!wakeLock.isHeld) {
+                    wakeLock.acquire(videoDurationMs)
+                }
+            } else {
+                // Set default timeout (e.g., 10 minutes) when video is paused or stopped
+                if (!wakeLock.isHeld) {
+                    wakeLock.acquire(10 * 60 * 1000L) // 10 minutes
+                }
+            }
+        }
 
 
         val scaledModifier = Modifier
             .fillMaxSize()
             .resizeWithContentScale(ContentScale.Fit, presentationState.videoSizeDp)
+            .pointerInput(Unit) {
+                detectTapGestures {
+                    if (controlsVisible) {
+                        controlsVisible = false // hide immediately
+                    } else {
+                        controlsVisible = true
+                        startAutoHideTimer()
+                    }
+                }
+            }
 
         PlayerSurface(
             mExoPlayer,
@@ -401,42 +442,16 @@ private fun ExoPlayerUI(
                     .background(Color.Black))
         }
 
-        Column(
-            verticalArrangement = Arrangement.SpaceBetween,
-            modifier = Modifier
-                .fillMaxSize()
-        ) {
-
-            TopControls{
+        PlayerControls(
+            mExoPlayer = mExoPlayer,
+            isVisible ={controlsVisible},
+            navigateUp = {
                 navController.navigateUp()
             }
-            Row(
-                horizontalArrangement = Arrangement.SpaceAround,
-                verticalAlignment = Alignment.CenterVertically,
-                modifier = Modifier.fillMaxWidth()
-            ) {
-                PreviousButton(mExoPlayer)
-                PlayPauseButton(mExoPlayer)
-                NextButton(mExoPlayer)
+        )
 
-            }
 
-            BottomControls(player = mExoPlayer, onFullScreen = onFullScreen)
-        }
 
-//        AndroidView(
-//            factory = { context ->
-//
-//
-//                PlayerView(context).apply {
-//                    player = mExoPlayer
-//                    keepScreenOn = true
-//                }
-//
-//            },
-//            modifier = Modifier
-//
-//        )
     }
 
 
