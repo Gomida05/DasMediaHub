@@ -1,15 +1,9 @@
 package com.das.forui.ui.viewer
 
-import android.app.PendingIntent
 import android.content.Context
 import android.content.Intent
-import android.graphics.Bitmap
-import android.graphics.BitmapFactory
 import android.graphics.Typeface.BOLD
 import android.graphics.Typeface.ITALIC
-import android.graphics.drawable.Drawable
-import android.media.MediaMetadata
-import android.media.session.MediaSession
 import android.os.Bundle
 import android.text.SpannableString
 import android.text.style.BackgroundColorSpan
@@ -85,17 +79,14 @@ import androidx.compose.ui.window.Dialog
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.media3.common.MediaItem
 import androidx.media3.common.Player
-import androidx.media3.common.util.UnstableApi
 import androidx.media3.exoplayer.ExoPlayer
-import androidx.media3.ui.PlayerNotificationManager
 import androidx.media3.ui.PlayerView
 import androidx.navigation.NavController
+import androidx.work.OneTimeWorkRequestBuilder
+import androidx.work.WorkManager
+import androidx.work.workDataOf
 import coil.compose.AsyncImage
 import coil.request.ImageRequest
-import com.bumptech.glide.Glide
-import com.bumptech.glide.request.target.CustomTarget
-import com.bumptech.glide.request.transition.Transition
-import com.das.forui.downloader.DownloaderClass
 import com.das.forui.services.AudioServiceFromUrl
 import com.das.forui.MainActivity
 import com.das.forui.R
@@ -103,14 +94,12 @@ import com.das.forui.ui.viewer.GlobalVideoList.listOfVideosListData
 import com.das.forui.ui.viewer.GlobalVideoList.previousVideosListData
 import com.das.forui.MainApplication
 import com.das.forui.databased.DatabaseFavorite
-import com.das.forui.mediacontroller.MyExoPlayerCallBack
-import com.das.forui.mediacontroller.MyMediaSessionCallBack
+import com.das.forui.downloader.DownloaderCoroutineWorker
 import com.das.forui.objectsAndData.ForUIKeyWords.ACTION_START
 import com.das.forui.objectsAndData.ForUIKeyWords.NEW_INTENT_FOR_VIEWER
 import com.das.forui.objectsAndData.ForUIDataClass.VideoDetails
 import com.das.forui.objectsAndData.ForUIDataClass.VideosListData
 import com.das.forui.ui.viewer.GlobalVideoList.bundles
-
 
 
 @Composable
@@ -194,18 +183,17 @@ fun VideoPlayerScreen(
                 ExoPlayerUI(
                     navController,
                     currentId = videoID,
-                    title = videoTitle.toString(),
-                    channelName = videoChannelName.toString(),
-                    viewModel,
-                    done = {
-                        videoUrl = it
-                    }
-                )
+                    viewModel
+                ){
+                    videoUrl = it
+                }
+
+
             }
 
             LazyColumn {
 
-                item {
+                item(videoID) {
                     VideoDetailsComposable(
                         mContext = mContext,
                         videoId = videoID,
@@ -218,7 +206,8 @@ fun VideoPlayerScreen(
                         downloadAsVideo = {
                             Toast.makeText(mContext, "Downloading has started", Toast.LENGTH_SHORT)
                                 .show()
-                            DownloaderClass(mContext).downloadVideo(videoUrl, it, "mp4")
+                            startDownloading(mContext, videoUrl, it)
+//                            DownloaderClass(mContext).downloadVideo(videoUrl, it, "mp4")
                         },
                         downloadAsMusic = {
                             Toast.makeText(mContext, "Downloading has started", Toast.LENGTH_SHORT)
@@ -292,14 +281,20 @@ fun VideoPlayerScreen(
     }
 }
 
+fun startDownloading(context: Context, fileUrl: String, title: String){
+    val request = OneTimeWorkRequestBuilder<DownloaderCoroutineWorker>()
+        .setInputData(workDataOf("file_url" to fileUrl, "title" to title))
+        .build()
 
-@androidx.annotation.OptIn(UnstableApi::class)
+    WorkManager.getInstance(context).enqueue(request)
+}
+
+
+
 @Composable
 private fun ExoPlayerUI(
     navController: NavController,
     currentId: String,
-    title: String,
-    channelName: String,
     viewModel: ViewerViewModel,
     done: (url: String) ->Unit
 ) {
@@ -314,12 +309,10 @@ private fun ExoPlayerUI(
 
 
 
-    LaunchedEffect(Unit) {
+    LaunchedEffect(currentId) {
         viewModel.loadVideoUrl(currentId)
     }
 
-    val playerNotificationManager = PlayerNotificationManager.Builder(mContext, 22, "MEDIA_PLAYER")
-        .build()
 
     if (isThereError.isNotEmpty()){
         Box(
@@ -363,71 +356,128 @@ private fun ExoPlayerUI(
 
 
 
-        val mediaSession = MediaSession(mContext, "AudioService").apply {
-            setMetadata(
-                mediaMetaDetails(mContext, currentId, title, channelName, mExoPlayer.duration)
-                )
-
-            setCallback(
-                MyMediaSessionCallBack(
-                    mContext,
-                    mediaDetails = VideosListData(
-                        currentId,
-                        title,
-                        "434",
-                        "33",
-                        mExoPlayer.duration.toString(),
-                        channelName,""
-                    ),
-                    this,
-                    mExoPlayer
-                )
-            )
-            isActive = true
-            @Suppress("DEPRECATION")
-            setFlags(MediaSession.FLAG_HANDLES_MEDIA_BUTTONS or MediaSession.FLAG_HANDLES_TRANSPORT_CONTROLS)
-
-            @Suppress("DEPRECATION")
-            setMediaButtonReceiver(
-                PendingIntent.getBroadcast(
-                    mContext, 0,
-                    Intent(Intent.ACTION_MEDIA_BUTTON),
-                    PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE)
-            )
-        }
-        mExoPlayer.addListener(
-            MyExoPlayerCallBack(
-                mContext, mExoPlayer,
-                currentId, mediaSession
-            )
-        )
 
 
         DisposableEffect(mExoPlayer) {
             onDispose {
                 mExoPlayer.release()
-                playerNotificationManager.setPlayer(null)
+//                playerNotificationManager.setPlayer(null)
             }
         }
-        playerNotificationManager.setMediaSessionToken(
-            mediaSession.sessionToken
+
+        /*
+        val presentationState = rememberPresentationState(mExoPlayer)
+        val videoSize = presentationState.videoSizeDp
+        val isPlaying by remember { derivedStateOf { mExoPlayer.isPlaying } }
+
+        // Seek position handling
+        val currentPosition by remember { mutableLongStateOf(mExoPlayer.currentPosition?: 0L) }
+        val duration by remember { mutableLongStateOf(mExoPlayer.duration?: 0L) }
+
+
+        val scaledModifier = Modifier
+            .fillMaxSize()
+            .resizeWithContentScale(ContentScale.Fit, presentationState.videoSizeDp)
+
+        PlayerSurface(
+            mExoPlayer,
+            surfaceType = SURFACE_TYPE_SURFACE_VIEW,
+            modifier = scaledModifier
         )
-        playerNotificationManager.setPlayer(mExoPlayer)
 
+        if (presentationState.coverSurface) {
+            // Cover the surface that is being prepared with a shutter
+            Box(
+                Modifier
+                    .fillMaxSize()
+                    .background(Color.Black))
+        }
 
+        Column(
+            modifier = Modifier
+                .fillMaxSize()
+                .padding(16.dp),
+            verticalArrangement = Arrangement.Bottom,
+            horizontalAlignment = Alignment.CenterHorizontally
+        ) {
+            // Timeline + timestamps
+            Row(
+                verticalAlignment = Alignment.CenterVertically,
+                modifier = Modifier.fillMaxWidth()
+            ) {
+                Text(
+                    text = currentPosition.toString(),
+                    color = Color.White,
+                    fontSize = 12.sp
+                )
+//                Slider(
+//                    value = currentPosition.coerceAtMost(duration).toFloat(),
+//                    onValueChange = { mExoPlayer.seekTo(it.toLong()) },
+//                    valueRange = 0f..duration.toFloat(),
+//                    modifier = Modifier.weight(1f).padding(horizontal = 8.dp),
+//                    colors = SliderDefaults.colors(
+//                        thumbColor = Color.White,
+//                        activeTrackColor = Color.White
+//                    )
+//                )
+
+                if (duration > 0) {
+                    Slider(
+                        value = currentPosition.toFloat(),
+                        onValueChange = { mExoPlayer.seekTo(it.toLong()) },
+                        valueRange = 0f..duration.toFloat(),
+                        modifier = Modifier
+                            .weight(1f)
+                            .padding(horizontal = 8.dp),
+                        colors = SliderDefaults.colors(
+                            thumbColor = Color.White,
+                            activeTrackColor = Color.White
+                        )
+                    )
+                } else {
+                    // Optionally show a disabled Slider or loading placeholder
+                    LinearProgressIndicator(
+                        modifier = Modifier
+                            .weight(1f)
+                            .height(4.dp),
+                        color = Color.White
+                    )
+                }
+
+                Text(
+                    text = duration.toString(),
+                    color = Color.White,
+                    fontSize = 12.sp
+                )
+            }
+
+            // Controls row
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(top = 8.dp),
+                horizontalArrangement = Arrangement.SpaceEvenly,
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                PreviousButton(mExoPlayer)
+                PlayPauseButton(mExoPlayer)
+                NextButton(mExoPlayer)
+            }
+        }
+*/
 
         AndroidView(
             factory = { context ->
 
+
                 PlayerView(context).apply {
                     player = mExoPlayer
                     keepScreenOn = true
-                    setShowNextButton(true)
                 }
 
             },
             modifier = Modifier
-                .fillMaxSize()
+
         )
     }
 
@@ -1020,6 +1070,7 @@ private fun ShowAlertDialog(
 
 
 
+
 private class MyExoPlayerListener(
     private val navController: NavController
 ) : Player.Listener {
@@ -1266,71 +1317,6 @@ private fun AskToPlay(
         }
     )
 
-}
-
-
-private fun mediaMetaDetails(
-    context: Context,
-    videoId: String,
-    title: String,
-    channelName: String,
-    duration: Long
-): MediaMetadata {
-    val metadata = MediaMetadata.Builder()
-        .putString(MediaMetadata.METADATA_KEY_TITLE, title)
-        .putString(MediaMetadata.METADATA_KEY_ARTIST, channelName)
-
-        .putString(
-            MediaMetadata.METADATA_KEY_ALBUM,
-            "unknown album"
-        )
-        .putLong(MediaMetadata.METADATA_KEY_DURATION, duration)
-
-    getBitmapFromUrl(context,"https://img.youtube.com/vi/$videoId/0.jpg", { bitmap ->
-
-        if (bitmap != null) {
-            metadata.putBitmap(MediaMetadata.METADATA_KEY_ALBUM_ART, bitmap)
-        } else {
-            metadata.putBitmap(
-                MediaMetadata.METADATA_KEY_ALBUM_ART,
-                BitmapFactory.decodeResource(context.resources, R.drawable.music_note_24dp)
-            )
-        }
-    }, { _ ->
-        metadata.putBitmap(
-            MediaMetadata.METADATA_KEY_ALBUM_ART,
-            BitmapFactory.decodeResource(context.resources, R.drawable.music_note_24dp)
-        )
-
-
-    }
-    )
-    return metadata.build()
-}
-
-
-private fun getBitmapFromUrl(
-    context: Context,
-    url: String, callback: (Bitmap?) -> Unit,
-    gotAnError: (Drawable?) -> Unit
-) {
-    Glide.with(context)
-        .asBitmap()
-        .load(url)
-        .into(object : CustomTarget<Bitmap>() {
-            override fun onResourceReady(resource: Bitmap, transition: Transition<in Bitmap>?) {
-                // Pass the loaded bitmap back via the callback
-                callback(resource)
-            }
-
-            override fun onLoadCleared(placeholder: Drawable?) {
-
-            }
-
-            override fun onLoadFailed(errorDrawable: Drawable?) {
-                gotAnError(errorDrawable)
-            }
-        })
 }
 
 

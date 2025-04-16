@@ -2,10 +2,10 @@ package com.das.forui
 
 import android.app.Application
 import android.os.Build
+import androidx.work.Configuration
 import com.chaquo.python.Python
 import com.chaquo.python.Python.getInstance
 import com.chaquo.python.android.AndroidPlatform
-import com.das.forui.MainApplication.Youtuber.pythonInstant
 import com.das.forui.objectsAndData.ForUIKeyWords.YOUTUBE_HOST_1
 import com.das.forui.objectsAndData.ForUIKeyWords.YOUTUBE_HOST_2
 import com.das.forui.objectsAndData.ForUIKeyWords.YOUTUBE_HOST_3
@@ -22,7 +22,11 @@ import java.time.format.DateTimeFormatter
 import java.util.Locale
 import java.util.regex.Pattern
 
-class MainApplication: Application() {
+class MainApplication: Application(), Configuration.Provider {
+    override val workManagerConfiguration: Configuration
+        get() = Configuration.Builder()
+            .setMinimumLoggingLevel(android.util.Log.INFO)
+            .build()
 
     override fun onCreate() {
         super.onCreate()
@@ -80,7 +84,7 @@ class MainApplication: Application() {
 
 
 
-    object Youtuber {
+    companion object Youtuber {
         val pythonInstant = getInstance()
 
         /**

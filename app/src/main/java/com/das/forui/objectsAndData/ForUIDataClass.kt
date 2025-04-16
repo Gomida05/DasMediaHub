@@ -73,12 +73,4 @@ data object ForUIDataClass {
         val selectedIcon: ImageVector,
         val unselectedIcon: ImageVector
     )
-
-
-    data class SettingsDataClass(
-        val title: String,
-        val leftIcon: ImageVector,
-        val rightIcon: ImageVector
-
-    )
 }

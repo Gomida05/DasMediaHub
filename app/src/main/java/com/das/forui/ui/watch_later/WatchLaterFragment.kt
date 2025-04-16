@@ -22,6 +22,7 @@ import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.MoreVert
+import androidx.compose.material.icons.filled.VideoLibrary
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ExperimentalMaterial3Api
@@ -89,35 +90,56 @@ fun WatchLaterComposable(navController: NavController) {
             TopAppBar(
                 scrollBehavior = scrollBehavior,
                 actions = {
+                    Icon(
+                        imageVector = Icons.Default.VideoLibrary,
+                        "",
+
+                        modifier = Modifier
+                            .align(Alignment.CenterVertically)
+                    )
+                },
+                title = {
                     Text(
                         "List of videos",
                         textAlign = TextAlign.Center,
-                        style = MaterialTheme.typography.headlineSmall,
+                        style = MaterialTheme.typography.headlineMedium,
                         modifier = Modifier
                             .fillMaxWidth()
-                            .padding(start = 15.dp, end = 5.dp)
                     )
-                },
-                title = {}
+                }
             )
         }
     ) { paddingValues ->
         Box(
             modifier = Modifier
                 .fillMaxSize()
-                .padding(paddingValues)
-                .padding(bottom = 30.dp),
+                .padding(paddingValues),
         ) {
             if (isLoading) {
                 CircularProgressIndicator(modifier = Modifier.align(Alignment.Center))
             } else {
                 if (searchResults.isEmpty()) {
 
-                    Text(
-                        text = "You haven't saved any videos yet. Save some videos to create your collection!",
-                        fontSize = 25.sp,
-                        textAlign = TextAlign.Center
-                    )
+                    Column(
+                        modifier = Modifier
+                                .align(Alignment.Center)
+                    ){
+                        Text(
+                            text = "You don't have any saved videos int your collection!." +
+                                    "\nSave some videos to add to your collection! ",
+                            style = MaterialTheme.typography.headlineMedium,
+                            fontSize = 20.sp,
+                            textAlign = TextAlign.Center,
+                        )
+                        Icon(
+                            imageVector = Icons.Default.VideoLibrary,
+                            "",
+
+                            modifier = Modifier
+                                .align(Alignment.CenterHorizontally)
+                                .size(60.dp)
+                        )
+                    }
                 } else {
                     LazyColumn {
                         items(searchResults, key = { it.watchUrl }) { searchItem ->

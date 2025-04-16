@@ -77,7 +77,7 @@ fun ResultViewerPage(
     val searchResults by viewModel.searchResults
     val mContext = LocalContext.current
 
-    LaunchedEffect(Unit) {
+    LaunchedEffect(data) {
         if (data.isNotEmpty()) {
             viewModel.fetchSuggestions(data)
         }

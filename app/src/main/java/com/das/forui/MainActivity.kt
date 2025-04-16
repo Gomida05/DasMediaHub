@@ -29,6 +29,7 @@ import androidx.activity.compose.setContent
 import androidx.appcompat.app.AppCompatDelegate
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Home
 import androidx.compose.material.icons.filled.Settings
@@ -41,7 +42,6 @@ import androidx.compose.material3.Text
 import androidx.compose.material3.NavigationBar
 import androidx.compose.material3.NavigationBarDefaults
 import androidx.compose.material3.Scaffold
-import androidx.compose.material3.Surface
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.core.app.ActivityCompat
@@ -66,13 +66,18 @@ import java.lang.System.currentTimeMillis
 import androidx.compose.material3.NavigationBarItem
 import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.platform.LocalContext
 import androidx.core.util.Consumer
 import androidx.lifecycle.compose.LocalLifecycleOwner
 import androidx.navigation.NavController
 import androidx.navigation.compose.currentBackStackEntryAsState
+import androidx.work.OneTimeWorkRequestBuilder
+import androidx.work.WorkManager
+import androidx.work.workDataOf
 import com.das.forui.databased.PathSaver.getAudioDownloadPath
 import com.das.forui.databased.PathSaver.getVideosDownloadPath
+import com.das.forui.downloader.DownloaderCoroutineWorker
 import com.das.forui.objectsAndData.ForUIKeyWords.ACTION_START
 import com.das.forui.objectsAndData.ForUIKeyWords.NEW_INTENT_FOR_SEARCHER
 import com.das.forui.objectsAndData.ForUIKeyWords.NEW_INTENT_FOR_VIEWER
@@ -93,6 +98,7 @@ import com.das.forui.ui.viewer.VideoPlayerScreen
 class MainActivity : ComponentActivity() {
 
 
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
 
@@ -100,9 +106,8 @@ class MainActivity : ComponentActivity() {
             MainLauncherPageComposable()
         }
 
-
-
     }
+
 
 
 
@@ -149,15 +154,17 @@ class MainActivity : ComponentActivity() {
                 )
             )
 
-            Surface(
-                modifier = Modifier.fillMaxSize()
-            ) {
-                Scaffold(
-                    bottomBar = {
-                        if (currentRoute !in listOf("video viewer", "ResultViewerPage", "user Setting", "searcher", "Downloads", "ExoPlayerUI")) {
+            Scaffold(
+                modifier = Modifier.fillMaxSize(),
+                bottomBar = {
+                    if (currentRoute in listOf("Home", "Watch Later", "Setting")) {
 
-                            NavigationBar(windowInsets = NavigationBarDefaults.windowInsets) {
-                                bottomNavigationItems.forEachIndexed { _, items ->
+                        NavigationBar(
+                            windowInsets = NavigationBarDefaults.windowInsets,
+                            modifier = Modifier
+                                .clip(RoundedCornerShape(12))
+                        ) {
+                            bottomNavigationItems.forEachIndexed { _, items ->
                                     NavigationBarItem(
                                         selected = currentRoute == items.title,
                                         onClick = {
@@ -183,70 +190,73 @@ class MainActivity : ComponentActivity() {
                                         }
                                     )
                                 }
-                            }
-                        }
-                    }
-                ) { paddingValues ->
 
-                    NavHost(
-                        navController = navController, startDestination = "Home",
-                        modifier = Modifier.padding(paddingValues)
-                    ) {
-                        composable("Home") {
-                            HomePageComposable(navController)
-                        }
-                        composable("Watch Later") {
-                            WatchLaterComposable(navController)
-                        }
-                        composable("Setting") {
-                            SettingsComposable(navController)
-                        }
-
-                        composable("video viewer"){
-                            val bundle = bundles.getBundle(NEW_INTENT_FOR_VIEWER)
-                            VideoPlayerScreen(navController,
-                                bundle
-                            )
-
-                        }
-                        composable("ResultViewerPage") {
-
-                            val argument = bundles.getString(NEW_TEXT_FOR_RESULT).toString()
-                                ResultViewerPage(
-                                    navController,
-                                    argument
-                                )
-                        }
-                        composable("Downloads"){
-                            DownloadsPageComposable(navController)
-                        }
-                        composable("searcher") {
-
-                            SearchPageCompose(
-                                navController,
-                                bundles.getString(NEW_INTENT_FOR_SEARCHER, "")
-                            )
-                        }
-                        composable("user Setting") {
-                            UserSettingComposable(navController)
-
-                        }
-                        composable("ExoPlayerUI") {
-                            ExoPlayerUI(
-                                bundles.getString(PLAY_HERE_VIDEO).toString()
-                            )
                         }
                     }
                 }
+            ) { paddingValues ->
 
+                NavHost(
+                    navController = navController, startDestination = "Home",
+                    modifier = Modifier.padding(paddingValues)
+                ) {
+                    composable("Home") {
+                        HomePageComposable(navController)
+                    }
+                    composable("Watch Later") {
+                        WatchLaterComposable(navController)
+                    }
+                    composable("Setting") {
+                        SettingsComposable(navController)
+                    }
+
+                    composable("video viewer") {
+                        val bundle = bundles.getBundle(NEW_INTENT_FOR_VIEWER)
+                        VideoPlayerScreen(
+                            navController,
+                            bundle
+                        )
+
+                    }
+                    composable("ResultViewerPage") {
+
+                        val argument = bundles.getString(NEW_TEXT_FOR_RESULT).toString()
+                        ResultViewerPage(
+                            navController,
+                            argument
+                        )
+                    }
+                    composable("Downloads") {
+                        DownloadsPageComposable(navController)
+                    }
+                    composable("searcher") {
+
+                        SearchPageCompose(
+                            navController,
+                            bundles.getString(NEW_INTENT_FOR_SEARCHER, "")
+                        )
+                    }
+                    composable("user Setting") {
+                        UserSettingComposable(navController)
+
+                    }
+                    composable("ExoPlayerUI") {
+                        ExoPlayerUI(
+                            bundles.getString(PLAY_HERE_VIDEO).toString()
+                        )
+                    }
+                }
             }
+
         }
+
 
 
         DisposableEffect(Unit) {
 
-
-            onDispose { activity.removeOnNewIntentListener(listener) }
+            onDispose {
+                activity.removeOnNewIntentListener(listener)
+            }
         }
     }
 
@@ -558,6 +568,8 @@ class MainActivity : ComponentActivity() {
             manager?.createNotificationChannelGroup(serviceChannel)
             manager?.createNotificationChannel(downloadChannel)
         }
+
+
     }
 
 
@@ -658,6 +670,15 @@ class MainActivity : ComponentActivity() {
         if (result != AudioManager.AUDIOFOCUS_REQUEST_GRANTED) {
 
         }
+    }
+
+
+    fun startDownloading(fileUrl: String, title: String){
+        val request = OneTimeWorkRequestBuilder<DownloaderCoroutineWorker>()
+            .setInputData(workDataOf("file_url" to fileUrl, "title" to title))
+            .build()
+
+        WorkManager.getInstance(this).enqueue(request)
     }
 
 

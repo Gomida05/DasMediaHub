@@ -8,7 +8,6 @@ import com.das.forui.objectsAndData.ForUIKeyWords.SET_SHUFFLE_MODE
 
 object BackgroundPlayerStates {
 
-
     fun setStateToPlaying(currentPosition: Long, shuffleMode: Boolean): PlaybackStateCompat {
         val playbackState = PlaybackStateCompat.Builder()
             .setState(

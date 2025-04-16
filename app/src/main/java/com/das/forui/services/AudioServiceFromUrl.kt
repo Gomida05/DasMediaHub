@@ -41,12 +41,12 @@ class AudioServiceFromUrl : Service() {
 
     private val channelId = "MediaYouTubePlayer"
     private var exoPlayer: ExoPlayer? = null
-    lateinit var mediaSession: MediaSessionCompat
+    private lateinit var mediaSession: MediaSessionCompat
     private lateinit var audioManager: AudioManager
     private lateinit var mediaUrl: String
     private lateinit var videoViews: String
     private lateinit var videoDate: String
-    lateinit var videoId: String
+    private lateinit var videoId: String
     private lateinit var durationFromActivity: String
     private var audioFocusRequest: AudioFocusRequest? = null
 
@@ -177,7 +177,7 @@ class AudioServiceFromUrl : Service() {
             val serviceChannel = NotificationChannel(
                 channelId,
                 "Media Player",
-                NotificationManager.IMPORTANCE_LOW
+                NotificationManager.IMPORTANCE_HIGH
             ).apply {
                 group = "MNGC"
                 enableLights(false)
@@ -233,6 +233,7 @@ class AudioServiceFromUrl : Service() {
             .setPriority(NotificationCompat.PRIORITY_HIGH)
             .setVisibility(NotificationCompat.VISIBILITY_PUBLIC)
             .setDeleteIntent(deletePendingIntent)
+            .setSettingsText("ForUI Media Player")
             .build()
 
 
@@ -430,7 +431,7 @@ class AudioServiceFromUrl : Service() {
                 stopSelf()
                 val notificationManager = getSystemService(NotificationManager::class.java)
                 notificationManager?.cancel(1)
-
+                onDestroy()
             }
         }
 
