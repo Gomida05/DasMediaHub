@@ -1,5 +1,6 @@
 package com.das.forui.ui.viewer
 
+import android.annotation.SuppressLint
 import android.content.Context
 import android.content.Intent
 import android.graphics.Typeface.BOLD
@@ -74,13 +75,15 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextDecoration
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import androidx.compose.ui.viewinterop.AndroidView
 import androidx.compose.ui.window.Dialog
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.media3.common.MediaItem
 import androidx.media3.common.Player
 import androidx.media3.exoplayer.ExoPlayer
-import androidx.media3.ui.PlayerView
+import androidx.media3.ui.compose.PlayerSurface
+import androidx.media3.ui.compose.SURFACE_TYPE_SURFACE_VIEW
+import androidx.media3.ui.compose.modifiers.resizeWithContentScale
+import androidx.media3.ui.compose.state.rememberPresentationState
 import androidx.navigation.NavController
 import androidx.work.OneTimeWorkRequestBuilder
 import androidx.work.WorkManager
@@ -95,6 +98,11 @@ import com.das.forui.ui.viewer.GlobalVideoList.previousVideosListData
 import com.das.forui.MainApplication
 import com.das.forui.databased.DatabaseFavorite
 import com.das.forui.downloader.DownloaderCoroutineWorker
+import com.das.forui.mediacontroller.VideoPlayerControllers.BottomControls
+import com.das.forui.mediacontroller.VideoPlayerControllers.NextButton
+import com.das.forui.mediacontroller.VideoPlayerControllers.PlayPauseButton
+import com.das.forui.mediacontroller.VideoPlayerControllers.PreviousButton
+import com.das.forui.mediacontroller.VideoPlayerControllers.TopControls
 import com.das.forui.objectsAndData.ForUIKeyWords.ACTION_START
 import com.das.forui.objectsAndData.ForUIKeyWords.NEW_INTENT_FOR_VIEWER
 import com.das.forui.objectsAndData.ForUIDataClass.VideoDetails
@@ -183,10 +191,11 @@ fun VideoPlayerScreen(
                 ExoPlayerUI(
                     navController,
                     currentId = videoID,
-                    viewModel
-                ){
-                    videoUrl = it
-                }
+                    title = videoTitle.toString(),
+                    viewModel = viewModel,
+                    done = {videoUrl= it},
+                    onFullScreen = { }
+                )
 
 
             }
@@ -291,12 +300,15 @@ fun startDownloading(context: Context, fileUrl: String, title: String){
 
 
 
+@SuppressLint("UnsafeOptInUsageError")
 @Composable
 private fun ExoPlayerUI(
     navController: NavController,
     currentId: String,
+    title: String,
     viewModel: ViewerViewModel,
-    done: (url: String) ->Unit
+    done: (url: String) ->Unit,
+    onFullScreen: ()-> Unit
 ) {
     val mContext = LocalContext.current
 
@@ -365,14 +377,10 @@ private fun ExoPlayerUI(
             }
         }
 
-        /*
+
         val presentationState = rememberPresentationState(mExoPlayer)
         val videoSize = presentationState.videoSizeDp
-        val isPlaying by remember { derivedStateOf { mExoPlayer.isPlaying } }
 
-        // Seek position handling
-        val currentPosition by remember { mutableLongStateOf(mExoPlayer.currentPosition?: 0L) }
-        val duration by remember { mutableLongStateOf(mExoPlayer.duration?: 0L) }
 
 
         val scaledModifier = Modifier
@@ -394,91 +402,41 @@ private fun ExoPlayerUI(
         }
 
         Column(
+            verticalArrangement = Arrangement.SpaceBetween,
             modifier = Modifier
                 .fillMaxSize()
-                .padding(16.dp),
-            verticalArrangement = Arrangement.Bottom,
-            horizontalAlignment = Alignment.CenterHorizontally
         ) {
-            // Timeline + timestamps
+
+            TopControls{
+                navController.navigateUp()
+            }
             Row(
+                horizontalArrangement = Arrangement.SpaceAround,
                 verticalAlignment = Alignment.CenterVertically,
                 modifier = Modifier.fillMaxWidth()
-            ) {
-                Text(
-                    text = currentPosition.toString(),
-                    color = Color.White,
-                    fontSize = 12.sp
-                )
-//                Slider(
-//                    value = currentPosition.coerceAtMost(duration).toFloat(),
-//                    onValueChange = { mExoPlayer.seekTo(it.toLong()) },
-//                    valueRange = 0f..duration.toFloat(),
-//                    modifier = Modifier.weight(1f).padding(horizontal = 8.dp),
-//                    colors = SliderDefaults.colors(
-//                        thumbColor = Color.White,
-//                        activeTrackColor = Color.White
-//                    )
-//                )
-
-                if (duration > 0) {
-                    Slider(
-                        value = currentPosition.toFloat(),
-                        onValueChange = { mExoPlayer.seekTo(it.toLong()) },
-                        valueRange = 0f..duration.toFloat(),
-                        modifier = Modifier
-                            .weight(1f)
-                            .padding(horizontal = 8.dp),
-                        colors = SliderDefaults.colors(
-                            thumbColor = Color.White,
-                            activeTrackColor = Color.White
-                        )
-                    )
-                } else {
-                    // Optionally show a disabled Slider or loading placeholder
-                    LinearProgressIndicator(
-                        modifier = Modifier
-                            .weight(1f)
-                            .height(4.dp),
-                        color = Color.White
-                    )
-                }
-
-                Text(
-                    text = duration.toString(),
-                    color = Color.White,
-                    fontSize = 12.sp
-                )
-            }
-
-            // Controls row
-            Row(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(top = 8.dp),
-                horizontalArrangement = Arrangement.SpaceEvenly,
-                verticalAlignment = Alignment.CenterVertically
             ) {
                 PreviousButton(mExoPlayer)
                 PlayPauseButton(mExoPlayer)
                 NextButton(mExoPlayer)
+
             }
+
+            BottomControls(player = mExoPlayer, onFullScreen = onFullScreen)
         }
-*/
 
-        AndroidView(
-            factory = { context ->
-
-
-                PlayerView(context).apply {
-                    player = mExoPlayer
-                    keepScreenOn = true
-                }
-
-            },
-            modifier = Modifier
-
-        )
+//        AndroidView(
+//            factory = { context ->
+//
+//
+//                PlayerView(context).apply {
+//                    player = mExoPlayer
+//                    keepScreenOn = true
+//                }
+//
+//            },
+//            modifier = Modifier
+//
+//        )
     }
 
 

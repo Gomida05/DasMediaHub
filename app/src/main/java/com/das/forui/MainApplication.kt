@@ -6,6 +6,7 @@ import androidx.work.Configuration
 import com.chaquo.python.Python
 import com.chaquo.python.Python.getInstance
 import com.chaquo.python.android.AndroidPlatform
+import com.das.forui.MainApplication.Youtuber.pythonInstant
 import com.das.forui.objectsAndData.ForUIKeyWords.YOUTUBE_HOST_1
 import com.das.forui.objectsAndData.ForUIKeyWords.YOUTUBE_HOST_2
 import com.das.forui.objectsAndData.ForUIKeyWords.YOUTUBE_HOST_3
@@ -84,7 +85,7 @@ class MainApplication: Application(), Configuration.Provider {
 
 
 
-    companion object Youtuber {
+    object Youtuber {
         val pythonInstant = getInstance()
 
         /**
