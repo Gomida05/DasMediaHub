@@ -2,7 +2,6 @@ package com.das.forui.ui.searcher
 
 import android.app.AlertDialog
 import android.content.Context
-import android.database.Cursor
 import android.os.Bundle
 import android.widget.Toast
 import androidx.compose.foundation.layout.Box
@@ -31,6 +30,7 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.MutableState
+import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
@@ -41,6 +41,7 @@ import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavController
 import com.das.forui.MainApplication.Youtuber.youtubeExtractor
 import com.das.forui.MainApplication.Youtuber.isValidYoutubeURL
@@ -57,9 +58,15 @@ fun SearchPageCompose(
 ) {
 
     val textState = remember { mutableStateOf(newText) }
-
-
     val context = LocalContext.current
+    val androidViewMode: SearchPageViewMode = viewModel()
+
+
+    val settingsResults = remember { androidViewMode.downloadedListData}
+
+    val isThereError by androidViewMode.error
+
+
     Scaffold(
         modifier = Modifier
             .fillMaxSize()
@@ -134,24 +141,30 @@ fun SearchPageCompose(
 
             Spacer(modifier = Modifier.height(16.dp))
 
-            val settingsResults = remember { mutableStateOf<List<String>>(emptyList()) }
+
 
             LaunchedEffect(Unit) {
-                settingsResults.value = fetchDataFromDatabase(context)
+                androidViewMode.fetchDatabase()
             }
-            LazyColumn(
-                modifier = Modifier
-            ) {
-                items(settingsResults.value) { settingsItem ->
-                    CategoryItems(
-                        context,
-                        title = settingsItem,
-                        settingsResults,
-                        onButtonClicked = { text ->
-                            textState.value = text
-                            goSearch(context, navController, text)
-                        }
-                    )
+
+            if (isThereError.isNotEmpty()){
+
+            }
+            else if (settingsResults.value.isNotEmpty()){
+                LazyColumn(
+                    modifier = Modifier
+                ) {
+                    items(settingsResults.value) { settingsItem ->
+                        CategoryItems(
+                            context,
+                            title = settingsItem,
+                            settingsResults,
+                            onButtonClicked = { text ->
+                                textState.value = text
+                                goSearch(context, navController, text)
+                            }
+                        )
+                    }
                 }
             }
 
@@ -270,29 +283,7 @@ private fun showDialogs(context: Context, message: String){
     Toast.makeText(context, message, Toast.LENGTH_SHORT).show()
 }
 
-private fun fetchDataFromDatabase(context: Context): List<String> {
-    try {
-        val dbHelper = SearchHistoryDB(context)
 
-        val cursor: Cursor? = dbHelper.getResults()
-        val urls = mutableListOf<String>()
-        cursor?.let {
-            while (it.moveToNext()) {
-                val title = it.getString(it.getColumnIndexOrThrow("title"))
-                title?.let { _ ->
-                    urls.add("$title ")
-                } ?: run {}
-            }
-            it.close()
-        } ?: run {}
-
-        return urls.toList()
-    } catch (e: Exception) {
-        showDialogs(context, e.message.toString())
-    }
-    return listOf("")
-
-}
 
 
 

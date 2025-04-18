@@ -1,10 +1,8 @@
-
 plugins {
     id("com.android.application")
     id("org.jetbrains.kotlin.android")
     id("com.chaquo.python") version "16.0.0"
     id("org.jetbrains.kotlin.plugin.compose")
-    id("com.google.firebase.firebase-perf")
 }
 
 
@@ -26,6 +24,7 @@ android {
         targetSdk = 35
         versionCode = 2
         versionName = "1.13"
+
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
         flavorDimensions.add("pyVersion")
         ndk {
@@ -126,10 +125,6 @@ dependencies {
 //    implementation("androidx.appcompat:appcompat:1.7.0")
 
     implementation("com.google.code.gson:gson:2.10.1")
-    implementation(platform("com.google.firebase:firebase-bom:33.12.0"))
-    implementation("com.google.firebase:firebase-analytics")
-
-    implementation("com.google.firebase:firebase-perf")
 
     implementation("com.github.bumptech.glide:glide:4.16.0")
     implementation("androidx.compose.runtime:runtime-android:1.7.8")
@@ -144,11 +139,10 @@ dependencies {
     //noinspection GradleDependency
     implementation("androidx.navigation:navigation-ui-ktx:2.8.4")
     implementation("androidx.work:work-runtime-ktx:2.10.0")
-    implementation("com.google.firebase:firebase-database-ktx:21.0.0")
     implementation("androidx.media3:media3-session:1.6.1")
     implementation("androidx.media3:media3-exoplayer-dash:1.6.1")
     implementation("androidx.media3:media3-exoplayer-hls:1.6.1")
-    implementation("androidx.media3:media3-ui:1.6.1")
+//    implementation("androidx.media3:media3-ui:1.6.1")
     implementation("androidx.media3:media3-ui-compose:1.6.1")
     implementation("androidx.media3:media3-exoplayer:1.6.1")
     implementation("androidx.media3:media3-common:1.6.1")

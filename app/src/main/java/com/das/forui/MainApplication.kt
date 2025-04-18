@@ -1,3 +1,4 @@
+@file:Suppress("BadConfigurationProvider")
 package com.das.forui
 
 import android.app.Application
@@ -24,14 +25,16 @@ import java.util.Locale
 import java.util.regex.Pattern
 
 class MainApplication: Application(), Configuration.Provider {
+
     override val workManagerConfiguration: Configuration
         get() = Configuration.Builder()
-            .setMinimumLoggingLevel(android.util.Log.INFO)
             .build()
-
     override fun onCreate() {
         super.onCreate()
+
+
         CoroutineScope(Dispatchers.IO).launch {
+
             if (!Python.isStarted()) {
                 Python.start(AndroidPlatform(this@MainApplication))
             }

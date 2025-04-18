@@ -64,15 +64,17 @@ class BackGroundPlayer: Service() {
             @Suppress("DEPRECATION")
             setFlags(MediaSessionCompat.FLAG_HANDLES_MEDIA_BUTTONS or MediaSessionCompat.FLAG_HANDLES_TRANSPORT_CONTROLS)
 
-            setMediaButtonReceiver(PendingIntent.getBroadcast(
-                this@BackGroundPlayer, 0,
-                Intent(Intent.ACTION_MEDIA_BUTTON),
-                PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE)
+            setMediaButtonReceiver(
+                PendingIntent.getBroadcast(
+                    this@BackGroundPlayer, 0,
+                    Intent(Intent.ACTION_MEDIA_BUTTON),
+                    PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
+                )
             )
         }
 
         val mediaUri = intent?.getStringExtra("media_url").orEmpty()
-        val title =  intent?.getStringExtra("title").toString()
+        val title = intent?.getStringExtra("title").toString()
         mediaId = intent?.getStringExtra("media_id").toString()
 
 
@@ -105,7 +107,6 @@ class BackGroundPlayer: Service() {
         when (intent?.action) {
 
             ACTION_START -> {
-
 
 
                 val exoMetadata = MediaMetadata.Builder()

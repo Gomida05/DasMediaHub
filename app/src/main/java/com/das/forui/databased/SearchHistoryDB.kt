@@ -7,9 +7,7 @@ import android.database.sqlite.SQLiteDatabase
 import android.database.sqlite.SQLiteOpenHelper
 
 
-class SearchHistoryDB(
-    context: Context
-): SQLiteOpenHelper(context, DATABASE_NAME, null, DATABASE_VERSION) {
+class SearchHistoryDB(context: Context): SQLiteOpenHelper(context, DATABASE_NAME, null, DATABASE_VERSION) {
 
     override fun onCreate(db: SQLiteDatabase) {
         db.execSQL(SQL_CREATE_ENTRIES)
@@ -23,11 +21,11 @@ class SearchHistoryDB(
 
     fun getResults(): Cursor {
         val db = this.readableDatabase
-        return db.rawQuery("SELECT * FROM results", null) }
+        return db.rawQuery("SELECT * FROM $DATABASE_TABLE_NAME", null) }
 
     private fun isWatchUrlExist(url: String): Boolean {
         val db = this.readableDatabase
-        val cursor = db.rawQuery("SELECT 1 FROM results WHERE title = ?",
+        val cursor = db.rawQuery("SELECT 1 FROM $DATABASE_TABLE_NAME WHERE title = ?",
             arrayOf(
                 url.let {
                     it.trimEnd()
@@ -49,9 +47,13 @@ class SearchHistoryDB(
 
 
         val rowsDeleted = db.delete(
-            "results",
+            DATABASE_TABLE_NAME,
             "title = ?",
-            arrayOf(selectedItem)
+            arrayOf(selectedItem.apply {
+                trimEnd()
+                trimStart()
+            }
+            )
         )
 
         db.close()
@@ -67,22 +69,27 @@ class SearchHistoryDB(
         }
 
         val db = this.writableDatabase
-        val contentValues = ContentValues().apply {
-            put("title", title)
+        val trimmedDta = title.apply {
+            trimEnd()
+            trimStart()
         }
-        val result = db.insert("results", null, contentValues)
+        val contentValues = ContentValues().apply {
+            put("title", trimmedDta)
+        }
+        val result = db.insert(DATABASE_TABLE_NAME, null, contentValues)
         db.close()
         return result != -1L
     }
 
 
     companion object {
-        const val DATABASE_VERSION = 2
-        const val DATABASE_NAME = "search_history.db"
-        const val SQL_CREATE_ENTRIES =
-            """ CREATE TABLE IF NOT EXISTS results ( title TEXT PRIMARY KEY) """
+        private const val DATABASE_TABLE_NAME = "Search_history"
+        private const val DATABASE_VERSION = 3
+        private const val DATABASE_NAME = "search_history.db"
+        private const val SQL_CREATE_ENTRIES =
+            """ CREATE TABLE IF NOT EXISTS $DATABASE_TABLE_NAME ( title TEXT PRIMARY KEY) """
 
-        const val SQL_DELETE_ENTRIES = "DROP TABLE IF EXISTS results"
+        private const val SQL_DELETE_ENTRIES = "DROP TABLE IF EXISTS $DATABASE_TABLE_NAME"
     }
 
 }

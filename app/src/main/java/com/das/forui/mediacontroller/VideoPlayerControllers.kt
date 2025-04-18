@@ -11,6 +11,7 @@ import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.padding
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.Fullscreen
@@ -78,7 +79,10 @@ object VideoPlayerControllers {
                 Row(
                     horizontalArrangement = Arrangement.SpaceAround,
                     verticalAlignment = Alignment.CenterVertically,
-                    modifier = Modifier.fillMaxWidth()
+                    modifier = Modifier
+                        .align(Alignment.CenterHorizontally)
+                        .fillMaxWidth()
+                        .padding(start = 5.dp, end = 5.dp)
                 ) {
                     PreviousButton(mExoPlayer)
                     PlayPauseButton(mExoPlayer)
@@ -98,7 +102,8 @@ object VideoPlayerControllers {
             Icon(
                 imageVector = if (state.showPlay) Icons.Default.PlayArrow else Icons.Default.Pause,
                 contentDescription = if (state.showPlay) "play_button"
-                else "pause_button"
+                else "pause_button",
+                tint = Color(0xFFBB86FC)
             )
         }
     }
@@ -112,7 +117,8 @@ object VideoPlayerControllers {
 
             Icon(
                 imageVector = Icons.Default.SkipPrevious,
-                ""
+                "",
+                tint = Color(0xFFBB86FC)
             )
         }
 
@@ -126,7 +132,8 @@ object VideoPlayerControllers {
 
             Icon(
                 imageVector = Icons.Default.SkipNext,
-                ""
+                "",
+                tint = Color(0xFFBB86FC)
             )
         }
 

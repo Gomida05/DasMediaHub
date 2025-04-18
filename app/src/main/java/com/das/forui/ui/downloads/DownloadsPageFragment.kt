@@ -248,7 +248,7 @@ fun ListItems(
                             options
                         )
                     }
-                    .error(R.drawable.smart_display_24dp)
+                    .error(R.mipmap.under_development)
                     .build()
                 AsyncImage(
                     model = model,

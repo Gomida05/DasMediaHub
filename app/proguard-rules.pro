@@ -31,6 +31,9 @@
 -keep class com.google.gson.** { *; }
 -keep class com.google.gson.reflect.TypeToken { *; }
 -keep class * extends com.google.gson.reflect.TypeToken
+-keep class androidx.work.impl.** { *; }
+-keep class androidx.work.Configuration$Builder { *; }
+
 
 
 -dontwarn com.android.org.conscrypt.SSLParametersImpl

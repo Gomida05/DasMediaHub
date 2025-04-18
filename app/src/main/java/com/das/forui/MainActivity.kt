@@ -72,12 +72,8 @@ import androidx.core.util.Consumer
 import androidx.lifecycle.compose.LocalLifecycleOwner
 import androidx.navigation.NavController
 import androidx.navigation.compose.currentBackStackEntryAsState
-import androidx.work.OneTimeWorkRequestBuilder
-import androidx.work.WorkManager
-import androidx.work.workDataOf
 import com.das.forui.databased.PathSaver.getAudioDownloadPath
 import com.das.forui.databased.PathSaver.getVideosDownloadPath
-import com.das.forui.downloader.DownloaderCoroutineWorker
 import com.das.forui.objectsAndData.ForUIKeyWords.ACTION_START
 import com.das.forui.objectsAndData.ForUIKeyWords.NEW_INTENT_FOR_SEARCHER
 import com.das.forui.objectsAndData.ForUIKeyWords.NEW_INTENT_FOR_VIEWER
@@ -242,6 +238,7 @@ class MainActivity : ComponentActivity() {
                     }
                     composable("ExoPlayerUI") {
                         ExoPlayerUI(
+                            navController,
                             bundles.getString(PLAY_HERE_VIDEO).toString()
                         )
                     }
@@ -580,9 +577,6 @@ class MainActivity : ComponentActivity() {
             .setContentText(message)
             .setSmallIcon(R.mipmap.ic_launcher_ofme)
             .setOngoing(true)
-            .addAction(R.drawable.pause_icon,"Pause", null)
-            .addAction(R.drawable.play_arrow_24dp,"Play", null)
-            .addAction(R.drawable.stop_circle_24dp, "Stop", null)
             .setAutoCancel(false)
             .setGroup("NGC")
             .setPriority(NotificationCompat.PRIORITY_HIGH)
@@ -673,13 +667,6 @@ class MainActivity : ComponentActivity() {
     }
 
 
-    fun startDownloading(fileUrl: String, title: String){
-        val request = OneTimeWorkRequestBuilder<DownloaderCoroutineWorker>()
-            .setInputData(workDataOf("file_url" to fileUrl, "title" to title))
-            .build()
-
-        WorkManager.getInstance(this).enqueue(request)
-    }
 
 
 

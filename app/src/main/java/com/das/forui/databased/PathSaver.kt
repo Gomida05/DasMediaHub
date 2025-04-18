@@ -21,7 +21,6 @@ object PathSaver {
             editor.putString(AUDIO_KEY, downloadPath)
             editor.apply()
         }
-        println("here is the path\n$downloadPath")
         return downloadPath.toString()
     }
 
@@ -30,7 +29,6 @@ object PathSaver {
     }
 
     fun setAudioDownloadPath(context: Context, path: String) {
-        println("Here is new saved path: $path")
         val sharedPref: SharedPreferences = context.getSharedPreferences(PREF_NAME, Context.MODE_PRIVATE)
         with(sharedPref.edit()) {
             // Replace the old path with the new one
@@ -50,14 +48,12 @@ object PathSaver {
             editor.putString(VIDEO_KEY, downloadPath)
             editor.apply()
         }
-        println("here is the path\n$downloadPath")
+
         return downloadPath.toString()
     }
 
 
     fun setMoviesDownloadPath(context: Context, path: String) {
-        println("hello there\n$path")
-        println("Here is new saved path: $path")
         val sharedPref: SharedPreferences =context.getSharedPreferences(PREF_NAME, Context.MODE_PRIVATE)
         with(sharedPref.edit()) {
             // Replace the old path with the new one

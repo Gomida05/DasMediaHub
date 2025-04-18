@@ -194,8 +194,7 @@ fun VideoPlayerScreen(
                     navController,
                     currentId = videoID,
                     viewModel = viewModel,
-                    done = {videoUrl= it},
-                    onFullScreen = { }
+                    done = {videoUrl= it}
                 )
 
 
@@ -292,6 +291,7 @@ fun VideoPlayerScreen(
 }
 
 fun startDownloading(context: Context, fileUrl: String, title: String){
+
     val request = OneTimeWorkRequestBuilder<DownloaderCoroutineWorker>()
         .setInputData(workDataOf("file_url" to fileUrl, "title" to title))
         .build()
@@ -308,7 +308,6 @@ private fun ExoPlayerUI(
     currentId: String,
     viewModel: ViewerViewModel,
     done: (url: String) ->Unit,
-    onFullScreen: ()-> Unit
 ) {
     val mContext = LocalContext.current
 
@@ -408,7 +407,7 @@ private fun ExoPlayerUI(
             } else {
                 // Set default timeout (e.g., 10 minutes) when video is paused or stopped
                 if (!wakeLock.isHeld) {
-                    wakeLock.acquire(10 * 60 * 1000L) // 10 minutes
+                    wakeLock.acquire(2 * 60 * 1000L) // 10 minutes
                 }
             }
         }
@@ -532,7 +531,7 @@ fun VideoDetailsComposable(
                     model = ImageRequest.Builder(mContext)
                         .data(channelThumbnailURL)
                         .crossfade(true)
-                        .error(R.drawable.accpuntimg)
+                        .error(R.mipmap.under_development)
                         .build(),
                     contentDescription = "Category Image",
                     modifier = Modifier
