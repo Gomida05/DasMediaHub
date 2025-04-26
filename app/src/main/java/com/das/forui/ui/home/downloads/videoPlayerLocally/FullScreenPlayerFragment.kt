@@ -1,4 +1,4 @@
-package com.das.forui.ui.videoPlayerLocally
+package com.das.forui.ui.home.downloads.videoPlayerLocally
 
 import android.annotation.SuppressLint
 import android.app.Activity

@@ -2,6 +2,7 @@ package com.das.forui.ui.settings
 
 import android.content.Context
 import android.content.Intent
+import android.content.pm.PackageManager
 import android.net.Uri
 import android.widget.Toast
 import androidx.activity.compose.rememberLauncherForActivityResult
@@ -18,6 +19,7 @@ import androidx.compose.material.icons.filled.AccountCircle
 import androidx.compose.material.icons.filled.ColorLens
 import androidx.compose.material.icons.filled.Folder
 import androidx.compose.material.icons.filled.Info
+import androidx.compose.material.icons.filled.Save
 import androidx.compose.material.icons.filled.Update
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Card
@@ -72,6 +74,7 @@ fun SettingsComposable(
         .padding(top = 65.dp)
         .wrapContentSize(Alignment.Center)
     ) {
+      Saved(navController)
       Account(context)
       Appearance(navController)
       Change_Downloading_Location(context)
@@ -90,10 +93,52 @@ fun SettingsComposable(
 
 
 @Composable
-private fun Account(mContext: Context){
+private fun Saved(navController: NavController){
   Card(
     onClick = {
-      showDialogs(mContext)
+      navController.navigate("saved")
+    },
+    modifier = Modifier
+      .fillMaxWidth()
+      .padding(4.dp)
+      .clip(RoundedCornerShape(25))
+
+  ) {
+
+
+    Box(
+      modifier = Modifier
+        .fillMaxWidth()
+        .align(Alignment.CenterHorizontally)
+        .padding(25.dp)
+    ) {
+      Icon(
+        imageVector = Icons.Default.Save,
+        "",
+        modifier = Modifier
+          .align(Alignment.CenterStart)
+      )
+      Text(
+        text = "Saved Videos",
+        fontSize = 16.sp,
+        style = MaterialTheme.typography.headlineSmall,
+        modifier = Modifier.align(Alignment.Center)
+      )
+      Icon(
+        imageVector = Icons.AutoMirrored.Default.ArrowForward,
+        "",
+        modifier = Modifier.align(Alignment.CenterEnd)
+      )
+    }
+
+  }
+}
+
+@Composable
+private fun Account(context: Context){
+  Card(
+    onClick = {
+      openMusicApp(context)
     },
     modifier = Modifier
       .fillMaxWidth()
@@ -323,6 +368,17 @@ private fun showDialogs(context: Context, inputText: String = "coming soon") {
   Toast.makeText(context, inputText, Toast.LENGTH_SHORT).show()
 }
 
+fun openMusicApp(context: Context){
+  try {
+    val musicApp = context.packageManager.getLaunchIntentForPackage("com.das.musicplayer")
+    context.startActivity(musicApp)
+  }catch (p: PackageManager.NameNotFoundException){
+    showDialogs(context, "App Not founded!")
+  }
+  catch (e: Exception){
+    showDialogs(context,"App not opening!")
+  }
+}
 
 
 @Composable

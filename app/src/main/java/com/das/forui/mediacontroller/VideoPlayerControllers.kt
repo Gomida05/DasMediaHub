@@ -42,9 +42,8 @@ import androidx.media3.exoplayer.ExoPlayer
 import androidx.media3.ui.compose.state.rememberNextButtonState
 import androidx.media3.ui.compose.state.rememberPlayPauseButtonState
 import androidx.media3.ui.compose.state.rememberPreviousButtonState
+import com.das.forui.MainApplication.Youtuber.formatTimeFromMs
 import kotlinx.coroutines.delay
-import java.util.Locale
-import java.util.concurrent.TimeUnit
 
 
 @SuppressLint("UnsafeOptInUsageError")
@@ -247,7 +246,7 @@ object VideoPlayerControllers {
                     .fillMaxWidth()
             ) {
                 Text(
-                    text = totalDuration.formatMinSec(),
+                    text = currentPosition.formatTimeFromMs(),
                     color = Color(0xFFBB86FC),
                     modifier = Modifier
                         .align(Alignment.CenterStart)
@@ -260,7 +259,7 @@ object VideoPlayerControllers {
                 ) {
 
                     Text(
-                        text = currentPosition.formatMinSec(),
+                        text = totalDuration.formatTimeFromMs(),
                         color = Color(0xFFBB86FC),
                         modifier = Modifier
                             .align(Alignment.CenterVertically)
@@ -281,18 +280,5 @@ object VideoPlayerControllers {
 
 
 
-    private fun Long.formatMinSec(): String {
-        return if (this == 0L) {
-            "..."
-        } else {
-            String.format(
-                Locale.ENGLISH,
-                "%02d:%02d",
-                TimeUnit.MILLISECONDS.toMinutes(this),
-                TimeUnit.MILLISECONDS.toSeconds(this) -
-                        TimeUnit.MINUTES.toSeconds(TimeUnit.MILLISECONDS.toMinutes(this))
-            )
-        }
-    }
 }
 

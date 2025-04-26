@@ -1,4 +1,4 @@
-package com.das.forui.ui.result
+package com.das.forui.ui.home.searcher.result
 
 import android.content.Context
 import android.content.Intent

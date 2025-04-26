@@ -1,4 +1,4 @@
-package com.das.forui.ui.watch_later
+package com.das.forui.ui.watchedVideos
 
 import android.content.Context
 import android.content.Intent
@@ -61,22 +61,22 @@ import com.das.forui.MainActivity
 import com.das.forui.MainApplication
 import com.das.forui.R
 import com.das.forui.databased.DatabaseFavorite
-import com.das.forui.objectsAndData.ForUIKeyWords.ACTION_START
-import com.das.forui.objectsAndData.ForUIKeyWords.NEW_INTENT_FOR_VIEWER
 import com.das.forui.objectsAndData.ForUIDataClass.SavedVideosListData
 import com.das.forui.objectsAndData.ForUIDataClass.VideosListData
+import com.das.forui.objectsAndData.ForUIKeyWords.ACTION_START
+import com.das.forui.objectsAndData.ForUIKeyWords.NEW_INTENT_FOR_VIEWER
 import com.das.forui.services.AudioServiceFromUrl
 import com.das.forui.ui.viewer.GlobalVideoList.bundles
 
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun WatchLaterComposable(navController: NavController) {
+fun WatchedVideosComposable(navController: NavController) {
 
 
-    val viewModel: WatchLaterViewModel = viewModel()
+    val viewModel: WatchedVideosViewModel = viewModel()
     val scrollBehavior = TopAppBarDefaults.enterAlwaysScrollBehavior()
-    val searchResults by viewModel.searchResults
+    val searchResults by viewModel.savedLists
     val isLoading by viewModel.isLoading
 
     LaunchedEffect(Unit) {
@@ -90,17 +90,23 @@ fun WatchLaterComposable(navController: NavController) {
             TopAppBar(
                 scrollBehavior = scrollBehavior,
                 actions = {
-                    Icon(
-                        imageVector = Icons.Default.VideoLibrary,
-                        "",
+                    IconButton(
+                        onClick = {
+                            navController.navigate("saved")
+                        }
+                    ) {
+                        Icon(
+                            imageVector = Icons.Default.VideoLibrary,
+                            "",
 
-                        modifier = Modifier
-                            .align(Alignment.CenterVertically)
-                    )
+                            modifier = Modifier
+                                .align(Alignment.CenterVertically)
+                        )
+                    }
                 },
                 title = {
                     Text(
-                        "List of videos",
+                        "Recently watched videos",
                         textAlign = TextAlign.Center,
                         style = MaterialTheme.typography.headlineMedium,
                         modifier = Modifier
@@ -122,11 +128,10 @@ fun WatchLaterComposable(navController: NavController) {
 
                     Column(
                         modifier = Modifier
-                                .align(Alignment.Center)
+                            .align(Alignment.Center)
                     ){
                         Text(
-                            text = "You don't have any saved videos int your collection!." +
-                                    "\nSave some videos to add to your collection! ",
+                            text = "You don't have any watched videos!.",
                             style = MaterialTheme.typography.headlineMedium,
                             fontSize = 20.sp,
                             textAlign = TextAlign.Center,
@@ -162,7 +167,7 @@ fun WatchLaterComposable(navController: NavController) {
 private fun CategoryItems(
     navController: NavController,
     selectedItem: SavedVideosListData,
-    viewModel: WatchLaterViewModel
+    viewModel: WatchedVideosViewModel
 ) {
 
     var showDialog by remember { mutableStateOf(false) }
@@ -380,15 +385,15 @@ private fun InfoDialog(onDismissRequest: () -> Unit){
             }
         },
 
-    )
+        )
 
 }
 
 private fun onClickListListener(
-        context: Context,
-        selectedId: String,
-        controller: NavController
-    ) {
+    context: Context,
+    selectedId: String,
+    controller: NavController
+) {
     try {
         val dbHelper = DatabaseFavorite(context)
         val viewNumber = dbHelper.getViewNumber(selectedId)
@@ -438,42 +443,42 @@ private fun ShowAlertDialog(
                 Text("Remove")
             }
         },
-         dismissButton = {
-             TextButton(
-            onClick = {
-                MainApplication().getListItemsStreamUrls(
-                    VideosListData(
-                        selectedData.watchUrl, selectedData.title, selectedData.viewer,
-                        selectedData.dateTime, selectedData.duration, selectedData.channelName, ""
-                    ),
-                    onSuccess = { result ->
-                        val playIntent =
-                            Intent(
-                                context,
-                                AudioServiceFromUrl::class.java
-                            ).apply {
-                                action = ACTION_START
-                                putExtra("videoId", selectedData.watchUrl)
-                                putExtra("media_url", result.audioUrl)
-                                putExtra("title", selectedData.title)
-                                putExtra("channelName", selectedData.channelName)
-                                putExtra("viewNumber", selectedData.viewer)
-                                putExtra("videoDate", selectedData.dateTime)
-                                putExtra("duration", selectedData.duration)
-                            }
-                        context.startService(playIntent)
-                    },
-                    onFailure = { errorMessage ->
-                        // Handle the error (e.g., show a dialog with the error message)
-                        println("Error: $errorMessage")
-                    }
-                )
-                onDismissRequest()
-            },
+        dismissButton = {
+            TextButton(
+                onClick = {
+                    MainApplication().getListItemsStreamUrls(
+                        VideosListData(
+                            selectedData.watchUrl, selectedData.title, selectedData.viewer,
+                            selectedData.dateTime, selectedData.duration, selectedData.channelName, ""
+                        ),
+                        onSuccess = { result ->
+                            val playIntent =
+                                Intent(
+                                    context,
+                                    AudioServiceFromUrl::class.java
+                                ).apply {
+                                    action = ACTION_START
+                                    putExtra("videoId", selectedData.watchUrl)
+                                    putExtra("media_url", result.audioUrl)
+                                    putExtra("title", selectedData.title)
+                                    putExtra("channelName", selectedData.channelName)
+                                    putExtra("viewNumber", selectedData.viewer)
+                                    putExtra("videoDate", selectedData.dateTime)
+                                    putExtra("duration", selectedData.duration)
+                                }
+                            context.startService(playIntent)
+                        },
+                        onFailure = { errorMessage ->
+                            // Handle the error (e.g., show a dialog with the error message)
+                            println("Error: $errorMessage")
+                        }
+                    )
+                    onDismissRequest()
+                },
 
-        ) {
-            Text("Play in background!")
-        }
+                ) {
+                Text("Play in background!")
+            }
 
         }
     )

@@ -13,7 +13,6 @@ import android.text.style.ForegroundColorSpan
 import android.text.style.StyleSpan
 import android.text.style.URLSpan
 import android.widget.Toast
-import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.combinedClickable
@@ -101,6 +100,7 @@ import com.das.forui.ui.viewer.GlobalVideoList.listOfVideosListData
 import com.das.forui.ui.viewer.GlobalVideoList.previousVideosListData
 import com.das.forui.MainApplication
 import com.das.forui.databased.DatabaseFavorite
+import com.das.forui.databased.WatchHistory
 import com.das.forui.downloader.DownloaderCoroutineWorker
 import com.das.forui.mediacontroller.VideoPlayerControllers.PlayerControls
 import com.das.forui.objectsAndData.ForUIKeyWords.ACTION_START
@@ -463,7 +463,6 @@ private fun ExoPlayerUI(
 
 
 
-@OptIn(ExperimentalFoundationApi::class)
 @Composable
 fun VideoDetailsComposable(
     mContext: Context,
@@ -510,6 +509,16 @@ fun VideoDetailsComposable(
 
             val title = videoDetails?.title.toString()
             finished(videoDetails!!)
+
+            WatchHistory(mContext).insertNewVideo(
+                    videoId,
+                    title,
+                    videoDetails?.date.toString(),
+                    videoDetails?.viewNumber.toString(),
+                    videoDetails?.channelName.toString(),
+                    duration,
+                    channelThumbnailURL
+            )
 
             Text(
                 text = title,
@@ -684,7 +693,6 @@ fun VideoDetailsComposable(
 
 
 
-@OptIn(ExperimentalFoundationApi::class)
 @Composable
 fun CategoryItems(
     navController: NavController,
@@ -837,6 +845,14 @@ fun CategoryItems(
                 }
             }
         }
+    }
+
+    if (showDialog || showInfoDialog) {
+        Box(
+            modifier = Modifier
+                .fillMaxSize()
+                .background(Color.Black)
+        )
     }
 
     if (showInfoDialog){

@@ -30,6 +30,10 @@
     <uses-permission android:name="android.permission.BLUETOOTH_CONNECT"/>
 
 
+    <queries>
+        <package android:name="com.das.musicplayer" />
+        <package android:name="com.das.myqrcode" />
+    </queries>
 
     <application
         android:name=".MainApplication"
@@ -72,7 +76,7 @@
                 <category android:name="android.intent.category.BROWSABLE" />
 
                 <data android:scheme="https" android:host="myfirstpythontokotlinasbackend.onrender.com"
-                    android:pathPrefix="/YouTube Downloader"/>
+                    android:pathPrefix="/YouTube Downloader" />
             </intent-filter>
 
 

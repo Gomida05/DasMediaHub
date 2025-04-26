@@ -1,4 +1,4 @@
-package com.das.forui.ui.watch_later
+package com.das.forui.ui.settings.watch_later
 
 import android.app.Application
 import android.database.Cursor

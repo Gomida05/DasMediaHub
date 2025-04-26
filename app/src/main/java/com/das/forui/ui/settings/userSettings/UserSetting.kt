@@ -1,4 +1,4 @@
-package com.das.forui.ui.userSettings
+package com.das.forui.ui.settings.userSettings
 
 import android.app.UiModeManager
 import android.content.Context
@@ -193,3 +193,4 @@ fun changeTheme(
     }
     return setUiMode
 }
+

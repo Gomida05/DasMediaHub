@@ -1,4 +1,4 @@
-package com.das.forui.ui.result
+package com.das.forui.ui.home.searcher.result
 
 import androidx.compose.runtime.State
 import androidx.compose.runtime.mutableStateOf

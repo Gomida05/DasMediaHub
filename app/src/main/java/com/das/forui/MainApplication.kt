@@ -3,6 +3,7 @@ package com.das.forui
 
 import android.app.Application
 import android.os.Build
+import androidx.media3.common.MediaItem
 import androidx.work.Configuration
 import com.chaquo.python.Python
 import com.chaquo.python.Python.getInstance
@@ -19,8 +20,10 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import java.net.URL
+import java.text.SimpleDateFormat
 import java.time.ZonedDateTime
 import java.time.format.DateTimeFormatter
+import java.util.Date
 import java.util.Locale
 import java.util.regex.Pattern
 
@@ -91,6 +94,7 @@ class MainApplication: Application(), Configuration.Provider {
     object Youtuber {
         val pythonInstant = getInstance()
 
+        lateinit var mediaItems: MutableList<MediaItem>
         /**
          * Extracts the YouTube video ID from a given URL using a predefined regex.
          *
@@ -156,8 +160,8 @@ class MainApplication: Application(), Configuration.Provider {
                     zonedDateTime.format(outputFormatter)
                 } else {
                     val inputFormat =
-                        java.text.SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ssX", Locale.ENGLISH)
-                    val outputFormat = java.text.SimpleDateFormat("dd MMM yyyy", Locale.ENGLISH)
+                        SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ssX", Locale.ENGLISH)
+                    val outputFormat = SimpleDateFormat("dd MMM yyyy", Locale.ENGLISH)
 
                     outputFormat.format(inputFormat.parse(dateStr) ?: return dateStr)
                 }
@@ -167,6 +171,11 @@ class MainApplication: Application(), Configuration.Provider {
             }
         }
 
+        fun formatDateFromLong(timestamp: Long): String {
+            val date = Date(timestamp)
+            val dateFormat = SimpleDateFormat("dd/MM/yyyy", Locale.getDefault())
+            return dateFormat.format(date)
+        }
 
         /**
          * Converts a number of views into a shortened string format:
@@ -183,6 +192,52 @@ class MainApplication: Application(), Configuration.Provider {
                 views >= 1_000_000 -> "%.1fM".format(views / 1_000_000.0)
                 views >= 1_000 -> "%.1fK".format(views / 1_000.0)
                 else -> views.toString()
+            }
+        }
+
+
+
+        /**
+         * Extension function to convert a duration in milliseconds (Long) to a formatted time string.
+         *
+         * Formats adaptively based on the length of the duration:
+         * - If duration is 0 or negative, returns "00:00"
+         * - If duration includes days, format is "dd:hh:mm:ss"
+         * - If duration includes hours, format is "hh:mm:ss"
+         * - If duration includes minutes, format is "mm:ss"
+         * - If duration is less than a minute, format is "ss.ms"
+         */
+        fun Long.formatTimeFromMs(): String {
+            if (this <= 0L) {
+                return "00:00"
+            }
+            val totalSeconds = this / 1000
+            val milliseconds = this % 1000
+            val seconds = totalSeconds % 60
+            val minutes = (totalSeconds / 60) % 60
+            val hours = (totalSeconds / 3600) % 24
+            val days = totalSeconds / (3600 * 24)
+
+            return when {
+                days > 0 -> String.format(
+                    Locale.ENGLISH,
+                    "%02d:%02d:%02d:%02d",
+                    days,
+                    hours,
+                    minutes,
+                    seconds
+                )
+
+                hours > 0 -> String.format(
+                    Locale.ENGLISH,
+                    "%02d:%02d:%02d",
+                    hours,
+                    minutes,
+                    seconds
+                )
+
+                minutes > 0 -> String.format(Locale.ENGLISH, "%02d:%02d", minutes, seconds)
+                else -> String.format(Locale.ENGLISH, "00:%02d.%03d", seconds, milliseconds)
             }
         }
     }

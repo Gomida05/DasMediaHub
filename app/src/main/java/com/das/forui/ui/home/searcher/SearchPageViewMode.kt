@@ -1,4 +1,4 @@
-package com.das.forui.ui.searcher
+package com.das.forui.ui.home.searcher
 
 import android.app.Application
 import android.database.Cursor

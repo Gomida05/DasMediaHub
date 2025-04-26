@@ -10,12 +10,12 @@ import android.graphics.BitmapFactory
 import android.media.AudioAttributes
 import android.media.AudioFocusRequest
 import android.media.AudioManager
-import android.net.Uri
 import android.os.Build
 import android.os.Bundle
 import android.os.IBinder
 import android.support.v4.media.MediaMetadataCompat
 import android.support.v4.media.session.MediaSessionCompat
+import android.text.format.Formatter.formatFileSize
 import android.util.Log
 import android.view.KeyEvent
 import androidx.core.app.NotificationCompat
@@ -33,9 +33,11 @@ import androidx.media3.common.MediaItem
 import androidx.media3.common.MediaMetadata
 import androidx.media3.common.PlaybackException
 import androidx.media3.common.Player
+import com.das.forui.MainApplication.Youtuber.formatDateFromLong
 import com.das.forui.mediacontroller.BackgroundPlayerStates.setStateToPaused
 import com.das.forui.mediacontroller.BackgroundPlayerStates.setStateToLoading
 import com.das.forui.mediacontroller.BackgroundPlayerStates.setStateToPlaying
+import com.das.forui.MainApplication.Youtuber.mediaItems
 import java.io.File
 
 
@@ -45,7 +47,7 @@ class BackGroundPlayer: Service() {
     private var exoPlayer: ExoPlayer? = null
     lateinit var mediaSession: MediaSessionCompat
     private lateinit var audioManager: AudioManager
-    private lateinit var mediaId: String
+    private var mediaId: Int = 0
     private var audioFocusRequest: AudioFocusRequest? = null
 
 
@@ -73,9 +75,11 @@ class BackGroundPlayer: Service() {
             )
         }
 
-        val mediaUri = intent?.getStringExtra("media_url").orEmpty()
-        val title = intent?.getStringExtra("title").toString()
-        mediaId = intent?.getStringExtra("media_id").toString()
+        if (intent != null) {
+            mediaId = intent.getIntExtra("media_id", 0)
+        }
+        val listMediaItems = mediaItems.ifEmpty { fetchDataFromFolder() }
+        exoPlayer?.setMediaItems(listMediaItems)
 
 
 
@@ -91,44 +95,29 @@ class BackGroundPlayer: Service() {
 
 
 
-        exoPlayer?.addListener(ExoPlayerListener(mediaUri))
+
 
 
         mediaSession.setCallback(
             MyMediaSessionCallBack()
-        )
-        mediaSession.setMetadata(
-            mediaMetaDetails(
-                exoPlayer?.currentMediaItem?.mediaMetadata?.title.toString(),
-                mediaUri,
-                exoPlayer?.duration!!
-            )
         )
         when (intent?.action) {
 
             ACTION_START -> {
 
 
-                val exoMetadata = MediaMetadata.Builder()
-                    .setTitle(title)
-                    .setMediaType(MediaMetadata.MEDIA_TYPE_MUSIC)
-                    .build()
-                val mediaItem = MediaItem.Builder()
-                    .setMediaId(mediaId)
-                    .setUri(mediaUri.toUri())
-                    .setMediaMetadata(exoMetadata)
-                    .build()
-                val listMediaItems = fetchDataFromFolder(title)
-                listMediaItems.add(-1, mediaItem)
+
                 exoPlayer?.apply {
-                    setMediaItems(listMediaItems)
+                    seekTo(mediaId, 0)
                     prepare()
                     play()
                 }
 
-
-
-
+                exoPlayer?.addListener(
+                    ExoPlayerListener(
+                        exoPlayer?.currentMediaItem?.mediaId!!
+                    )
+                )
 
                 mediaSession.setPlaybackState(
                     setStateToPlaying(
@@ -139,10 +128,12 @@ class BackGroundPlayer: Service() {
                 mediaSession.setMetadata(
                     mediaMetaDetails(
                         exoPlayer?.currentMediaItem?.mediaMetadata?.title.toString(),
-                        mediaUri,
+                        exoPlayer?.currentMediaItem?.mediaId!!,
                         exoPlayer?.duration!!
                     )
                 )
+
+
             }
 
         }
@@ -480,39 +471,33 @@ class BackGroundPlayer: Service() {
     }
 
 
-    private fun fetchDataFromFolder(currentMediaTitle: String): MutableList<MediaItem> {
-        val fileLists = mutableListOf<MediaItem>().apply {
-            clear()
-        }
+    private fun fetchDataFromFolder(): MutableList<MediaItem> {
 
-
-
-        val pathOfVideos = File(
+        val fileLists = mutableListOf<MediaItem>()
+        val pathOfMusics = File(
             getAudioDownloadPath(this)
         )
 
-        if (pathOfVideos.exists()) {
-            val fileNames = arrayOfNulls<String>(pathOfVideos.listFiles()!!.size)
-            val pathOfVideosUris = arrayOfNulls<Uri?>(pathOfVideos.listFiles()!!.size)
-            pathOfVideos.listFiles()!!.mapIndexed { index, item ->
-                fileNames[index] = item?.name
-                pathOfVideosUris[index] = item?.toUri()
-
-            }
-            fileNames.zip(pathOfVideosUris).forEach { (fileName, videoUri) ->
-                if (videoUri != null && fileName != null && currentMediaTitle != fileName) {
-                    val exoMetadata = MediaMetadata.Builder()
-                        .setTitle(fileName)
-                        .setMediaType(MediaMetadata.MEDIA_TYPE_MUSIC)
+        if (pathOfMusics.exists()) {
+            pathOfMusics.listFiles()?.forEach { file ->
+                val lastModified = file.lastModified()
+                val formattedDate = formatDateFromLong(lastModified)
+                val fileSizeFormatted = formatFileSize(this, file.length())
+                val mediaMetaData = MediaMetadata.Builder()
+                    .setTitle(file.name.removeSuffix(".mp3"))
+                    .setDescription(formattedDate)
+                    .setMediaType(MediaMetadata.MEDIA_TYPE_MUSIC)
+                    .build()
+                fileLists.add(
+                    MediaItem.Builder()
+                        .setMediaId(file.toUri().toString())
+                        .setUri(file.toUri())
+                        .setMediaMetadata(mediaMetaData)
+                        .setTag(fileSizeFormatted)
                         .build()
-                    fileLists.add(
-                        MediaItem.Builder()
-                            .setMediaId(videoUri.toString())
-                            .setUri(videoUri)
-                            .setMediaMetadata(exoMetadata)
-                            .build()
-                    )
-                }
+                )
+
+
             }
         }
         return fileLists
@@ -711,3 +696,4 @@ class BackGroundPlayer: Service() {
     }
 
 }
+

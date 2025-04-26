@@ -1,4 +1,4 @@
-package com.das.forui.ui.downloads
+package com.das.forui.ui.home.downloads
 
 import android.content.Context
 import android.content.Intent
@@ -15,7 +15,7 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.layout.wrapContentSize
 import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material.icons.Icons
@@ -51,7 +51,9 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.core.net.toUri
 import androidx.lifecycle.viewmodel.compose.viewModel
+import androidx.media3.common.MediaItem
 import androidx.navigation.NavController
 import coil.compose.AsyncImage
 import coil.decode.VideoFrameDecoder
@@ -60,10 +62,10 @@ import coil.request.videoFrameMillis
 import com.das.forui.R
 import com.das.forui.databased.PathSaver.getVideosDownloadPath
 import com.das.forui.databased.PathSaver.getAudioDownloadPath
-import com.das.forui.objectsAndData.ForUIDataClass.DownloadedListData
 import com.das.forui.objectsAndData.ForUIKeyWords.ACTION_START
 import com.das.forui.objectsAndData.ForUIKeyWords.PLAY_HERE_VIDEO
 import com.das.forui.services.BackGroundPlayer
+import com.das.forui.MainApplication.Youtuber.mediaItems
 import com.das.forui.ui.viewer.GlobalVideoList.bundles
 import java.io.File
 
@@ -78,7 +80,8 @@ fun DownloadsPageComposable(navController: NavController) {
 
     var isVideo by remember { mutableStateOf(true) }
 
-    val downloadedListData by viewModel.downloadedListData.collectAsState()
+    val videosListData by viewModel.videosListData.collectAsState()
+    val musicsListData by viewModel.listMusic.collectAsState()
 
     val videoPath = getVideosDownloadPath(mContext)
     val audioPath = getAudioDownloadPath(mContext)
@@ -89,9 +92,9 @@ fun DownloadsPageComposable(navController: NavController) {
     LaunchedEffect(isVideo) {
         // Fetch data based on the file type
         if (isVideo) {
-            viewModel.fetchDataFromDatabase(videoPath, 1)
+            viewModel.fetchVideoFiles(videoPath)
         } else {
-            viewModel.fetchDataFromDatabase(audioPath, 0)
+            viewModel.fetchMusicFiles(audioPath)
         }
     }
 
@@ -151,7 +154,7 @@ fun DownloadsPageComposable(navController: NavController) {
                 ElevatedButton(
                     onClick = {
                         isVideo = true
-                        viewModel.fetchDataFromDatabase(videoPath, 1)
+                        viewModel.fetchVideoFiles(videoPath)
                     },
                     enabled = !isVideo
                 ) {
@@ -166,7 +169,7 @@ fun DownloadsPageComposable(navController: NavController) {
                 ElevatedButton(
                     onClick = {
                         isVideo = false
-                        viewModel.fetchDataFromDatabase(videoPath, 1)
+                        viewModel.fetchMusicFiles(videoPath)
                     },
                     enabled = isVideo
                 ) {
@@ -180,7 +183,7 @@ fun DownloadsPageComposable(navController: NavController) {
                 }
             }
 
-            if (downloadedListData.isEmpty()) {
+            if (videosListData.isEmpty() || musicsListData.isEmpty()) {
 
                 Text(
                     text = "You haven't saved any ${if (isVideo) "videos" else "music"} yet. Save some to create your collection!",
@@ -189,10 +192,22 @@ fun DownloadsPageComposable(navController: NavController) {
                 )
             } else {
                 LazyColumn {
-                    items(downloadedListData, key = { it.title }) { searchItem ->
-                        ListItems(searchItem, isVideo, mContext, navController)
+                    if (isVideo) {
+                        itemsIndexed(videosListData) { index, searchItem ->
+                            ListItems(searchItem, true, mContext, navController, index)
+                        }
+                    }else {
+                        mediaItems = musicsListData
+                        itemsIndexed(musicsListData) { index, searchItem ->
 
+                            ListItems(
+                                searchItem, false,
+                                mContext, navController, index
+                            )
+
+                        }
                     }
+
                 }
             }
 
@@ -203,10 +218,11 @@ fun DownloadsPageComposable(navController: NavController) {
 
 @Composable
 fun ListItems(
-    itemDetails: DownloadedListData,
+    itemDetails: MediaItem,
     isVideo: Boolean,
     mContext: Context,
-    navController: NavController
+    navController: NavController,
+    index: Int
 ) {
 
 
@@ -215,8 +231,9 @@ fun ListItems(
     Card(
         onClick = {
             itemClicked(
-                itemDetails.pathOfVideo.toString(),
-                itemDetails.title,
+                index,
+                itemDetails.mediaId,
+                itemDetails.mediaMetadata.title.toString(),
                 isVideo,
                 mContext,
                 navController
@@ -240,7 +257,7 @@ fun ListItems(
         ) {
             if (isVideo) {
                 val model = ImageRequest.Builder(mContext)
-                    .data(itemDetails.thumbnailUri)
+                    .data(itemDetails.mediaId.toUri())
                     .videoFrameMillis(10000)
                     .decoderFactory { result, options, _ ->
                         VideoFrameDecoder(
@@ -252,7 +269,7 @@ fun ListItems(
                     .build()
                 AsyncImage(
                     model = model,
-                    "loaded thumbnail ${itemDetails.fileSize}",
+                    "loaded thumbnail ${itemDetails.mediaMetadata.artist}",
                     modifier = Modifier
                         .size(65.dp, 65.dp)
                         .align(Alignment.CenterVertically)
@@ -274,7 +291,7 @@ fun ListItems(
                     .width(250.dp)
             ) {
                 Text(
-                    text = itemDetails.title,
+                    text = itemDetails.mediaMetadata.title.toString(),
                     fontSize = 16.sp,
                     maxLines = 2,
                     style = MaterialTheme.typography.headlineSmall,
@@ -290,7 +307,7 @@ fun ListItems(
                         .align(Alignment.CenterHorizontally)
                 ) {
                     Text(
-                        text = itemDetails.dateTime,
+                        text = itemDetails.mediaMetadata.description.toString(),
                         fontSize = 13.sp,
                         maxLines = 1,
                         style = MaterialTheme.typography.headlineSmall,
@@ -298,7 +315,7 @@ fun ListItems(
                             .width(95.dp)
                     )
                     Text(
-                        text = itemDetails.fileSize,
+                        text = itemDetails.mediaMetadata.artist.toString(),
                         fontSize = 13.sp,
                         maxLines = 1,
                         style = MaterialTheme.typography.headlineSmall,
@@ -327,9 +344,11 @@ fun ListItems(
 
     if (showAlertDialog){
         DeleteItem(
-            onDismissRequest = {showAlertDialog = false},
+            onDismissRequest = {
+                showAlertDialog = false
+            },
             onDelete = {
-                File(itemDetails.pathOfVideo.path!!).delete()
+                itemDetails.mediaId.toUri().path?.let { File(it).delete() }
             }
         )
     }
@@ -337,6 +356,7 @@ fun ListItems(
 }
 
 private fun itemClicked(
+    index: Int,
     selectedFilePath: String,
     selectedTitle: String,
     isVideo: Boolean,
@@ -352,8 +372,7 @@ private fun itemClicked(
 
         val playIntent = Intent(context, BackGroundPlayer::class.java).apply {
             action = ACTION_START
-            putExtra("media_id", selectedFilePath)
-            putExtra("media_url", selectedFilePath)
+            putExtra("media_id", index)
             putExtra("title", selectedTitle)
         }
         context.startService(playIntent)

@@ -79,16 +79,17 @@ import com.das.forui.objectsAndData.ForUIKeyWords.NEW_INTENT_FOR_SEARCHER
 import com.das.forui.objectsAndData.ForUIKeyWords.NEW_INTENT_FOR_VIEWER
 import com.das.forui.objectsAndData.ForUIKeyWords.NEW_TEXT_FOR_RESULT
 import com.das.forui.services.BackGroundPlayer
-import com.das.forui.ui.downloads.DownloadsPageComposable
+import com.das.forui.ui.home.downloads.DownloadsPageComposable
 import com.das.forui.ui.home.HomePageComposable
-import com.das.forui.ui.result.ResultViewerPage
-import com.das.forui.ui.searcher.SearchPageCompose
-import com.das.forui.ui.watch_later.WatchLaterComposable
+import com.das.forui.ui.home.searcher.result.ResultViewerPage
+import com.das.forui.ui.home.searcher.SearchPageCompose
+import com.das.forui.ui.settings.watch_later.WatchLaterComposable
 import com.das.forui.ui.settings.SettingsComposable
-import com.das.forui.ui.userSettings.UserSettingComposable
-import com.das.forui.ui.videoPlayerLocally.ExoPlayerUI
+import com.das.forui.ui.settings.userSettings.UserSettingComposable
+import com.das.forui.ui.home.downloads.videoPlayerLocally.ExoPlayerUI
 import com.das.forui.ui.viewer.GlobalVideoList.bundles
 import com.das.forui.ui.viewer.VideoPlayerScreen
+import com.das.forui.ui.watchedVideos.WatchedVideosComposable
 
 
 class MainActivity : ComponentActivity() {
@@ -139,7 +140,7 @@ class MainActivity : ComponentActivity() {
                     unselectedIcon = Icons.Outlined.Home
                 ),
                 MyBottomNavData(
-                    title = "Watch Later",
+                    title = "Recently Watched",
                     selectedIcon = Icons.Filled.WatchLater,
                     unselectedIcon = Icons.Outlined.WatchLater
                 ),
@@ -153,7 +154,7 @@ class MainActivity : ComponentActivity() {
             Scaffold(
                 modifier = Modifier.fillMaxSize(),
                 bottomBar = {
-                    if (currentRoute in listOf("Home", "Watch Later", "Setting")) {
+                    if (currentRoute in listOf("Home", "Recently Watched", "Setting")) {
 
                         NavigationBar(
                             windowInsets = NavigationBarDefaults.windowInsets,
@@ -199,8 +200,8 @@ class MainActivity : ComponentActivity() {
                     composable("Home") {
                         HomePageComposable(navController)
                     }
-                    composable("Watch Later") {
-                        WatchLaterComposable(navController)
+                    composable("Recently Watched") {
+                        WatchedVideosComposable(navController)
                     }
                     composable("Setting") {
                         SettingsComposable(navController)
@@ -241,6 +242,10 @@ class MainActivity : ComponentActivity() {
                             navController,
                             bundles.getString(PLAY_HERE_VIDEO).toString()
                         )
+                    }
+
+                    composable("saved"){
+                        WatchLaterComposable(navController)
                     }
                 }
             }

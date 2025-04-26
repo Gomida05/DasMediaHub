@@ -79,10 +79,7 @@ class MediaSessionPlaybackState(private val context: Context) {
         return playbackState
     }
 
-    fun addItOrRemoveFromDB(
-        currentPosition: Long,
-        videosListData: VideosListData
-    ): PlaybackStateCompat{
+    fun addItOrRemoveFromDB(currentPosition: Long, videosListData: VideosListData): PlaybackStateCompat{
         val db = DatabaseFavorite(context)
         val playbackSate = PlaybackStateCompat.Builder()
             .setState(PlaybackStateCompat.STATE_PLAYING, currentPosition,
@@ -118,9 +115,7 @@ class MediaSessionPlaybackState(private val context: Context) {
 
 
     private fun isAddedToTheDataBased(videoId: String): Boolean{
-        println("the provided url is ${DatabaseFavorite(context).isWatchUrlExist(videoId)}")
         return DatabaseFavorite(context).isWatchUrlExist(videoId)
-
     }
 
 }
