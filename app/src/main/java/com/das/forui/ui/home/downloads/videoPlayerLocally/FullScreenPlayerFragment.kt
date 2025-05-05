@@ -2,10 +2,10 @@ package com.das.forui.ui.home.downloads.videoPlayerLocally
 
 import android.annotation.SuppressLint
 import android.app.Activity
-import android.content.Context
 import android.content.pm.ActivityInfo
 import android.net.Uri
-import android.os.PowerManager
+import android.view.WindowManager
+import androidx.activity.compose.LocalActivity
 import androidx.compose.foundation.background
 import androidx.compose.foundation.gestures.detectTapGestures
 import androidx.compose.foundation.layout.Box
@@ -26,6 +26,9 @@ import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
 import androidx.core.net.toUri
+import androidx.core.view.WindowCompat
+import androidx.core.view.WindowInsetsCompat
+import androidx.core.view.WindowInsetsControllerCompat
 import androidx.media3.common.MediaItem
 import androidx.media3.common.MediaMetadata
 import com.das.forui.MainActivity
@@ -44,21 +47,12 @@ import java.io.File
 
 
 
-
-
-
-
-
-
 @SuppressLint("UnsafeOptInUsageError", "SourceLockedOrientationActivity")
 @Composable
 fun ExoPlayerUI(navController: NavController, videoUri: String) {
 
     val mContext = LocalContext.current
-    val activity = mContext as? Activity
-    val powerManager = mContext.getSystemService(Context.POWER_SERVICE) as PowerManager
-    @Suppress("DEPRECATION")
-    val wakeLock = powerManager.newWakeLock(PowerManager.SCREEN_BRIGHT_WAKE_LOCK or PowerManager.ACQUIRE_CAUSES_WAKEUP, "MyApp:VideoPlayer")
+    val activity = LocalActivity.current
 
     activity?.requestedOrientation = ActivityInfo.SCREEN_ORIENTATION_SENSOR
 
@@ -101,29 +95,24 @@ fun ExoPlayerUI(navController: NavController, videoUri: String) {
 
 
     LaunchedEffect(Unit) {
+        setFullscreen(activity, true)
         startAutoHideTimer()
     }
 
     val presentationState = rememberPresentationState(mExoPlayer)
+    val window = activity?.window
 
     LaunchedEffect(mExoPlayer.isPlaying) {
         if (mExoPlayer.isPlaying) {
-            val videoDurationMs = mExoPlayer.duration / 1000
-            if (!wakeLock.isHeld) {
-                wakeLock.acquire(videoDurationMs)
-            }
+            window?.addFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON)
         } else {
-            // Set default timeout (e.g., 10 minutes) when video is paused or stopped
-            if (!wakeLock.isHeld) {
-                wakeLock.acquire(2 * 60 * 1000L) // 10 minutes
-            }
+            window?.clearFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON)
         }
     }
 
 
 
 
-    // Ensure the ExoPlayer is released when composable is disposed
 
     Scaffold(
         modifier = Modifier
@@ -153,7 +142,7 @@ fun ExoPlayerUI(navController: NavController, videoUri: String) {
         )
 
         if (presentationState.coverSurface) {
-            // Cover the surface that is being prepared with a shutter
+
             Box(
                 Modifier
                     .fillMaxSize()
@@ -165,18 +154,22 @@ fun ExoPlayerUI(navController: NavController, videoUri: String) {
             isVisible ={controlsVisible},
             navigateUp = {
                 navController.navigateUp()
+            },
+            fullScreen = {
+
             }
         )
 
     }
 
     DisposableEffect(mExoPlayer) {
+
         onDispose {
             mExoPlayer.release()
-            if (wakeLock.isHeld) {
-                wakeLock.release()
-            }
+            window?.clearFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON)
             activity?.requestedOrientation = ActivityInfo.SCREEN_ORIENTATION_PORTRAIT
+
+            setFullscreen(activity, false)
         }
     }
 
@@ -187,7 +180,21 @@ fun ExoPlayerUI(navController: NavController, videoUri: String) {
 
 
 
+fun setFullscreen(activity: Activity?, fullscreen: Boolean) {
 
+    activity?.let {
+        WindowCompat.setDecorFitsSystemWindows(it.window, !fullscreen)
+        val controller = WindowInsetsControllerCompat(it.window, it.window.decorView)
+
+        if (fullscreen) {
+            controller.hide(WindowInsetsCompat.Type.systemBars())
+            controller.systemBarsBehavior =
+                WindowInsetsControllerCompat.BEHAVIOR_SHOW_TRANSIENT_BARS_BY_SWIPE
+        } else {
+            controller.show(WindowInsetsCompat.Type.systemBars())
+        }
+    }
+}
 
 
 private fun fetchDataFromDatabase(

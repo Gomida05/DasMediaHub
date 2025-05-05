@@ -2,6 +2,7 @@ package com.das.forui.objectsAndData
 
 import android.os.Build
 import android.util.Log
+import androidx.media3.common.MediaItem
 import com.chaquo.python.Python.getInstance
 import com.das.forui.objectsAndData.ForUIKeyWords.YOUTUBE_HOST_1
 import com.das.forui.objectsAndData.ForUIKeyWords.YOUTUBE_HOST_2
@@ -26,9 +27,7 @@ import java.util.regex.Pattern
 
 object Youtuber {
     val pythonInstant = getInstance()
-
-
-
+    var mediaItems = mutableListOf<MediaItem>()
 
     /**
      * Extracts the YouTube video ID from a given URL using a predefined regex.
@@ -157,7 +156,6 @@ object Youtuber {
             return "00:00"
         }
         val totalSeconds = this / 1000
-        val milliseconds = this % 1000
         val seconds = totalSeconds % 60
         val minutes = (totalSeconds / 60) % 60
         val hours = (totalSeconds / 3600) % 24
@@ -181,8 +179,7 @@ object Youtuber {
                 seconds
             )
 
-            minutes > 0 -> String.format(Locale.ENGLISH, "%02d:%02d", minutes, seconds)
-            else -> String.format(Locale.ENGLISH, "00:%02d.%03d", seconds, milliseconds)
+            else -> String.format(Locale.ENGLISH, "%02d:%02d", minutes, seconds)
         }
     }
 
@@ -215,6 +212,7 @@ object Youtuber {
         }
 
     }
+
     fun getAudioStreamUrl(
         videoId: String,
         onSuccess: (streamUrl: String) -> Unit,

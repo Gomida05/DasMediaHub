@@ -1,18 +1,21 @@
 package com.das.forui.ui.viewer
 
-import android.annotation.SuppressLint
+import android.app.Activity
 import android.content.Context
 import android.content.Intent
+import android.content.pm.ActivityInfo
 import android.graphics.Typeface.BOLD
 import android.graphics.Typeface.ITALIC
 import android.os.Bundle
-import android.os.PowerManager
 import android.text.SpannableString
 import android.text.style.BackgroundColorSpan
 import android.text.style.ForegroundColorSpan
 import android.text.style.StyleSpan
 import android.text.style.URLSpan
+import android.view.WindowManager
 import android.widget.Toast
+import androidx.activity.compose.LocalActivity
+import androidx.annotation.OptIn
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.combinedClickable
@@ -48,7 +51,6 @@ import androidx.compose.material3.Card
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
-import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
@@ -79,9 +81,13 @@ import androidx.compose.ui.text.style.TextDecoration
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.window.Dialog
+import androidx.core.view.WindowCompat
+import androidx.core.view.WindowInsetsCompat
+import androidx.core.view.WindowInsetsControllerCompat
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.media3.common.MediaItem
 import androidx.media3.common.Player
+import androidx.media3.common.util.UnstableApi
 import androidx.media3.exoplayer.ExoPlayer
 import androidx.media3.ui.compose.PlayerSurface
 import androidx.media3.ui.compose.SURFACE_TYPE_SURFACE_VIEW
@@ -108,18 +114,19 @@ import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 
 
+@OptIn(UnstableApi::class)
 @Composable
 fun VideoPlayerScreen(
     navController: NavController,
     arguments: Bundle?
 ) {
 
-
+//    listOfVideosListData.clear()
+    var isFullScreen by remember { mutableStateOf(false) }
     var showAlertDialog by remember { mutableStateOf(false) }
 
-    listOfVideosListData.clear()
     val viewModel: ViewerViewModel = viewModel()
-    val suggestionViewModel: ViewerViewModel = viewModel()
+
 
     val videoID = arguments?.getString("View_ID").toString()
 
@@ -160,111 +167,256 @@ fun VideoPlayerScreen(
     }
 
 
-    var videoUrl by remember { mutableStateOf("") }
+    val isLoadingVideos by viewModel.isLoadingVideos
+    val videosListResult by viewModel.searchResults
 
+    val videoUrl by viewModel.videoUrl
 
-    val isLoading by suggestionViewModel.isLoadingVideos
-    val searchResults by suggestionViewModel.searchResults
+    val isLoading by viewModel.isLoading
+
+    val isThereError by viewModel.error
+
+    val activity = LocalActivity.current
+    LaunchedEffect(videoID) {
+        viewModel.loadVideoUrl(videoID)
+    }
+
 
     LaunchedEffect(videoTitle) {
         if (!videoTitle.isNullOrEmpty()) {
-            suggestionViewModel.fetchSuggestions(videoTitle!!)
+            viewModel.fetchSuggestions(videoTitle!!)
 
         }
     }
 
-    Scaffold { paddingValues ->
+    Box {
 
         Column(
             modifier = Modifier
-                .padding(paddingValues)
                 .fillMaxSize()
         ) {
-            Box(
-                modifier = Modifier
-                    .wrapContentSize(Alignment.TopCenter)
-                    .background(Color.Black)
-                    .height(220.dp)
-                    .fillMaxWidth(),
-            ) {
-                ExoPlayerUI(
-                    navController,
-                    currentId = videoID,
-                    viewModel = viewModel,
-                    done = {videoUrl= it}
-                )
+            if (videoUrl.isNotEmpty() && !isLoading) {
+
+
+                val mExoPlayer = remember(mContext) {
+
+                    ExoPlayer.Builder(mContext).build().apply {
+                        hasNextMediaItem()
+                        setMediaItem(MediaItem.fromUri(videoUrl))
+                        prepare()
+                        play()
+
+                        MainActivity().requestAudioFocusFromMain(mContext, this)
+                        addListener(MyExoPlayerListener(navController))
+                    }
+                }
+
+
+
+                var controlsVisible by remember { mutableStateOf(true) }
+                val coroutineScope = rememberCoroutineScope()
+
+
+                fun startAutoHideTimer() {
+                    coroutineScope.launch {
+                        delay(4000) // 3 seconds
+                        controlsVisible = false
+                    }
+                }
+
+
+                LaunchedEffect(Unit) {
+                    startAutoHideTimer()
+                }
+
+
+                DisposableEffect(mExoPlayer) {
+                    val window = activity?.window
+
+                    window?.addFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON)
+
+                    onDispose {
+                        window?.clearFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON)
+                        mExoPlayer.release()
+                        setFullscreen(activity, false)
+                    }
+                }
+
+
+                val presentationState = rememberPresentationState(mExoPlayer)
+
+                LaunchedEffect(mExoPlayer.isPlaying) {
+                    val window = activity?.window
+                    if (mExoPlayer.isPlaying) {
+                        window?.addFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON)
+
+                    } else {
+                        window?.clearFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON)
+                    }
+                }
+                val playerModifier = if (isFullScreen) {
+                    Modifier
+                        .fillMaxSize()
+                        .background(Color.Black)
+                } else {
+                    Modifier
+                        .height(220.dp)
+                        .fillMaxWidth()
+                        .background(Color.Black)
+                }
+
+
+                val scaledModifier = Modifier
+                    .fillMaxSize()
+                    .resizeWithContentScale(ContentScale.Fit, presentationState.videoSizeDp)
+                    .pointerInput(Unit) {
+                        detectTapGestures {
+                            if (controlsVisible) {
+                                controlsVisible = false // hide immediately
+                            } else {
+                                controlsVisible = true
+                                startAutoHideTimer()
+                            }
+                        }
+                    }
+
+                Box(modifier = playerModifier) {
+                    PlayerSurface(
+                        mExoPlayer,
+                        surfaceType = SURFACE_TYPE_SURFACE_VIEW,
+                        modifier = scaledModifier
+                    )
+
+                    if (presentationState.coverSurface) {
+                        Box(
+                            Modifier
+                                .matchParentSize()
+                                .background(Color.Black)
+                        )
+                    }
+
+                    PlayerControls(
+                        mExoPlayer = mExoPlayer,
+                        isVisible = { controlsVisible },
+                        navigateUp = { navController.navigateUp() },
+                        fullScreen = { isFullScreen = it } // toggle fullscreen from controls
+                    )
+                }
+
 
             }
-
-            LazyColumn {
-
-                item(videoID) {
-                    VideoDetailsComposable(
-                        mContext = mContext,
-                        videoId = videoID,
-                        channelThumbnailURL = videoChannelThumbnails ?: "none is here",
-                        duration = videoDuration ?: "0:00",
-                        viewModel = viewModel,
-                        clickForMore = {
-                            showAlertDialog = true
-                        },
-                        downloadAsVideo = {
-                            Toast.makeText(mContext, "Downloading has started", Toast.LENGTH_SHORT)
-                                .show()
-                            MainActivity().startDownloadingVideo(mContext, videoID, it)
-//                            DownloaderClass(mContext).downloadVideo(videoUrl, it, "mp4")
-                        },
-                        downloadAsMusic = {
-                            Toast.makeText(mContext, "Downloading has started", Toast.LENGTH_SHORT)
-                                .show()
-                            MainActivity().startDownloadingAudio(mContext, videoID, it)
-
-                        },
-                        finished = {
-                            videoTitle = it.title
-                            videoViews = it.viewNumber
-                            videoDate = it.date
-                            videoChannelName = it.channelName
-                        }
+            else if (isThereError.isNotEmpty()) {
+                Box(
+                    modifier = Modifier
+                        .fillMaxSize()
+                ) {
+                    Image(
+                        imageVector = Icons.Default.Error,
+                        "",
+                        modifier = Modifier
+                            .fillMaxSize()
                     )
 
                 }
 
-                if (isLoading) {
-                    item {
-                        SkeletonSuggestionLoadingLayout()
-                    }
-                } else {
-                    if (searchResults.isEmpty()) {
-                        item {
+            }
+            else if (isLoading) {
+                Box(
+                    modifier = Modifier
+                        .fillMaxSize()
+                ) {
+                    CircularProgressIndicator(modifier = Modifier.align(Alignment.Center))
+                }
 
-                            Text(
-                                text = "No results found",
-                                fontSize = 18.sp,
-                                textAlign = TextAlign.Center
-                            )
+            }
+            if (!isFullScreen){
+                LazyColumn {
+
+                    item(videoID) {
+                        VideoDetailsComposable(
+                            mContext = mContext,
+                            videoId = videoID,
+                            channelThumbnailURL = videoChannelThumbnails ?: "none is here",
+                            duration = videoDuration ?: "0:00",
+                            viewModel = viewModel,
+                            clickForMore = {
+                                showAlertDialog = true
+                            },
+                            downloadAsVideo = {
+                                Toast.makeText(mContext, "Downloading has started", Toast.LENGTH_SHORT)
+                                    .show()
+                                MainActivity().startDownloadingVideo(mContext, videoID, it)
+//                            DownloaderClass(mContext).downloadVideo(videoUrl, it, "mp4")
+                            },
+                            downloadAsMusic = {
+                                Toast.makeText(mContext, "Downloading has started", Toast.LENGTH_SHORT)
+                                    .show()
+                                MainActivity().startDownloadingAudio(mContext, videoID, it)
+
+                            },
+                            finished = {
+                                videoTitle = it.title
+                                videoViews = it.viewNumber
+                                videoDate = it.date
+                                videoChannelName = it.channelName
+                            }
+                        )
+
+                    }
+
+                    if (isLoadingVideos) {
+                        item {
+                            SkeletonSuggestionLoadingLayout()
                         }
                     } else {
-                        items(searchResults) { searchItem ->
-                            if (searchItem.videoId == videoID) {
-                                videoChannelThumbnails = searchItem.channelThumbnailsUrl
-                                videoDuration = searchItem.duration
+                        if (videosListResult.isEmpty()) {
+                            item {
+
+                                Text(
+                                    text = "No results found",
+                                    fontSize = 18.sp,
+                                    textAlign = TextAlign.Center
+                                )
                             }
-                            CategoryItems(
-                                navController,
-                                searchItem
-                            )
-                            listOfVideosListData.add(searchItem)
+                        } else {
+                            items(videosListResult) { searchItem ->
+                                if (searchItem.videoId == videoID) {
+                                    videoChannelThumbnails = searchItem.channelThumbnailsUrl
+                                    videoDuration = searchItem.duration
+                                }
+                                CategoryItems(
+                                    navController,
+                                    searchItem
+                                )
+                                listOfVideosListData.add(searchItem)
+
+                            }
 
                         }
 
                     }
-
                 }
+            }
+        }
+    }
+
+
+    LaunchedEffect(isFullScreen) {
+
+        activity?.let {
+
+            setFullscreen(it, isFullScreen)
+
+            // Optional: lock orientation when fullscreen
+            it.requestedOrientation = if (isFullScreen) {
+                ActivityInfo.SCREEN_ORIENTATION_SENSOR
+            } else {
+                ActivityInfo.SCREEN_ORIENTATION_PORTRAIT
             }
         }
 
     }
+
 
     if (showAlertDialog){
         AskToPlay(
@@ -290,165 +442,21 @@ fun VideoPlayerScreen(
 
 
 
-@SuppressLint("UnsafeOptInUsageError")
-@Composable
-private fun ExoPlayerUI(
-    navController: NavController,
-    currentId: String,
-    viewModel: ViewerViewModel,
-    done: (url: String) ->Unit,
-) {
-    val mContext = LocalContext.current
+fun setFullscreen(activity: Activity?, fullscreen: Boolean) {
 
-    val videoUrl by viewModel.videoUrl
+    activity?.let {
+        WindowCompat.setDecorFitsSystemWindows(it.window, !fullscreen)
+        val controller = WindowInsetsControllerCompat(it.window, it.window.decorView)
 
-    val isLoading by viewModel.isLoading
-
-    val isThereError by viewModel.error
-
-    val powerManager = mContext.getSystemService(Context.POWER_SERVICE) as PowerManager
-    @Suppress("DEPRECATION")
-    val wakeLock = powerManager.newWakeLock(PowerManager.SCREEN_BRIGHT_WAKE_LOCK or PowerManager.ACQUIRE_CAUSES_WAKEUP, "MyApp:VideoPlayer")
-
-    // Acquire the wake lock when the video is playing
-
-
-
-    LaunchedEffect(currentId) {
-        viewModel.loadVideoUrl(currentId)
-    }
-
-
-    if (isThereError.isNotEmpty()){
-        Box(
-            modifier = Modifier
-                .fillMaxSize()
-        ){
-            Image(
-                imageVector = Icons.Default.Error,
-                "",
-                modifier = Modifier
-                    .fillMaxSize()
-            )
-        }
-        return
-    }
-
-    if (isLoading){
-        Box(
-            modifier = Modifier
-                .fillMaxSize()
-        ){
-            CircularProgressIndicator(modifier = Modifier.align(Alignment.Center))
+        if (fullscreen) {
+            controller.hide(WindowInsetsCompat.Type.systemBars())
+            controller.systemBarsBehavior =
+                WindowInsetsControllerCompat.BEHAVIOR_SHOW_TRANSIENT_BARS_BY_SWIPE
+        } else {
+            controller.show(WindowInsetsCompat.Type.systemBars())
         }
     }
-
-
-    if (videoUrl.isNotEmpty() && !isLoading) {
-
-        val mExoPlayer = remember(mContext) {
-            done(videoUrl)
-            ExoPlayer.Builder(mContext).build().apply {
-                hasNextMediaItem()
-                setMediaItem(MediaItem.fromUri(videoUrl))
-                prepare()
-                playWhenReady = true
-
-                MainActivity().requestAudioFocusFromMain(mContext, this)
-                addListener(MyExoPlayerListener(navController))
-            }
-        }
-        var controlsVisible by remember { mutableStateOf(true) }
-        val coroutineScope = rememberCoroutineScope()
-
-        fun startAutoHideTimer() {
-            coroutineScope.launch {
-                delay(4000) // 3 seconds
-                controlsVisible = false
-            }
-        }
-
-
-        LaunchedEffect(Unit) {
-            startAutoHideTimer()
-        }
-
-
-        // Auto-hide after 3 seconds of visibility
-        DisposableEffect(mExoPlayer) {
-            onDispose {
-                mExoPlayer.release()
-                if (wakeLock.isHeld) {
-                    wakeLock.release()
-                }
-            }
-        }
-
-
-        val presentationState = rememberPresentationState(mExoPlayer)
-
-        LaunchedEffect(mExoPlayer.isPlaying) {
-            if (mExoPlayer.isPlaying) {
-                val videoDurationMs = mExoPlayer.duration / 1000
-                if (!wakeLock.isHeld) {
-                    wakeLock.acquire(videoDurationMs)
-                }
-            } else {
-                // Set default timeout (e.g., 10 minutes) when video is paused or stopped
-                if (!wakeLock.isHeld) {
-                    wakeLock.acquire(2 * 60 * 1000L) // 10 minutes
-                }
-            }
-        }
-
-
-        val scaledModifier = Modifier
-            .fillMaxSize()
-            .resizeWithContentScale(ContentScale.Fit, presentationState.videoSizeDp)
-            .pointerInput(Unit) {
-                detectTapGestures {
-                    if (controlsVisible) {
-                        controlsVisible = false // hide immediately
-                    } else {
-                        controlsVisible = true
-                        startAutoHideTimer()
-                    }
-                }
-            }
-
-        PlayerSurface(
-            mExoPlayer,
-            surfaceType = SURFACE_TYPE_SURFACE_VIEW,
-            modifier = scaledModifier
-        )
-
-        if (presentationState.coverSurface) {
-            // Cover the surface that is being prepared with a shutter
-            Box(
-                Modifier
-                    .fillMaxSize()
-                    .background(Color.Black))
-        }
-
-        PlayerControls(
-            mExoPlayer = mExoPlayer,
-            isVisible ={controlsVisible},
-            navigateUp = {
-                navController.navigateUp()
-            }
-        )
-
-
-
-    }
-
-
 }
-
-
-
-
-
 
 
 
@@ -863,12 +871,6 @@ fun CategoryItems(
     }
 }
 
-
-@SuppressLint("UnsafeOptInUsageError")
-@Composable
-fun FullScreenExoPlayer(navController: NavController, mExoPlayer: ExoPlayer){
-
-}
 
 
 

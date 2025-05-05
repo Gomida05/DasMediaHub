@@ -47,8 +47,6 @@ fun CustomTheme(content: @Composable () -> Unit) {
     val colors = if (isDarkTheme) darkColors else lightColors
 
     val lightPrimary = Color.Black
-    val lightPrimaryVariant = Color(0xFF000000)
-    val lightSecondary = Color(0xFF03DAC5)
 
     val whiteColor = Color(0xFFFFFFFF)
 

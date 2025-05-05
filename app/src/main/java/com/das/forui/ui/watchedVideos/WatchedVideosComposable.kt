@@ -145,7 +145,10 @@ fun WatchedVideosComposable(navController: NavController) {
                         )
                     }
                 } else {
-                    LazyColumn {
+                    LazyColumn(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                    ) {
                         items(searchResults, key = { it.watchUrl }) { searchItem ->
                             CategoryItems(
                                 navController,

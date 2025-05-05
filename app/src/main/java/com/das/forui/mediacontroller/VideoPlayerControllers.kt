@@ -15,6 +15,7 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.Fullscreen
+import androidx.compose.material.icons.filled.FullscreenExit
 import androidx.compose.material.icons.filled.Pause
 import androidx.compose.material.icons.filled.PlayArrow
 import androidx.compose.material.icons.filled.Settings
@@ -30,6 +31,7 @@ import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableLongStateOf
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
@@ -56,7 +58,8 @@ object VideoPlayerControllers {
         mExoPlayer: ExoPlayer,
         modifier: Modifier = Modifier,
         isVisible: () -> Boolean,
-        navigateUp: () -> Unit
+        navigateUp: () -> Unit,
+        fullScreen: (isFullScreen: Boolean) ->Unit
     ) {
 
 
@@ -89,7 +92,7 @@ object VideoPlayerControllers {
 
                 }
 
-                BottomControls(player = mExoPlayer, onFullScreen = {  })
+                BottomControls(player = mExoPlayer, isFullScreen = { fullScreen(it) })
             }
         }
     }
@@ -180,9 +183,10 @@ object VideoPlayerControllers {
     fun BottomControls(
         player: ExoPlayer,
         modifier: Modifier = Modifier,
-        onFullScreen: ()-> Unit
+        isFullScreen: (toFullScreen: Boolean) -> Unit
     ) {
-        // Reactive state for duration, current time, and buffer
+
+        var fullScreen by remember { mutableStateOf(false) }
         var currentPosition by remember { mutableLongStateOf(0L) }
         var totalDuration by remember { mutableLongStateOf(0L) }
         var bufferedPercent by remember { mutableIntStateOf(0) }
@@ -265,11 +269,14 @@ object VideoPlayerControllers {
                             .align(Alignment.CenterVertically)
                     )
                     IconButton(
-                        onClick = onFullScreen
+                        onClick = {
+                            fullScreen = !fullScreen
+                            isFullScreen(fullScreen)
+                        }
                     ) {
                         Icon(
-                            imageVector = Icons.Default.Fullscreen,
-                            contentDescription = "Enter/Exit fullscreen"
+                            imageVector = if (fullScreen) Icons.Default.FullscreenExit else Icons.Default.Fullscreen,
+                            contentDescription = if (fullScreen) "Exit fullscreen" else "Enter fullscreen"
                         )
                     }
                 }
@@ -277,6 +284,8 @@ object VideoPlayerControllers {
         }
 
     }
+
+
 
 
 
