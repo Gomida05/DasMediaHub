@@ -65,7 +65,7 @@ import com.das.forui.databased.PathSaver.getAudioDownloadPath
 import com.das.forui.objectsAndData.ForUIKeyWords.ACTION_START
 import com.das.forui.objectsAndData.ForUIKeyWords.PLAY_HERE_VIDEO
 import com.das.forui.services.BackGroundPlayer
-import com.das.forui.MainApplication.Youtuber.mediaItems
+import com.das.forui.objectsAndData.Youtuber.mediaItems
 import com.das.forui.ui.viewer.GlobalVideoList.bundles
 import java.io.File
 
@@ -183,7 +183,7 @@ fun DownloadsPageComposable(navController: NavController) {
                 }
             }
 
-            if (videosListData.isEmpty() || musicsListData.isEmpty()) {
+            if (isVideo && videosListData.isEmpty() || !isVideo && musicsListData.isEmpty()) {
 
                 Text(
                     text = "You haven't saved any ${if (isVideo) "videos" else "music"} yet. Save some to create your collection!",
@@ -242,7 +242,7 @@ fun ListItems(
         modifier = Modifier
             .fillMaxWidth()
             .padding(top = 2.dp, bottom = 2.dp)
-            .clip(RoundedCornerShape(30))
+            .clip(RoundedCornerShape(15))
 
     ) {
 
@@ -273,7 +273,7 @@ fun ListItems(
                     modifier = Modifier
                         .size(65.dp, 65.dp)
                         .align(Alignment.CenterVertically)
-                        .clip(RoundedCornerShape(15)),
+                        .clip(RoundedCornerShape(10)),
                     alignment = Alignment.Center,
                     contentScale = ContentScale.Crop
                 )
@@ -288,11 +288,12 @@ fun ListItems(
             }
             Column(
                 modifier = Modifier
-                    .width(250.dp)
+//                    .width(250.dp)
+                    .fillMaxWidth(0.86f)
             ) {
                 Text(
                     text = itemDetails.mediaMetadata.title.toString(),
-                    fontSize = 16.sp,
+                    fontSize = 14.sp,
                     maxLines = 2,
                     style = MaterialTheme.typography.headlineSmall,
                     modifier = Modifier
@@ -373,7 +374,6 @@ private fun itemClicked(
         val playIntent = Intent(context, BackGroundPlayer::class.java).apply {
             action = ACTION_START
             putExtra("media_id", index)
-            putExtra("title", selectedTitle)
         }
         context.startService(playIntent)
 

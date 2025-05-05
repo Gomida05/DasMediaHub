@@ -11,7 +11,7 @@ android {
         create("py312Release") {
             storeFile = file("C:\\Users\\esrom\\AndroidStudioProjects\\VideoDownloader\\app\\myRelease.jks")
             storePassword = "Esrom@11"
-            keyAlias = "key0"
+            keyAlias = "key1"
             keyPassword = "Esrom@11"
         }
     }
@@ -23,7 +23,7 @@ android {
         minSdk = 24
         targetSdk = 35
         versionCode = 2
-        versionName = "1.13"
+        versionName = "1.14"
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
         flavorDimensions.add("pyVersion")
@@ -94,16 +94,15 @@ chaquopy {
 
 dependencies {
 
-
     implementation("io.coil-kt:coil-compose:2.2.2")
     implementation("io.coil-kt:coil-video:2.4.0")
-    implementation("androidx.compose.runtime:runtime-livedata:1.7.8")
+    implementation("androidx.compose.runtime:runtime-livedata:1.8.0")
     implementation("androidx.navigation:navigation-compose:2.8.9")
-    implementation("androidx.compose.ui:ui-viewbinding:1.7.8")
+    implementation("androidx.compose.ui:ui-viewbinding:1.8.0")
 
     //Material 3
 
-    implementation(platform("androidx.compose:compose-bom:2025.04.00"))
+    implementation(platform("androidx.compose:compose-bom:2025.04.01"))
     implementation("androidx.compose.material3:material3")
 
 
@@ -127,22 +126,18 @@ dependencies {
     implementation("com.google.code.gson:gson:2.10.1")
 
     implementation("com.github.bumptech.glide:glide:4.16.0")
-    implementation("androidx.compose.runtime:runtime-android:1.7.8")
-    implementation("androidx.core:core-ktx:1.16.0")
+    implementation("androidx.compose.runtime:runtime-android:1.8.0")
     implementation("androidx.appcompat:appcompat:1.7.0")
 
-    implementation("androidx.work:work-runtime-ktx:2.10.0")
 
     implementation("androidx.constraintlayout:constraintlayout:2.2.1")
     implementation("androidx.lifecycle:lifecycle-livedata-ktx:2.8.7")
     implementation("androidx.lifecycle:lifecycle-viewmodel-ktx:2.8.7")
-    //noinspection GradleDependency
-    implementation("androidx.navigation:navigation-ui-ktx:2.8.4")
-    implementation("androidx.work:work-runtime-ktx:2.10.0")
+    implementation("androidx.navigation:navigation-ui-ktx:2.8.9")
     implementation("androidx.media3:media3-session:1.6.1")
     implementation("androidx.media3:media3-exoplayer-dash:1.6.1")
     implementation("androidx.media3:media3-exoplayer-hls:1.6.1")
-//    implementation("androidx.media3:media3-ui:1.6.1")
+
     implementation("androidx.media3:media3-ui-compose:1.6.1")
     implementation("androidx.media3:media3-exoplayer:1.6.1")
     implementation("androidx.media3:media3-common:1.6.1")

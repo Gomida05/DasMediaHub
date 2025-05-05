@@ -1,18 +1,22 @@
 package com.das.forui.objectsAndData
 
-import android.net.Uri
 import androidx.compose.ui.graphics.vector.ImageVector
 
 
 data object ForUIDataClass {
 
-    data class DownloadedListData(
+
+    data class PlayListDataClass(
+        val url: String,
         val title: String,
-        val pathOfVideo: Uri,
-        val thumbnailUri: Uri,
-        val dateTime: String,
-        val fileSize: String,
-        val type: Int
+        val views: String,
+        val date: String,
+        val duration: String
+
+    )
+    data class DownloadData(
+        val title: String,
+        val url: String
     )
 
 

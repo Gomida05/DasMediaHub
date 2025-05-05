@@ -3,7 +3,6 @@ package com.das.forui.ui.watchedVideos
 import android.content.Context
 import android.content.Intent
 import android.os.Bundle
-import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.combinedClickable
@@ -60,7 +59,7 @@ import coil.request.ImageRequest
 import com.das.forui.MainActivity
 import com.das.forui.MainApplication
 import com.das.forui.R
-import com.das.forui.databased.DatabaseFavorite
+import com.das.forui.databased.WatchHistory
 import com.das.forui.objectsAndData.ForUIDataClass.SavedVideosListData
 import com.das.forui.objectsAndData.ForUIDataClass.VideosListData
 import com.das.forui.objectsAndData.ForUIKeyWords.ACTION_START
@@ -108,7 +107,7 @@ fun WatchedVideosComposable(navController: NavController) {
                     Text(
                         "Recently watched videos",
                         textAlign = TextAlign.Center,
-                        style = MaterialTheme.typography.headlineMedium,
+                        style = MaterialTheme.typography.headlineSmall,
                         modifier = Modifier
                             .fillMaxWidth()
                     )
@@ -131,7 +130,7 @@ fun WatchedVideosComposable(navController: NavController) {
                             .align(Alignment.Center)
                     ){
                         Text(
-                            text = "You don't have any watched videos!.",
+                            text = "You haven't watched any video!.",
                             style = MaterialTheme.typography.headlineMedium,
                             fontSize = 20.sp,
                             textAlign = TextAlign.Center,
@@ -162,7 +161,6 @@ fun WatchedVideosComposable(navController: NavController) {
     }
 }
 
-@OptIn(ExperimentalFoundationApi::class)
 @Composable
 private fun CategoryItems(
     navController: NavController,
@@ -334,7 +332,7 @@ private fun CategoryItems(
             context,
             selectedItem,
             deleteTheItem = { selectedId->
-                DatabaseFavorite(context).deleteWatchUrl(selectedId)
+                WatchHistory(context).deleteWatchUrl(selectedId)
                 viewModel.removeSearchItem(selectedItem)
             },
             onDismissRequest = {showDialog = false}
@@ -395,7 +393,7 @@ private fun onClickListListener(
     controller: NavController
 ) {
     try {
-        val dbHelper = DatabaseFavorite(context)
+        val dbHelper = WatchHistory(context)
         val viewNumber = dbHelper.getViewNumber(selectedId)
         val datVideo = dbHelper.getVideoDate(selectedId)
         val videoChannel = dbHelper.getVideoChannelName(selectedId)

@@ -28,7 +28,23 @@ class WatchHistory(context: Context) : SQLiteOpenHelper(context, DATABASE_NAME, 
         if(isWatchUrlExist(videoId)){
             return false
         }
+
         val db = this.writableDatabase
+        val countQuery = "SELECT COUNT(*) FROM $FAVOURITE_TABLE_NAME"
+        val cursor = db.rawQuery(countQuery, null)
+        var count = 0
+        if (cursor.moveToFirst()) {
+            count = cursor.getInt(0)
+        }
+        cursor.close()
+
+        // If there are more than 27 rows, delete the oldest
+        if (count >= 30) {
+            val deleteQuery = "DELETE FROM $FAVOURITE_TABLE_NAME WHERE rowid IN " +
+                    "(SELECT rowid FROM $FAVOURITE_TABLE_NAME ORDER BY rowid ASC LIMIT 1)"
+            db.execSQL(deleteQuery)
+        }
+
         val contentValues = ContentValues().apply {
             put("video_id", videoId)
             put("title", title)
@@ -49,7 +65,7 @@ class WatchHistory(context: Context) : SQLiteOpenHelper(context, DATABASE_NAME, 
 
 
 
-    fun isWatchUrlExist(url: String): Boolean {
+    private fun isWatchUrlExist(url: String): Boolean {
         val db = readableDatabase
         val cursor = db.rawQuery("SELECT 1 FROM Watched_Videos WHERE video_id = ?", arrayOf(url))
 
@@ -62,7 +78,7 @@ class WatchHistory(context: Context) : SQLiteOpenHelper(context, DATABASE_NAME, 
 
     fun getResults(): Cursor {
         val db = readableDatabase
-        return db.rawQuery("SELECT * FROM Watched_Videos", null)
+        return db.rawQuery("SELECT * FROM $FAVOURITE_TABLE_NAME ORDER BY rowid DESC", null)
     }
 
 
@@ -94,7 +110,7 @@ class WatchHistory(context: Context) : SQLiteOpenHelper(context, DATABASE_NAME, 
         val db = this.readableDatabase
         try {
             val cursor = db.rawQuery(
-                "SELECT viewNumber FROM ${FAVOURITE_TABLE_NAME} WHERE video_id = ?",
+                "SELECT viewNumber FROM $FAVOURITE_TABLE_NAME WHERE video_id = ?",
                 arrayOf(videoId)
             )
 
@@ -122,7 +138,7 @@ class WatchHistory(context: Context) : SQLiteOpenHelper(context, DATABASE_NAME, 
     fun getVideoDate(videoId: String): String? {
         val db = this.readableDatabase
         val cursor = db.rawQuery(
-            "SELECT videoDate FROM ${FAVOURITE_TABLE_NAME} WHERE video_id = ?",
+            "SELECT videoDate FROM $FAVOURITE_TABLE_NAME WHERE video_id = ?",
             arrayOf(videoId)
         )
 
@@ -147,7 +163,7 @@ class WatchHistory(context: Context) : SQLiteOpenHelper(context, DATABASE_NAME, 
     fun getVideoChannelName(videoId: String): String? {
         val db = this.readableDatabase
         val cursor = db.rawQuery(
-            "SELECT videoChannelName FROM ${FAVOURITE_TABLE_NAME} WHERE video_id = ?",
+            "SELECT videoChannelName FROM $FAVOURITE_TABLE_NAME WHERE video_id = ?",
             arrayOf(videoId)
         )
 
@@ -171,7 +187,7 @@ class WatchHistory(context: Context) : SQLiteOpenHelper(context, DATABASE_NAME, 
     fun getChannelNameThumbnail(videoId: String): String? {
         val db = this.readableDatabase
         val cursor = db.rawQuery(
-            "SELECT channelThumbnail FROM ${FAVOURITE_TABLE_NAME} WHERE video_id = ?",
+            "SELECT channelThumbnail FROM $FAVOURITE_TABLE_NAME WHERE video_id = ?",
             arrayOf(videoId)
         )
 
@@ -195,7 +211,7 @@ class WatchHistory(context: Context) : SQLiteOpenHelper(context, DATABASE_NAME, 
     fun getDuration(videoId: String): String?{
         val db = this.readableDatabase
         val cursor = db.rawQuery(
-            "SELECT duration FROM ${FAVOURITE_TABLE_NAME} WHERE video_id = ?",
+            "SELECT duration FROM $FAVOURITE_TABLE_NAME WHERE video_id = ?",
             arrayOf(videoId)
         )
 

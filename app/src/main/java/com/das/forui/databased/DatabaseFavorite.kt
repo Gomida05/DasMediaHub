@@ -29,7 +29,7 @@ class DatabaseFavorite(context: Context) : SQLiteOpenHelper(context, DATABASE_NA
 
     fun getResults(): Cursor {
         val db = readableDatabase
-        return db.rawQuery("SELECT * FROM $FAVOURITE_TABLE_NAME", null)
+        return db.rawQuery("SELECT * FROM $FAVOURITE_TABLE_NAME ORDER BY rowid DESC", null)
     }
 
 

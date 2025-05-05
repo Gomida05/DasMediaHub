@@ -1,7 +1,6 @@
 package com.das.forui.objectsAndData
 
 object ForUIKeyWords {
-
     const val ACTION_START = "com.das.forui.Start"
     const val ACTION_KILL = "com.das.forui.kill"
     const val ACTION_ADD_TO_WATCH_LATER = "com.das.forui.ACTION_ADD_TO_WATCH_LATER"
@@ -15,6 +14,10 @@ object ForUIKeyWords {
 
 
     const val DOWNLOADER_NOTIFICATION_CHANNEL = "com.das.forui.DOWNLOADER_NOTIFICATION_CHANNEL"
+    const val AUDIO_SERVICE_FROM_URL_NOTIFICATION = "com.das.forui.services.AudioServiceFromUrl.NOTIFICATION_DELETED"
+    const val BACKGROUND_GROUND_PLAYER_NOTIFICATION = "com.das.forui.services.BackgroundPlayer.NOTIFICATION_DELETED"
+
+
 
 
     const val YOUTUBE_REGEX = "(?<=v=|/)([a-zA-Z0-9_-]{11})(?=&|\$|/)"

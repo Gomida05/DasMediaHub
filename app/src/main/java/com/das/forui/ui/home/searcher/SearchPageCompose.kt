@@ -11,6 +11,7 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -20,7 +21,10 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.Delete
+import androidx.compose.material.icons.filled.Download
+import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
+import androidx.compose.material3.ElevatedButton
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
@@ -33,9 +37,12 @@ import androidx.compose.runtime.MutableState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.vector.rememberVectorPainter
+import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.input.KeyboardType
@@ -43,11 +50,15 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavController
-import com.das.forui.MainApplication.Youtuber.youtubeExtractor
-import com.das.forui.MainApplication.Youtuber.isValidYoutubeURL
+import coil.compose.AsyncImage
+import coil.request.ImageRequest
+import com.das.forui.MainActivity
+import com.das.forui.objectsAndData.Youtuber.youtubeExtractor
+import com.das.forui.objectsAndData.Youtuber.isValidYoutubeURL
 import com.das.forui.databased.SearchHistoryDB
 import com.das.forui.objectsAndData.ForUIKeyWords.NEW_INTENT_FOR_VIEWER
 import com.das.forui.objectsAndData.ForUIKeyWords.NEW_TEXT_FOR_RESULT
+import com.das.forui.objectsAndData.Youtuber.isValidYouTubePlaylistUrl
 import com.das.forui.ui.viewer.GlobalVideoList.bundles
 
 
@@ -60,6 +71,9 @@ fun SearchPageCompose(
     val textState = remember { mutableStateOf(newText) }
     val context = LocalContext.current
     val androidViewMode: SearchPageViewMode = viewModel()
+
+    var playListUrl by remember { mutableStateOf("") }
+    var askToDownloadPlayList by remember { mutableStateOf(false) }
 
 
     val settingsResults = remember { androidViewMode.downloadedListData}
@@ -103,7 +117,7 @@ fun SearchPageCompose(
                         }
                     ) {
                         Icon(
-                            painter = rememberVectorPainter(Icons.AutoMirrored.Default.ArrowBack),
+                            imageVector = Icons.AutoMirrored.Default.ArrowBack,
                             "navigateUpButton"
                         )
                     }
@@ -112,7 +126,7 @@ fun SearchPageCompose(
                     if (textState.value.isNotEmpty()) {
                         IconButton(onClick = { textState.value = "" }) {
                             Icon(
-                                painter = rememberVectorPainter(Icons.Default.Close),
+                                imageVector = Icons.Default.Close,
                                 contentDescription = "Clear"
                             )
                         }
@@ -122,7 +136,7 @@ fun SearchPageCompose(
                     imeAction = ImeAction.Search,
                     autoCorrectEnabled = true,
                     keyboardType = KeyboardType.Text,
-                    showKeyboardOnFocus = true
+                    showKeyboardOnFocus = true,
                 ),
                 keyboardActions = KeyboardActions(
                     onSearch = {
@@ -131,7 +145,10 @@ fun SearchPageCompose(
                                 navController,
                                 textState.value,
                                 context
-                            )
+                            ) { url ->
+                                askToDownloadPlayList = true
+                                playListUrl = url
+                            }
                         }
                     }
                 )
@@ -155,7 +172,7 @@ fun SearchPageCompose(
                     modifier = Modifier
                 ) {
                     items(settingsResults.value) { settingsItem ->
-                        CategoryItems(
+                        RecentlySearchList(
                             context,
                             title = settingsItem,
                             settingsResults,
@@ -172,6 +189,17 @@ fun SearchPageCompose(
         }
 
     }
+    if (askToDownloadPlayList && playListUrl.isNotEmpty()){
+
+        PlayListDownloadRequest(
+            onDismissRequest = {
+                askToDownloadPlayList = false
+            },
+            context,
+            playListUrl
+        )
+
+    }
 
 }
 
@@ -179,7 +207,7 @@ fun SearchPageCompose(
 
 
 @Composable
-private fun CategoryItems(
+private fun RecentlySearchList(
     context: Context,
     title: String,
     settingsResults: MutableState<List<String>>,
@@ -233,16 +261,83 @@ private fun CategoryItems(
 }
 
 
+@Composable
+fun PlayListDownloadRequest(onDismissRequest: ()->Unit, mContext: Context, url: String){
+    AlertDialog(
+        onDismissRequest = onDismissRequest,
 
+        title = {
+            Text(
+                "Do you want to download the playlist",
+                style = MaterialTheme.typography.headlineSmall
+            )
+        },
+        text = {
+            AsyncImage(
+                model = ImageRequest.Builder(mContext)
+                    .data("https://img.youtube.com/vi/_uQrJ0TkZlc&t=109s/0.jpg")
+                    .crossfade(true)
+                    .build(),
+                contentDescription = "Category Image",
+                modifier = Modifier
+                    .height(190.dp)
+                    .clip(RoundedCornerShape(4)),
+                alignment = Alignment.Center,
+                contentScale = ContentScale.Fit
+            )
 
+        },
+        confirmButton = {
+            ElevatedButton (
+                onClick = {
+                    onDismissRequest()
+                    MainActivity().startPlayListDownload(
+                        mContext,
+                        url
+                    )
+
+                }
+            ) {
+
+                Text(
+                    "Download"
+                )
+
+                Icon(
+                    imageVector = Icons.Default.Download,
+                    ""
+                )
+
+            }
+        },
+        dismissButton = {
+            ElevatedButton(
+                onClick = onDismissRequest
+            ) {
+
+                Text(
+                    "No"
+                )
+                Spacer(
+                    modifier = Modifier.width(5.dp)
+                )
+                Icon(
+                    imageVector = Icons.Default.Close,
+                    ""
+                )
+            }
+
+        }
+    )
+}
 
 
 private fun keyEvent(
     navController: NavController,
     editTextText: String,
-    context: Context
+    context: Context,
+    isPlayList: (url: String)-> Unit
 ) {
-
 
         try {
             if (isValidYoutubeURL(editTextText)) {
@@ -252,9 +347,17 @@ private fun keyEvent(
                     putString("View_URL", "https://www.youtube.com/watch?v=$videoId")
                 }
                 bundles.putBundle(NEW_INTENT_FOR_VIEWER, bundled)
-                navController.navigate("video viewer")
-            } else {
-                SearchHistoryDB(context).insertData(title = editTextText)
+            } else if (isValidYouTubePlaylistUrl(editTextText)){
+
+                isPlayList(editTextText)
+//                MainActivity().startPlayListDownload(
+//                    context,
+//                    editTextText
+//                )
+//                showDialogs(context, "PlayList Starting to download!")
+            }
+            else {
+                SearchHistoryDB(context).insertData(editTextText)
                 goSearch(
                     context,
                     navController,

@@ -7,17 +7,13 @@ import android.app.Activity
 import android.app.NotificationChannel
 import android.app.NotificationChannelGroup
 import android.app.NotificationManager
-import android.app.UiModeManager
 import android.content.Context
 import android.content.ContextWrapper
 import android.content.Intent
 import android.content.Intent.EXTRA_STREAM
 import android.content.Intent.EXTRA_TEXT
-import android.content.SharedPreferences
 import android.content.pm.PackageManager
-import android.content.res.Configuration
 import android.media.AudioManager
-import android.media.MediaScannerConnection
 import android.net.Uri
 import android.os.Build
 import android.os.Build.VERSION_CODES.TIRAMISU
@@ -26,7 +22,7 @@ import android.util.Log
 import android.widget.Toast
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
-import androidx.appcompat.app.AppCompatDelegate
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -52,17 +48,10 @@ import androidx.media3.exoplayer.ExoPlayer
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
-import com.das.forui.MainApplication.Youtuber.youtubeExtractor
-import com.das.forui.MainApplication.Youtuber.isValidYoutubeURL
-import com.das.forui.MainApplication.Youtuber.pythonInstant
+import com.das.forui.objectsAndData.Youtuber.youtubeExtractor
+import com.das.forui.objectsAndData.Youtuber.isValidYoutubeURL
 import com.das.forui.objectsAndData.ForUIKeyWords.PLAY_HERE_VIDEO
 import com.das.forui.objectsAndData.ForUIDataClass.MyBottomNavData
-import kotlinx.coroutines.CoroutineScope
-import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.launch
-import kotlinx.coroutines.withContext
-import java.io.File
-import java.lang.System.currentTimeMillis
 import androidx.compose.material3.NavigationBarItem
 import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
@@ -72,12 +61,16 @@ import androidx.core.util.Consumer
 import androidx.lifecycle.compose.LocalLifecycleOwner
 import androidx.navigation.NavController
 import androidx.navigation.compose.currentBackStackEntryAsState
-import com.das.forui.databased.PathSaver.getAudioDownloadPath
-import com.das.forui.databased.PathSaver.getVideosDownloadPath
+import com.das.forui.objectsAndData.Youtuber.getAudioStreamUrl
+import com.das.forui.objectsAndData.Youtuber.getVideoStreamUrl
+import com.das.forui.downloader.DownloaderClass
 import com.das.forui.objectsAndData.ForUIKeyWords.ACTION_START
 import com.das.forui.objectsAndData.ForUIKeyWords.NEW_INTENT_FOR_SEARCHER
 import com.das.forui.objectsAndData.ForUIKeyWords.NEW_INTENT_FOR_VIEWER
 import com.das.forui.objectsAndData.ForUIKeyWords.NEW_TEXT_FOR_RESULT
+import com.das.forui.objectsAndData.Youtuber.extractPlaylistId
+import com.das.forui.objectsAndData.Youtuber.getPlayListStreamUrl
+import com.das.forui.objectsAndData.Youtuber.isValidYouTubePlaylistUrl
 import com.das.forui.services.BackGroundPlayer
 import com.das.forui.ui.home.downloads.DownloadsPageComposable
 import com.das.forui.ui.home.HomePageComposable
@@ -98,12 +91,12 @@ class MainActivity : ComponentActivity() {
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-
         setContent{
             MainLauncherPageComposable()
         }
 
     }
+
 
 
 
@@ -193,59 +186,63 @@ class MainActivity : ComponentActivity() {
                 }
             ) { paddingValues ->
 
-                NavHost(
-                    navController = navController, startDestination = "Home",
-                    modifier = Modifier.padding(paddingValues)
-                ) {
-                    composable("Home") {
-                        HomePageComposable(navController)
-                    }
-                    composable("Recently Watched") {
-                        WatchedVideosComposable(navController)
-                    }
-                    composable("Setting") {
-                        SettingsComposable(navController)
-                    }
+                Box(
+                    modifier = Modifier
+                        .padding(paddingValues)
+                        .fillMaxSize()
+                ){
+                    NavHost(
+                        navController = navController, startDestination = "Home"
+                    ) {
+                        composable("Home") {
+                            HomePageComposable(navController)
+                        }
+                        composable("Recently Watched") {
+                            WatchedVideosComposable(navController)
+                        }
+                        composable("Setting") {
+                            SettingsComposable(navController)
+                        }
 
-                    composable("video viewer") {
-                        val bundle = bundles.getBundle(NEW_INTENT_FOR_VIEWER)
-                        VideoPlayerScreen(
-                            navController,
-                            bundle
-                        )
+                        composable("video viewer") {
+                            val bundle = bundles.getBundle(NEW_INTENT_FOR_VIEWER)
+                            VideoPlayerScreen(
+                                navController,
+                                bundle
+                            )
+                        }
+                        composable("ResultViewerPage") {
 
-                    }
-                    composable("ResultViewerPage") {
+                            val argument = bundles.getString(NEW_TEXT_FOR_RESULT).toString()
+                            ResultViewerPage(
+                                navController,
+                                argument
+                            )
+                        }
+                        composable("Downloads") {
+                            DownloadsPageComposable(navController)
+                        }
+                        composable("searcher") {
 
-                        val argument = bundles.getString(NEW_TEXT_FOR_RESULT).toString()
-                        ResultViewerPage(
-                            navController,
-                            argument
-                        )
-                    }
-                    composable("Downloads") {
-                        DownloadsPageComposable(navController)
-                    }
-                    composable("searcher") {
+                            SearchPageCompose(
+                                navController,
+                                bundles.getString(NEW_INTENT_FOR_SEARCHER, "")
+                            )
+                        }
+                        composable("user Setting") {
+                            UserSettingComposable(navController)
 
-                        SearchPageCompose(
-                            navController,
-                            bundles.getString(NEW_INTENT_FOR_SEARCHER, "")
-                        )
-                    }
-                    composable("user Setting") {
-                        UserSettingComposable(navController)
+                        }
+                        composable("ExoPlayerUI") {
+                            ExoPlayerUI(
+                                navController,
+                                bundles.getString(PLAY_HERE_VIDEO).toString()
+                            )
+                        }
 
-                    }
-                    composable("ExoPlayerUI") {
-                        ExoPlayerUI(
-                            navController,
-                            bundles.getString(PLAY_HERE_VIDEO).toString()
-                        )
-                    }
-
-                    composable("saved"){
-                        WatchLaterComposable(navController)
+                        composable("saved"){
+                            WatchLaterComposable(navController)
+                        }
                     }
                 }
             }
@@ -390,7 +387,17 @@ class MainActivity : ComponentActivity() {
                 }
                 navController.navigate("video viewer")
 
-            } else if (it.startsWith("DownloadsPageFr")) {
+            } else if (isValidYouTubePlaylistUrl(it)){
+                val bundle= Bundle().apply {
+                    putString("View_ID", extractPlaylistId(it))
+                    putString("View_URL", it)
+                }
+                bundles.apply {
+                    putBundle(NEW_INTENT_FOR_VIEWER, bundle)
+                }
+                navController.navigate("video viewer")
+
+            }else if (it.startsWith("DownloadsPageFr")) {
                 navController.navigate("Downloads")
             } else {
                 bundles.apply {
@@ -401,10 +408,205 @@ class MainActivity : ComponentActivity() {
         }
     }
 
+    fun startDownloadingVideo(context: Context, videoId: String, title: String){
+
+        getVideoStreamUrl(videoId,
+            onSuccess = {
+                DownloaderClass(context)
+                    .downloadVideo(it, title)
+            },
+            onFailure = {
+                showDialogs(it)
+            }
+        )
+    }
+
+    fun startPlayListDownload(
+        context: Context, playListUrl: String
+    ){
+        getPlayListStreamUrl(
+            playListUrl,
+            onSuccess = { playListName, videoList ->
+                for (i in videoList){
+                    DownloaderClass(context)
+                        .downloadVideosPlayList(
+                            i.url,
+                            playListName,
+                            i.title
+                        )
+                }
+            },
+            onFailure = {
+                Log.e("There is an error ", it)
+            }
+        )
+    }
+
+
+    fun startDownloadingAudio(context: Context, videoId: String, title: String){
+
+        getAudioStreamUrl(videoId,
+            onSuccess = {
+                DownloaderClass(context)
+                    .downloadMusic(it, title)
+            },
+            onFailure = {
+                showDialogs(it)
+            }
+        )
+    }
+
+
+    private fun createMediaGroupNotificationChannel() {
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+            val serviceChannel = NotificationChannelGroup(
+                "MNGC",
+                "MediaPlayer notifications"
+            )
+
+            val manager = getSystemService(NotificationManager::class.java)
+            manager?.createNotificationChannelGroup(serviceChannel)
+        }
+    }
+    private fun createGroupNotificationChannel(){
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+            val serviceChannel = NotificationChannelGroup(
+                "NGC",
+                "Download notification"
+            )
+
+
+            val downloadChannelId = "download_channel"
+            val downloadChannelName = "Downloads"
+            val downloadChannel = NotificationChannel(
+                downloadChannelId,
+                downloadChannelName,
+                NotificationManager.IMPORTANCE_LOW // Set the importance level based on your needs
+            )
+            downloadChannel.apply {
+                group = "NGC"
+                description = "This channel is for download notifications"
+            }
+
+
+            val manager = getSystemService(NotificationManager::class.java)
+            manager?.createNotificationChannelGroup(serviceChannel)
+            manager?.createNotificationChannel(downloadChannel)
+        }
+
+
+    }
+
+
+    fun alertUserError(context: Context, message: String?) {
+
+        val notification = NotificationCompat.Builder(context, "error_searching")
+            .setContentTitle("Found an error")
+            .setContentText(message)
+            .setSmallIcon(R.mipmap.ic_launcher_ofme)
+            .setOngoing(true)
+            .setAutoCancel(false)
+            .setGroup("NGC")
+            .setPriority(NotificationCompat.PRIORITY_HIGH)
+            .setStyle(
+                NotificationCompat.BigTextStyle()
+                    .setBigContentTitle("Found an error")
+                    .setSummaryText("Please contact the developer")
+            )
+            .setCategory(NotificationCompat.CATEGORY_SERVICE) // Heads-up notification
+            .build()
+
+        val notificationManager = NotificationManagerCompat.from(context)
+        if (ActivityCompat.checkSelfPermission(
+                this,
+                POST_NOTIFICATIONS
+            ) != PackageManager.PERMISSION_GRANTED
+        ) {
+            if (Build.VERSION.SDK_INT >= TIRAMISU) {
+                ActivityCompat.requestPermissions(this, arrayOf(POST_NOTIFICATIONS), 0)
+            }
+            return
+        }
+        notificationManager.notify(1001, notification)  // Unique ID for your notification
+    }
+
+    private fun createNotificationChannel() {
+        // Only create the channel for Android 8.0 (API level 26) or higher
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+            val channelId = "error_searching"
+            val channelName = "Error Notifications"
+            val importance = NotificationManager.IMPORTANCE_HIGH
+            val channel = NotificationChannel(channelId, channelName, importance).apply {
+                description = "Channel for error notifications"
+                enableVibration(true)
+            }
+
+            val notificationManager = applicationContext.getSystemService(NOTIFICATION_SERVICE) as NotificationManager
+            notificationManager.createNotificationChannel(channel)
+        }
+    }
 
 
 
-    fun downloadVideo(link: String, title: String, contexts: Context) {
+
+
+    private fun showDialogs(inputText: String) {
+        Toast.makeText(this, inputText, Toast.LENGTH_SHORT).show()
+    }
+
+
+
+    fun requestAudioFocusFromMain(context: Context, exoPlayer: ExoPlayer?) {
+
+        val audioManager = context.getSystemService(AUDIO_SERVICE) as AudioManager
+
+        val audioFocusRequest = AudioManager.OnAudioFocusChangeListener { focusChange ->
+            when (focusChange) {
+                AudioManager.AUDIOFOCUS_LOSS -> {
+                    // Pause playback when losing focus
+                    exoPlayer?.playWhenReady = false
+                }
+                AudioManager.AUDIOFOCUS_GAIN -> {
+                    // Resume playback when gaining focus
+                    exoPlayer?.playWhenReady = true
+                    exoPlayer?.volume = 1.0f
+                }
+                AudioManager.AUDIOFOCUS_LOSS_TRANSIENT -> {
+                    // Pause temporarily (e.g., during a phone call)
+                    exoPlayer?.playWhenReady = false
+                }
+                AudioManager.AUDIOFOCUS_LOSS_TRANSIENT_CAN_DUCK -> {
+                    // Can continue playing but with lower volume
+                    exoPlayer?.volume = 0.1f  // Reduce volume
+                }
+            }
+        }
+
+
+        @Suppress("DEPRECATION")
+        val result = audioManager.requestAudioFocus(
+            audioFocusRequest,
+            AudioManager.STREAM_MUSIC,
+            AudioManager.AUDIOFOCUS_GAIN
+        )
+
+        if (result != AudioManager.AUDIOFOCUS_REQUEST_GRANTED) {
+
+        }
+    }
+
+
+
+
+
+
+    private fun Context.getActivity(): Activity {
+        if (this is Activity) return this
+        return if (this is ContextWrapper) baseContext.getActivity() else getActivity()
+    }
+
+
+    /*    fun downloadVideo(link: String, title: String, contexts: Context) {
         val path = getVideosDownloadPath(contexts)
 
         createSingleDirectory(path)
@@ -506,209 +708,6 @@ class MainActivity : ComponentActivity() {
             showDialogs("An Exception Error from kt: \n$e")
         }
     }
-
-
-    private fun downloadCompleted(message: String) {
-
-
-        val notificationId = currentTimeMillis().toInt()
-        val notification = NotificationCompat.Builder(this, "download_channel")
-            .setContentTitle("Download Finished")
-            .setContentText(message)
-            .setSmallIcon(R.mipmap.icon)
-            .setPriority(NotificationCompat.PRIORITY_DEFAULT)
-            .setGroupSummary(false)
-            .setGroup("message")
-            .build()
-        val notificationManager = NotificationManagerCompat.from(this@MainActivity)
-        if (ActivityCompat.checkSelfPermission(
-                this,
-                POST_NOTIFICATIONS
-            ) != PackageManager.PERMISSION_GRANTED
-        ) {
-            if (Build.VERSION.SDK_INT >= TIRAMISU) {
-                ActivityCompat.requestPermissions(this, arrayOf(POST_NOTIFICATIONS), 0)
-            }
-            return
-        }
-        notificationManager.notify(notificationId, notification)
-    }
-
-    private fun createMediaGroupNotificationChannel() {
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
-            val serviceChannel = NotificationChannelGroup(
-                "MNGC",
-                "MediaPlayer notifications"
-            )
-
-            val manager = getSystemService(NotificationManager::class.java)
-            manager?.createNotificationChannelGroup(serviceChannel)
-        }
-    }
-    private fun createGroupNotificationChannel(){
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
-            val serviceChannel = NotificationChannelGroup(
-                "NGC",
-                "Download notification"
-            )
-
-
-            val downloadChannelId = "download_channel"
-            val downloadChannelName = "Downloads"
-            val downloadChannel = NotificationChannel(
-                downloadChannelId,
-                downloadChannelName,
-                NotificationManager.IMPORTANCE_LOW // Set the importance level based on your needs
-            )
-            downloadChannel.apply {
-                group = "NGC"
-                description = "This channel is for download notifications"
-            }
-
-
-            val manager = getSystemService(NotificationManager::class.java)
-            manager?.createNotificationChannelGroup(serviceChannel)
-            manager?.createNotificationChannel(downloadChannel)
-        }
-
-
-    }
-
-
-    fun alertUserError(context: Context, message: String?) {
-
-        val notification = NotificationCompat.Builder(context, "error_searching")
-            .setContentTitle("Found an error")
-            .setContentText(message)
-            .setSmallIcon(R.mipmap.ic_launcher_ofme)
-            .setOngoing(true)
-            .setAutoCancel(false)
-            .setGroup("NGC")
-            .setPriority(NotificationCompat.PRIORITY_HIGH)
-            .setStyle(
-                NotificationCompat.BigTextStyle()
-                    .setBigContentTitle("Found an error")
-                    .setSummaryText("Please contact the developer")
-            )
-            .setCategory(NotificationCompat.CATEGORY_SERVICE) // Heads-up notification
-            .build()
-
-        val notificationManager = NotificationManagerCompat.from(context)
-        if (ActivityCompat.checkSelfPermission(
-                this,
-                POST_NOTIFICATIONS
-            ) != PackageManager.PERMISSION_GRANTED
-        ) {
-            if (Build.VERSION.SDK_INT >= TIRAMISU) {
-                ActivityCompat.requestPermissions(this, arrayOf(POST_NOTIFICATIONS), 0)
-            }
-            return
-        }
-        notificationManager.notify(1001, notification)  // Unique ID for your notification
-    }
-
-    private fun createNotificationChannel() {
-        // Only create the channel for Android 8.0 (API level 26) or higher
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
-            val channelId = "error_searching"
-            val channelName = "Error Notifications"
-            val importance = NotificationManager.IMPORTANCE_HIGH
-            val channel = NotificationChannel(channelId, channelName, importance)
-            channel.description = "Channel for error notifications"
-
-            val notificationManager =
-                applicationContext.getSystemService(NOTIFICATION_SERVICE) as NotificationManager
-            notificationManager.createNotificationChannel(channel)
-        }
-    }
-
-
-
-
-
-    private fun showDialogs(inputText: String) {
-        Toast.makeText(this, inputText, Toast.LENGTH_SHORT).show()
-    }
-
-
-
-    fun requestAudioFocusFromMain(context: Context, exoPlayer: ExoPlayer?) {
-
-        val audioManager = context.getSystemService(AUDIO_SERVICE) as AudioManager
-
-        val audioFocusRequest = AudioManager.OnAudioFocusChangeListener { focusChange ->
-            when (focusChange) {
-                AudioManager.AUDIOFOCUS_LOSS -> {
-                    // Pause playback when losing focus
-                    exoPlayer?.playWhenReady = false
-                }
-                AudioManager.AUDIOFOCUS_GAIN -> {
-                    // Resume playback when gaining focus
-                    exoPlayer?.playWhenReady = true
-                    exoPlayer?.volume = 1.0f
-                }
-                AudioManager.AUDIOFOCUS_LOSS_TRANSIENT -> {
-                    // Pause temporarily (e.g., during a phone call)
-                    exoPlayer?.playWhenReady = false
-                }
-                AudioManager.AUDIOFOCUS_LOSS_TRANSIENT_CAN_DUCK -> {
-                    // Can continue playing but with lower volume
-                    exoPlayer?.volume = 0.1f  // Reduce volume
-                }
-            }
-        }
-
-
-        @Suppress("DEPRECATION")
-        val result = audioManager.requestAudioFocus(
-            audioFocusRequest,
-            AudioManager.STREAM_MUSIC,
-            AudioManager.AUDIOFOCUS_GAIN
-        )
-
-        if (result != AudioManager.AUDIOFOCUS_REQUEST_GRANTED) {
-
-        }
-    }
-
-
-
-
-
-
-
-    private fun createSingleDirectory(directoryPath: String) {
-        val dir = File(directoryPath)
-        if (dir.mkdir()) {
-        } else {
-        }
-    }
-
-
-
-
-    override fun onConfigurationChanged(newConfig: Configuration) {
-        super.onConfigurationChanged(newConfig)
-        val myNewConfig = newConfig.uiMode and Configuration.UI_MODE_NIGHT_MASK
-        val currentUiMode = resources.configuration.uiMode and Configuration.UI_MODE_NIGHT_MASK
-        val sharedPref: SharedPreferences = getSharedPreferences("AppPreferences", MODE_PRIVATE)
-
-        val uiModeType = sharedPref.getInt("isNightModeOn", currentUiMode)
-
-        if (myNewConfig != currentUiMode && uiModeType == UiModeManager.MODE_NIGHT_AUTO) {
-            if (myNewConfig == Configuration.UI_MODE_NIGHT_YES) {
-                AppCompatDelegate.setDefaultNightMode(AppCompatDelegate.MODE_NIGHT_NO)
-            } else {
-                AppCompatDelegate.setDefaultNightMode(AppCompatDelegate.MODE_NIGHT_YES)
-            }
-            this.recreate()
-        }
-    }
-
-
-    private fun Context.getActivity(): Activity {
-        if (this is Activity) return this
-        return if (this is ContextWrapper) baseContext.getActivity() else getActivity()
-    }
+     */
 
 }

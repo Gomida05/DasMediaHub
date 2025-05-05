@@ -29,7 +29,7 @@ class DownloadsPageViewModel : ViewModel() {
                     val formattedDate = formatDate(lastModified)
                     val fileSizeFormatted = formatFileSize(file.length())
                     val mediaMetaData = MediaMetadata.Builder()
-                        .setTitle(file.name.removeSuffix(".mp3"))
+                        .setTitle(file.name.removeSuffix(".mp4"))
                         .setDescription(formattedDate)
                         .setArtist(fileSizeFormatted)
                         .setMediaType(MediaMetadata.MEDIA_TYPE_FOLDER_VIDEOS)
@@ -64,6 +64,7 @@ class DownloadsPageViewModel : ViewModel() {
                         .setTitle(file.name.removeSuffix(".mp3"))
                         .setDescription(formattedDate)
                         .setMediaType(MediaMetadata.MEDIA_TYPE_MUSIC)
+                        .setArtist(fileSizeFormatted)
                         .build()
                     musicMutableList.add(
                         MediaItem.Builder()

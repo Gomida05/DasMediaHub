@@ -60,6 +60,7 @@
       <option name="ignoredErrors">
         <list>
           <option value="E302" />
+          <option value="W292" />
         </list>
       </option>
     </inspection_tool>
@@ -70,10 +71,11 @@
         </list>
       </option>
     </inspection_tool>
+    <inspection_tool class="PyTypeCheckerInspection" enabled="false" level="WARNING" enabled_by_default="false" />
     <inspection_tool class="PyUnresolvedReferencesInspection" enabled="true" level="WARNING" enabled_by_default="true">
       <option name="ignoredIdentifiers">
         <list>
-          <option value="python.main.*" />
+          <option value="datetime.year" />
         </list>
       </option>
     </inspection_tool>

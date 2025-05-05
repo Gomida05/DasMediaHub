@@ -42,7 +42,7 @@ import androidx.media3.exoplayer.ExoPlayer
 import androidx.media3.ui.compose.state.rememberNextButtonState
 import androidx.media3.ui.compose.state.rememberPlayPauseButtonState
 import androidx.media3.ui.compose.state.rememberPreviousButtonState
-import com.das.forui.MainApplication.Youtuber.formatTimeFromMs
+import com.das.forui.objectsAndData.Youtuber.formatTimeFromMs
 import kotlinx.coroutines.delay
 
 

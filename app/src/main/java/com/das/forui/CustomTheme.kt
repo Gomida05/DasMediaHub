@@ -19,6 +19,33 @@ import androidx.compose.ui.unit.sp
 fun CustomTheme(content: @Composable () -> Unit) {
 
     val isDarkTheme = isSystemInDarkTheme()
+
+    val lightColors = lightColorScheme(
+        primary = Color(0xFF000000),
+        onPrimary = Color.White,
+        primaryContainer = Color(0xFFE0E0E0),
+        secondary = Color(0xFF03DAC5),
+        onSecondary = Color.Black,
+        background = Color(0xFFFFFFFF),
+        onBackground = Color.Black,
+        surface = Color(0xFFFFFFFF),
+        onSurface = Color.Black,
+    )
+
+    val darkColors = darkColorScheme(
+        primary = Color.White,
+        onPrimary = Color.Black,
+        primaryContainer = Color(0xFF121212),
+        secondary = Color(0xFF03DAC5),
+        onSecondary = Color.Black,
+        background = Color(0xFF121212),
+        onBackground = Color.White,
+        surface = Color(0xFF121212),
+        onSurface = Color.White,
+    )
+
+    val colors = if (isDarkTheme) darkColors else lightColors
+
     val lightPrimary = Color.Black
     val lightPrimaryVariant = Color(0xFF000000)
     val lightSecondary = Color(0xFF03DAC5)
@@ -59,23 +86,7 @@ fun CustomTheme(content: @Composable () -> Unit) {
 
     MaterialTheme(
 
-        colorScheme = if (isDarkTheme) {
-            darkColorScheme(
-                primary = whiteColor,
-                primaryContainer = Color(0xFF000000),
-                onPrimary = Color(0xFF000000),
-                secondary = lightSecondary,
-
-                )
-        } else {
-            lightColorScheme(
-                primary = lightPrimary,
-                primaryContainer = lightPrimaryVariant,
-                onPrimary = Color(0xFFFFFFFF),
-                secondary = lightSecondary,
-
-            )
-        },
+        colorScheme = colors,
         typography = customTypography,
         shapes = customShapes,
         content = content

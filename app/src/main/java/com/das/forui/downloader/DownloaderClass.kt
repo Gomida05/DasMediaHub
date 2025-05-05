@@ -3,118 +3,239 @@ package com.das.forui.downloader
 import android.app.DownloadManager
 import android.app.NotificationChannel
 import android.app.NotificationManager
-import android.app.PendingIntent
 import android.content.Context
-import android.content.Intent
+import android.database.Cursor
 import android.net.Uri
 import android.os.Build
-import android.os.Environment
-import android.view.View
+import android.os.Handler
+import android.os.Looper
+import android.webkit.MimeTypeMap
 import androidx.core.app.NotificationCompat
-import com.das.forui.MainActivity
 import com.das.forui.R
+import com.das.forui.databased.PathSaver.getAudioDownloadPath
 import com.das.forui.databased.PathSaver.getVideosDownloadPath
+import com.das.forui.objectsAndData.ForUIDataClass.DownloadData
+import com.das.forui.objectsAndData.ForUIKeyWords.DOWNLOADER_NOTIFICATION_CHANNEL
 import java.io.File
 
-class DownloaderClass(val context: Context) {
+class DownloaderClass(val context: Context): ForUIDownloader {
+
+    private val downloadManager = context.getSystemService(DownloadManager::class.java)
+    private val notificationManager = context.getSystemService(NotificationManager::class.java)
 
 
 
-    fun downloadVideo(url: String, title: String, type: String) {
-        try {
-            val pathVideo = getVideosDownloadPath(context)
-            createSingleDirectory(pathVideo)
-
-            createNotificationChannel()
-
-            val builder = createMediaNotification(title)
-            val notificationManager = context.getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
-            val notificationId = 26
-            val uri = Uri.parse(url)
 
 
+    override fun downloadVideo(url: String, title: String): Long {
+
+        createNotificationChannel()
+        val builder = createMediaNotificationForProgress(title)
+
+        val uri = Uri.parse(url)
+        val pathVideo = getVideosDownloadPath(context)
+        createSingleDirectory(pathVideo)
+        val customFilePath = File("$pathVideo/$title.mp4")
+
+        if (customFilePath.parentFile?.exists()!!) {
+            customFilePath.parentFile?.mkdirs()
+        }
+        val customUri = Uri.fromFile(customFilePath)
+        val request = DownloadManager.Request(uri)
+            .setTitle("Downloading Video")
+            .setDescription("Video download in progress")
+            .setAllowedNetworkTypes(DownloadManager.Request.NETWORK_WIFI or DownloadManager.Request.NETWORK_MOBILE)
+            .setDestinationUri(customUri)
+            .setNotificationVisibility(DownloadManager.Request.VISIBILITY_HIDDEN)
+            .setAllowedOverMetered(true)
+
+        val extension = MimeTypeMap.getFileExtensionFromUrl(url)
+        val mimeType = MimeTypeMap.getSingleton().getMimeTypeFromExtension(extension)
+        if (mimeType != null) {
+            request.setMimeType(mimeType)
+        }
+
+        val downloadId = downloadManager.enqueue(request)
+        startTacking(downloadId, builder)
+
+        return downloadId
+
+    }
+
+    override fun downloadMusic(url: String, title: String): Long {
+        createNotificationChannel()
+        val builder = createMediaNotificationForProgress(title)
+
+        val uri = Uri.parse(url)
+        val pathVideo = getAudioDownloadPath(context)
+        createSingleDirectory(pathVideo)
+        val customFilePath = File("$pathVideo/$title.mp3")
+
+        if (customFilePath.parentFile?.exists()!!) {
+            customFilePath.parentFile?.mkdirs()
+        }
+        val customUri = Uri.fromFile(customFilePath)
+        val request = DownloadManager.Request(uri)
+            .setTitle("Downloading Music")
+            .setDescription("Music download in progress")
+            .setAllowedNetworkTypes(DownloadManager.Request.NETWORK_WIFI or DownloadManager.Request.NETWORK_MOBILE)
+            .setDestinationUri(customUri)
+            .setNotificationVisibility(DownloadManager.Request.VISIBILITY_HIDDEN)
+            .setAllowedOverMetered(true)
+
+        val extension = MimeTypeMap.getFileExtensionFromUrl(url)
+        val mimeType = MimeTypeMap.getSingleton().getMimeTypeFromExtension(extension)
+        if (mimeType != null) {
+            request.setMimeType(mimeType)
+        }
+
+        val downloadId = downloadManager.enqueue(request)
+        startTacking(downloadId, builder)
+        return downloadId
+    }
+
+
+    override fun downloadVideosPlayList(url: String, playListName: String, title: String): Long {
+        createNotificationChannel()
+        val builder = createMediaNotificationForProgress(title)
+
+        val uri = Uri.parse(url)
+        val pathVideo = getVideosDownloadPath(context)
+        createSingleDirectory(pathVideo)
+        val customFilePath = File("$pathVideo/$playListName/$title.mp4")
+
+        if (customFilePath.parentFile?.exists()!!) {
+            customFilePath.parentFile?.mkdirs()
+        }
+        val customUri = Uri.fromFile(customFilePath)
+        val request = DownloadManager.Request(uri)
+            .setTitle("Downloading PlayList")
+            .setDescription("Video download is in progress")
+            .setAllowedNetworkTypes(DownloadManager.Request.NETWORK_WIFI or DownloadManager.Request.NETWORK_MOBILE)
+            .setDestinationUri(customUri)
+            .setNotificationVisibility(DownloadManager.Request.VISIBILITY_HIDDEN)
+            .setAllowedOverMetered(true)
+
+        val extension = MimeTypeMap.getFileExtensionFromUrl(url)
+        val mimeType = MimeTypeMap.getSingleton().getMimeTypeFromExtension(extension)
+        if (mimeType != null) {
+            request.setMimeType(mimeType)
+        }
+
+        val downloadId = downloadManager.enqueue(request)
+        startTacking(downloadId, builder)
+        return downloadId
+    }
+
+    override fun downloadPlayListMusic(urls: List<DownloadData>): Long {
+        createNotificationChannel()
+        val pathVideo = getAudioDownloadPath(context)
+        createSingleDirectory(pathVideo)
+        for (i in urls) {
+            val builder = createMediaNotificationForProgress(i.title)
+            val uri = Uri.parse(i.url)
+            val customFilePath = File("$pathVideo/${i.title}.mp3")
+
+            if (customFilePath.parentFile?.exists()!!) {
+                customFilePath.parentFile?.mkdirs()
+            }
+
+            val customUri = Uri.fromFile(customFilePath)
             val request = DownloadManager.Request(uri)
-                .setTitle("Downloading Video")
-                .setDescription("Video download in progress")
-                .setDestinationInExternalPublicDir(Environment.DIRECTORY_MOVIES, "$title.$type")
+                .setTitle("Downloading Music")
+                .setDescription("Music download in progress")
                 .setAllowedNetworkTypes(DownloadManager.Request.NETWORK_WIFI or DownloadManager.Request.NETWORK_MOBILE)
-                .setNotificationVisibility(View.GONE)
+                .setDestinationUri(customUri)
+                .setNotificationVisibility(DownloadManager.Request.VISIBILITY_HIDDEN)
                 .setAllowedOverMetered(true)
 
-            val downloadManager = context.getSystemService(Context.DOWNLOAD_SERVICE) as DownloadManager
+
+            val extension = MimeTypeMap.getFileExtensionFromUrl(i.url)
+            val mimeType = MimeTypeMap.getSingleton().getMimeTypeFromExtension(extension)
+            if (mimeType != null) {
+                request.setMimeType(mimeType)
+            }
+
             val downloadId = downloadManager.enqueue(request)
-            val query = DownloadManager.Query().setFilterById(downloadId)
-            Thread {
-                while (true) {
-                    val cursor = downloadManager.query(query)
-                    cursor?.let {
-                        if (it.moveToFirst()) {
-                            val bytesDownloadedIndex =
-                                it.getColumnIndex(DownloadManager.COLUMN_BYTES_DOWNLOADED_SO_FAR)
-                            val bytesIndex =
-                                it.getColumnIndex(DownloadManager.COLUMN_TOTAL_SIZE_BYTES)
+            startTacking(downloadId, builder)
+            return downloadId
+        }
+        return 0L
+    }
 
-                            if (bytesDownloadedIndex != -1 && bytesIndex != -1) {
-                                val bytesDownloaded = it.getLong(bytesDownloadedIndex)
-                                val bytesTotal = it.getLong(bytesIndex)
+    private fun startTacking(downloadId: Long, builder: NotificationCompat.Builder) {
+        val query = DownloadManager.Query().setFilterById(downloadId)
+        val notificationId = downloadId.toInt()
 
-                                if (bytesTotal > 0) {
-                                    val progress = (bytesDownloaded * 100L) / bytesTotal
+        // Set initial notification state
+        builder.setContentText("Preparing download...")
+            .setProgress(0, 50, true)
+            .setOngoing(true)
+        notificationManager.notify(notificationId, builder.build())
 
-                                    // Update notification with progress
-                                    builder.setProgress(100, progress.toInt(), false)
-                                    notificationManager.notify(notificationId, builder.build())
+        // Use a Handler to update UI periodically instead of blocking thread
+        val handler = Handler(Looper.getMainLooper())
+        val updateRunnable = object : Runnable {
+            override fun run() {
+                var cursor: Cursor? = null
+                try {
+                    cursor = downloadManager.query(query)
 
-                                    if (bytesDownloaded == bytesTotal) {
-                                        // When download is finished, show the completed notification
-                                        builder.setContentText("Download complete")
-                                            .setProgress(0, 0, false)
-                                            .setOngoing(false)
-                                        notificationManager.notify(notificationId, builder.build())
-                                    }
-                                }
+                    if (cursor != null && cursor.moveToFirst()) {
+                        val bytesDownloadedIndex = cursor.getColumnIndex(DownloadManager.COLUMN_BYTES_DOWNLOADED_SO_FAR)
+                        val bytesTotalIndex = cursor.getColumnIndex(DownloadManager.COLUMN_TOTAL_SIZE_BYTES)
+
+                        if (bytesDownloadedIndex != -1 && bytesTotalIndex != -1) {
+                            val bytesDownloaded = cursor.getLong(bytesDownloadedIndex)
+                            val bytesTotal = cursor.getLong(bytesTotalIndex)
+
+                            if (bytesTotal > 0) {
+                                val progress = (bytesDownloaded * 100L / bytesTotal).toInt()
+
+                                builder.setContentText("Downloading...")
+                                builder.setProgress(100, progress, false)
+                                notificationManager.notify(notificationId, builder.build())
+
                                 if (bytesDownloaded == bytesTotal) {
-                                    // When download is finished, show the completed notification
                                     builder.setContentText("Download complete")
                                         .setProgress(0, 0, false)
                                         .setOngoing(false)
+                                        .setPriority(NotificationCompat.PRIORITY_HIGH)
+
                                     notificationManager.notify(notificationId, builder.build())
+
+                                    // Remove the handler callback once download is complete
+                                    handler.removeCallbacks(this)
                                 }
                             }
                         }
                     }
-                    cursor?.close()
-
-                    Thread.sleep(1000)
+                } catch (e: Exception) {
+                    e.printStackTrace()
+                } finally {
+                    cursor?.close() // Make sure the cursor is closed once the operation is done
                 }
-            }.start()
 
-        } catch (e: Exception) {
-            e.printStackTrace()
-            createMediaNotification("Failed").setContentText("Found error ${e.message}").build()
-            println("Download Failed: ${e.message}")
+                // Repeat the check after a delay
+                handler.postDelayed(this, 1000)
+            }
         }
-    }
 
+        handler.post(updateRunnable)
+    }
 
     private fun createSingleDirectory(directoryPath: String) {
         val dir = File(directoryPath)
-        if (dir.mkdir()) {
-        } else {
+        if (!dir.exists()) {
+            dir.mkdirs()
         }
     }
 
-    private fun createMediaNotification(title: String): NotificationCompat.Builder {
-        val deleteIntent = Intent(context, MainActivity::class.java)
 
-        val deletePendingIntent = PendingIntent.getActivity(
-            context,
-            0,
-            deleteIntent,
-            PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
-        )
+    private fun createMediaNotificationForProgress(title: String): NotificationCompat.Builder {
 
-        val ourNotification = NotificationCompat.Builder(context, "downloadingChannel")
+
+        val ourNotification = NotificationCompat.Builder(context, DOWNLOADER_NOTIFICATION_CHANNEL)
             .setContentTitle(title)
             .setContentText("Download in progress...")
             .setSmallIcon(R.drawable.music_note_24dp)
@@ -124,7 +245,6 @@ class DownloaderClass(val context: Context) {
             .setPriority(NotificationCompat.PRIORITY_LOW)
             .setAutoCancel(true)
             .setSound(null)
-            .setDeleteIntent(deletePendingIntent)
             .setVibrate(longArrayOf(0))
 
         return ourNotification
@@ -132,17 +252,16 @@ class DownloaderClass(val context: Context) {
     }
 
     private fun createNotificationChannel() {
-        // Only create the channel for Android 8.0 (API level 26) or higher
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
-            val channelId = "downloadingChannel"
-            val channelName = "Downloading Process"
+            val channelId = DOWNLOADER_NOTIFICATION_CHANNEL
+            val channelName = "Media Downloader"
             val channel = NotificationChannel(
                 channelId, channelName,
                 NotificationManager.IMPORTANCE_LOW
             ).apply {
                 enableVibration(false)
                 setShowBadge(false)
-                description = "Channel notifications"
+                description = "Media Downloader for videos and musics"
                 enableLights(false)
                 setSound(null, null)
             }
@@ -150,4 +269,7 @@ class DownloaderClass(val context: Context) {
             notificationManager.createNotificationChannel(channel)
         }
     }
+
+
+
 }

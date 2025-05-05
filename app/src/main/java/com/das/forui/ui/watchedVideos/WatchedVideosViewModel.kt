@@ -43,11 +43,11 @@ class WatchedVideosViewModel(application: Application): AndroidViewModel(applica
                 while (it.moveToNext()) {
                     val watchUrl = it.getString(it.getColumnIndexOrThrow("video_id"))
                     val title = dbHelper.getVideoTitle(watchUrl).toString()
-                    val viewerNumber = it.getString(it.getColumnIndexOrThrow("viewNumber"))
-                    val dateTime = it.getString(it.getColumnIndexOrThrow("videoDate"))
-                    val channelName = it.getString(it.getColumnIndexOrThrow("videoChannelName"))
-                    val myDuration = it.getString(it.getColumnIndexOrThrow("duration"))
-                    val channelThumbnail = it.getString(it.getColumnIndexOrThrow("channelThumbnail"))
+                    val viewerNumber = dbHelper.getViewNumber(watchUrl).toString()
+                    val dateTime = dbHelper.getVideoDate(watchUrl).toString()
+                    val channelName = dbHelper.getVideoChannelName(watchUrl).toString()
+                    val myDuration = dbHelper.getDuration(watchUrl).toString()
+                    val channelThumbnail = dbHelper.getChannelNameThumbnail(watchUrl).toString()
                     savedVideosListData.add(
                         SavedVideosListData(
                             title,

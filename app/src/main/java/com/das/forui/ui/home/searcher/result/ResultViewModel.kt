@@ -4,7 +4,7 @@ import androidx.compose.runtime.State
 import androidx.compose.runtime.mutableStateOf
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import com.das.forui.MainApplication.Youtuber.pythonInstant
+import com.das.forui.objectsAndData.Youtuber.pythonInstant
 import com.das.forui.objectsAndData.ForUIDataClass.SearchResultFromMain
 import com.google.gson.Gson
 import com.google.gson.reflect.TypeToken
@@ -18,6 +18,10 @@ class ResultViewModel: ViewModel() {
     val searchResults: State<List<SearchResultFromMain>> = _searchResults
     private val _isLoading = mutableStateOf(true)
     val isLoading: State<Boolean> = _isLoading
+
+    private val _isThereError = mutableStateOf<String?>(null)
+
+    val error = _isThereError
 
 
     fun fetchSuggestions(inputText: String) {
@@ -34,12 +38,18 @@ class ResultViewModel: ViewModel() {
     private fun callPythonForSearchVideos(inputText: String): List<SearchResultFromMain>? {
         return try {
             val mainFile = pythonInstant.getModule("main")
-            val variable = mainFile["Searcher"]?.call(inputText).toString()
-            val videoListType = object : TypeToken<List<SearchResultFromMain>>() {}.type
-            val videoList: List<SearchResultFromMain> = Gson().fromJson(variable, videoListType)
-            videoList
+            val variable = mainFile["Searcher"]?.call(inputText)
+            if (variable.isNullOrEmpty() || variable.toString() == "False"){
+                _isThereError.value = variable.toString()
+                null
+            }else {
+                val videoListType = object : TypeToken<List<SearchResultFromMain>>() {}.type
+                val videoList: List<SearchResultFromMain> = Gson().fromJson(variable.toString(), videoListType)
+                videoList
+            }
         } catch (e: Exception) {
             e.printStackTrace()
+            _isThereError.value = e.message
             return null
         }
     }

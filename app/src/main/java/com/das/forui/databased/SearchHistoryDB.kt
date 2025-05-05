@@ -21,7 +21,8 @@ class SearchHistoryDB(context: Context): SQLiteOpenHelper(context, DATABASE_NAME
 
     fun getResults(): Cursor {
         val db = this.readableDatabase
-        return db.rawQuery("SELECT * FROM $DATABASE_TABLE_NAME", null) }
+        return db.rawQuery("SELECT * FROM $DATABASE_TABLE_NAME ORDER BY rowid DESC", null)
+    }
 
     private fun isWatchUrlExist(url: String): Boolean {
         val db = this.readableDatabase

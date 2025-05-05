@@ -4,7 +4,6 @@ import android.content.Context
 import android.content.Intent
 import android.os.Bundle
 import android.widget.Toast
-import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.background
 import androidx.compose.foundation.combinedClickable
 import androidx.compose.foundation.layout.Arrangement
@@ -20,6 +19,7 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.filled.PlaylistPlay
 import androidx.compose.material.icons.filled.MoreVert
 import androidx.compose.material.icons.outlined.Search
 import androidx.compose.material3.Button
@@ -75,6 +75,7 @@ fun ResultViewerPage(
     val viewModel: ResultViewModel = viewModel()
     val isLoading by viewModel.isLoading
     val searchResults by viewModel.searchResults
+    val foundError by viewModel.error
     val mContext = LocalContext.current
 
     LaunchedEffect(data) {
@@ -127,14 +128,22 @@ fun ResultViewerPage(
             } else {
                 if (searchResults.isEmpty()) {
                     Text(
-                        text = "No results found",
+                        text = "No results found for \n$data",
                         fontSize = 18.sp,
                         textAlign = TextAlign.Center
                     )
-                } else {
+                } else if (!foundError.isNullOrEmpty()){
+                    Text(
+                        text = "Something went wrong, please check your internet and try again!",
+                        fontSize = 18.sp,
+                        textAlign = TextAlign.Center
+                    )
+                }
+                else {
                     LazyColumn(modifier = Modifier) {
                         items(searchResults, key = { it.videoId }) { searchItem ->
-                            CategoryItems(
+
+                            VideoItems(
                                 mContext,
                                 navController,
                                 searchItem
@@ -148,9 +157,8 @@ fun ResultViewerPage(
     }
 }
 
-@OptIn(ExperimentalFoundationApi::class)
 @Composable
-fun CategoryItems(
+fun VideoItems(
     context: Context,
     navController: NavController,
     searchItem: SearchResultFromMain
@@ -327,6 +335,192 @@ fun CategoryItems(
 
 
 @Composable
+fun PlayListItems(
+    context: Context,
+    navController: NavController,
+    searchItem: SearchResultFromMain
+) {
+    val videoId = searchItem.videoId
+    val title = searchItem.title
+    val viewsNumber = searchItem.views
+    val dateOfVideo = searchItem.dateOfVideo
+    val channelName = searchItem.channelName
+    val duration = searchItem.duration
+    val videoThumbnailURL = searchItem.videoId
+    val channelThumbnails = searchItem.channelThumbnailsUrl
+
+    var showDialog by remember { mutableStateOf(false) }
+
+    val imageRequest = remember {
+        ImageRequest.Builder(context)
+            .data("https://img.youtube.com/vi/$videoThumbnailURL/0.jpg")
+            .crossfade(true)
+            .memoryCachePolicy(CachePolicy.ENABLED)
+            .diskCachePolicy(CachePolicy.ENABLED)
+            .build()
+    }
+    Box(
+        modifier = Modifier
+            .clip(RoundedCornerShape(1))
+            .fillMaxWidth()
+            .padding(bottom = 3.dp, top = 3.dp)
+            .combinedClickable(
+                onClick = {
+                    val bundle = Bundle().apply {
+                        putString("View_ID", videoId)
+                        putString("View_URL", "https://www.youtube.com/watch?v=$videoId")
+                        putString("View_Title", title)
+                        putString("View_Number", viewsNumber)
+                        putString("dateOfVideo", dateOfVideo)
+                        putString("channelName", channelName)
+                        putString("channel_Thumbnails", channelThumbnails)
+                    }
+                    bundles.putBundle(NEW_INTENT_FOR_VIEWER, bundle)
+                    navController.navigate("video viewer")
+
+                },
+                onLongClick = {
+                    showDialog = true
+                }
+            )
+    ) {
+        Column(
+            modifier = Modifier
+                .height(260.dp)
+                .fillMaxWidth()
+
+        ) {
+            Box {
+                AsyncImage(
+                    model = imageRequest,
+                    contentDescription = "Category Image",
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .height(210.dp),
+                    alignment = Alignment.Center,
+                    contentScale = ContentScale.Crop
+                )
+                Text(
+                    text = duration,
+                    maxLines = 1,
+                    color = Color.White,
+                    textAlign = TextAlign.Center,
+                    modifier = Modifier
+                        .padding(end = 3.dp, bottom = 3.dp)
+                        .align(Alignment.BottomEnd)
+                        .background(Color(0xCC2C2B2B), RoundedCornerShape(5.dp))
+                )
+            }
+            Row(
+                modifier = Modifier
+                    .fillMaxSize()
+            ) {
+
+
+                IconButton(
+                    onClick = {
+                        Toast.makeText(context, channelName, Toast.LENGTH_SHORT).show()
+                    }
+                ) {
+                    AsyncImage(
+                        model = ImageRequest.Builder(context)
+                            .data(channelThumbnails)
+                            .crossfade(true)
+                            .build(),
+                        contentDescription = "Category Image",
+                        modifier = Modifier
+                            .fillMaxSize(),
+                        alignment = Alignment.Center,
+                        contentScale = ContentScale.Crop
+                    )
+                }
+                Column(
+                    modifier = Modifier
+                        .width(285.dp)
+                        .padding(3.dp)
+                ) {
+
+
+                    Text(
+                        text = title,
+                        maxLines = 1,
+                        fontSize = 15.sp,
+                        textAlign = TextAlign.Start,
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(start = 2.dp)
+                    )
+                    Row {
+                        Text(
+                            text = channelName,
+                            maxLines = 1,
+                            fontSize = 12.sp,
+                            textAlign = TextAlign.Start,
+                            modifier = Modifier
+                                .width(112.dp)
+                                .padding(start = 2.dp)
+                        )
+                        Row(
+                            modifier = Modifier
+                                .padding(start = 5.dp, end = 5.dp)
+                        ){
+                            Icon(
+                                imageVector = Icons.AutoMirrored.Default.PlaylistPlay,
+                                ""
+                            )
+                            Text(
+                                text = "$viewsNumber Videos",
+                                maxLines = 1,
+                                fontSize = 12.sp,
+                                textAlign = TextAlign.Center,
+                                modifier = Modifier
+                                    .width(55.dp)
+                                    .padding(start = 5.dp, end = 5.dp)
+                            )
+                        }
+                        Text(
+                            text = dateOfVideo,
+                            maxLines = 1,
+                            fontSize = 12.sp,
+                            textAlign = TextAlign.Center,
+                            modifier = Modifier
+                                .width(100.dp)
+                                .padding(start = 2.dp)
+                        )
+                    }
+
+                }
+/*                IconButton(
+                    onClick = {
+                        showDialog = true
+                    }
+
+
+                ) {
+                    Icon(
+                        painter = rememberVectorPainter(Icons.Default.MoreVert),
+                        contentDescription = "Back"
+                    )
+                }
+                */
+            }
+        }
+    }
+
+    if (showDialog) {
+        ShowAlertDialog(
+            mContext = context,
+            selectedItem = VideosListData(
+                videoId, title, viewsNumber, dateOfVideo,
+                duration, channelName, channelThumbnails
+            ),
+            onDismissRequest = { showDialog = false }
+        )
+    }
+}
+
+
+@Composable
 private fun ShowAlertDialog(
     mContext: Context,
     selectedItem: VideosListData,
@@ -401,10 +595,10 @@ private fun ShowAlertDialog(
                     }
                     TextButton(
                         onClick = {
-                            MainActivity().downloadMusic(
+                            MainActivity().startDownloadingAudio(
+                                mContext,
                                 selectedItem.videoId,
-                                selectedItem.title,
-                                mContext
+                                selectedItem.title
                             )
                             onDismissRequest()
                         },
@@ -414,10 +608,10 @@ private fun ShowAlertDialog(
                     }
                     TextButton(
                         onClick = {
-                            MainActivity().downloadVideo(
+                            MainActivity().startDownloadingVideo(
+                                mContext,
                                 selectedItem.videoId,
-                                selectedItem.title,
-                                mContext
+                                selectedItem.title
                             )
                             onDismissRequest()
                         },

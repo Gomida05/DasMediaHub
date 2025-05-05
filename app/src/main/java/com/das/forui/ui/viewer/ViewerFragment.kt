@@ -88,9 +88,6 @@ import androidx.media3.ui.compose.SURFACE_TYPE_SURFACE_VIEW
 import androidx.media3.ui.compose.modifiers.resizeWithContentScale
 import androidx.media3.ui.compose.state.rememberPresentationState
 import androidx.navigation.NavController
-import androidx.work.OneTimeWorkRequestBuilder
-import androidx.work.WorkManager
-import androidx.work.workDataOf
 import coil.compose.AsyncImage
 import coil.request.ImageRequest
 import com.das.forui.services.AudioServiceFromUrl
@@ -101,7 +98,6 @@ import com.das.forui.ui.viewer.GlobalVideoList.previousVideosListData
 import com.das.forui.MainApplication
 import com.das.forui.databased.DatabaseFavorite
 import com.das.forui.databased.WatchHistory
-import com.das.forui.downloader.DownloaderCoroutineWorker
 import com.das.forui.mediacontroller.VideoPlayerControllers.PlayerControls
 import com.das.forui.objectsAndData.ForUIKeyWords.ACTION_START
 import com.das.forui.objectsAndData.ForUIKeyWords.NEW_INTENT_FOR_VIEWER
@@ -124,6 +120,7 @@ fun VideoPlayerScreen(
     listOfVideosListData.clear()
     val viewModel: ViewerViewModel = viewModel()
     val suggestionViewModel: ViewerViewModel = viewModel()
+
     val videoID = arguments?.getString("View_ID").toString()
 
     val mContext = LocalContext.current
@@ -197,7 +194,6 @@ fun VideoPlayerScreen(
                     done = {videoUrl= it}
                 )
 
-
             }
 
             LazyColumn {
@@ -215,13 +211,13 @@ fun VideoPlayerScreen(
                         downloadAsVideo = {
                             Toast.makeText(mContext, "Downloading has started", Toast.LENGTH_SHORT)
                                 .show()
-                            startDownloading(mContext, videoUrl, it)
+                            MainActivity().startDownloadingVideo(mContext, videoID, it)
 //                            DownloaderClass(mContext).downloadVideo(videoUrl, it, "mp4")
                         },
                         downloadAsMusic = {
                             Toast.makeText(mContext, "Downloading has started", Toast.LENGTH_SHORT)
                                 .show()
-                            MainActivity().downloadMusic(videoID, it, mContext)
+                            MainActivity().startDownloadingAudio(mContext, videoID, it)
 
                         },
                         finished = {
@@ -290,14 +286,7 @@ fun VideoPlayerScreen(
     }
 }
 
-fun startDownloading(context: Context, fileUrl: String, title: String){
 
-    val request = OneTimeWorkRequestBuilder<DownloaderCoroutineWorker>()
-        .setInputData(workDataOf("file_url" to fileUrl, "title" to title))
-        .build()
-
-    WorkManager.getInstance(context).enqueue(request)
-}
 
 
 
@@ -511,13 +500,13 @@ fun VideoDetailsComposable(
             finished(videoDetails!!)
 
             WatchHistory(mContext).insertNewVideo(
-                    videoId,
-                    title,
-                    videoDetails?.date.toString(),
-                    videoDetails?.viewNumber.toString(),
-                    videoDetails?.channelName.toString(),
-                    duration,
-                    channelThumbnailURL
+                videoId,
+                title,
+                videoDetails?.date.toString(),
+                videoDetails?.viewNumber.toString(),
+                videoDetails?.channelName.toString(),
+                duration,
+                channelThumbnailURL
             )
 
             Text(
@@ -875,6 +864,14 @@ fun CategoryItems(
 }
 
 
+@SuppressLint("UnsafeOptInUsageError")
+@Composable
+fun FullScreenExoPlayer(navController: NavController, mExoPlayer: ExoPlayer){
+
+}
+
+
+
 private fun playThisOne(
     navController: NavController,
     gotIndex: Int = 1,
@@ -1025,10 +1022,10 @@ private fun ShowAlertDialog(
                     }
                     TextButton(
                         onClick = {
-                            MainActivity().downloadMusic(
+                            MainActivity().startDownloadingAudio(
+                                mContext,
                                 selectedItem.videoId,
-                                selectedItem.title,
-                                mContext
+                                selectedItem.title
                             )
                             onDismissRequest()
                         },
@@ -1038,10 +1035,10 @@ private fun ShowAlertDialog(
                     }
                     TextButton(
                         onClick = {
-                            MainActivity().downloadVideo(
+                            MainActivity().startDownloadingVideo(
+                                mContext,
                                 selectedItem.videoId,
-                                selectedItem.title,
-                                mContext
+                                selectedItem.title
                             )
                             onDismissRequest()
                         },
@@ -1062,8 +1059,6 @@ private fun ShowAlertDialog(
 private class MyExoPlayerListener(
     private val navController: NavController
 ) : Player.Listener {
-
-
     override fun onPlaybackStateChanged(state: Int) {
         super.onPlaybackStateChanged(state)
         if (state == Player.STATE_ENDED) {
@@ -1311,11 +1306,6 @@ private fun AskToPlay(
 
 
 
-object GlobalVideoList {
-    val listOfVideosListData = mutableListOf<VideosListData>()
-    val previousVideosListData = mutableListOf<VideosListData>()
-    val bundles = Bundle()
-}
 
 
 fun SpannableString.toAnnotatedString(): AnnotatedString {
@@ -1365,4 +1355,10 @@ fun SpannableString.toAnnotatedString(): AnnotatedString {
             }
         }
     }
+}
+
+object GlobalVideoList {
+    val listOfVideosListData = mutableListOf<VideosListData>()
+    val previousVideosListData = mutableListOf<VideosListData>()
+    val bundles = Bundle()
 }

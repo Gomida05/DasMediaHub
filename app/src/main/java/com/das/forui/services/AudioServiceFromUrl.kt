@@ -35,6 +35,7 @@ import androidx.media3.exoplayer.ExoPlayer
 import androidx.media3.common.MediaItem
 import androidx.media3.common.PlaybackException
 import androidx.media3.common.Player
+import com.das.forui.objectsAndData.ForUIKeyWords.AUDIO_SERVICE_FROM_URL_NOTIFICATION
 
 
 class AudioServiceFromUrl : Service() {
@@ -49,6 +50,7 @@ class AudioServiceFromUrl : Service() {
     private lateinit var videoId: String
     private lateinit var durationFromActivity: String
     private var audioFocusRequest: AudioFocusRequest? = null
+    private lateinit var mediaType: String
 
 
     override fun onCreate() {
@@ -81,7 +83,6 @@ class AudioServiceFromUrl : Service() {
         videoViews = intent?.getStringExtra("viewNumber").toString()
         videoDate = intent?.getStringExtra("videoDate").toString()
         durationFromActivity = intent?.getStringExtra("duration").toString()
-
 
 
         val mediaDetails = VideosListData(
@@ -190,7 +191,15 @@ class AudioServiceFromUrl : Service() {
     private fun createMediaNotification(): Notification {
 
 
-
+        val deleteIntent = Intent(this, BroadReceiverForNotificationActivity::class.java).apply {
+            action = AUDIO_SERVICE_FROM_URL_NOTIFICATION
+        }
+        val deletePendingIntent = PendingIntent.getBroadcast(
+            this,
+            0,
+            deleteIntent,
+            PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
+        )
         val mainIntent = Intent(this, MainActivity::class.java)
 
 
@@ -204,17 +213,6 @@ class AudioServiceFromUrl : Service() {
         val mediaStyle = MediaStyle()
             .setMediaSession(mediaSession.sessionToken)
 
-
-        val deleteIntent = Intent(this, AudioServiceFromUrl::class.java).apply {
-            action = ACTION_KILL
-        }
-
-        val deletePendingIntent = PendingIntent.getActivity(
-            this,
-            0,
-            deleteIntent,
-            PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
-        )
 
 
 
@@ -415,6 +413,7 @@ class AudioServiceFromUrl : Service() {
                         mediaDetails
                     )
                 )
+                createMediaNotification()
             }
             else if (action.toString() == ACTION_KILL){
                 exoPlayer?.let {
@@ -517,6 +516,7 @@ class AudioServiceFromUrl : Service() {
                 )
                 mediaSession.isActive = false
             }
+            createMediaNotification()
         }
 
 
@@ -527,6 +527,7 @@ class AudioServiceFromUrl : Service() {
                     error.timestampMs, videoId
                 )
             )
+            createMediaNotification()
         }
 
         override fun onIsPlayingChanged(isPlaying: Boolean) {
@@ -546,7 +547,6 @@ class AudioServiceFromUrl : Service() {
                         exoPlayer?.duration!!
                     )
                 )
-                createMediaNotification()
             }
 
             if (!isPlaying && exoPlayer?.isLoading!!) {
@@ -563,7 +563,6 @@ class AudioServiceFromUrl : Service() {
                         exoPlayer?.duration!!
                     )
                 )
-                createMediaNotification()
             }
 
             if (!isPlaying) {
@@ -581,6 +580,7 @@ class AudioServiceFromUrl : Service() {
                     )
                 )
             }
+            createMediaNotification()
         }
 
         override fun onIsLoadingChanged(isLoading: Boolean) {
@@ -598,7 +598,6 @@ class AudioServiceFromUrl : Service() {
                         exoPlayer?.duration!!
                     )
                 )
-                createMediaNotification()
             } else {
                 mediaSession.setPlaybackState(
                     MediaSessionPlaybackState(this@AudioServiceFromUrl).setStateToLoading(
@@ -606,6 +605,7 @@ class AudioServiceFromUrl : Service() {
                     )
                 )
             }
+            createMediaNotification()
         }
     }
 
@@ -621,5 +621,14 @@ class AudioServiceFromUrl : Service() {
         super.onDestroy()
         mediaSession.release()
         exoPlayer?.release()
+    }
+
+    override fun onTaskRemoved(rootIntent: Intent?) {
+        super.onTaskRemoved(rootIntent)
+        if (!exoPlayer?.isPlaying!!){
+            exoPlayer?.release()
+            mediaSession.release()
+            stopSelf()
+        }
     }
 }

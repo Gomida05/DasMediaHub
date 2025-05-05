@@ -6,9 +6,7 @@ import android.content.SharedPreferences
 
 object PathSaver {
 
-    private const val AUDIO_KEY = "download_path1"
-    private const val VIDEO_KEY = "download_path2"
-    private const val PREF_NAME = "AppPreferences"
+
 
     fun getAudioDownloadPath(context: Context): String {
 
@@ -58,11 +56,15 @@ object PathSaver {
         with(sharedPref.edit()) {
             // Replace the old path with the new one
             putString(VIDEO_KEY, path)
-            apply()  // Save the change asynchronously
+            apply()
         }
     }
 
     private fun getMoviesDefaultDownloadPath(): String {
         return "/storage/emulated/0/Movies/ForUI"
     }
+
+    private const val AUDIO_KEY = "download_path1"
+    private const val VIDEO_KEY = "download_path2"
+    private const val PREF_NAME = "AppPreferences"
 }

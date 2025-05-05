@@ -7,9 +7,9 @@ import androidx.lifecycle.LiveData
 import androidx.lifecycle.MutableLiveData
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import com.das.forui.MainApplication.Youtuber.formatDate
-import com.das.forui.MainApplication.Youtuber.formatViews
-import com.das.forui.MainApplication.Youtuber.pythonInstant
+import com.das.forui.objectsAndData.Youtuber.formatDate
+import com.das.forui.objectsAndData.Youtuber.formatViews
+import com.das.forui.objectsAndData.Youtuber.pythonInstant
 import com.das.forui.objectsAndData.ForUIDataClass.VideoDetails
 import com.das.forui.objectsAndData.ForUIDataClass.VideosListData
 import com.google.gson.Gson
