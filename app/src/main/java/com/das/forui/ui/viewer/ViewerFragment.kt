@@ -16,6 +16,12 @@ import android.view.WindowManager
 import android.widget.Toast
 import androidx.activity.compose.LocalActivity
 import androidx.annotation.OptIn
+import androidx.compose.animation.core.LinearEasing
+import androidx.compose.animation.core.RepeatMode
+import androidx.compose.animation.core.animateFloat
+import androidx.compose.animation.core.infiniteRepeatable
+import androidx.compose.animation.core.rememberInfiniteTransition
+import androidx.compose.animation.core.tween
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.combinedClickable
@@ -41,6 +47,7 @@ import androidx.compose.material.icons.automirrored.filled.More
 import androidx.compose.material.icons.filled.Error
 import androidx.compose.material.icons.filled.Favorite
 import androidx.compose.material.icons.filled.FavoriteBorder
+import androidx.compose.material.icons.filled.Info
 import androidx.compose.material.icons.filled.MoreVert
 import androidx.compose.material.icons.filled.MusicNote
 import androidx.compose.material.icons.filled.Share
@@ -64,7 +71,11 @@ import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.composed
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.draw.drawWithCache
+import androidx.compose.ui.geometry.Offset
+import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.rememberVectorPainter
 import androidx.compose.ui.input.pointer.pointerInput
@@ -299,16 +310,28 @@ fun VideoPlayerScreen(
                         mExoPlayer = mExoPlayer,
                         isVisible = { controlsVisible },
                         navigateUp = { navController.navigateUp() },
-                        fullScreen = { isFullScreen = it } // toggle fullscreen from controls
+                        fullScreen = { isFullScreen = it }
                     )
                 }
 
 
             }
+            else if (isLoading){
+                Box(
+                    modifier = Modifier
+                        .height(220.dp)
+                        .fillMaxWidth()
+                        .background(Color.Black)
+                ){
+                    CircularProgressIndicator(modifier = Modifier.align(Alignment.Center))
+                }
+            }
             else if (isThereError.isNotEmpty()) {
                 Box(
                     modifier = Modifier
-                        .fillMaxSize()
+                        .height(220.dp)
+                        .fillMaxWidth()
+                        .background(Color.Black)
                 ) {
                     Image(
                         imageVector = Icons.Default.Error,
@@ -319,14 +342,6 @@ fun VideoPlayerScreen(
 
                 }
 
-            }
-            else if (isLoading) {
-                Box(
-                    modifier = Modifier
-                        .fillMaxSize()
-                ) {
-                    CircularProgressIndicator(modifier = Modifier.align(Alignment.Center))
-                }
 
             }
             if (!isFullScreen){
@@ -411,10 +426,9 @@ fun VideoPlayerScreen(
             it.requestedOrientation = if (isFullScreen) {
                 ActivityInfo.SCREEN_ORIENTATION_SENSOR
             } else {
-                ActivityInfo.SCREEN_ORIENTATION_PORTRAIT
+                ActivityInfo.SCREEN_ORIENTATION_UNSPECIFIED
             }
         }
-
     }
 
 
@@ -474,6 +488,7 @@ fun VideoDetailsComposable(
 ) {
 
     var showDescriptionDialog by remember { mutableStateOf(false) }
+    var comingSoonDialog by remember { mutableStateOf(false) }
     val isLoading by viewModel.isLoadings
 
     val dbForFav = DatabaseFavorite(mContext)
@@ -507,15 +522,17 @@ fun VideoDetailsComposable(
             val title = videoDetails?.title.toString()
             finished(videoDetails!!)
 
-            WatchHistory(mContext).insertNewVideo(
-                videoId,
-                title,
-                videoDetails?.date.toString(),
-                videoDetails?.viewNumber.toString(),
-                videoDetails?.channelName.toString(),
-                duration,
-                channelThumbnailURL
-            )
+            if (channelThumbnailURL != "none is here"){
+                WatchHistory(mContext).insertNewVideo(
+                    videoId,
+                    title,
+                    videoDetails?.date.toString(),
+                    videoDetails?.viewNumber.toString(),
+                    videoDetails?.channelName.toString(),
+                    duration,
+                    channelThumbnailURL
+                )
+            }
 
             Text(
                 text = title,
@@ -542,7 +559,12 @@ fun VideoDetailsComposable(
                     contentDescription = "Category Image",
                     modifier = Modifier
                         .size(34.dp, 34.dp)
-                        .clip(RoundedCornerShape(50)),
+                        .clip(RoundedCornerShape(50))
+                        .combinedClickable(
+                            onClick = {
+                                comingSoonDialog = true
+                            }
+                        ),
                     alignment = Alignment.CenterStart,
                     contentScale = ContentScale.Crop
                 )
@@ -591,8 +613,9 @@ fun VideoDetailsComposable(
                             type = "text/plain"
                             putExtra(
                                 Intent.EXTRA_TEXT,
-                                "https://www.youtube.com/watch?v=${videoId}&feature=shared"
+                                "https://youtu.be/${videoId}?feature=shared"
                             )
+//                                "https://www.youtube.com/watch?v=${videoId}&feature=shared"
                         }
 
                         val chooser = Intent.createChooser(shareIntent, "Share via")
@@ -686,8 +709,50 @@ fun VideoDetailsComposable(
         }
     }
 
+    if (comingSoonDialog){
+
+        ComingSoonAlertDialog {
+            comingSoonDialog = false
+        }
+    }
+
 }
 
+
+@Composable
+fun ComingSoonAlertDialog(
+    onDismissRequest: () -> Unit
+) {
+    AlertDialog(
+        onDismissRequest,
+        icon = {
+            Image(
+                imageVector = Icons.Default.Info,
+                ""
+            )
+        },
+        title = {
+            Text(
+                "Sorry this feature is still underdevelopment!"
+            )
+        },
+
+        text = {
+            Text(
+                "Thanks for your understanding"
+            )
+        },
+        confirmButton = {
+            TextButton(
+                onClick = onDismissRequest
+            ) {
+                Text(
+                    "Okay"
+                )
+            }
+        }
+    )
+}
 
 
 @Composable
@@ -1081,25 +1146,18 @@ fun SkeletonSuggestionLoadingLayout() {
             .fillMaxWidth()
             .height(495.dp)
             .padding(8.dp)
+            .shimmerLoading()
     ) {
         // Placeholder for each video item (image + text)
         repeat(5) { // Repeat for a few video items to show skeletons
+
+
             Box(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .height(260.dp)
-                    .padding(bottom = 12.dp)
-                    .background(Color.Gray.copy(alpha = 0.2f)) // Placeholder background
+                    .height(193.dp)
+                    .background(Color.Gray.copy(alpha = 0.17f))
             ) {
-                // Video thumbnail placeholder
-                Box(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .height(210.dp)
-                        .background(Color.Gray.copy(alpha = 0.2f))
-                )
-
-                // Duration placeholder (bottom right)
                 Text(
                     text = "",
                     maxLines = 1,
@@ -1111,111 +1169,192 @@ fun SkeletonSuggestionLoadingLayout() {
                         .background(Color.Gray.copy(alpha = 0.5f), RoundedCornerShape(5.dp))
                         .height(20.dp)
                         .width(50.dp)
+                        .shimmerLoading()
                 )
-                // Title placeholder
-                Text(
-                    text = "",
-                    modifier = Modifier
-                        .padding(16.dp)
-                        .fillMaxWidth()
-                        .height(16.dp)
-                        .background(Color.Gray.copy(alpha = 0.3f))
-                )
-                // Channel name, views, and date placeholders
-                Row(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(16.dp)
-                ) {
-                    Box(
-                        modifier = Modifier
-                            .width(100.dp)
-                            .height(12.dp)
-                            .background(Color.Gray.copy(alpha = 0.3f))
-                    )
-                    Spacer(modifier = Modifier.width(10.dp))
-                    Box(
-                        modifier = Modifier
-                            .width(60.dp)
-                            .height(12.dp)
-                            .background(Color.Gray.copy(alpha = 0.3f))
-                    )
-                    Spacer(modifier = Modifier.width(10.dp))
-                    Box(
-                        modifier = Modifier
-                            .width(90.dp)
-                            .height(12.dp)
-                            .background(Color.Gray.copy(alpha = 0.3f))
-                    )
-                }
             }
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .background(Color.Gray.copy(alpha = 0.2f)) // Placeholder background
+            ) {
+
+                // Channel Profile Image
+                Box(
+                    modifier = Modifier
+                        .size(40.dp, 40.dp)
+                        .clip(RoundedCornerShape(100))
+                        .shimmerLoading()
+                        .background(Color.Gray.copy(alpha = 0.2f))
+                )
+                Column(
+                    modifier = Modifier
+                        .fillMaxWidth(0.95f)
+                ) {
+                    //Title
+                    Text(
+                        text = "",
+                        modifier = Modifier
+                            .padding(start = 6.dp, end = 6.dp)
+                            .fillMaxWidth()
+                            .height(16.dp)
+                            .shimmerLoading()
+                            .background(Color.Gray.copy(alpha = 0.3f))
+                    )
+
+                    // Channel name, views, and date placeholders
+
+                    Row(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(8.dp)
+                    ) {
+                        Box(
+                            modifier = Modifier
+                                .width(100.dp)
+                                .height(12.dp)
+                                .shimmerLoading()
+                                .background(Color.Gray.copy(alpha = 0.3f))
+                        )
+                        Spacer(modifier = Modifier.width(10.dp))
+                        Box(
+                            modifier = Modifier
+                                .width(60.dp)
+                                .height(12.dp)
+                                .shimmerLoading()
+                                .background(Color.Gray.copy(alpha = 0.3f))
+                        )
+                        Spacer(modifier = Modifier.width(10.dp))
+                        Box(
+                            modifier = Modifier
+                                .width(90.dp)
+                                .height(12.dp)
+                                .shimmerLoading()
+                                .background(Color.Gray.copy(alpha = 0.3f))
+                        )
+                    }
+                }
+
+                Box(
+                    modifier = Modifier
+                        .width(9.dp)
+                        .height(40.dp)
+                        .shimmerLoading()
+                        .background(Color.Gray.copy(alpha = 0.3f))
+
+                ) { }
+
+            }
+
+        }
+    }
+}
+
+fun Modifier.shimmerLoading(
+    durationMillis: Int = 1000
+): Modifier = composed {
+    val transition = rememberInfiniteTransition(label = "")
+
+    val translateAnim by transition.animateFloat(
+        initialValue = 0f,
+        targetValue = 1000f,
+        animationSpec = infiniteRepeatable(
+            animation = tween(durationMillis, easing = LinearEasing),
+            repeatMode = RepeatMode.Restart
+        ),
+        label = ""
+    )
+
+    this.drawWithCache {
+        val shimmerColors = listOf(
+            Color.LightGray.copy(alpha = 0.3f),
+            Color.LightGray.copy(alpha = 0.9f),
+            Color.LightGray.copy(alpha = 0.3f),
+        )
+
+        val brush = Brush.linearGradient(
+            colors = shimmerColors,
+            start = Offset(translateAnim - 200f, 0f),
+            end = Offset(translateAnim, size.height)
+        )
+
+        onDrawBehind {
+            drawRect(brush = brush)
         }
     }
 }
 
 
+
 @Composable
 fun SkeletonLoadingLayout() {
-        // This can be your custom skeleton loader UI
-        Column(
+    // This can be your custom skeleton loader UI
+    Column(
+        modifier = Modifier.fillMaxWidth()
+    ) {
+        Box(
+            modifier = Modifier
+                .fillMaxWidth()
+                .height(24.dp)
+                .background(Color.Gray.copy(alpha = 0.3f))
+                .shimmerLoading()
+        )
+
+        Spacer(modifier = Modifier.height(5.dp))
+
+        // Thumbnail and other details placeholders
+        Row(
+            horizontalArrangement = Arrangement.SpaceAround,
             modifier = Modifier.fillMaxWidth()
         ) {
             Box(
                 modifier = Modifier
-                    .fillMaxWidth()
-                    .height(24.dp)
+                    .size(34.dp)
+                    .clip(RoundedCornerShape(100))
+                    .shimmerLoading()
                     .background(Color.Gray.copy(alpha = 0.3f))
             )
+            Box(
+                modifier = Modifier
+                    .shimmerLoading()
+                    .width(142.dp)
+                    .height(16.dp)
+                    .background(Color.Gray.copy(alpha = 0.3f))
+            )
+            Box(
+                modifier = Modifier
+                    .shimmerLoading()
+                    .width(52.dp)
+                    .height(16.dp)
+                    .background(Color.Gray.copy(alpha = 0.3f))
+            )
+            Box(
+                modifier = Modifier
+                    .shimmerLoading()
+                    .width(62.dp)
+                    .height(16.dp)
+                    .background(Color.Gray.copy(alpha = 0.3f))
+            )
+        }
 
-            Spacer(modifier = Modifier.height(5.dp))
+        Spacer(modifier = Modifier.height(8.dp))
 
-            // Thumbnail and other details placeholders
-            Row(
-                horizontalArrangement = Arrangement.SpaceAround,
-                modifier = Modifier.fillMaxWidth()
-            ) {
+        // Action buttons placeholders
+        Row(
+            horizontalArrangement = Arrangement.SpaceAround,
+            modifier = Modifier.fillMaxWidth()
+        ) {
+            repeat(5) {
                 Box(
                     modifier = Modifier
-                        .size(34.dp)
+                        .size(40.dp)
+                        .clip(RoundedCornerShape(22))
                         .background(Color.Gray.copy(alpha = 0.3f))
+                        .shimmerLoading()
                 )
-                Box(
-                    modifier = Modifier
-                        .width(142.dp)
-                        .height(16.dp)
-                        .background(Color.Gray.copy(alpha = 0.3f))
-                )
-                Box(
-                    modifier = Modifier
-                        .width(52.dp)
-                        .height(16.dp)
-                        .background(Color.Gray.copy(alpha = 0.3f))
-                )
-                Box(
-                    modifier = Modifier
-                        .width(62.dp)
-                        .height(16.dp)
-                        .background(Color.Gray.copy(alpha = 0.3f))
-                )
-            }
-
-            Spacer(modifier = Modifier.height(8.dp))
-
-            // Action buttons placeholders
-            Row(
-                horizontalArrangement = Arrangement.SpaceAround,
-                modifier = Modifier.fillMaxWidth()
-            ) {
-                repeat(5) {
-                    Box(
-                        modifier = Modifier
-                            .size(40.dp)
-                            .background(Color.Gray.copy(alpha = 0.3f))
-                    )
-                }
             }
         }
     }
+}
 
 
 @Composable

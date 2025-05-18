@@ -465,6 +465,7 @@ class MainActivity : ComponentActivity() {
             manager?.createNotificationChannelGroup(serviceChannel)
         }
     }
+    
     private fun createGroupNotificationChannel(){
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
             val serviceChannel = NotificationChannelGroup(

@@ -10,10 +10,12 @@ import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
@@ -24,7 +26,6 @@ import androidx.compose.material.icons.filled.MoreVert
 import androidx.compose.material.icons.outlined.Search
 import androidx.compose.material3.Button
 import androidx.compose.material3.Card
-import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
@@ -64,6 +65,7 @@ import com.das.forui.objectsAndData.ForUIDataClass.SearchResultFromMain
 import com.das.forui.services.AudioServiceFromUrl
 import com.das.forui.objectsAndData.ForUIDataClass.VideosListData
 import com.das.forui.ui.viewer.GlobalVideoList.bundles
+import com.das.forui.ui.viewer.shimmerLoading
 
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -124,7 +126,12 @@ fun ResultViewerPage(
             contentAlignment = Alignment.Center,
         ) {
             if (isLoading) {
-                CircularProgressIndicator(modifier = Modifier.align(Alignment.Center))
+                Box(
+                    modifier = Modifier.align(Alignment.Center)
+
+                ){
+                    SkeletonSuggestionLoadingLayout()
+                }
             } else {
                 if (searchResults.isEmpty()) {
                     Text(
@@ -330,6 +337,116 @@ fun VideoItems(
             ),
             onDismissRequest = { showDialog = false }
         )
+    }
+}
+
+
+@Composable
+fun SkeletonSuggestionLoadingLayout() {
+
+    Column(
+        modifier = Modifier
+            .fillMaxSize()
+            .shimmerLoading()
+    ) {
+        // Placeholder for each video item (image + text)
+        repeat(5) { // Repeat for a few video items to show skeletons
+
+
+            Box(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .height(193.dp)
+                    .background(Color.Gray.copy(alpha = 0.17f))
+            ) {
+                Text(
+                    text = "",
+                    maxLines = 1,
+                    color = Color.White,
+                    textAlign = TextAlign.Center,
+                    modifier = Modifier
+                        .padding(end = 3.dp, bottom = 3.dp)
+                        .align(Alignment.BottomEnd)
+                        .background(Color.Gray.copy(alpha = 0.5f), RoundedCornerShape(5.dp))
+                        .height(20.dp)
+                        .width(50.dp)
+                        .shimmerLoading()
+                )
+            }
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .background(Color.Gray.copy(alpha = 0.2f)) // Placeholder background
+            ) {
+
+                // Channel Profile Image
+                Box(
+                    modifier = Modifier
+                        .size(40.dp, 40.dp)
+                        .clip(RoundedCornerShape(100))
+                        .shimmerLoading()
+                        .background(Color.Gray.copy(alpha = 0.2f))
+                )
+                Column(
+                    modifier = Modifier
+                        .fillMaxWidth(0.95f)
+                ) {
+                    //Title
+                    Text(
+                        text = "",
+                        modifier = Modifier
+                            .padding(start = 6.dp, end = 6.dp)
+                            .fillMaxWidth()
+                            .height(16.dp)
+                            .shimmerLoading()
+                            .background(Color.Gray.copy(alpha = 0.3f))
+                    )
+
+                    // Channel name, views, and date placeholders
+
+                    Row(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(8.dp)
+                    ) {
+                        Box(
+                            modifier = Modifier
+                                .width(100.dp)
+                                .height(12.dp)
+                                .shimmerLoading()
+                                .background(Color.Gray.copy(alpha = 0.3f))
+                        )
+                        Spacer(modifier = Modifier.width(10.dp))
+                        Box(
+                            modifier = Modifier
+                                .width(60.dp)
+                                .height(12.dp)
+                                .shimmerLoading()
+                                .background(Color.Gray.copy(alpha = 0.3f))
+                        )
+                        Spacer(modifier = Modifier.width(10.dp))
+                        Box(
+                            modifier = Modifier
+                                .width(90.dp)
+                                .height(12.dp)
+                                .shimmerLoading()
+                                .background(Color.Gray.copy(alpha = 0.3f))
+                        )
+                    }
+                }
+
+                Box(
+                    modifier = Modifier
+                        .width(9.dp)
+                        .height(40.dp)
+                        .shimmerLoading()
+                        .background(Color.Gray.copy(alpha = 0.3f))
+
+                ) { }
+
+            }
+
+        }
     }
 }
 

@@ -357,10 +357,11 @@ private fun About_Us(mContext: Context){
 
 
 private fun goToWeb(mContext: Context) {
-  val browserIntent = Intent(
-    Intent.ACTION_VIEW,
-    Uri.parse("https://myfirstpythontokotlinasbackend.onrender.com/aboutdownloader")
-  )
+
+  val url = Uri.parse("https://gomida05.github.io/")
+
+  val browserIntent = Intent(Intent.ACTION_VIEW, url)
+
   mContext.startActivity(browserIntent)
 }
 

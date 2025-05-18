@@ -64,7 +64,6 @@ class WatchHistory(context: Context) : SQLiteOpenHelper(context, DATABASE_NAME, 
 
 
 
-
     private fun isWatchUrlExist(url: String): Boolean {
         val db = readableDatabase
         val cursor = db.rawQuery("SELECT 1 FROM Watched_Videos WHERE video_id = ?", arrayOf(url))
