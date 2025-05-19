@@ -16,9 +16,12 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 
 @Composable
-fun CustomTheme(content: @Composable () -> Unit) {
+fun CustomTheme(
+    isDarkTheme: Boolean = isSystemInDarkTheme(),
+    content: @Composable () -> Unit
+) {
 
-    val isDarkTheme = isSystemInDarkTheme()
+//    val isDarkTheme = isSystemInDarkTheme()
 
     val lightColors = lightColorScheme(
         primary = Color(0xFF000000),

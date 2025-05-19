@@ -58,6 +58,7 @@ import com.das.forui.objectsAndData.Youtuber.isValidYoutubeURL
 import com.das.forui.databased.SearchHistoryDB
 import com.das.forui.objectsAndData.ForUIKeyWords.NEW_INTENT_FOR_VIEWER
 import com.das.forui.objectsAndData.ForUIKeyWords.NEW_TEXT_FOR_RESULT
+import com.das.forui.objectsAndData.Youtuber.extractPlaylistId
 import com.das.forui.objectsAndData.Youtuber.isValidYouTubePlaylistUrl
 import com.das.forui.ui.viewer.GlobalVideoList.bundles
 
@@ -275,7 +276,7 @@ fun PlayListDownloadRequest(onDismissRequest: ()->Unit, mContext: Context, url: 
         text = {
             AsyncImage(
                 model = ImageRequest.Builder(mContext)
-                    .data("https://img.youtube.com/vi/_uQrJ0TkZlc&t=109s/0.jpg")
+                    .data("https://img.youtube.com/vi/${extractPlaylistId(url)}/0.jpg")
                     .crossfade(true)
                     .build(),
                 contentDescription = "Category Image",

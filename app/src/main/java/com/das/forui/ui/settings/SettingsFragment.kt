@@ -1,5 +1,6 @@
 package com.das.forui.ui.settings
 
+import android.content.ActivityNotFoundException
 import android.content.Context
 import android.content.Intent
 import android.content.pm.PackageManager
@@ -7,27 +8,40 @@ import android.net.Uri
 import android.widget.Toast
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.wrapContentSize
+import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowForward
 import androidx.compose.material.icons.filled.AccountCircle
 import androidx.compose.material.icons.filled.ColorLens
+import androidx.compose.material.icons.filled.DarkMode
+import androidx.compose.material.icons.filled.Feedback
 import androidx.compose.material.icons.filled.Folder
 import androidx.compose.material.icons.filled.Info
+import androidx.compose.material.icons.filled.LightMode
 import androidx.compose.material.icons.filled.Save
 import androidx.compose.material.icons.filled.Update
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Card
+import androidx.compose.material3.DropdownMenu
+import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
+import androidx.compose.material3.Switch
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
+import androidx.compose.material3.VerticalDivider
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -63,23 +77,46 @@ fun SettingsComposable(
           .padding(top = 50.dp)
       )
     }
-  ) { paddingValue ->
-
-
-
-    Column(
+  ) {
+    LazyColumn (
       modifier = Modifier
-        .fillMaxWidth()
-        .padding(paddingValue)
-        .padding(top = 65.dp)
-        .wrapContentSize(Alignment.Center)
+        .padding(it)
+        .fillMaxSize()
     ) {
-      Saved(navController)
-      Account(context)
-      Appearance(navController)
-      Change_Downloading_Location(context)
-      Check_for_update(context)
-      About_Us(context)
+      item { UserHeader() }
+
+      item {
+        VerticalDivider(modifier = Modifier.padding(vertical = 3.dp))
+      }
+
+      item { Saved(navController) }
+      item { Account(context) }
+
+      item {
+        VerticalDivider(modifier = Modifier.padding(vertical = 1.dp))
+      }
+
+      item { Appearance(navController) }
+
+      item {
+        VerticalDivider(modifier = Modifier.padding(vertical = 1.dp))
+      }
+
+      item { Change_Downloading_Location(context) }
+      item { Check_for_update(context) }
+      item { About_Us(context) }
+
+      item {
+        VerticalDivider(modifier = Modifier.padding(vertical = 1.dp))
+      }
+
+      item { FeedbackButton(context) }
+      item { AppVersionInfo() }
+
+//
+//      Saved(navController)
+//      Account(context)
+//      Appearance(navController)
 
 
     }
@@ -411,7 +448,26 @@ fun AlertDialogPathChoose(
     }
   )
 }
-
+@Composable
+fun UserHeader(name: String = "Guest User", email: String = "guest@example.com") {
+  Row(
+    modifier = Modifier
+      .fillMaxWidth()
+      .padding(16.dp),
+    verticalAlignment = Alignment.CenterVertically
+  ) {
+    Icon(
+      imageVector = Icons.Default.AccountCircle,
+      contentDescription = null,
+      modifier = Modifier.size(50.dp)
+    )
+    Spacer(modifier = Modifier.width(12.dp))
+    Column {
+      Text(text = name, style = MaterialTheme.typography.titleMedium)
+      Text(text = email, style = MaterialTheme.typography.bodySmall)
+    }
+  }
+}
 
 @Composable
 fun FolderPickerDialog(context: Context, showDialog: Boolean, onDismiss: () -> Unit) {
@@ -462,7 +518,72 @@ fun FolderPickerDialog(context: Context, showDialog: Boolean, onDismiss: () -> U
 
 
 
+@Composable
+fun FeedbackButton(context: Context) {
+  Card(
+    onClick = {
+      sendFeedback(context)
+    },
+    modifier = Modifier
+      .fillMaxWidth()
+      .padding(4.dp)
+      .clip(RoundedCornerShape(25))
+  ) {
+    Box(
+      modifier = Modifier
+        .fillMaxWidth()
+        .padding(25.dp)
+    ) {
+      Icon(
+        imageVector = Icons.Default.Feedback,
+        contentDescription = null,
+        modifier = Modifier.align(Alignment.CenterStart)
+      )
+      Text(
+        text = "Send Feedback",
+        style = MaterialTheme.typography.headlineSmall,
+        fontSize = 16.sp,
+        modifier = Modifier.align(Alignment.Center)
+      )
+      Icon(
+        imageVector = Icons.AutoMirrored.Default.ArrowForward,
+        contentDescription = null,
+        modifier = Modifier.align(Alignment.CenterEnd)
+      )
+    }
+  }
+}
 
+@Composable
+fun AppVersionInfo() {
+  val context = LocalContext.current
+  val version = remember {
+    context.packageManager
+      .getPackageInfo(context.packageName, 0).versionName
+  }
+  Text(
+    text = "App Version: $version",
+    style = MaterialTheme.typography.bodySmall,
+    modifier = Modifier
+      .fillMaxWidth()
+      .padding(16.dp),
+    textAlign = TextAlign.Center
+  )
+}
+
+fun sendFeedback(context: Context) {
+  val intent = Intent(Intent.ACTION_SENDTO).apply {
+    data = Uri.parse("mailto:efootballmobile2023player@gmail.com") // Replace with your email
+    putExtra(Intent.EXTRA_SUBJECT, "Feedback for My App")
+    putExtra(Intent.EXTRA_TEXT, "Hi, I have some feedback...")
+  }
+
+  try {
+    context.startActivity(Intent.createChooser(intent, "Send Feedback"))
+  } catch (e: ActivityNotFoundException) {
+    Toast.makeText(context, "No email app found.", Toast.LENGTH_SHORT).show()
+  }
+}
 
   private fun getFolderPathFromUri(mContext: Context, uri: Uri, type: String): String? {
     val path = uri.path

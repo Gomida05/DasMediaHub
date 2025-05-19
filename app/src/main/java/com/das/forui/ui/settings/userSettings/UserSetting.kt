@@ -1,18 +1,18 @@
 package com.das.forui.ui.settings.userSettings
 
-import android.app.UiModeManager
-import android.content.Context
-import android.content.SharedPreferences
-import androidx.appcompat.app.AppCompatDelegate
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Box
-import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.layout.wrapContentSize
+import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
-import androidx.compose.material.icons.filled.Contrast
 import androidx.compose.material.icons.filled.DarkMode
 import androidx.compose.material.icons.filled.LightMode
 import androidx.compose.material3.Button
@@ -22,6 +22,7 @@ import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.PlainTooltip
 import androidx.compose.material3.Scaffold
+import androidx.compose.material3.Switch
 import androidx.compose.material3.Text
 import androidx.compose.material3.TooltipBox
 import androidx.compose.material3.TooltipDefaults
@@ -35,7 +36,7 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.vector.rememberVectorPainter
-import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.unit.dp
 import androidx.navigation.NavController
 
 
@@ -44,8 +45,7 @@ import androidx.navigation.NavController
 fun UserSettingComposable(
     navController: NavController
 ){
-    val mContext = LocalContext.current
-    var expanded by remember { mutableStateOf(false) }
+
     Scaffold(
         topBar = {
             TopAppBar(
@@ -82,95 +82,15 @@ fun UserSettingComposable(
                 .wrapContentSize(Alignment.Center)
 
         ) {
-        Column(
+        LazyColumn (
             modifier = Modifier
                 .fillMaxSize()
-                .wrapContentSize(Alignment.Center)
                 .align(Alignment.Center)
-
         ) {
 
-
-
-                Button(
-                    onClick = {
-                        expanded = !expanded
-
-                    },
-                    modifier = Modifier
-                ) {
-                    Text(
-                        text = "Change Theme Mode"
-                    )
-                }
-            DropdownMenu(
-                expanded = expanded,
-                onDismissRequest = { expanded = false }
-            ) {
-                DropdownMenuItem(
-                    text = { Text("Dark Mode") },
-                    trailingIcon = {
-                        Icon(
-                            imageVector = Icons.Default.DarkMode,
-                            ""
-                        )
-                    },
-                    onClick = {
-                        changeTheme(
-                            mContext,
-                            UiModeManager.MODE_NIGHT_YES
-                        )
-                        expanded = false
-                    }
-                )
-                DropdownMenuItem(
-                    text = { Text("Light Mode") },
-                    trailingIcon = {
-                        Icon(
-                            imageVector = Icons.Default.LightMode,
-                            ""
-                        )
-                    },
-                    onClick = {
-                        changeTheme(
-                            mContext,
-                            UiModeManager.MODE_NIGHT_NO
-                        )
-                        expanded = false
-                    }
-                )
-                DropdownMenuItem(
-                    text = { Text("Auto") },
-                    trailingIcon = {
-                        Icon(
-                            imageVector = Icons.Default.Contrast,
-                            ""
-                        )
-                    },
-                    onClick = {
-                        expanded = false
-                        changeTheme(
-                            mContext,
-                            AppCompatDelegate.MODE_NIGHT_FOLLOW_SYSTEM
-                        )
-                    }
-                )
-
-            }
-
-
-                Button(
-                    onClick = {
-
-                    },
-                    modifier = Modifier
-                ) {
-                    Text(
-                        text = "          "
-                    )
-                }
-
-            }
+            item { DarkModeToggle() }
+            item { LanguageSelector() }
+        }
         }
     }
 
@@ -179,18 +99,58 @@ fun UserSettingComposable(
 
 
 
-fun changeTheme(
-    context: Context,
-    setUiMode: Int
-): Int {
-    val sharedPref: SharedPreferences =
-        context.getSharedPreferences("AppPreferences", Context.MODE_PRIVATE)
-    with(sharedPref.edit()) {
-        putInt("isNightModeOn", setUiMode)
-        apply()
+@Composable
+fun DarkModeToggle() {
+    var isDarkTheme by remember { mutableStateOf(false) }
 
-        AppCompatDelegate.setDefaultNightMode(setUiMode)
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(16.dp),
+        verticalAlignment = Alignment.CenterVertically
+    ) {
+        Icon(
+            imageVector = if (isDarkTheme) Icons.Default.DarkMode else Icons.Default.LightMode,
+            contentDescription = null
+        )
+        Spacer(Modifier.width(16.dp))
+        Text(if (isDarkTheme) "Dark Mode" else "Light Mode", modifier = Modifier.weight(1f))
+        Switch(
+            checked = isDarkTheme,
+            onCheckedChange = {
+                isDarkTheme = it
+
+                // Apply theme change logic here
+            }
+        )
     }
-    return setUiMode
+}
+
+
+@Composable
+fun LanguageSelector() {
+    var expanded by remember { mutableStateOf(false) }
+    val languages = listOf("English", "French", "Spanish")
+    var selectedLanguage by remember { mutableStateOf(languages[0]) }
+
+    Box(modifier = Modifier.fillMaxWidth().padding(16.dp)) {
+        Text("Language: $selectedLanguage", modifier = Modifier.clickable { expanded = true })
+        DropdownMenu(
+            expanded = expanded,
+            onDismissRequest = { expanded = false }
+        ) {
+            languages.forEach { lang ->
+                DropdownMenuItem(
+                    text = {
+                        Text(lang)
+                    },
+                    onClick = {
+                        selectedLanguage = lang
+                        expanded = false
+                        // Persist language preference
+                    })
+            }
+        }
+    }
 }
 
