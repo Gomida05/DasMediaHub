@@ -3,8 +3,6 @@ package com.das.forui.ui.home
 import android.widget.Toast
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.wrapContentSize
@@ -44,57 +42,38 @@ fun HomePageComposable(navController: NavController) {
                     Text(
                         text = "YouTube Downloader",
                         fontWeight = FontWeight.SemiBold,
-                        textAlign = TextAlign.Center,
                         fontSize = 20.sp,
-                        modifier = Modifier.padding(15.dp)
-                            .fillMaxWidth()
-
+                        maxLines = 1
                     )
                 },
                 navigationIcon = {
-                    Button(
-                        onClick = {
-                            Toast.makeText(
-                                mContext,
-                                "Coming soon!",
-                                Toast.LENGTH_SHORT
-                            )
-                                .show()
-                        },
-                        shape = RoundedCornerShape(32),
-                        modifier = Modifier
-                            .height(53.dp)
-                    ) {
+                    Button(onClick = {
+                        Toast.makeText(mContext, "Coming soon!", Toast.LENGTH_SHORT).show()
+                    }) {
                         Icon(
-                            painter = rememberVectorPainter(Icons.Default.AccountCircle),
-                            ""
+                            imageVector = Icons.Default.AccountCircle,
+                            contentDescription = "Profile"
                         )
                     }
                 },
                 actions = {
 
-                    Button(
-                        onClick = {
-                            navController.navigate("Downloads")
-                        },
-                        shape = RoundedCornerShape(32),
-                        modifier = Modifier
-                            .height(53.dp)
-                    ) {
+                    Button(onClick = {
+                        navController.navigate("Downloads")
+                    }) {
                         Icon(
-                            painter = rememberVectorPainter(Icons.Default.Download),
-                            ""
+                            imageVector = Icons.Default.Download,
+                            contentDescription = "Downloads"
                         )
                     }
                 }
             )
         }
     )
-    { paddingValues ->
-
+    {
         Box(
             modifier = Modifier
-                .padding(paddingValues)
+                .padding(it)
                 .fillMaxSize()
                 .wrapContentSize(Alignment.Center)
         ) {

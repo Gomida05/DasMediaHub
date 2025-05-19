@@ -233,7 +233,6 @@ fun ListItems(
             itemClicked(
                 index,
                 itemDetails.mediaId,
-                itemDetails.mediaMetadata.title.toString(),
                 isVideo,
                 mContext,
                 navController
@@ -359,7 +358,6 @@ fun ListItems(
 private fun itemClicked(
     index: Int,
     selectedFilePath: String,
-    selectedTitle: String,
     isVideo: Boolean,
     context: Context,
     navController: NavController

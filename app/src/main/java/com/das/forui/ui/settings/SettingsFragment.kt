@@ -1,14 +1,20 @@
 package com.das.forui.ui.settings
 
+import android.app.DownloadManager
 import android.content.ActivityNotFoundException
+import android.content.BroadcastReceiver
 import android.content.Context
 import android.content.Intent
+import android.content.IntentFilter
 import android.content.pm.PackageManager
 import android.net.Uri
+import android.os.Build
+import android.os.Environment
+import android.provider.Settings
 import android.widget.Toast
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
-import androidx.compose.foundation.clickable
+import androidx.appcompat.app.AlertDialog
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -24,21 +30,16 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowForward
 import androidx.compose.material.icons.filled.AccountCircle
 import androidx.compose.material.icons.filled.ColorLens
-import androidx.compose.material.icons.filled.DarkMode
 import androidx.compose.material.icons.filled.Feedback
 import androidx.compose.material.icons.filled.Folder
 import androidx.compose.material.icons.filled.Info
-import androidx.compose.material.icons.filled.LightMode
 import androidx.compose.material.icons.filled.Save
 import androidx.compose.material.icons.filled.Update
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Card
-import androidx.compose.material3.DropdownMenu
-import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
-import androidx.compose.material3.Switch
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.material3.VerticalDivider
@@ -54,10 +55,18 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.core.content.ContextCompat
 import androidx.documentfile.provider.DocumentFile
 import androidx.navigation.NavController
 import com.das.forui.databased.PathSaver.setMoviesDownloadPath
 import com.das.forui.databased.PathSaver.setAudioDownloadPath
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
+import org.json.JSONObject
+import java.net.HttpURLConnection
+import java.net.URL
 
 
 @Composable
@@ -113,12 +122,6 @@ fun SettingsComposable(
       item { FeedbackButton(context) }
       item { AppVersionInfo() }
 
-//
-//      Saved(navController)
-//      Account(context)
-//      Appearance(navController)
-
-
     }
   }
 
@@ -172,7 +175,7 @@ private fun Saved(navController: NavController){
 }
 
 @Composable
-private fun Account(context: Context){
+private fun Account(context: Context) {
   Card(
     onClick = {
       openMusicApp(context)
@@ -267,7 +270,7 @@ private fun Change_Downloading_Location(mContext: Context){
 private fun Check_for_update(mContext: Context){
   Card(
     onClick = {
-      showDialogs(mContext)
+      checkForAppUpdate(mContext)
     },
     modifier = Modifier
       .fillMaxWidth()
@@ -401,6 +404,109 @@ private fun goToWeb(mContext: Context) {
 
   mContext.startActivity(browserIntent)
 }
+
+
+
+fun checkForAppUpdate(context: Context){
+
+  CoroutineScope(Dispatchers.IO).launch {
+    try {
+      val url = URL("https://github.com/Gomida05/Gomida05/raw/refs/heads/main/AppToDownload.json")
+      val connection = url.openConnection() as HttpURLConnection
+      connection.requestMethod = "GET"
+      val inputStream = connection.inputStream
+      val response = inputStream.bufferedReader().use { it.readText() }
+
+      val jsonObject = JSONObject(response)
+      val appsObject = jsonObject.getJSONObject("apps")
+      val ytDownloader = appsObject.optJSONObject("YouTube Downloader")
+      val latestVersionCode = ytDownloader?.getInt("latestVersionCode")!!
+      val latestVersionName = ytDownloader.getString("latestVersionName")
+      val apkUrl = ytDownloader.getString("apkUrl")
+      val changelog = ytDownloader.getString("changelog")
+
+      val currentVersionCode = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.P) {
+          context.packageManager
+            .getPackageInfo(context.packageName, 0).longVersionCode
+      } else {
+        @Suppress("DEPRECATION")
+        context.packageManager
+          .getPackageInfo(context.packageName, 0).versionCode.toLong()
+      }
+
+        if (latestVersionCode > currentVersionCode) {
+        withContext(Dispatchers.Main) {
+
+          AlertDialog.Builder(context)
+            .setTitle("Update Available: v$latestVersionName")
+            .setMessage("Changelog:\n$changelog")
+            .setPositiveButton("Download") { _, _ ->
+
+              if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O &&
+                !context.packageManager.canRequestPackageInstalls()
+              ) {
+                val intent = Intent(Settings.ACTION_MANAGE_UNKNOWN_APP_SOURCES).apply {
+                  data = Uri.parse("package:" + context.packageName)
+                }
+                context.startActivity(intent)
+                return@setPositiveButton
+              }
+
+              val request = DownloadManager.Request(Uri.parse(apkUrl))
+                .setTitle("Downloading Update")
+                .setDescription("YouTube Downloader v$latestVersionName")
+                .setMimeType("application/vnd.android.package-archive")
+                .setNotificationVisibility(DownloadManager.Request.VISIBILITY_VISIBLE_NOTIFY_COMPLETED)
+                .setDestinationInExternalPublicDir(Environment.DIRECTORY_DOWNLOADS, "YouTubeDownloader_Update.apk")
+
+              val downloadManager = context.getSystemService(Context.DOWNLOAD_SERVICE) as DownloadManager
+              val downloadId = downloadManager.enqueue(request)
+
+              val onComplete = object : BroadcastReceiver() {
+                override fun onReceive(ctx: Context, intent: Intent) {
+                  val downloadedId = intent.getLongExtra(DownloadManager.EXTRA_DOWNLOAD_ID, -1)
+                  if (downloadedId == downloadId) {
+                    val apkUri = downloadManager.getUriForDownloadedFile(downloadId)
+
+                    val installIntent = Intent(Intent.ACTION_VIEW).apply {
+                      setDataAndType(apkUri, "application/vnd.android.package-archive")
+                      flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_GRANT_READ_URI_PERMISSION
+                    }
+
+                    context.startActivity(installIntent)
+                    context.unregisterReceiver(this)
+                  }
+                }
+              }
+
+              ContextCompat.registerReceiver(
+                context,
+                onComplete,
+                IntentFilter(DownloadManager.ACTION_DOWNLOAD_COMPLETE),
+                ContextCompat.RECEIVER_NOT_EXPORTED
+              )
+
+            }
+            .setNegativeButton("Cancel", null)
+            .show()
+        }
+      } else {
+        withContext(Dispatchers.Main) {
+          showDialogs(context, "You're up to date")
+        }
+      }
+
+    } catch (e: Exception) {
+      withContext(Dispatchers.Main) {
+        showDialogs(context, "Update check failed: ${e.localizedMessage}")
+      }
+    }
+  }
+
+}
+
+
+
 
 private fun showDialogs(context: Context, inputText: String = "coming soon") {
   Toast.makeText(context, inputText, Toast.LENGTH_SHORT).show()

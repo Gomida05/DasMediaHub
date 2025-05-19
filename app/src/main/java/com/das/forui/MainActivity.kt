@@ -55,6 +55,7 @@ import com.das.forui.objectsAndData.ForUIDataClass.MyBottomNavData
 import androidx.compose.material3.NavigationBarItem
 import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.remember
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.platform.LocalContext
 import androidx.core.util.Consumer
@@ -110,8 +111,10 @@ class MainActivity : ComponentActivity() {
 
 
         val activity = (mContext.getActivity() as ComponentActivity)
-        val listener = Consumer<Intent> {
-            listenNewIntent(navController, it)
+        val listener = remember {
+            Consumer<Intent> {
+                listenNewIntent(navController, it)
+            }
         }
 
 
@@ -219,25 +222,25 @@ class MainActivity : ComponentActivity() {
                         composable("Downloads") {
                             DownloadsPageComposable(navController)
                         }
-                        composable("searcher") {
+                        composable(Screen.Searcher.route) {
 
                             SearchPageCompose(
                                 navController,
                                 bundles.getString(NEW_INTENT_FOR_SEARCHER, "")
                             )
                         }
-                        composable("user Setting") {
+                        composable(Screen.UserSettings.route) {
                             UserSettingComposable(navController)
 
                         }
-                        composable("ExoPlayerUI") {
+                        composable(Screen.ExoPlayerUI.route) {
                             ExoPlayerUI(
                                 navController,
                                 bundles.getString(PLAY_HERE_VIDEO).toString()
                             )
                         }
 
-                        composable("saved"){
+                        composable(Screen.Saved.route){
                             WatchLaterComposable(navController)
                         }
                     }
