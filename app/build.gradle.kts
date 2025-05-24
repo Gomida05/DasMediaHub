@@ -1,8 +1,9 @@
 plugins {
     id("com.android.application")
     id("org.jetbrains.kotlin.android")
-    id("com.chaquo.python") version "16.0.0"
+    id("com.chaquo.python") version "16.1.0"
     id("org.jetbrains.kotlin.plugin.compose")
+    id("com.google.gms.google-services")
 }
 
 
@@ -22,8 +23,8 @@ android {
         applicationId = "com.das.forui"
         minSdk = 24
         targetSdk = 35
-        versionCode = 2
-        versionName = "1.14"
+        versionCode = 3
+        versionName = "1.18"
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
         flavorDimensions.add("pyVersion")
@@ -77,7 +78,7 @@ chaquopy {
         version = "3.13"
         buildPython("C:\\Users\\esrom\\AppData\\Local\\Programs\\Python\\Python313\\python.exe")
 
-        pip{
+        pip {
             install("pytubefix")
             install("youtube-search-python")
             install("httpx<0.28")
@@ -94,15 +95,23 @@ chaquopy {
 
 dependencies {
 
+
+    //Firebase dependencies
+    implementation(platform("com.google.firebase:firebase-bom:33.14.0"))
+    implementation("com.google.firebase:firebase-analytics")
+
+    implementation("com.google.android.gms:play-services-auth:21.3.0")
+
+    implementation("com.airbnb.android:lottie-compose:6.6.6")
     implementation("io.coil-kt:coil-compose:2.2.2")
     implementation("io.coil-kt:coil-video:2.4.0")
-    implementation("androidx.compose.runtime:runtime-livedata:1.8.0")
-    implementation("androidx.navigation:navigation-compose:2.8.9")
-    implementation("androidx.compose.ui:ui-viewbinding:1.8.0")
+    implementation("androidx.compose.runtime:runtime-livedata:1.8.2")
+    implementation("androidx.navigation:navigation-compose:2.9.0")
+    implementation("androidx.compose.ui:ui-viewbinding:1.8.2")
 
     //Material 3
 
-    implementation(platform("androidx.compose:compose-bom:2025.04.01"))
+    implementation(platform("androidx.compose:compose-bom:2025.05.01"))
     implementation("androidx.compose.material3:material3")
 
 
@@ -110,6 +119,7 @@ dependencies {
 
     //preview
     implementation("androidx.compose.ui:ui-tooling-preview")
+    implementation("com.google.firebase:firebase-auth-ktx:23.2.1")
     debugImplementation("androidx.compose.ui:ui-tooling")
 
     //icons
@@ -117,31 +127,31 @@ dependencies {
 
 
 
-    implementation("androidx.lifecycle:lifecycle-viewmodel-compose:2.8.7")
+    implementation("androidx.lifecycle:lifecycle-viewmodel-compose:2.9.0")
 
     implementation("androidx.core:core-ktx:1.16.0")
     implementation("androidx.media:media:1.7.0")
-//    implementation("androidx.appcompat:appcompat:1.7.0")
+
 
     implementation("com.google.code.gson:gson:2.10.1")
 
     implementation("com.github.bumptech.glide:glide:4.16.0")
-    implementation("androidx.compose.runtime:runtime-android:1.8.0")
+    implementation("androidx.compose.runtime:runtime-android:1.8.2")
     implementation("androidx.appcompat:appcompat:1.7.0")
 
 
     implementation("androidx.constraintlayout:constraintlayout:2.2.1")
-    implementation("androidx.lifecycle:lifecycle-livedata-ktx:2.8.7")
-    implementation("androidx.lifecycle:lifecycle-viewmodel-ktx:2.8.7")
-    implementation("androidx.navigation:navigation-ui-ktx:2.8.9")
-    implementation("androidx.media3:media3-session:1.6.1")
-    implementation("androidx.media3:media3-exoplayer-dash:1.6.1")
-    implementation("androidx.media3:media3-exoplayer-hls:1.6.1")
+    implementation("androidx.lifecycle:lifecycle-livedata-ktx:2.9.0")
+    implementation("androidx.lifecycle:lifecycle-viewmodel-ktx:2.9.0")
+    implementation("androidx.navigation:navigation-ui-ktx:2.9.0")
+    implementation("androidx.media3:media3-session:1.7.1")
+    implementation("androidx.media3:media3-exoplayer-dash:1.7.1")
+    implementation("androidx.media3:media3-exoplayer-hls:1.7.1")
 
-    implementation("androidx.media3:media3-ui-compose:1.6.1")
-    implementation("androidx.media3:media3-exoplayer:1.6.1")
-    implementation("androidx.media3:media3-common:1.6.1")
-    implementation("androidx.media3:media3-common-ktx:1.6.1")
+    implementation("androidx.media3:media3-ui-compose:1.7.1")
+    implementation("androidx.media3:media3-exoplayer:1.7.1")
+    implementation("androidx.media3:media3-common:1.7.1")
+    implementation("androidx.media3:media3-common-ktx:1.7.1")
     testImplementation("junit:junit:4.13.2")
     implementation("org.jetbrains.kotlin:kotlin-stdlib:2.1.0")
 }

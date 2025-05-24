@@ -50,7 +50,6 @@ class AudioServiceFromUrl : Service() {
     private lateinit var videoId: String
     private lateinit var durationFromActivity: String
     private var audioFocusRequest: AudioFocusRequest? = null
-    private lateinit var mediaType: String
 
 
     override fun onCreate() {
@@ -61,8 +60,48 @@ class AudioServiceFromUrl : Service() {
 
 
     }
+
+    /*
+
+    override fun onLoadChildren(parentId: String, result: Result<MutableList<MediaBrowserCompat.MediaItem>>) {
+
+        val mediaItems = mutableListOf<MediaBrowserCompat.MediaItem>()
+
+        val title = exoPlayer?.currentMediaItem?.mediaMetadata?.title ?: "not found"
+        val descr = exoPlayer?.currentMediaItem?.mediaMetadata?.description ?: "not found"
+
+
+        val description = MediaDescriptionCompat.Builder()
+            .setMediaId(videoId)
+            .setTitle(title)
+            .setDescription(descr)
+            .setIconUri("https://img.youtube.com/vi/$videoId/0.jpg".toUri())
+            .build()
+
+        mediaItems.add(
+            MediaBrowserCompat.MediaItem(description, MediaBrowserCompat.MediaItem.FLAG_PLAYABLE)
+        )
+
+
+        result.sendResult(mediaItems)
+    }
+
+    override fun onGetRoot(
+        clientPackageName: String,
+        clientUid: Int,
+        rootHints: Bundle?
+    ): BrowserRoot {
+        return BrowserRoot("root", null)
+    }
+
+    */
     override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
 
+//        mediaBrowserServiceCompat = MediaBrowserCompat(
+//            this,
+//            this@AudioServiceFromUrl,
+//            connectionCallbacks
+//        )
         mediaSession = MediaSessionCompat(this, "AudioService").apply {
             isActive = true
             @Suppress("DEPRECATION")
@@ -158,10 +197,61 @@ class AudioServiceFromUrl : Service() {
     }
 
 
+/*
+    private val connectionCallbacks = object : MediaBrowserCompat.ConnectionCallback() {
+        override fun onConnected() {
 
+            // Get the token for the MediaSession
+            mediaBrowserServiceCompat.sessionToken.also { token ->
 
+                // Create a MediaControllerCompat
+                val mediaController = MediaControllerCompat(
+                    this@AudioServiceFromUrl, // Context
+                    token!!
+                )
 
+                // Save the controller
+                MediaControllerCompat.setMediaController(MainActivity(), mediaController)
+            }
 
+            // Finish building the UI
+            buildTransportControls()
+        }
+
+        override fun onConnectionSuspended() {
+            // The Service has crashed. Disable transport controls until it automatically reconnects
+        }
+
+        override fun onConnectionFailed() {
+            // The Service has refused our connection
+        }
+    }
+    fun buildTransportControls() {
+        val mediaController = MediaControllerCompat.getMediaController(MainActivity())
+        // Grab the view for the play/pause button
+        playPause = findViewById<ImageView>(R.id.play_pause).apply {
+            setOnClickListener {
+                // Since this is a play/pause button, you'll need to test the current state
+                // and choose the action accordingly
+
+                val pbState = mediaController.playbackState.state
+                if (pbState == PlaybackStateCompat.STATE_PLAYING) {
+                    mediaController.transportControls.pause()
+                } else {
+                    mediaController.transportControls.play()
+                }
+            }
+        }
+
+        // Display the initial state
+        val metadata = mediaController.metadata
+        val pbState = mediaController.playbackState
+
+        // Register a Callback to stay in sync
+        mediaController.registerCallback(controllerCallback)
+    }
+
+*/
     override fun onBind(intent: Intent?): IBinder? {
         return null
     }

@@ -61,6 +61,7 @@ import com.das.forui.objectsAndData.ForUIKeyWords.NEW_TEXT_FOR_RESULT
 import com.das.forui.objectsAndData.Youtuber.extractPlaylistId
 import com.das.forui.objectsAndData.Youtuber.isValidYouTubePlaylistUrl
 import com.das.forui.ui.viewer.GlobalVideoList.bundles
+import com.das.forui.Screen.ResultViewerPage
 
 
 @Composable
@@ -377,7 +378,7 @@ private fun keyEvent(
     ) {
         try {
             bundles.putString(NEW_TEXT_FOR_RESULT, text)
-            navController.navigate("ResultViewerPage")
+            navController.navigate(ResultViewerPage.route)
         } catch (e: Exception) {
             showDialogs(context, e.message.toString())
         }

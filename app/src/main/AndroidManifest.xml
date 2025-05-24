@@ -49,6 +49,7 @@
         android:roundIcon="@mipmap/ic_launcher_round"
         android:supportsRtl="true"
         android:theme="@style/Theme.AppCompat.DayNight.NoActionBar"
+        android:resizeableActivity="true"
         tools:targetApi="35">
 
 
@@ -156,18 +157,15 @@
             android:exported="false"
             android:grantUriPermissions="true">
 
-        <meta-data
-            android:name="android.support.FILE_PROVIDER_PATHS"
-            android:resource="@xml/file_paths" />
+            <meta-data
+                android:name="android.support.FILE_PROVIDER_PATHS"
+                android:resource="@xml/file_paths" />
+
         </provider>
 
 
 
         <receiver android:name=".services.BroadReceiverForNotificationActivity" />
-
-
-
-
 
     </application>
 

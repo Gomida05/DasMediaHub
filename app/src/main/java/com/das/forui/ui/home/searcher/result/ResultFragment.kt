@@ -66,7 +66,7 @@ import com.das.forui.services.AudioServiceFromUrl
 import com.das.forui.objectsAndData.ForUIDataClass.VideosListData
 import com.das.forui.ui.viewer.GlobalVideoList.bundles
 import com.das.forui.ui.viewer.shimmerLoading
-
+import com.das.forui.Screen.VideoViewer
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -207,7 +207,7 @@ fun VideoItems(
                         putString("channel_Thumbnails", channelThumbnails)
                     }
                     bundles.putBundle(NEW_INTENT_FOR_VIEWER, bundle)
-                    navController.navigate("video viewer")
+                    navController.navigate(VideoViewer.route)
 
                 },
                 onLongClick = {
@@ -451,6 +451,7 @@ fun SkeletonSuggestionLoadingLayout() {
 }
 
 
+@Suppress("unused")
 @Composable
 fun PlayListItems(
     context: Context,
@@ -493,7 +494,7 @@ fun PlayListItems(
                         putString("channel_Thumbnails", channelThumbnails)
                     }
                     bundles.putBundle(NEW_INTENT_FOR_VIEWER, bundle)
-                    navController.navigate("video viewer")
+                    navController.navigate(VideoViewer.route)
 
                 },
                 onLongClick = {

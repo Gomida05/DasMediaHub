@@ -113,6 +113,7 @@ import com.das.forui.R
 import com.das.forui.ui.viewer.GlobalVideoList.listOfVideosListData
 import com.das.forui.ui.viewer.GlobalVideoList.previousVideosListData
 import com.das.forui.MainApplication
+import com.das.forui.Screen
 import com.das.forui.databased.DatabaseFavorite
 import com.das.forui.databased.WatchHistory
 import com.das.forui.mediacontroller.VideoPlayerControllers.PlayerControls
@@ -962,7 +963,7 @@ private fun playThisOne(
     bundles.putBundle(NEW_INTENT_FOR_VIEWER, bundle)
     navController.run {
         popBackStack()
-        navigate("video viewer")
+        navigate(Screen.VideoViewer.route)
     }
 
 

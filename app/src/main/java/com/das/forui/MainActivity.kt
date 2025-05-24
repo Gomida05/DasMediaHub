@@ -81,9 +81,13 @@ import com.das.forui.ui.settings.watch_later.WatchLaterComposable
 import com.das.forui.ui.settings.SettingsComposable
 import com.das.forui.ui.settings.userSettings.UserSettingComposable
 import com.das.forui.ui.home.downloads.videoPlayerLocally.ExoPlayerUI
+import com.das.forui.ui.settings.userSettings.AnimatedLoginPage
+import com.das.forui.ui.settings.userSettings.LoginPage
 import com.das.forui.ui.viewer.GlobalVideoList.bundles
 import com.das.forui.ui.viewer.VideoPlayerScreen
 import com.das.forui.ui.watchedVideos.WatchedVideosComposable
+import com.das.forui.Screen.*
+import com.das.forui.ui.settings.userSettings.SignUpPage
 
 
 class MainActivity : ComponentActivity() {
@@ -107,6 +111,7 @@ class MainActivity : ComponentActivity() {
 
         val mContext = LocalContext.current
 
+
         val currentRoute = navController.currentBackStackEntryAsState().value?.destination?.route
 
 
@@ -128,17 +133,17 @@ class MainActivity : ComponentActivity() {
         CustomTheme {
             val bottomNavigationItems = listOf(
                 MyBottomNavData(
-                    title = "Home",
+                    title = Home.route,
                     selectedIcon = Icons.Filled.Home,
                     unselectedIcon = Icons.Outlined.Home
                 ),
                 MyBottomNavData(
-                    title = "Recently Watched",
+                    title = RecentlyWatched.route,
                     selectedIcon = Icons.Filled.WatchLater,
                     unselectedIcon = Icons.Outlined.WatchLater
                 ),
                 MyBottomNavData(
-                    title = "Setting",
+                    title = Setting.route,
                     selectedIcon = Icons.Filled.Settings,
                     unselectedIcon = Icons.Outlined.Settings
                 )
@@ -192,26 +197,26 @@ class MainActivity : ComponentActivity() {
                         .fillMaxSize()
                 ){
                     NavHost(
-                        navController = navController, startDestination = "Home"
+                        navController = navController, startDestination = Home.route
                     ) {
-                        composable("Home") {
+                        composable(Home.route) {
                             HomePageComposable(navController)
                         }
-                        composable("Recently Watched") {
+                        composable(RecentlyWatched.route) {
                             WatchedVideosComposable(navController)
                         }
-                        composable("Setting") {
+                        composable(Setting.route) {
                             SettingsComposable(navController)
                         }
 
-                        composable("video viewer") {
+                        composable(VideoViewer.route) {
                             val bundle = bundles.getBundle(NEW_INTENT_FOR_VIEWER)
                             VideoPlayerScreen(
                                 navController,
                                 bundle
                             )
                         }
-                        composable("ResultViewerPage") {
+                        composable(ResultViewerPage.route) {
 
                             val argument = bundles.getString(NEW_TEXT_FOR_RESULT).toString()
                             ResultViewerPage(
@@ -219,29 +224,46 @@ class MainActivity : ComponentActivity() {
                                 argument
                             )
                         }
-                        composable("Downloads") {
+                        composable(Downloads.route) {
                             DownloadsPageComposable(navController)
                         }
-                        composable(Screen.Searcher.route) {
+                        composable(Searcher.route) {
 
                             SearchPageCompose(
                                 navController,
                                 bundles.getString(NEW_INTENT_FOR_SEARCHER, "")
                             )
                         }
-                        composable(Screen.UserSettings.route) {
+                        composable(UserSettings.route) {
                             UserSettingComposable(navController)
 
                         }
-                        composable(Screen.ExoPlayerUI.route) {
+                        composable(ExoPlayerUI.route) {
                             ExoPlayerUI(
                                 navController,
                                 bundles.getString(PLAY_HERE_VIDEO).toString()
                             )
                         }
 
-                        composable(Screen.Saved.route){
+                        composable(Saved.route){
                             WatchLaterComposable(navController)
+                        }
+
+                        composable(LoginPage1.route) {
+                            LoginPage(navController)
+                        }
+                        composable(LoginPage2.route) {
+                            AnimatedLoginPage (
+                                {email, pas ->
+
+                                },
+                                {
+
+                                }
+                            )
+                        }
+                        composable(SignUpPage.route) {
+                            SignUpPage(navController)
                         }
                     }
                 }
@@ -354,7 +376,7 @@ class MainActivity : ComponentActivity() {
             val mimeType = contentResolver.getType(it) ?: ""
             if (mimeType.startsWith("video/")) {
                 bundles.putString(PLAY_HERE_VIDEO, intent.dataString)
-                navController.navigate("ExoPlayerUI")
+                navController.navigate(ExoPlayerUI.route)
             } else if (mimeType.startsWith("audio/")) {
 
 
@@ -385,7 +407,7 @@ class MainActivity : ComponentActivity() {
                 bundles.apply {
                     putBundle(NEW_INTENT_FOR_VIEWER, bundle)
                 }
-                navController.navigate("video viewer")
+                navController.navigate(VideoViewer.route)
 
             } else if (isValidYouTubePlaylistUrl(it)){
                 val bundle= Bundle().apply {
@@ -395,15 +417,15 @@ class MainActivity : ComponentActivity() {
                 bundles.apply {
                     putBundle(NEW_INTENT_FOR_VIEWER, bundle)
                 }
-                navController.navigate("video viewer")
+                navController.navigate(VideoViewer.route)
 
             }else if (it.startsWith("DownloadsPageFr")) {
-                navController.navigate("Downloads")
+                navController.navigate(Downloads.route)
             } else {
                 bundles.apply {
                     putString(NEW_INTENT_FOR_SEARCHER, it)
                 }
-                navController.navigate("searcher")
+                navController.navigate(Searcher.route)
             }
         }
     }

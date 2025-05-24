@@ -60,6 +60,7 @@ import coil.decode.VideoFrameDecoder
 import coil.request.ImageRequest
 import coil.request.videoFrameMillis
 import com.das.forui.R
+import com.das.forui.Screen
 import com.das.forui.databased.PathSaver.getVideosDownloadPath
 import com.das.forui.databased.PathSaver.getAudioDownloadPath
 import com.das.forui.objectsAndData.ForUIKeyWords.ACTION_START
@@ -366,7 +367,7 @@ private fun itemClicked(
 
     if (isVideo) {
         bundles.putString(PLAY_HERE_VIDEO, selectedFilePath)
-        navController.navigate("ExoPlayerUI")
+        navController.navigate(Screen.ExoPlayerUI.route)
     } else {
 
         val playIntent = Intent(context, BackGroundPlayer::class.java).apply {

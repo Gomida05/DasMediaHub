@@ -66,6 +66,8 @@ import com.das.forui.objectsAndData.ForUIKeyWords.ACTION_START
 import com.das.forui.objectsAndData.ForUIKeyWords.NEW_INTENT_FOR_VIEWER
 import com.das.forui.services.AudioServiceFromUrl
 import com.das.forui.ui.viewer.GlobalVideoList.bundles
+import com.das.forui.Screen.VideoViewer
+import com.das.forui.Screen.Saved
 
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -91,7 +93,7 @@ fun WatchedVideosComposable(navController: NavController) {
                 actions = {
                     IconButton(
                         onClick = {
-                            navController.navigate("saved")
+                            navController.navigate(Saved.route)
                         }
                     ) {
                         Icon(
@@ -414,7 +416,7 @@ private fun onClickListListener(
             putString("channel_Thumbnails", channelThumbnail)
         }
         bundles.putBundle(NEW_INTENT_FOR_VIEWER, bundle)
-        controller.navigate("video viewer")
+        controller.navigate(VideoViewer.route)
 
     } catch (e: Exception) {
         MainActivity().alertUserError(context, e.message.toString())

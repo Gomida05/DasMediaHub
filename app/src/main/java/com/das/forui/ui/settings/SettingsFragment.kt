@@ -1,20 +1,14 @@
 package com.das.forui.ui.settings
 
-import android.app.DownloadManager
 import android.content.ActivityNotFoundException
-import android.content.BroadcastReceiver
 import android.content.Context
 import android.content.Intent
-import android.content.IntentFilter
 import android.content.pm.PackageManager
 import android.net.Uri
 import android.os.Build
-import android.os.Environment
-import android.provider.Settings
 import android.widget.Toast
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
-import androidx.appcompat.app.AlertDialog
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -55,11 +49,14 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import androidx.core.content.ContextCompat
 import androidx.documentfile.provider.DocumentFile
 import androidx.navigation.NavController
+import com.das.forui.Screen
 import com.das.forui.databased.PathSaver.setMoviesDownloadPath
 import com.das.forui.databased.PathSaver.setAudioDownloadPath
+import com.das.forui.downloader.DownloaderClass
+import com.das.forui.objectsAndData.ForUIDataClass.AppUpdateInfo
+import com.google.firebase.auth.FirebaseAuth
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
@@ -101,6 +98,9 @@ fun SettingsComposable(
       item { Saved(navController) }
       item { Account(context) }
 
+      item { TestLoginPage1(navController) }
+      item { TestLoginPage2(navController) }
+
       item {
         VerticalDivider(modifier = Modifier.padding(vertical = 1.dp))
       }
@@ -115,10 +115,6 @@ fun SettingsComposable(
       item { Check_for_update(context) }
       item { About_Us(context) }
 
-      item {
-        VerticalDivider(modifier = Modifier.padding(vertical = 1.dp))
-      }
-
       item { FeedbackButton(context) }
       item { AppVersionInfo() }
 
@@ -130,6 +126,31 @@ fun SettingsComposable(
 
 
 
+@Composable
+fun UserHeader() {
+  val auth = FirebaseAuth.getInstance()
+
+  val name by remember { mutableStateOf(auth.currentUser?.displayName ?: "Guest") }
+  val email by remember { mutableStateOf(auth.currentUser?.email?: "Coming soon") }
+
+  Row(
+    modifier = Modifier
+      .fillMaxWidth()
+      .padding(16.dp),
+    verticalAlignment = Alignment.CenterVertically
+  ) {
+    Icon(
+      imageVector = Icons.Default.AccountCircle,
+      contentDescription = null,
+      modifier = Modifier.size(50.dp)
+    )
+    Spacer(modifier = Modifier.width(12.dp))
+    Column {
+      Text(text = name, style = MaterialTheme.typography.titleMedium)
+      Text(text = email, style = MaterialTheme.typography.bodySmall)
+    }
+  }
+}
 
 
 @Composable
@@ -216,6 +237,90 @@ private fun Account(context: Context) {
   }
 }
 
+@Composable
+private fun TestLoginPage1(navController: NavController) {
+  Card(
+    onClick = {
+      navController.navigate(Screen.LoginPage1.route)
+    },
+    modifier = Modifier
+      .fillMaxWidth()
+      .padding(4.dp)
+      .clip(RoundedCornerShape(25))
+
+  ) {
+
+
+    Box(
+      modifier = Modifier
+        .fillMaxWidth()
+        .align(Alignment.CenterHorizontally)
+        .padding(25.dp)
+    ) {
+      Icon(
+        imageVector = Icons.Default.AccountCircle,
+        "",
+        modifier = Modifier
+          .align(Alignment.CenterStart)
+      )
+      Text(
+        text = "Test Login page 1",
+        fontSize = 16.sp,
+        style = MaterialTheme.typography.headlineSmall,
+        modifier = Modifier.align(Alignment.Center)
+      )
+      Icon(
+        imageVector = Icons.AutoMirrored.Default.ArrowForward,
+        "",
+        modifier = Modifier.align(Alignment.CenterEnd)
+      )
+    }
+
+  }
+}
+
+@Composable
+private fun TestLoginPage2(navController: NavController) {
+  Card(
+    onClick = {
+      navController.navigate(Screen.LoginPage2.route)
+    },
+    modifier = Modifier
+      .fillMaxWidth()
+      .padding(4.dp)
+      .clip(RoundedCornerShape(25))
+
+  ) {
+
+
+    Box(
+      modifier = Modifier
+        .fillMaxWidth()
+        .align(Alignment.CenterHorizontally)
+        .padding(25.dp)
+    ) {
+      Icon(
+        imageVector = Icons.Default.AccountCircle,
+        "",
+        modifier = Modifier
+          .align(Alignment.CenterStart)
+      )
+      Text(
+        text = "Test Login page 2",
+        fontSize = 16.sp,
+        style = MaterialTheme.typography.headlineSmall,
+        modifier = Modifier.align(Alignment.Center)
+      )
+      Icon(
+        imageVector = Icons.AutoMirrored.Default.ArrowForward,
+        "",
+        modifier = Modifier.align(Alignment.CenterEnd)
+      )
+    }
+
+  }
+}
+
 
 @Composable
 private fun Change_Downloading_Location(mContext: Context){
@@ -268,9 +373,20 @@ private fun Change_Downloading_Location(mContext: Context){
 
 @Composable
 private fun Check_for_update(mContext: Context){
+
+  var showDialog by remember { mutableStateOf(false) }
+  var appInfo by remember { mutableStateOf<AppUpdateInfo?>(null) }
+
   Card(
     onClick = {
-      checkForAppUpdate(mContext)
+      checkForAppUpdate(
+        mContext
+      ) { newV, info ->
+        if (newV) {
+          appInfo = info
+          showDialog = true
+        }
+      }
     },
     modifier = Modifier
       .fillMaxWidth()
@@ -305,6 +421,16 @@ private fun Check_for_update(mContext: Context){
       )
     }
 
+  }
+
+  if(showDialog && appInfo != null){
+    ShowAlertDialog(
+      mContext,
+      appInfo!!,
+      onDismissRequest = {
+        showDialog = false
+      },
+    )
   }
 }
 
@@ -393,237 +519,6 @@ private fun About_Us(mContext: Context){
 }
 
 
-
-
-
-private fun goToWeb(mContext: Context) {
-
-  val url = Uri.parse("https://gomida05.github.io/")
-
-  val browserIntent = Intent(Intent.ACTION_VIEW, url)
-
-  mContext.startActivity(browserIntent)
-}
-
-
-
-fun checkForAppUpdate(context: Context){
-
-  CoroutineScope(Dispatchers.IO).launch {
-    try {
-      val url = URL("https://github.com/Gomida05/Gomida05/raw/refs/heads/main/AppToDownload.json")
-      val connection = url.openConnection() as HttpURLConnection
-      connection.requestMethod = "GET"
-      val inputStream = connection.inputStream
-      val response = inputStream.bufferedReader().use { it.readText() }
-
-      val jsonObject = JSONObject(response)
-      val appsObject = jsonObject.getJSONObject("apps")
-      val ytDownloader = appsObject.optJSONObject("YouTube Downloader")
-      val latestVersionCode = ytDownloader?.getInt("latestVersionCode")!!
-      val latestVersionName = ytDownloader.getString("latestVersionName")
-      val apkUrl = ytDownloader.getString("apkUrl")
-      val changelog = ytDownloader.getString("changelog")
-
-      val currentVersionCode = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.P) {
-          context.packageManager
-            .getPackageInfo(context.packageName, 0).longVersionCode
-      } else {
-        @Suppress("DEPRECATION")
-        context.packageManager
-          .getPackageInfo(context.packageName, 0).versionCode.toLong()
-      }
-
-        if (latestVersionCode > currentVersionCode) {
-        withContext(Dispatchers.Main) {
-
-          AlertDialog.Builder(context)
-            .setTitle("Update Available: v$latestVersionName")
-            .setMessage("Changelog:\n$changelog")
-            .setPositiveButton("Download") { _, _ ->
-
-              if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O &&
-                !context.packageManager.canRequestPackageInstalls()
-              ) {
-                val intent = Intent(Settings.ACTION_MANAGE_UNKNOWN_APP_SOURCES).apply {
-                  data = Uri.parse("package:" + context.packageName)
-                }
-                context.startActivity(intent)
-                return@setPositiveButton
-              }
-
-              val request = DownloadManager.Request(Uri.parse(apkUrl))
-                .setTitle("Downloading Update")
-                .setDescription("YouTube Downloader v$latestVersionName")
-                .setMimeType("application/vnd.android.package-archive")
-                .setNotificationVisibility(DownloadManager.Request.VISIBILITY_VISIBLE_NOTIFY_COMPLETED)
-                .setDestinationInExternalPublicDir(Environment.DIRECTORY_DOWNLOADS, "YouTubeDownloader_Update.apk")
-
-              val downloadManager = context.getSystemService(Context.DOWNLOAD_SERVICE) as DownloadManager
-              val downloadId = downloadManager.enqueue(request)
-
-              val onComplete = object : BroadcastReceiver() {
-                override fun onReceive(ctx: Context, intent: Intent) {
-                  val downloadedId = intent.getLongExtra(DownloadManager.EXTRA_DOWNLOAD_ID, -1)
-                  if (downloadedId == downloadId) {
-                    val apkUri = downloadManager.getUriForDownloadedFile(downloadId)
-
-                    val installIntent = Intent(Intent.ACTION_VIEW).apply {
-                      setDataAndType(apkUri, "application/vnd.android.package-archive")
-                      flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_GRANT_READ_URI_PERMISSION
-                    }
-
-                    context.startActivity(installIntent)
-                    context.unregisterReceiver(this)
-                  }
-                }
-              }
-
-              ContextCompat.registerReceiver(
-                context,
-                onComplete,
-                IntentFilter(DownloadManager.ACTION_DOWNLOAD_COMPLETE),
-                ContextCompat.RECEIVER_NOT_EXPORTED
-              )
-
-            }
-            .setNegativeButton("Cancel", null)
-            .show()
-        }
-      } else {
-        withContext(Dispatchers.Main) {
-          showDialogs(context, "You're up to date")
-        }
-      }
-
-    } catch (e: Exception) {
-      withContext(Dispatchers.Main) {
-        showDialogs(context, "Update check failed: ${e.localizedMessage}")
-      }
-    }
-  }
-
-}
-
-
-
-
-private fun showDialogs(context: Context, inputText: String = "coming soon") {
-  Toast.makeText(context, inputText, Toast.LENGTH_SHORT).show()
-}
-
-fun openMusicApp(context: Context){
-  try {
-    val musicApp = context.packageManager.getLaunchIntentForPackage("com.das.musicplayer")
-    context.startActivity(musicApp)
-  }catch (p: PackageManager.NameNotFoundException){
-    showDialogs(context, "App Not founded!")
-  }
-  catch (e: Exception){
-    showDialogs(context,"App not opening!")
-  }
-}
-
-
-@Composable
-fun AlertDialogPathChoose(
-  onDismissRequest: () -> Unit = {},
-  onAudioSelect: () -> Unit,
-  onVideoSelect: () -> Unit
-) {
-  AlertDialog(
-    onDismissRequest = onDismissRequest,
-    title = {
-      Text("Which location do you want to change? Please select one of them:")
-    },
-    confirmButton = {
-      TextButton(onClick = {
-        onAudioSelect()
-        onDismissRequest()
-      }) {
-        Text("Audio's")
-      }
-    },
-    dismissButton = {
-      TextButton(onClick = {
-        onVideoSelect()
-        onDismissRequest()
-      }) {
-        Text("Video's")
-      }
-    }
-  )
-}
-@Composable
-fun UserHeader(name: String = "Guest User", email: String = "guest@example.com") {
-  Row(
-    modifier = Modifier
-      .fillMaxWidth()
-      .padding(16.dp),
-    verticalAlignment = Alignment.CenterVertically
-  ) {
-    Icon(
-      imageVector = Icons.Default.AccountCircle,
-      contentDescription = null,
-      modifier = Modifier.size(50.dp)
-    )
-    Spacer(modifier = Modifier.width(12.dp))
-    Column {
-      Text(text = name, style = MaterialTheme.typography.titleMedium)
-      Text(text = email, style = MaterialTheme.typography.bodySmall)
-    }
-  }
-}
-
-@Composable
-fun FolderPickerDialog(context: Context, showDialog: Boolean, onDismiss: () -> Unit) {
-
-  val audioPickerLauncher = rememberLauncherForActivityResult(
-    contract = ActivityResultContracts.OpenDocumentTree(),
-    onResult = { uri: Uri? ->
-      uri?.let {
-        getFolderPathFromUri(context, it, "audio")
-      }
-    }
-  )
-
-  val videoPickerLauncher = rememberLauncherForActivityResult(
-    contract = ActivityResultContracts.OpenDocumentTree(),
-    onResult = { uri: Uri? ->
-      uri?.let {
-        getFolderPathFromUri(context, it, "video")
-      }
-    }
-  )
-
-  if (showDialog) {
-
-    AlertDialogPathChoose(
-      onDismissRequest = onDismiss,
-      onAudioSelect = {
-        audioPickerLauncher.launch(null)
-      },
-      onVideoSelect = {
-        videoPickerLauncher.launch(null)
-      }
-    )
-  }
-}
-
-
-
-  private fun extractFolderPath(path: String): String {
-    val prefix = "/tree/primary:"
-    return if (path.startsWith(prefix)) {
-      path.removePrefix(prefix)
-    } else {
-      path
-    }
-  }
-
-
-
-
 @Composable
 fun FeedbackButton(context: Context) {
   Card(
@@ -677,6 +572,224 @@ fun AppVersionInfo() {
   )
 }
 
+
+
+
+@Composable
+fun FolderPickerDialog(context: Context, showDialog: Boolean, onDismiss: () -> Unit) {
+
+  val audioPickerLauncher = rememberLauncherForActivityResult(
+    contract = ActivityResultContracts.OpenDocumentTree(),
+    onResult = { uri: Uri? ->
+      uri?.let {
+        getFolderPathFromUri(context, it, "audio")
+      }
+    }
+  )
+
+  val videoPickerLauncher = rememberLauncherForActivityResult(
+    contract = ActivityResultContracts.OpenDocumentTree(),
+    onResult = { uri: Uri? ->
+      uri?.let {
+        getFolderPathFromUri(context, it, "video")
+      }
+    }
+  )
+
+  if (showDialog) {
+
+    AlertDialogPathChoose(
+      onDismissRequest = onDismiss,
+      onAudioSelect = {
+        audioPickerLauncher.launch(null)
+      },
+      onVideoSelect = {
+        videoPickerLauncher.launch(null)
+      }
+    )
+  }
+}
+
+@Composable
+fun AlertDialogPathChoose(
+  onDismissRequest: () -> Unit = {},
+  onAudioSelect: () -> Unit,
+  onVideoSelect: () -> Unit
+) {
+  AlertDialog(
+    onDismissRequest = onDismissRequest,
+    title = {
+      Text("Which location do you want to change? Please select one of them:")
+    },
+    confirmButton = {
+      TextButton(onClick = {
+        onAudioSelect()
+        onDismissRequest()
+      }) {
+        Text("Audio's")
+      }
+    },
+    dismissButton = {
+      TextButton(onClick = {
+        onVideoSelect()
+        onDismissRequest()
+      }) {
+        Text("Video's")
+      }
+    }
+  )
+}
+
+
+@Composable
+fun ShowAlertDialog(
+  context: Context,
+  appInfo: AppUpdateInfo,
+  onDismissRequest: () -> Unit,
+){
+
+  AlertDialog(
+    onDismissRequest = onDismissRequest,
+    title = {
+      Text(
+        "Update Available: v${appInfo.versionName}"
+      )
+    },
+    text = {
+      Text("Changelog:\n${appInfo.whatsNew}")
+    },
+    confirmButton = {
+      TextButton(
+        onClick = {
+          DownloaderClass(context).downloadNewVersionAPK(appInfo)
+          onDismissRequest()
+        }
+      ) {
+        Text("Download")
+      }
+    },
+    dismissButton = {
+      TextButton(
+        onClick = onDismissRequest
+      ) {
+        Text("Cancel")
+      }
+    }
+  )
+}
+
+
+
+private fun goToWeb(mContext: Context) {
+
+  val url = Uri.parse("https://gomida05.github.io/")
+
+  val browserIntent = Intent(Intent.ACTION_VIEW, url)
+
+  mContext.startActivity(browserIntent)
+}
+
+
+
+fun checkForAppUpdate(
+  context: Context,
+  isThereNew: (isThere: Boolean, appInfo: AppUpdateInfo?) ->Unit
+) {
+
+  CoroutineScope(Dispatchers.IO).launch {
+    try {
+      val url = URL("https://github.com/Gomida05/Gomida05/raw/refs/heads/main/AppToDownload.json")
+      val connection = url.openConnection() as HttpURLConnection
+      connection.requestMethod = "GET"
+      val inputStream = connection.inputStream
+      val response = inputStream.bufferedReader().use { it.readText() }
+
+      val jsonObject = JSONObject(response)
+      val appsObject = jsonObject.getJSONObject("apps")
+      val ytDownloader = appsObject.optJSONObject("YouTube Downloader")
+      val latestVersionCode = ytDownloader?.getInt("latestVersionCode")!!
+      val latestVersionName = ytDownloader.getString("latestVersionName")
+      val apkUrl = ytDownloader.getString("apkUrl")
+      val changelog = ytDownloader.getString("changelog")
+
+      val appInfo = AppUpdateInfo(
+        latestVersionCode,
+        latestVersionName,
+        apkUrl,
+        changelog
+      )
+
+      val currentVersionCode = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.P) {
+        context.packageManager
+          .getPackageInfo(context.packageName, 0).longVersionCode
+      } else {
+        @Suppress("DEPRECATION")
+        context.packageManager
+          .getPackageInfo(context.packageName, 0).versionCode.toLong()
+      }
+
+      val currentVersionName = context.packageManager
+        .getPackageInfo(context.packageName, 0).versionName?.toDouble()
+
+      if (latestVersionCode > currentVersionCode || latestVersionName.toDouble() > currentVersionName!!)
+      {
+        withContext(Dispatchers.Main) {
+          isThereNew(true, appInfo)
+        }
+      } else {
+        withContext(Dispatchers.Main) {
+          isThereNew(false, null)
+          showDialogs(context, "You're up to date")
+        }
+      }
+
+    } catch (e: Exception) {
+      withContext(Dispatchers.Main) {
+          isThereNew(false, null)
+        showDialogs(context, "Update check failed: ${e.localizedMessage}")
+      }
+    }
+  }
+
+}
+
+
+
+
+private fun showDialogs(context: Context, inputText: String = "coming soon") {
+  Toast.makeText(context, inputText, Toast.LENGTH_SHORT).show()
+}
+
+
+fun openMusicApp(context: Context){
+  try {
+    val musicApp = context.packageManager.getLaunchIntentForPackage("com.das.musicplayer")
+    context.startActivity(musicApp)
+  }catch (p: PackageManager.NameNotFoundException){
+    showDialogs(context, "App Not founded!")
+  }
+  catch (e: Exception){
+    showDialogs(context,"App not opening!")
+  }
+}
+
+
+
+
+
+private fun extractFolderPath(path: String): String {
+  val prefix = "/tree/primary:"
+  return if (path.startsWith(prefix)) {
+    path.removePrefix(prefix)
+  } else {
+    path
+  }
+}
+
+
+
+
+
 fun sendFeedback(context: Context) {
   val intent = Intent(Intent.ACTION_SENDTO).apply {
     data = Uri.parse("mailto:efootballmobile2023player@gmail.com") // Replace with your email
@@ -691,33 +804,33 @@ fun sendFeedback(context: Context) {
   }
 }
 
-  private fun getFolderPathFromUri(mContext: Context, uri: Uri, type: String): String? {
-    val path = uri.path
+private fun getFolderPathFromUri(mContext: Context, uri: Uri, type: String): String? {
+  val path = uri.path
 
-    try {
+  try {
 
-      val documentFile = DocumentFile.fromTreeUri(mContext, uri)
+    val documentFile = DocumentFile.fromTreeUri(mContext, uri)
 
 
-      if (documentFile != null && documentFile.isDirectory) {
+    if (documentFile != null && documentFile.isDirectory) {
 
-        val pather="/storage/emulated/0/${extractFolderPath(path.toString())}"
-        if (type == "video") {
+      val pather = "/storage/emulated/0/${extractFolderPath(path.toString())}"
+      if (type == "video") {
 
-          setMoviesDownloadPath(mContext, pather)
+        setMoviesDownloadPath(mContext, pather)
 
-        } else if (type == "audio") {
+      } else if (type == "audio") {
 
-          setAudioDownloadPath(mContext, pather)
+        setAudioDownloadPath(mContext, pather)
 
-        }
-      } else {
-        println("URI is not a directory or invalid")
       }
-    } catch (e: Exception) {
-      e.printStackTrace()
-      println("Error: ${e.message}")
+    } else {
+      println("URI is not a directory or invalid")
     }
-
-    return path
+  } catch (e: Exception) {
+    e.printStackTrace()
+    println("Error: ${e.message}")
   }
+
+  return path
+}

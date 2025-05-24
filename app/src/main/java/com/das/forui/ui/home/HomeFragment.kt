@@ -28,6 +28,9 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.navigation.NavController
+import com.das.forui.Screen.Searcher
+import com.das.forui.Screen.Downloads
+
 
 
 
@@ -42,6 +45,7 @@ fun HomePageComposable(navController: NavController) {
                     Text(
                         text = "YouTube Downloader",
                         fontWeight = FontWeight.SemiBold,
+                        textAlign = TextAlign.Center,
                         fontSize = 20.sp,
                         maxLines = 1
                     )
@@ -59,7 +63,7 @@ fun HomePageComposable(navController: NavController) {
                 actions = {
 
                     Button(onClick = {
-                        navController.navigate("Downloads")
+                        navController.navigate(Downloads.route)
                     }) {
                         Icon(
                             imageVector = Icons.Default.Download,
@@ -81,7 +85,7 @@ fun HomePageComposable(navController: NavController) {
 
             Button(
                 onClick = {
-                    navController.navigate("searcher")
+                    navController.navigate(Searcher.route)
                 },
                 modifier = Modifier
                     .align(Alignment.Center)

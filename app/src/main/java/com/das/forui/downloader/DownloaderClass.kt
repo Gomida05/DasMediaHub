@@ -4,26 +4,30 @@ import android.app.DownloadManager
 import android.app.NotificationChannel
 import android.app.NotificationManager
 import android.content.Context
+import android.content.Intent
 import android.database.Cursor
 import android.net.Uri
 import android.os.Build
+import android.os.Environment
 import android.os.Handler
 import android.os.Looper
+import android.provider.Settings
 import android.webkit.MimeTypeMap
 import androidx.core.app.NotificationCompat
 import com.das.forui.R
 import com.das.forui.databased.PathSaver.getAudioDownloadPath
 import com.das.forui.databased.PathSaver.getVideosDownloadPath
+import com.das.forui.objectsAndData.ForUIDataClass.AppUpdateInfo
 import com.das.forui.objectsAndData.ForUIDataClass.DownloadData
 import com.das.forui.objectsAndData.ForUIKeyWords.DOWNLOADER_NOTIFICATION_CHANNEL
+import com.das.forui.objectsAndData.ForUIKeyWords.EXCEPTED_DOWNLOAD_ID
 import java.io.File
+
 
 class DownloaderClass(val context: Context): ForUIDownloader {
 
     private val downloadManager = context.getSystemService(DownloadManager::class.java)
     private val notificationManager = context.getSystemService(NotificationManager::class.java)
-
-
 
 
 
@@ -163,6 +167,8 @@ class DownloaderClass(val context: Context): ForUIDownloader {
         return 0L
     }
 
+
+
     private fun startTacking(downloadId: Long, builder: NotificationCompat.Builder) {
         val query = DownloadManager.Query().setFilterById(downloadId)
         val notificationId = downloadId.toInt()
@@ -269,6 +275,40 @@ class DownloaderClass(val context: Context): ForUIDownloader {
             notificationManager.createNotificationChannel(channel)
         }
     }
+
+
+
+    override fun downloadNewVersionAPK(appInfo: AppUpdateInfo) {
+
+        createNotificationChannel()
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O &&
+            !context.packageManager.canRequestPackageInstalls()
+        ) {
+            val intent = Intent(Settings.ACTION_MANAGE_UNKNOWN_APP_SOURCES).apply {
+                data = Uri.parse("package:" + context.packageName)
+            }
+            context.startActivity(intent)
+            return
+        }
+
+        val request = DownloadManager.Request(Uri.parse(appInfo.appURL))
+            .setTitle("Downloading Update")
+            .setDescription("YouTube Downloader v${appInfo.versionName}")
+            .setMimeType("application/vnd.android.package-archive")
+            .setNotificationVisibility(DownloadManager.Request.VISIBILITY_VISIBLE_NOTIFY_COMPLETED)
+            .setDestinationInExternalPublicDir(
+                Environment.DIRECTORY_DOWNLOADS,
+                "YouTubeDownloader_Update.apk"
+            )
+
+        val downloadId = downloadManager.enqueue(request)
+        val prefs = context.getSharedPreferences("app_prefs", Context.MODE_PRIVATE)
+        prefs.edit().putLong(EXCEPTED_DOWNLOAD_ID, downloadId).apply()
+
+    }
+
+
+
 
 
 

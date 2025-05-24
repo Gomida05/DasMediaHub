@@ -5,6 +5,9 @@ import androidx.compose.ui.graphics.vector.ImageVector
 
 data object ForUIDataClass {
 
+    enum class ThemePreference {
+        SYSTEM, LIGHT, DARK
+    }
 
     data class PlayListDataClass(
         val url: String,
@@ -76,5 +79,12 @@ data object ForUIDataClass {
         val title: String,
         val selectedIcon: ImageVector,
         val unselectedIcon: ImageVector
+    )
+
+    data class AppUpdateInfo(
+        val versionCode: Int,
+        val versionName: String,
+        val appURL: String,
+        val whatsNew: String
     )
 }

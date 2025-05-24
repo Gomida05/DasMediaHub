@@ -1,5 +1,6 @@
 package com.das.forui.ui.settings.userSettings
 
+import android.content.Context
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Row
@@ -13,8 +14,11 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
+import androidx.compose.material.icons.filled.ArrowDropDown
+import androidx.compose.material.icons.filled.Contrast
 import androidx.compose.material.icons.filled.DarkMode
 import androidx.compose.material.icons.filled.LightMode
+import androidx.compose.material.icons.filled.Settings
 import androidx.compose.material3.Button
 import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.DropdownMenuItem
@@ -36,8 +40,12 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.vector.rememberVectorPainter
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
 import androidx.navigation.NavController
+import com.das.forui.databased.ThemePreferences.loadDarkModeState
+import com.das.forui.databased.ThemePreferences.saveDarkMode
+import com.das.forui.objectsAndData.ForUIDataClass.ThemePreference
 
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -45,6 +53,8 @@ import androidx.navigation.NavController
 fun UserSettingComposable(
     navController: NavController
 ){
+
+    val context = LocalContext.current
 
     Scaffold(
         topBar = {
@@ -88,7 +98,7 @@ fun UserSettingComposable(
                 .align(Alignment.Center)
         ) {
 
-            item { DarkModeToggle() }
+            item { DarkModeToggleWithPrefs(context) }
             item { LanguageSelector() }
         }
         }
@@ -97,15 +107,84 @@ fun UserSettingComposable(
 }
 
 
+@Composable
+fun DarkModeDropdown(
+    currentPreference: ThemePreference,
+    onPreferenceSelected: (ThemePreference) -> Unit
+) {
+    var expanded by remember { mutableStateOf(false) }
 
+    Box(modifier = Modifier
+        .fillMaxWidth()
+        .padding(16.dp)) {
+
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .clickable { expanded = true }
+                .padding(12.dp),
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            Icon(
+                imageVector = when (currentPreference) {
+                    ThemePreference.DARK -> Icons.Default.DarkMode
+                    ThemePreference.LIGHT -> Icons.Default.LightMode
+                    ThemePreference.SYSTEM -> Icons.Default.Contrast
+                },
+                contentDescription = null
+            )
+            Spacer(Modifier.width(16.dp))
+            Text(
+                when (currentPreference) {
+                    ThemePreference.DARK -> "Dark Mode"
+                    ThemePreference.LIGHT -> "Light Mode"
+                    ThemePreference.SYSTEM -> "Follow System"
+                },
+                modifier = Modifier.weight(1f)
+            )
+            Icon(Icons.Default.ArrowDropDown, contentDescription = null)
+        }
+
+        DropdownMenu(
+            expanded = expanded,
+            onDismissRequest = { expanded = false }
+        ) {
+            DropdownMenuItem(
+                text = { Text("Follow System") },
+                onClick = {
+                    onPreferenceSelected(ThemePreference.SYSTEM)
+                    expanded = false
+                }
+            )
+            DropdownMenuItem(
+                text = { Text("Light Mode") },
+                onClick = {
+                    onPreferenceSelected(ThemePreference.LIGHT)
+                    expanded = false
+                }
+            )
+            DropdownMenuItem(
+                text = { Text("Dark Mode") },
+                onClick = {
+                    onPreferenceSelected(ThemePreference.DARK)
+                    expanded = false
+                }
+            )
+        }
+    }
+}
 
 @Composable
-fun DarkModeToggle() {
-    var isDarkTheme by remember { mutableStateOf(false) }
+fun DarkModeToggle(
+    isDarkTheme: Boolean,
+    onToggle: (Boolean) -> Unit) {
+
+    var expanded by remember { mutableStateOf(false) }
 
     Row(
         modifier = Modifier
             .fillMaxWidth()
+            .clickable { expanded = true }
             .padding(16.dp),
         verticalAlignment = Alignment.CenterVertically
     ) {
@@ -117,15 +196,37 @@ fun DarkModeToggle() {
         Text(if (isDarkTheme) "Dark Mode" else "Light Mode", modifier = Modifier.weight(1f))
         Switch(
             checked = isDarkTheme,
-            onCheckedChange = {
-                isDarkTheme = it
-
-                // Apply theme change logic here
-            }
+            onCheckedChange = onToggle
         )
     }
 }
 
+@Composable
+fun DarkModeToggleWithPrefs(context: Context) {
+
+    var isDarkTheme by loadDarkModeState(context)
+
+    DarkModeToggle(
+        isDarkTheme = isDarkTheme,
+        onToggle = { newValue ->
+            isDarkTheme = newValue
+            saveDarkMode(context, newValue)
+        }
+    )
+}
+
+//@Composable
+//fun DarkModeDropdownWithPrefs(context: Context) {
+//    var preference by loadDarkModeState(context)
+//
+//    DarkModeDropdown(
+//        currentPreference = preference,
+//        onPreferenceSelected = { newPref ->
+//            preference = newPref
+//            saveDarkMode(context, newPref)
+//        }
+//    )
+//}
 
 @Composable
 fun LanguageSelector() {
