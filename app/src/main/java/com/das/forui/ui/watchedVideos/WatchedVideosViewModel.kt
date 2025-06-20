@@ -25,10 +25,9 @@ class WatchedVideosViewModel(application: Application): AndroidViewModel(applica
             val result = withContext(Dispatchers.IO) {
                 fetchDataFromDatabase()
             }
-            withContext(Dispatchers.Main) {
-                _savedLists.value = result ?: emptyList()
-                _isLoading.value = false
-            }
+            _savedLists.value = result ?: emptyList()
+            _isLoading.value = false
+
         }
     }
 

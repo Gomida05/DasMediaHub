@@ -25,9 +25,7 @@ class SearchPageViewMode(private val application: Application): AndroidViewModel
             val result = withContext(Dispatchers.IO) {
                 fetchDataFromDatabase(application)
             }
-            withContext(Dispatchers.Main) {
-                _searchHistory.value = result
-            }
+            _searchHistory.value = result
         }
     }
 

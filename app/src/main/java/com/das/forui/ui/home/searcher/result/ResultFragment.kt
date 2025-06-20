@@ -2,8 +2,10 @@ package com.das.forui.ui.home.searcher.result
 
 import android.content.Context
 import android.content.Intent
+import android.os.Build
 import android.os.Bundle
 import android.widget.Toast
+import androidx.annotation.RequiresApi
 import androidx.compose.foundation.background
 import androidx.compose.foundation.combinedClickable
 import androidx.compose.foundation.layout.Arrangement
@@ -67,6 +69,7 @@ import com.das.forui.objectsAndData.ForUIDataClass.VideosListData
 import com.das.forui.ui.viewer.GlobalVideoList.bundles
 import com.das.forui.ui.viewer.shimmerLoading
 import com.das.forui.Screen.VideoViewer
+import java.time.LocalDate
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -79,6 +82,17 @@ fun ResultViewerPage(
     val searchResults by viewModel.searchResults
     val foundError by viewModel.error
     val mContext = LocalContext.current
+
+    /*
+    val filteredResults = remember(searchResults, query) {
+        searchResults.filter {
+            it.title.contains(query, ignoreCase = true) ||
+                    it.channelName.contains(query, ignoreCase = true)
+        }
+    }
+
+    */
+
 
     LaunchedEffect(data) {
         if (data.isNotEmpty()) {
@@ -148,7 +162,9 @@ fun ResultViewerPage(
                 }
                 else {
                     LazyColumn(modifier = Modifier) {
-                        items(searchResults, key = { it.videoId }) { searchItem ->
+                        items(
+                            searchResults, key = { it.videoId }
+                        ) { searchItem ->
 
                             VideoItems(
                                 mContext,
@@ -745,3 +761,22 @@ private fun ShowAlertDialog(
 }
 
 
+fun parseViews(viewStr: String): Int {
+    val cleaned = viewStr.replace(",", "").lowercase().replace("views", "").trim()
+    return when {
+        cleaned.endsWith("k") -> ((cleaned.dropLast(1).toFloatOrNull() ?: (0f * 1_000))).toInt()
+        cleaned.endsWith("m") -> ((cleaned.dropLast(1).toFloatOrNull() ?: (0f * 1_000_000))).toInt()
+        cleaned.endsWith("b") -> ((cleaned.dropLast(1).toFloatOrNull() ?: (0f * 1_000_000_000))).toInt()
+        else -> cleaned.toIntOrNull() ?: 0
+    }
+}
+
+@RequiresApi(Build.VERSION_CODES.O)
+fun isDateAfter(dateString: String, threshold: LocalDate): Boolean {
+    return try {
+        val videoDate = LocalDate.parse(dateString)
+        videoDate.isAfter(threshold)
+    } catch (e: Exception) {
+        false
+    }
+}

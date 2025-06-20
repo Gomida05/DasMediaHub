@@ -3,6 +3,7 @@ package com.das.forui.ui.home
 import android.widget.Toast
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.wrapContentSize
@@ -47,13 +48,19 @@ fun HomePageComposable(navController: NavController) {
                         fontWeight = FontWeight.SemiBold,
                         textAlign = TextAlign.Center,
                         fontSize = 20.sp,
-                        maxLines = 1
+                        maxLines = 1,
+                        modifier = Modifier.fillMaxWidth()
                     )
                 },
                 navigationIcon = {
-                    Button(onClick = {
-                        Toast.makeText(mContext, "Coming soon!", Toast.LENGTH_SHORT).show()
-                    }) {
+                    Button(
+                        onClick = {
+                            Toast.makeText(mContext, "Coming soon!", Toast.LENGTH_SHORT).show()
+                        },
+                        modifier = Modifier
+                            .size(72.dp, 48.dp),
+                        shape = RoundedCornerShape(35)
+                    ) {
                         Icon(
                             imageVector = Icons.Default.AccountCircle,
                             contentDescription = "Profile"
@@ -62,9 +69,14 @@ fun HomePageComposable(navController: NavController) {
                 },
                 actions = {
 
-                    Button(onClick = {
-                        navController.navigate(Downloads.route)
-                    }) {
+                    Button(
+                        onClick = {
+                            navController.navigate(Downloads.route)
+                        },
+                        modifier = Modifier
+                            .size(72.dp, 48.dp),
+                        shape = RoundedCornerShape(35)
+                    ) {
                         Icon(
                             imageVector = Icons.Default.Download,
                             contentDescription = "Downloads"

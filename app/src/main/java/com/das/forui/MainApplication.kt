@@ -35,8 +35,7 @@ class MainApplication: Application() {
     ) {
         try {
             CoroutineScope(Dispatchers.IO).launch {
-                val mainFile = pythonInstant.getModule("main")
-                val variable = mainFile["get_audio_url"]
+                val variable = pythonInstant["get_audio_url"]
                 var details: ItemsStreamUrlsForMediaItemData?
 
                 val result =

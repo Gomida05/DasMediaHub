@@ -3,12 +3,10 @@ package com.das.forui
 import android.Manifest.permission.POST_NOTIFICATIONS
 import android.Manifest.permission.READ_MEDIA_AUDIO
 import android.Manifest.permission.READ_MEDIA_VIDEO
-import android.app.Activity
 import android.app.NotificationChannel
 import android.app.NotificationChannelGroup
 import android.app.NotificationManager
 import android.content.Context
-import android.content.ContextWrapper
 import android.content.Intent
 import android.content.Intent.EXTRA_STREAM
 import android.content.Intent.EXTRA_TEXT
@@ -55,11 +53,7 @@ import com.das.forui.objectsAndData.ForUIDataClass.MyBottomNavData
 import androidx.compose.material3.NavigationBarItem
 import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
-import androidx.compose.runtime.remember
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.platform.LocalContext
-import androidx.core.util.Consumer
-import androidx.lifecycle.compose.LocalLifecycleOwner
 import androidx.navigation.NavController
 import androidx.navigation.compose.currentBackStackEntryAsState
 import com.das.forui.objectsAndData.Youtuber.getAudioStreamUrl
@@ -81,16 +75,21 @@ import com.das.forui.ui.settings.watch_later.WatchLaterComposable
 import com.das.forui.ui.settings.SettingsComposable
 import com.das.forui.ui.settings.userSettings.UserSettingComposable
 import com.das.forui.ui.home.downloads.videoPlayerLocally.ExoPlayerUI
-import com.das.forui.ui.settings.userSettings.AnimatedLoginPage
-import com.das.forui.ui.settings.userSettings.LoginPage
+import com.das.forui.ui.welcome.LoginPage
+import com.das.forui.ui.welcome.SignUpPage
 import com.das.forui.ui.viewer.GlobalVideoList.bundles
 import com.das.forui.ui.viewer.VideoPlayerScreen
 import com.das.forui.ui.watchedVideos.WatchedVideosComposable
 import com.das.forui.Screen.*
-import com.das.forui.ui.settings.userSettings.SignUpPage
+import com.das.forui.ui.settings.FeedbackComposable
+import com.das.forui.ui.welcome.WelcomePage
 
 
 class MainActivity : ComponentActivity() {
+
+    private val intentListeners = mutableSetOf<(Intent) -> Unit>()
+
+    private var intentListener: ((Intent) -> Unit)? = null
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -100,6 +99,17 @@ class MainActivity : ComponentActivity() {
     }
 
 
+    override fun onNewIntent(intent: Intent) {
+        super.onNewIntent(intent)
+        intentListeners.forEach { it(intent) }
+    }
+    private fun registerIntentListener(listener: (Intent) -> Unit) {
+        intentListeners.add(listener)
+    }
+
+    private fun unregisterIntentListener(listener: (Intent) -> Unit) {
+        intentListeners.remove(listener)
+    }
 
 
 
@@ -109,26 +119,24 @@ class MainActivity : ComponentActivity() {
         val navController = rememberNavController()
 
 
-        val mContext = LocalContext.current
-
-
         val currentRoute = navController.currentBackStackEntryAsState().value?.destination?.route
 
 
-        val activity = (mContext.getActivity() as ComponentActivity)
-        val listener = remember {
-            Consumer<Intent> {
+        LaunchedEffect(Unit) {
+            intent?.let {
                 listenNewIntent(navController, it)
             }
         }
 
-
-        val lifecycleOwner = LocalLifecycleOwner.current
-
-        LaunchedEffect(lifecycleOwner) {
-            activity.addOnNewIntentListener(listener)
+        DisposableEffect(Unit) {
+            val listener: (Intent) -> Unit = {
+                listenNewIntent(navController, it)
+            }
+            registerIntentListener(listener)
+            onDispose {
+                unregisterIntentListener(listener)
+            }
         }
-
 
         CustomTheme {
             val bottomNavigationItems = listOf(
@@ -152,7 +160,7 @@ class MainActivity : ComponentActivity() {
             Scaffold(
                 modifier = Modifier.fillMaxSize(),
                 bottomBar = {
-                    if (currentRoute in listOf("Home", "Recently Watched", "Setting")) {
+                    if (currentRoute in listOf(Home.route, RecentlyWatched.route, Setting.route)) {
 
                         NavigationBar(
                             windowInsets = NavigationBarDefaults.windowInsets,
@@ -191,13 +199,15 @@ class MainActivity : ComponentActivity() {
                 }
             ) { paddingValues ->
 
+//                val isUserLoggedIn by remember { mutableStateOf(FirebaseAuth.getInstance().currentUser != null) }
+                val startDestination = Home.route //if (isUserLoggedIn) Home.route else WelcomePage.route
                 Box(
                     modifier = Modifier
                         .padding(paddingValues)
                         .fillMaxSize()
                 ){
                     NavHost(
-                        navController = navController, startDestination = Home.route
+                        navController = navController, startDestination = startDestination
                     ) {
                         composable(Home.route) {
                             HomePageComposable(navController)
@@ -252,18 +262,14 @@ class MainActivity : ComponentActivity() {
                         composable(LoginPage1.route) {
                             LoginPage(navController)
                         }
-                        composable(LoginPage2.route) {
-                            AnimatedLoginPage (
-                                {email, pas ->
-
-                                },
-                                {
-
-                                }
-                            )
+                        composable(WelcomePage.route) {
+                            WelcomePage(navController)
                         }
                         composable(SignUpPage.route) {
                             SignUpPage(navController)
+                        }
+                        composable(FeedbackScreen.route) {
+                            FeedbackComposable()
                         }
                     }
                 }
@@ -273,12 +279,6 @@ class MainActivity : ComponentActivity() {
 
 
 
-        DisposableEffect(Unit) {
-
-            onDispose {
-                activity.removeOnNewIntentListener(listener)
-            }
-        }
     }
 
 
@@ -619,118 +619,10 @@ class MainActivity : ComponentActivity() {
     }
 
 
-
-
-
-
-    private fun Context.getActivity(): Activity {
-        if (this is Activity) return this
-        return if (this is ContextWrapper) baseContext.getActivity() else getActivity()
+    override fun onDestroy() {
+        super.onDestroy()
+        intentListener?.let { unregisterIntentListener(it) }
+        intentListeners.clear()
     }
-
-
-    /*    fun downloadVideo(link: String, title: String, contexts: Context) {
-        val path = getVideosDownloadPath(contexts)
-
-        createSingleDirectory(path)
-        try {
-            var forToast: String
-            val mainFile = pythonInstant.getModule("main")
-            val variable = mainFile["DownloadVideo"]
-            CoroutineScope(Dispatchers.IO).launch {
-                when (val tester = variable?.call(link, path).toString()) {
-                    "False" -> {
-                        forToast = tester
-                    }
-                    "None" -> {
-                        forToast = "couldn't find it!"
-                    }
-                    else -> {
-                        tester.let {
-                            val file = File(it)
-                            if (file.exists()) {
-                                MediaScannerConnection.scanFile(
-                                    contexts,
-                                    arrayOf(file.toString()),
-                                    null,
-                                    null
-                                )
-                                forToast = "$title has been downloaded successfully go check it out!"
-
-                            } else {
-                                Log.e("MainActivity", "File does not exist at path: $it")
-                                forToast = "Download interrupted by the internet please try again!"
-
-                            }
-                        }
-                    }
-                }
-                withContext(Dispatchers.Main) {
-                    showDialogs(forToast)
-                }
-            }
-        } catch (e: Exception) {
-            Log.e("MainActivity", "Error: ${e.message}")
-            showDialogs("An Exception Error from kt: \n$e")
-        }
-    }
-
-
-
-
-
-
-    fun downloadMusic(receivedLink: String, title: String, context: Context) {
-        val path = getAudioDownloadPath(context)
-        println("given path \n$path")
-        createSingleDirectory(path)
-        try {
-            var forToast: String
-            val mainFile = pythonInstant.getModule("main")
-            val variable = mainFile["DownloadMusic"]
-            CoroutineScope(Dispatchers.IO).launch {
-                when (val tester = variable?.call(receivedLink, path).toString()) {
-                    "False" -> {
-                        forToast = "Something went wrong"
-                    }
-
-                    "None" -> {
-                        forToast = "couldn't find it!"
-                    }
-
-                    "we trying" -> {
-                        downloadMusic(receivedLink, title, context)
-                    }
-
-                    else -> {
-                        tester.let {
-                            val file = File(it)
-                            if (file.exists()) {
-                                MediaScannerConnection.scanFile(
-                                    context,
-                                    arrayOf(file.toString()),
-                                    null,
-                                    null
-                                )
-                                downloadCompleted("$title has been downloaded successfully go check it out!")
-                                forToast =
-                                    "$title has been downloaded successfully go check it out!"
-                            } else {
-                                Log.e("MainActivity", "File does not exist at path: $it")
-                                forToast = "Download interrupted by the internet please try again!"
-                            }
-                        }
-                        withContext(Dispatchers.Main) {
-                            showDialogs(forToast)
-                        }
-                    }
-                }
-            }
-        } catch (e: Exception) {
-            Log.e("MainActivity", "Error: ${e.message}")
-            showDialogs("An Exception Error from kt: \n$e")
-        }
-    }
-     */
 
 }

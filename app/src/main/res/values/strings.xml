@@ -41,4 +41,7 @@
     <string name="DarkMode">Dark Mode</string>
     <string name="setDefault">Auto</string>
     <string name="change_theme_mode">Change Theme Mode</string>
+    <string name="rewind">Rewind</string>
+    <string name="play_pause">Play/Pause</string>
+    <string name="fast_forward">Fast Forward</string>
 </resources>

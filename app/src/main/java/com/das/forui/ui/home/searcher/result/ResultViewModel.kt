@@ -25,20 +25,19 @@ class ResultViewModel: ViewModel() {
 
 
     fun fetchSuggestions(inputText: String) {
-        viewModelScope.launch(Dispatchers.IO) {
-            val result = callPythonForSearchVideos(inputText)
-            withContext(Dispatchers.Main) {
-                _searchResults.value = result ?: emptyList()
-                _isLoading.value = false
+        viewModelScope.launch {
+            val result = withContext(Dispatchers.IO){
+                callPythonForSearchVideos(inputText)
             }
+            _searchResults.value = result ?: emptyList()
+            _isLoading.value = false
         }
     }
 
 
     private fun callPythonForSearchVideos(inputText: String): List<SearchResultFromMain>? {
         return try {
-            val mainFile = pythonInstant.getModule("main")
-            val variable = mainFile["Searcher"]?.call(inputText)
+            val variable = pythonInstant["Searcher"]?.call(inputText)
             if (variable.isNullOrEmpty() || variable.toString() == "False"){
                 _isThereError.value = variable.toString()
                 null

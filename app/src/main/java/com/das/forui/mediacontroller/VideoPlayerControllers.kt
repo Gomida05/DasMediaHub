@@ -63,7 +63,6 @@ object VideoPlayerControllers {
     ) {
 
 
-
         AnimatedVisibility(
             modifier = modifier
                 .fillMaxSize(),

@@ -4,14 +4,12 @@ import android.annotation.SuppressLint
 import android.app.Activity
 import android.content.pm.ActivityInfo
 import android.net.Uri
+import android.view.LayoutInflater
 import android.view.WindowManager
 import androidx.activity.compose.LocalActivity
 import androidx.compose.foundation.background
-import androidx.compose.foundation.gestures.detectTapGestures
-import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.foundation.layout.padding
-import androidx.compose.material3.Scaffold
+import androidx.compose.material3.MaterialTheme
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
@@ -21,10 +19,8 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.input.pointer.pointerInput
-import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.viewinterop.AndroidView
 import androidx.core.net.toUri
 import androidx.core.view.WindowCompat
 import androidx.core.view.WindowInsetsCompat
@@ -34,12 +30,9 @@ import androidx.media3.common.MediaMetadata
 import com.das.forui.MainActivity
 import com.das.forui.databased.PathSaver.getVideosDownloadPath
 import androidx.media3.exoplayer.ExoPlayer
-import androidx.media3.ui.compose.PlayerSurface
-import androidx.media3.ui.compose.SURFACE_TYPE_SURFACE_VIEW
-import androidx.media3.ui.compose.modifiers.resizeWithContentScale
-import androidx.media3.ui.compose.state.rememberPresentationState
+import androidx.media3.ui.PlayerView
 import androidx.navigation.NavController
-import com.das.forui.mediacontroller.VideoPlayerControllers.PlayerControls
+import com.das.forui.R
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import java.io.File
@@ -47,7 +40,7 @@ import java.io.File
 
 
 
-@SuppressLint("UnsafeOptInUsageError", "SourceLockedOrientationActivity")
+@SuppressLint("UnsafeOptInUsageError", "SourceLockedOrientationActivity", "InflateParams")
 @Composable
 fun ExoPlayerUI(navController: NavController, videoUri: String) {
 
@@ -99,7 +92,6 @@ fun ExoPlayerUI(navController: NavController, videoUri: String) {
         startAutoHideTimer()
     }
 
-    val presentationState = rememberPresentationState(mExoPlayer)
     val window = activity?.window
 
     LaunchedEffect(mExoPlayer.isPlaying) {
@@ -110,9 +102,26 @@ fun ExoPlayerUI(navController: NavController, videoUri: String) {
         }
     }
 
+    AndroidView(
+        modifier = Modifier
+            .background(MaterialTheme.colorScheme.background)
+            .fillMaxSize(),
+        factory = { context ->
+            val view = LayoutInflater.from(context)
+                .inflate(R.layout.video_player_ui, null, false) as PlayerView
+
+            view.player = mExoPlayer
+            view.useController = true
+            view.hideController()
+            view
+        },
+        update = { playerView ->
+            playerView.player = mExoPlayer
+        }
+    )
 
 
-
+    /*
 
     Scaffold(
         modifier = Modifier
@@ -126,7 +135,7 @@ fun ExoPlayerUI(navController: NavController, videoUri: String) {
             .pointerInput(Unit) {
                 detectTapGestures {
                     if (controlsVisible) {
-                        controlsVisible = false // hide immediately
+                        controlsVisible = false
                     } else {
                         controlsVisible = true
                         startAutoHideTimer()
@@ -134,34 +143,50 @@ fun ExoPlayerUI(navController: NavController, videoUri: String) {
                 }
             }
 
+        AndroidView(
+            modifier = scaledModifier,
+            factory = { context ->
+                val view = LayoutInflater.from(context)
+                    .inflate(R.layout.video_player_ui, null, false) as PlayerView
 
-        PlayerSurface(
-            mExoPlayer,
-            surfaceType = SURFACE_TYPE_SURFACE_VIEW,
-            modifier = scaledModifier
-        )
-
-        if (presentationState.coverSurface) {
-
-            Box(
-                Modifier
-                    .fillMaxSize()
-                    .background(Color.Black))
-        }
-
-        PlayerControls(
-            mExoPlayer = mExoPlayer,
-            isVisible ={controlsVisible},
-            navigateUp = {
-                navController.navigateUp()
+                view.player = mExoPlayer
+                view.useController = true
+                view.hideController()
+                view
             },
-            fullScreen = {
-
+            update = { playerView ->
+                playerView.player = mExoPlayer
             }
         )
+//
+//        PlayerSurface(
+//            mExoPlayer,
+//            surfaceType = SURFACE_TYPE_SURFACE_VIEW,
+//            modifier = scaledModifier
+//        )
+//
+//        if (presentationState.coverSurface) {
+//
+//            Box(
+//                Modifier
+//                    .fillMaxSize()
+//                    .background(Color.Black))
+//        }
+//
+//        PlayerControls(
+//            mExoPlayer = mExoPlayer,
+//            isVisible ={controlsVisible},
+//            navigateUp = {
+//                navController.navigateUp()
+//            },
+//            fullScreen = {
+//
+//            }
+//        )
 
     }
 
+     */
     DisposableEffect(mExoPlayer) {
 
         onDispose {

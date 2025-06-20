@@ -1,5 +1,6 @@
 package com.das.forui.ui.viewer
 
+import android.annotation.SuppressLint
 import android.app.Activity
 import android.content.Context
 import android.content.Intent
@@ -12,6 +13,7 @@ import android.text.style.BackgroundColorSpan
 import android.text.style.ForegroundColorSpan
 import android.text.style.StyleSpan
 import android.text.style.URLSpan
+import android.view.LayoutInflater
 import android.view.WindowManager
 import android.widget.Toast
 import androidx.activity.compose.LocalActivity
@@ -25,7 +27,6 @@ import androidx.compose.animation.core.tween
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.combinedClickable
-import androidx.compose.foundation.gestures.detectTapGestures
 import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -58,6 +59,7 @@ import androidx.compose.material3.Card
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
+import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
@@ -78,7 +80,6 @@ import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.rememberVectorPainter
-import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
@@ -91,6 +92,7 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextDecoration
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.compose.ui.viewinterop.AndroidView
 import androidx.compose.ui.window.Dialog
 import androidx.core.view.WindowCompat
 import androidx.core.view.WindowInsetsCompat
@@ -100,10 +102,7 @@ import androidx.media3.common.MediaItem
 import androidx.media3.common.Player
 import androidx.media3.common.util.UnstableApi
 import androidx.media3.exoplayer.ExoPlayer
-import androidx.media3.ui.compose.PlayerSurface
-import androidx.media3.ui.compose.SURFACE_TYPE_SURFACE_VIEW
-import androidx.media3.ui.compose.modifiers.resizeWithContentScale
-import androidx.media3.ui.compose.state.rememberPresentationState
+import androidx.media3.ui.PlayerView
 import androidx.navigation.NavController
 import coil.compose.AsyncImage
 import coil.request.ImageRequest
@@ -116,7 +115,6 @@ import com.das.forui.MainApplication
 import com.das.forui.Screen
 import com.das.forui.databased.DatabaseFavorite
 import com.das.forui.databased.WatchHistory
-import com.das.forui.mediacontroller.VideoPlayerControllers.PlayerControls
 import com.das.forui.objectsAndData.ForUIKeyWords.ACTION_START
 import com.das.forui.objectsAndData.ForUIKeyWords.NEW_INTENT_FOR_VIEWER
 import com.das.forui.objectsAndData.ForUIDataClass.VideoDetails
@@ -126,6 +124,7 @@ import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 
 
+@SuppressLint("InflateParams")
 @OptIn(UnstableApi::class)
 @Composable
 fun VideoPlayerScreen(
@@ -134,7 +133,7 @@ fun VideoPlayerScreen(
 ) {
 
 //    listOfVideosListData.clear()
-    var isFullScreen by remember { mutableStateOf(false) }
+    var isInFullScreen by remember { mutableStateOf(false) }
     var showAlertDialog by remember { mutableStateOf(false) }
 
     val viewModel: ViewerViewModel = viewModel()
@@ -255,7 +254,6 @@ fun VideoPlayerScreen(
                 }
 
 
-                val presentationState = rememberPresentationState(mExoPlayer)
 
                 LaunchedEffect(mExoPlayer.isPlaying) {
                     val window = activity?.window
@@ -266,32 +264,39 @@ fun VideoPlayerScreen(
                         window?.clearFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON)
                     }
                 }
-                val playerModifier = if (isFullScreen) {
+                val playerModifier = if (isInFullScreen) {
                     Modifier
                         .fillMaxSize()
-                        .background(Color.Black)
+                        .background(MaterialTheme.colorScheme.background)
                 } else {
                     Modifier
                         .height(220.dp)
                         .fillMaxWidth()
-                        .background(Color.Black)
+                        .background(MaterialTheme.colorScheme.background)
                 }
 
 
-                val scaledModifier = Modifier
-                    .fillMaxSize()
-                    .resizeWithContentScale(ContentScale.Fit, presentationState.videoSizeDp)
-                    .pointerInput(Unit) {
-                        detectTapGestures {
-                            if (controlsVisible) {
-                                controlsVisible = false // hide immediately
-                            } else {
-                                controlsVisible = true
-                                startAutoHideTimer()
-                            }
-                        }
-                    }
 
+                AndroidView(
+                    modifier = playerModifier,
+                    factory = { context ->
+                        val view = LayoutInflater.from(context)
+                            .inflate(R.layout.video_player_ui, null, false) as PlayerView
+
+                        view.player = mExoPlayer
+                        view.useController = true
+                        view.setFullscreenButtonState(isInFullScreen)
+                        view.setFullscreenButtonClickListener { isFullscreen ->
+                            isInFullScreen = isFullscreen
+                        }
+                        view
+                    },
+                    update = { playerView ->
+                        playerView.player = mExoPlayer
+                    }
+                )
+
+                /*
                 Box(modifier = playerModifier) {
                     PlayerSurface(
                         mExoPlayer,
@@ -315,6 +320,7 @@ fun VideoPlayerScreen(
                     )
                 }
 
+                */
 
             }
             else if (isLoading){
@@ -345,7 +351,7 @@ fun VideoPlayerScreen(
 
 
             }
-            if (!isFullScreen){
+            if (!isInFullScreen){
                 LazyColumn {
 
                     item(videoID) {
@@ -417,14 +423,14 @@ fun VideoPlayerScreen(
     }
 
 
-    LaunchedEffect(isFullScreen) {
+    LaunchedEffect(isInFullScreen) {
 
         activity?.let {
 
-            setFullscreen(it, isFullScreen)
+            setFullscreen(it, isInFullScreen)
 
             // Optional: lock orientation when fullscreen
-            it.requestedOrientation = if (isFullScreen) {
+            it.requestedOrientation = if (isInFullScreen) {
                 ActivityInfo.SCREEN_ORIENTATION_SENSOR
             } else {
                 ActivityInfo.SCREEN_ORIENTATION_UNSPECIFIED

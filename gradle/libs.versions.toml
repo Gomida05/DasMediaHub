@@ -1,0 +1,86 @@
+[versions]
+activityComposeVersion = "1.10.1"
+agp = "8.8.2"
+appcompatVersion = "1.7.1"
+coilComposeVersion = "2.2.2"
+coilVideoVersion = "2.4.0"
+composeBomVersion = "2025.06.00"
+constraintlayoutVersion = "2.2.1"
+coreKtxVersion = "1.16.0"
+chaquo = "16.1.0"
+firebaseAuthKtxVersion = "23.2.1"
+firebaseBomVersion = "33.15.0"
+glideVersion = "4.16.0"
+gsonVersion = "2.11.0"
+gms = "4.4.2"
+junitJunit = "4.13.2"
+kotlin = "2.0.10"
+kotlinStdlibVersion = "2.1.21"
+lifecycleLivedataKtxVersion = "2.9.1"
+lifecycleViewmodelComposeVersion = "2.9.1"
+lifecycleViewmodelKtxVersion = "2.9.1"
+lottieComposeVersion = "6.6.6"
+media3CommonVersion = "1.7.1"
+media3CommonKtxVersion = "1.7.1"
+media3ExoplayerHlsVersion = "1.7.1"
+media3ExoplayerVersion = "1.7.1"
+media3SessionVersion = "1.7.1"
+media3ExoplayerDashVersion = "1.7.1"
+media3UiComposeVersion = "1.7.1"
+media3UiVersion = "1.7.1"
+mediaVersion = "1.7.0"
+navigationComposeVersion = "2.9.0"
+navigationUiKtxVersion = "2.9.0"
+playServicesAuthVersion = "21.3.0"
+runtimeAndroidVersion = "1.8.2"
+runtimeLivedataVersion = "1.8.2"
+uiViewbindingVersion = "1.8.2"
+firebaseFirestoreKtxVersion = "25.1.4"
+
+[libraries]
+activity-compose = { module = "androidx.activity:activity-compose", version.ref = "activityComposeVersion" }
+appcompat = { module = "androidx.appcompat:appcompat", version.ref = "appcompatVersion" }
+coil-video = { module = "io.coil-kt:coil-video", version.ref = "coilVideoVersion" }
+coil-compose = { module = "io.coil-kt:coil-compose", version.ref = "coilComposeVersion" }
+compose-bom = { module = "androidx.compose:compose-bom", version.ref = "composeBomVersion" }
+constraintlayout = { module = "androidx.constraintlayout:constraintlayout", version.ref = "constraintlayoutVersion" }
+core-ktx = { module = "androidx.core:core-ktx", version.ref = "coreKtxVersion" }
+firebase-analytics = { module = "com.google.firebase:firebase-analytics" }
+firebase-auth-ktx = { module = "com.google.firebase:firebase-auth-ktx", version.ref = "firebaseAuthKtxVersion" }
+firebase-bom = { module = "com.google.firebase:firebase-bom", version.ref = "firebaseBomVersion" }
+firebase-storage = { module = "com.google.firebase:firebase-storage" }
+glide = { module = "com.github.bumptech.glide:glide", version.ref = "glideVersion" }
+gson = { module = "com.google.code.gson:gson", version.ref = "gsonVersion" }
+kotlin-stdlib = { module = "org.jetbrains.kotlin:kotlin-stdlib", version.ref = "kotlinStdlibVersion" }
+junit = { module = "junit:junit", version.ref = "junitJunit" }
+lifecycle-livedata-ktx = { module = "androidx.lifecycle:lifecycle-livedata-ktx", version.ref = "lifecycleLivedataKtxVersion" }
+lifecycle-viewmodel-compose = { module = "androidx.lifecycle:lifecycle-viewmodel-compose", version.ref = "lifecycleViewmodelComposeVersion" }
+lifecycle-viewmodel-ktx = { module = "androidx.lifecycle:lifecycle-viewmodel-ktx", version.ref = "lifecycleViewmodelKtxVersion" }
+lottie-compose = { module = "com.airbnb.android:lottie-compose", version.ref = "lottieComposeVersion" }
+material-icons-extended = { module = "androidx.compose.material:material-icons-extended" }
+material3 = { module = "androidx.compose.material3:material3" }
+media = { module = "androidx.media:media", version.ref = "mediaVersion" }
+media3-common-ktx = { module = "androidx.media3:media3-common-ktx", version.ref = "media3CommonKtxVersion" }
+media3-common = { module = "androidx.media3:media3-common", version.ref = "media3CommonVersion" }
+media3-exoplayer = { module = "androidx.media3:media3-exoplayer", version.ref = "media3ExoplayerVersion" }
+media3-exoplayer-dash = { module = "androidx.media3:media3-exoplayer-dash", version.ref = "media3ExoplayerDashVersion" }
+media3-exoplayer-hls = { module = "androidx.media3:media3-exoplayer-hls", version.ref = "media3ExoplayerHlsVersion" }
+media3-session = { module = "androidx.media3:media3-session", version.ref = "media3SessionVersion" }
+media3-ui = { module = "androidx.media3:media3-ui", version.ref = "media3UiVersion" }
+media3-ui-compose = { module = "androidx.media3:media3-ui-compose", version.ref = "media3UiComposeVersion" }
+navigation-compose = { module = "androidx.navigation:navigation-compose", version.ref = "navigationComposeVersion" }
+navigation-ui-ktx = { module = "androidx.navigation:navigation-ui-ktx", version.ref = "navigationUiKtxVersion" }
+play-services-auth = { module = "com.google.android.gms:play-services-auth", version.ref = "playServicesAuthVersion" }
+runtime-android = { module = "androidx.compose.runtime:runtime-android", version.ref = "runtimeAndroidVersion" }
+runtime-livedata = { module = "androidx.compose.runtime:runtime-livedata", version.ref = "runtimeLivedataVersion" }
+ui-tooling = { module = "androidx.compose.ui:ui-tooling" }
+ui-tooling-preview = { module = "androidx.compose.ui:ui-tooling-preview" }
+ui-viewbinding = { module = "androidx.compose.ui:ui-viewbinding", version.ref = "uiViewbindingVersion" }
+firebase-firestore-ktx = { group = "com.google.firebase", name = "firebase-firestore-ktx", version.ref = "firebaseFirestoreKtxVersion" }
+
+[plugins]
+android-application = { id = "com.android.application", version.ref = "agp" }
+kotlin-android = { id = "org.jetbrains.kotlin.android", version.ref = "kotlin" }
+kotlin-compose = { id = "org.jetbrains.kotlin.plugin.compose", version.ref = "kotlin" }
+chaquo-python = { id = "com.chaquo.python", version.ref = "chaquo" }
+google-gms = { id = "com.google.gms.google-services", version.ref = "gms" }

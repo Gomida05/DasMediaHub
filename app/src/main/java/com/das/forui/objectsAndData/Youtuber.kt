@@ -26,7 +26,7 @@ import java.util.regex.Pattern
 
 
 object Youtuber {
-    val pythonInstant = getInstance()
+    val pythonInstant = getInstance().getModule("main")
     var mediaItems = mutableListOf<MediaItem>()
 
     /**
@@ -191,8 +191,7 @@ object Youtuber {
     ) {
         try {
             CoroutineScope(Dispatchers.IO).launch {
-                val mainFile = pythonInstant.getModule("main")
-                val variable = mainFile["get_video_url"]
+                val variable = pythonInstant["get_video_url"]
 
 
                 val result = variable?.call("https://www.youtube.com/watch?v=${videoId}").toString()
@@ -220,8 +219,7 @@ object Youtuber {
     ) {
         try {
             CoroutineScope(Dispatchers.IO).launch {
-                val mainFile = pythonInstant.getModule("main")
-                val variable = mainFile["get_audio_url"]
+                val variable = pythonInstant["get_audio_url"]
 
 
                 val result = variable?.call("https://www.youtube.com/watch?v=${videoId}").toString()
@@ -277,8 +275,8 @@ object Youtuber {
     private fun callPythonSearchSuggestion(inputText: String): List<PlayListDataClass>? {
         return try {
 
-            val mainFile = pythonInstant.getModule("main")
-            val getResultFromPython = mainFile["getPlayListUrls"]?.call(inputText)
+
+            val getResultFromPython = pythonInstant["getPlayListUrls"]?.call(inputText)
 
             if (!getResultFromPython.isNullOrEmpty()) {
                 val videosListDataListType = object : TypeToken<List<PlayListDataClass>>() {}.type
