@@ -16,8 +16,6 @@ class MainApplication: Application() {
 
     override fun onCreate() {
         super.onCreate()
-
-
         CoroutineScope(Dispatchers.IO).launch {
 
             if (!Python.isStarted()) {
@@ -54,8 +52,7 @@ class MainApplication: Application() {
                             data.channelName,
                             data.channelThumbnailsUrl
                         )
-                        // Call the success callback
-                        details?.let { onSuccess(it) }
+                        onSuccess(details)
                     }
                 } else {
                     withContext(Dispatchers.Main) {

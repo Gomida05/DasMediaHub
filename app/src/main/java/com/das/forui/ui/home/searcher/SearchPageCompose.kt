@@ -7,10 +7,12 @@ import android.widget.Toast
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.safeDrawing
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
@@ -31,8 +33,8 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
+import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.MutableState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -42,6 +44,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.vector.rememberVectorPainter
+import androidx.compose.ui.input.nestedscroll.nestedScroll
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.input.ImeAction
@@ -63,12 +66,13 @@ import com.das.forui.objectsAndData.Youtuber.isValidYouTubePlaylistUrl
 import com.das.forui.ui.viewer.GlobalVideoList.bundles
 import com.das.forui.Screen.ResultViewerPage
 
-
 @Composable
 fun SearchPageCompose(
     navController: NavController,
     newText: String
 ) {
+
+    val topAppBarScroll = TopAppBarDefaults.exitUntilCollapsedScrollBehavior()
 
     val textState = remember { mutableStateOf(newText) }
     val context = LocalContext.current
@@ -84,16 +88,16 @@ fun SearchPageCompose(
 
 
     Scaffold(
+        contentWindowInsets = WindowInsets.safeDrawing,
         modifier = Modifier
-            .fillMaxSize()
+            .nestedScroll(topAppBarScroll.nestedScrollConnection)
     ) { padding ->
         Column(
             modifier = Modifier
-                .fillMaxSize()
                 .padding(padding)
+                .fillMaxSize()
         ) {
-
-            Spacer(modifier = Modifier.height(16.dp))
+            Spacer(modifier = Modifier.height(17.dp))
             OutlinedTextField(
                 value = textState.value,
                 onValueChange = { newText ->
@@ -107,6 +111,7 @@ fun SearchPageCompose(
                 shape = RoundedCornerShape(28),
                 singleLine = true,
                 modifier = Modifier
+                    .padding(6.dp)
                     .fillMaxWidth()
                     .height(55.dp)
                     .align(Alignment.CenterHorizontally),
@@ -156,15 +161,7 @@ fun SearchPageCompose(
                 )
             )
 
-
-
-            Spacer(modifier = Modifier.height(16.dp))
-
-
-
-            LaunchedEffect(Unit) {
-                androidViewMode.fetchDatabase()
-            }
+            Spacer(modifier = Modifier.height(22.dp))
 
             if (isThereError.isNotEmpty()){
 

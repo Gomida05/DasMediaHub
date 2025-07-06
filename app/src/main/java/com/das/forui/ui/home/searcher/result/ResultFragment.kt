@@ -2,10 +2,8 @@ package com.das.forui.ui.home.searcher.result
 
 import android.content.Context
 import android.content.Intent
-import android.os.Build
 import android.os.Bundle
 import android.widget.Toast
-import androidx.annotation.RequiresApi
 import androidx.compose.foundation.background
 import androidx.compose.foundation.combinedClickable
 import androidx.compose.foundation.layout.Arrangement
@@ -13,10 +11,12 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.safeDrawing
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
@@ -28,7 +28,6 @@ import androidx.compose.material.icons.filled.MoreVert
 import androidx.compose.material.icons.outlined.Search
 import androidx.compose.material3.Button
 import androidx.compose.material3.Card
-import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.Scaffold
@@ -69,9 +68,7 @@ import com.das.forui.objectsAndData.ForUIDataClass.VideosListData
 import com.das.forui.ui.viewer.GlobalVideoList.bundles
 import com.das.forui.ui.viewer.shimmerLoading
 import com.das.forui.Screen.VideoViewer
-import java.time.LocalDate
 
-@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun ResultViewerPage(
     navController: NavController,
@@ -82,16 +79,6 @@ fun ResultViewerPage(
     val searchResults by viewModel.searchResults
     val foundError by viewModel.error
     val mContext = LocalContext.current
-
-    /*
-    val filteredResults = remember(searchResults, query) {
-        searchResults.filter {
-            it.title.contains(query, ignoreCase = true) ||
-                    it.channelName.contains(query, ignoreCase = true)
-        }
-    }
-
-    */
 
 
     LaunchedEffect(data) {
@@ -112,7 +99,6 @@ fun ResultViewerPage(
                 title = {
                 },
                 actions = {
-
                     Button(
                         onClick = {
                             navController.navigateUp()
@@ -130,48 +116,51 @@ fun ResultViewerPage(
 
                 }
             )
-        }
+        },
+        contentWindowInsets = WindowInsets.safeDrawing
     )
     { paddingValues ->
-        Box(
+        LazyColumn(
+            contentPadding = paddingValues,
             modifier = Modifier
-                .fillMaxSize()
-                .padding(paddingValues),
-            contentAlignment = Alignment.Center,
+                .fillMaxSize(),
         ) {
             if (isLoading) {
-                Box(
-                    modifier = Modifier.align(Alignment.Center)
-
-                ){
-                    SkeletonSuggestionLoadingLayout()
+                item {
+                    Box(
+                        contentAlignment = Alignment.Center
+                    ){
+                        SkeletonSuggestionLoadingLayout()
+                    }
                 }
             } else {
                 if (searchResults.isEmpty()) {
-                    Text(
-                        text = "No results found for \n$data",
-                        fontSize = 18.sp,
-                        textAlign = TextAlign.Center
-                    )
+                    item {
+                        Text(
+                            text = "No results found for \n$data",
+                            fontSize = 18.sp,
+                            textAlign = TextAlign.Center
+                        )
+                    }
                 } else if (!foundError.isNullOrEmpty()){
-                    Text(
-                        text = "Something went wrong, please check your internet and try again!",
-                        fontSize = 18.sp,
-                        textAlign = TextAlign.Center
-                    )
+                    item {
+                        Text(
+                            text = "Something went wrong, please check your internet and try again!",
+                            fontSize = 18.sp,
+                            textAlign = TextAlign.Center
+                        )
+                    }
                 }
                 else {
-                    LazyColumn(modifier = Modifier) {
-                        items(
-                            searchResults, key = { it.videoId }
-                        ) { searchItem ->
+                    items(
+                        searchResults, key = { it.videoId }
+                    ) { searchItem ->
 
-                            VideoItems(
-                                mContext,
-                                navController,
-                                searchItem
-                            )
-                        }
+                        VideoItems(
+                            mContext,
+                            navController,
+                            searchItem
+                        )
                     }
                 }
             }
@@ -758,25 +747,4 @@ private fun ShowAlertDialog(
         }
     }
 
-}
-
-
-fun parseViews(viewStr: String): Int {
-    val cleaned = viewStr.replace(",", "").lowercase().replace("views", "").trim()
-    return when {
-        cleaned.endsWith("k") -> ((cleaned.dropLast(1).toFloatOrNull() ?: (0f * 1_000))).toInt()
-        cleaned.endsWith("m") -> ((cleaned.dropLast(1).toFloatOrNull() ?: (0f * 1_000_000))).toInt()
-        cleaned.endsWith("b") -> ((cleaned.dropLast(1).toFloatOrNull() ?: (0f * 1_000_000_000))).toInt()
-        else -> cleaned.toIntOrNull() ?: 0
-    }
-}
-
-@RequiresApi(Build.VERSION_CODES.O)
-fun isDateAfter(dateString: String, threshold: LocalDate): Boolean {
-    return try {
-        val videoDate = LocalDate.parse(dateString)
-        videoDate.isAfter(threshold)
-    } catch (e: Exception) {
-        false
-    }
 }

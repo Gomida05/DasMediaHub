@@ -1,3 +1,5 @@
+import org.jetbrains.kotlin.gradle.dsl.JvmTarget
+
 plugins {
     alias(libs.plugins.android.application)
     alias(libs.plugins.kotlin.android)
@@ -17,12 +19,12 @@ android {
         }
     }
     namespace = "com.das.forui"
-    compileSdk = 35
+    compileSdk = 36
 
     defaultConfig {
         applicationId = "com.das.forui"
         minSdk = 24
-        targetSdk = 35
+        targetSdk = 36
         versionCode = 3
         versionName = "1.21"
 
@@ -50,11 +52,22 @@ android {
         }
     }
 
+    compileOptions {
+        sourceCompatibility = JavaVersion.VERSION_17
+        targetCompatibility = JavaVersion.VERSION_17
+    }
+    kotlin {
+        jvmToolchain(17)
+    }
 
 
-    kotlinOptions {
-        jvmTarget = "1.8"
-        freeCompilerArgs = freeCompilerArgs + "-Xlint:deprecation"
+    tasks.withType<org.jetbrains.kotlin.gradle.tasks.KotlinCompile>().configureEach {
+        compilerOptions {
+            jvmTarget.set(JvmTarget.JVM_17)
+//            allWarningsAsErrors.set(false)
+            freeCompilerArgs.add("-opt-in=androidx.compose.material3.ExperimentalMaterial3Api")
+//            freeCompilerArgs.add("-Xlint:deprecation")
+        }
     }
 
 
@@ -113,7 +126,6 @@ dependencies {
     implementation(libs.ui.viewbinding)
 
     //Material 3
-
     implementation(platform(libs.compose.bom))
     implementation(libs.material3)
 

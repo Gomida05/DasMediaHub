@@ -1,6 +1,5 @@
 package com.das.forui.ui.settings
 
-import android.content.ActivityNotFoundException
 import android.content.Context
 import android.content.Intent
 import android.content.pm.PackageManager
@@ -13,9 +12,11 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.safeDrawing
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
@@ -53,6 +54,7 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.core.net.toUri
 import androidx.documentfile.provider.DocumentFile
 import androidx.navigation.NavController
 import com.das.forui.Screen
@@ -72,11 +74,10 @@ import java.net.URL
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun SettingsComposable(
-  navController: NavController
-) {
+fun SettingsComposable(navController: NavController) {
+
   val context = LocalContext.current
-  val scrollBehavior = TopAppBarDefaults.enterAlwaysScrollBehavior()
+  val scrollBehavior = TopAppBarDefaults.exitUntilCollapsedScrollBehavior()
 
   val auth = FirebaseAuth.getInstance()
   val isUserLoggedIn by remember { mutableStateOf(auth.currentUser != null) }
@@ -90,22 +91,23 @@ fun SettingsComposable(
         title = {
           Text(
             text = "Setting",
-            style = MaterialTheme.typography.headlineLarge,
-            textAlign = TextAlign.Center,
+            style = MaterialTheme.typography.headlineLarge
+              .copy(textAlign = TextAlign.Center),
             modifier = Modifier
               .fillMaxWidth()
           )
         }
       )
-    }
+    },
+    contentWindowInsets = WindowInsets.safeDrawing
   ) {
-    LazyColumn (
+    LazyColumn(
+      contentPadding = it,
       modifier = Modifier
-        .padding(it)
         .fillMaxSize()
     ) {
 
-      if (isUserLoggedIn){
+      if (isUserLoggedIn) {
         item { UserHeader() }
       }
 
@@ -658,7 +660,7 @@ fun ShowAlertDialog(
 
 private fun goToWeb(mContext: Context) {
 
-  val url = Uri.parse("https://gomida05.github.io/")
+  val url = "https://gomida05.github.io/".toUri()
 
   val browserIntent = Intent(Intent.ACTION_VIEW, url)
 
@@ -741,10 +743,10 @@ fun openMusicApp(context: Context){
   try {
     val musicApp = context.packageManager.getLaunchIntentForPackage("com.das.musicplayer")
     context.startActivity(musicApp)
-  }catch (p: PackageManager.NameNotFoundException){
+  }catch (_: PackageManager.NameNotFoundException){
     showDialogs(context, "App Not founded!")
   }
-  catch (e: Exception){
+  catch (_: Exception){
     showDialogs(context,"App not opening!")
   }
 }
@@ -763,22 +765,6 @@ private fun extractFolderPath(path: String): String {
 }
 
 
-
-
-
-fun sendFeedback(context: Context) {
-  val intent = Intent(Intent.ACTION_SENDTO).apply {
-    data = Uri.parse("mailto:efootballmobile2023player@gmail.com") // Replace with your email
-    putExtra(Intent.EXTRA_SUBJECT, "Feedback for My App")
-    putExtra(Intent.EXTRA_TEXT, "Hi, I have some feedback...")
-  }
-
-  try {
-    context.startActivity(Intent.createChooser(intent, "Send Feedback"))
-  } catch (e: ActivityNotFoundException) {
-    Toast.makeText(context, "No email app found.", Toast.LENGTH_SHORT).show()
-  }
-}
 
 private fun getFolderPathFromUri(mContext: Context, uri: Uri, type: String): String? {
   val path = uri.path

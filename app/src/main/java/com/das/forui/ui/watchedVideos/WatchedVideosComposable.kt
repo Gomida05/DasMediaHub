@@ -10,10 +10,12 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.safeDrawing
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
@@ -24,7 +26,6 @@ import androidx.compose.material.icons.filled.MoreVert
 import androidx.compose.material.icons.filled.VideoLibrary
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.CircularProgressIndicator
-import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
@@ -70,7 +71,6 @@ import com.das.forui.Screen.VideoViewer
 import com.das.forui.Screen.Saved
 
 
-@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun WatchedVideosComposable(navController: NavController) {
 
@@ -108,57 +108,63 @@ fun WatchedVideosComposable(navController: NavController) {
                 title = {
                     Text(
                         "Recently watched videos",
-                        textAlign = TextAlign.Center,
-                        style = MaterialTheme.typography.headlineSmall,
+                        style = MaterialTheme.typography.headlineSmall
+                            .copy(textAlign = TextAlign.Center),
                         modifier = Modifier
                             .fillMaxWidth()
                     )
                 }
             )
-        }
+        },
+        contentWindowInsets = WindowInsets.safeDrawing
     ) { paddingValues ->
-        Box(
+
+        LazyColumn(
+            contentPadding = paddingValues,
             modifier = Modifier
-                .fillMaxSize()
-                .padding(paddingValues),
+                .fillMaxWidth()
         ) {
             if (isLoading) {
-                CircularProgressIndicator(modifier = Modifier.align(Alignment.Center))
+                item {
+                    CircularProgressIndicator()
+                }
             } else {
                 if (searchResults.isEmpty()) {
 
-                    Column(
-                        modifier = Modifier
-                            .align(Alignment.Center)
-                    ){
-                        Text(
-                            text = "You haven't watched any video!.",
-                            style = MaterialTheme.typography.headlineMedium,
-                            fontSize = 20.sp,
-                            textAlign = TextAlign.Center,
-                        )
-                        Icon(
-                            imageVector = Icons.Default.VideoLibrary,
-                            "",
+                    item {
+                        Box(
+                            contentAlignment = Alignment.Center,
+                            modifier = Modifier.fillMaxSize()
+                        ) {
+                            Column(
+                                modifier = Modifier
+                                    .align(Alignment.Center)
+                            ) {
+                                Text(
+                                    text = "You haven't watched any video!.",
+                                    style = MaterialTheme.typography.headlineMedium,
+                                    fontSize = 20.sp,
+                                    textAlign = TextAlign.Center,
+                                )
+                                Icon(
+                                    imageVector = Icons.Default.VideoLibrary,
+                                    "",
 
-                            modifier = Modifier
-                                .align(Alignment.CenterHorizontally)
-                                .size(60.dp)
-                        )
+                                    modifier = Modifier
+                                        .align(Alignment.CenterHorizontally)
+                                        .size(60.dp)
+                                )
+                            }
+                        }
                     }
                 } else {
-                    LazyColumn(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                    ) {
-                        items(searchResults, key = { it.watchUrl }) { searchItem ->
-                            CategoryItems(
-                                navController,
-                                searchItem,
-                                viewModel
-                            )
+                    items(searchResults, key = { it.watchUrl }) { searchItem ->
+                        CategoryItems(
+                            navController,
+                            searchItem,
+                            viewModel
+                        )
 
-                        }
                     }
                 }
             }

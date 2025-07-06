@@ -20,7 +20,8 @@ import android.util.Log
 import android.widget.Toast
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
-import androidx.compose.foundation.layout.Box
+import androidx.activity.enableEdgeToEdge
+import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -93,8 +94,11 @@ class MainActivity : ComponentActivity() {
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+        enableEdgeToEdge()
         setContent {
-            MainLauncherPageComposable()
+            CustomTheme {
+                MainLauncherPageComposable()
+            }
         }
     }
 
@@ -103,6 +107,7 @@ class MainActivity : ComponentActivity() {
         super.onNewIntent(intent)
         intentListeners.forEach { it(intent) }
     }
+
     private fun registerIntentListener(listener: (Intent) -> Unit) {
         intentListeners.add(listener)
     }
@@ -110,7 +115,6 @@ class MainActivity : ComponentActivity() {
     private fun unregisterIntentListener(listener: (Intent) -> Unit) {
         intentListeners.remove(listener)
     }
-
 
 
     @Composable
@@ -138,149 +142,142 @@ class MainActivity : ComponentActivity() {
             }
         }
 
-        CustomTheme {
-            val bottomNavigationItems = listOf(
-                MyBottomNavData(
-                    title = Home.route,
-                    selectedIcon = Icons.Filled.Home,
-                    unselectedIcon = Icons.Outlined.Home
-                ),
-                MyBottomNavData(
-                    title = RecentlyWatched.route,
-                    selectedIcon = Icons.Filled.WatchLater,
-                    unselectedIcon = Icons.Outlined.WatchLater
-                ),
-                MyBottomNavData(
-                    title = Setting.route,
-                    selectedIcon = Icons.Filled.Settings,
-                    unselectedIcon = Icons.Outlined.Settings
-                )
+        val bottomNavigationItems = listOf(
+            MyBottomNavData(
+                title = Home.route,
+                selectedIcon = Icons.Filled.Home,
+                unselectedIcon = Icons.Outlined.Home
+            ),
+            MyBottomNavData(
+                title = RecentlyWatched.route,
+                selectedIcon = Icons.Filled.WatchLater,
+                unselectedIcon = Icons.Outlined.WatchLater
+            ),
+            MyBottomNavData(
+                title = Setting.route,
+                selectedIcon = Icons.Filled.Settings,
+                unselectedIcon = Icons.Outlined.Settings
             )
+        )
 
-            Scaffold(
-                modifier = Modifier.fillMaxSize(),
-                bottomBar = {
-                    if (currentRoute in listOf(Home.route, RecentlyWatched.route, Setting.route)) {
+        Scaffold(
+            bottomBar = {
+                if (currentRoute in listOf(Home.route, RecentlyWatched.route, Setting.route)) {
 
-                        NavigationBar(
-                            windowInsets = NavigationBarDefaults.windowInsets,
-                            modifier = Modifier
-                                .clip(RoundedCornerShape(12))
-                        ) {
-                            bottomNavigationItems.forEachIndexed { _, items ->
-                                    NavigationBarItem(
-                                        selected = currentRoute == items.title,
-                                        onClick = {
-                                            if (currentRoute != items.title) {
-                                                navController.navigate(items.title) {
-                                                    // Avoid multiple copies of the same destination
-                                                    popUpTo(navController.graph.startDestinationId) {
-                                                        saveState = true
-                                                    }
-                                                    launchSingleTop = true
-                                                    restoreState = true
-                                                }
+                    NavigationBar(
+                        windowInsets = NavigationBarDefaults.windowInsets,
+                        modifier = Modifier
+                            .clip(RoundedCornerShape(12))
+                    ) {
+                        bottomNavigationItems.forEachIndexed { _, items ->
+                            NavigationBarItem(
+                                selected = currentRoute == items.title,
+                                onClick = {
+                                    if (currentRoute != items.title) {
+                                        navController.navigate(items.title) {
+                                            // Avoid multiple copies of the same destination
+                                            popUpTo(navController.graph.startDestinationId) {
+                                                saveState = true
                                             }
-                                        },
-                                        icon = {
-                                            Icon(
-                                                imageVector = if (currentRoute == items.title) items.selectedIcon else items.unselectedIcon,
-                                                contentDescription = items.title
-                                            )
-                                        },
-                                        label = {
-                                            Text(text = items.title)
+                                            launchSingleTop = true
+                                            restoreState = true
                                         }
+                                    }
+                                },
+                                icon = {
+                                    Icon(
+                                        imageVector = if (currentRoute == items.title) items.selectedIcon else items.unselectedIcon,
+                                        contentDescription = items.title
                                     )
+                                },
+                                label = {
+                                    Text(text = items.title)
                                 }
-
+                            )
                         }
+
                     }
                 }
-            ) { paddingValues ->
+            },
+            contentWindowInsets = WindowInsets(0, 0, 0, 0),
+            modifier = Modifier
+                .fillMaxSize()
+        ) { paddingValues ->
 
 //                val isUserLoggedIn by remember { mutableStateOf(FirebaseAuth.getInstance().currentUser != null) }
-                val startDestination = Home.route //if (isUserLoggedIn) Home.route else WelcomePage.route
-                Box(
-                    modifier = Modifier
-                        .padding(paddingValues)
-                        .fillMaxSize()
-                ){
-                    NavHost(
-                        navController = navController, startDestination = startDestination
-                    ) {
-                        composable(Home.route) {
-                            HomePageComposable(navController)
-                        }
-                        composable(RecentlyWatched.route) {
-                            WatchedVideosComposable(navController)
-                        }
-                        composable(Setting.route) {
-                            SettingsComposable(navController)
-                        }
+            val startDestination =
+                Home.route //if (isUserLoggedIn) Home.route else WelcomePage.route
+            NavHost(
+                navController = navController,
+                startDestination = startDestination,
+                modifier = Modifier
+                    .padding(paddingValues)
+                    .fillMaxSize()
+            ) {
+                composable(Home.route) {
+                    HomePageComposable(navController)
+                }
+                composable(RecentlyWatched.route) {
+                    WatchedVideosComposable(navController)
+                }
+                composable(Setting.route) {
+                    SettingsComposable(navController)
+                }
 
-                        composable(VideoViewer.route) {
-                            val bundle = bundles.getBundle(NEW_INTENT_FOR_VIEWER)
-                            VideoPlayerScreen(
-                                navController,
-                                bundle
-                            )
-                        }
-                        composable(ResultViewerPage.route) {
+                composable(VideoViewer.route) {
+                    val bundle = bundles.getBundle(NEW_INTENT_FOR_VIEWER)
+                    VideoPlayerScreen(
+                        navController,
+                        bundle
+                    )
+                }
+                composable(ResultViewerPage.route) {
 
-                            val argument = bundles.getString(NEW_TEXT_FOR_RESULT).toString()
-                            ResultViewerPage(
-                                navController,
-                                argument
-                            )
-                        }
-                        composable(Downloads.route) {
-                            DownloadsPageComposable(navController)
-                        }
-                        composable(Searcher.route) {
+                    val argument = bundles.getString(NEW_TEXT_FOR_RESULT).toString()
+                    ResultViewerPage(
+                        navController,
+                        argument
+                    )
+                }
+                composable(Downloads.route) {
+                    DownloadsPageComposable(navController)
+                }
+                composable(Searcher.route) {
 
-                            SearchPageCompose(
-                                navController,
-                                bundles.getString(NEW_INTENT_FOR_SEARCHER, "")
-                            )
-                        }
-                        composable(UserSettings.route) {
-                            UserSettingComposable(navController)
+                    SearchPageCompose(
+                        navController,
+                        bundles.getString(NEW_INTENT_FOR_SEARCHER, "")
+                    )
+                }
+                composable(UserSettings.route) {
+                    UserSettingComposable(navController)
 
-                        }
-                        composable(ExoPlayerUI.route) {
-                            ExoPlayerUI(
-                                navController,
-                                bundles.getString(PLAY_HERE_VIDEO).toString()
-                            )
-                        }
+                }
+                composable(ExoPlayerUI.route) {
+                    ExoPlayerUI(
+                        bundles.getString(PLAY_HERE_VIDEO).toString()
+                    )
+                }
 
-                        composable(Saved.route){
-                            WatchLaterComposable(navController)
-                        }
+                composable(Saved.route) {
+                    WatchLaterComposable(navController)
+                }
 
-                        composable(LoginPage1.route) {
-                            LoginPage(navController)
-                        }
-                        composable(WelcomePage.route) {
-                            WelcomePage(navController)
-                        }
-                        composable(SignUpPage.route) {
-                            SignUpPage(navController)
-                        }
-                        composable(FeedbackScreen.route) {
-                            FeedbackComposable()
-                        }
-                    }
+                composable(LoginPage1.route) {
+                    LoginPage(navController)
+                }
+                composable(WelcomePage.route) {
+                    WelcomePage(navController)
+                }
+                composable(SignUpPage.route) {
+                    SignUpPage(navController)
+                }
+                composable(FeedbackScreen.route) {
+                    FeedbackComposable()
                 }
             }
-
         }
-
-
-
     }
-
 
     private fun listenNewIntent(
         navController: NavController,

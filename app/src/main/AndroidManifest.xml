@@ -50,7 +50,7 @@
         android:supportsRtl="true"
         android:theme="@style/Theme.AppCompat.DayNight.NoActionBar"
         android:resizeableActivity="true"
-        tools:targetApi="35">
+        tools:targetApi="36">
 
 
 
@@ -107,23 +107,6 @@
             </intent-filter>
 
         </activity>
-
-
-
-
-        <receiver
-            android:name=".WidgetProvider"
-            android:label="ForUI App Widget"
-            android:enabled="true"
-            android:exported="true">
-            <intent-filter>
-                <action android:name="android.appwidget.action.APPWIDGET_UPDATE" />
-            </intent-filter>
-
-            <meta-data
-                android:name="android.appwidget.provider"
-                android:resource="@xml/app_widget_provider" />
-        </receiver>
 
 
 

@@ -7,10 +7,12 @@ import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.safeDrawing
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.layout.wrapContentSize
@@ -27,7 +29,6 @@ import androidx.compose.material.icons.filled.Settings
 import androidx.compose.material.icons.filled.VideoLibrary
 import androidx.compose.material3.Card
 import androidx.compose.material3.ElevatedButton
-import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
@@ -71,7 +72,6 @@ import com.das.forui.ui.viewer.GlobalVideoList.bundles
 import java.io.File
 
 
-@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun DownloadsPageComposable(navController: NavController) {
 
@@ -135,87 +135,90 @@ fun DownloadsPageComposable(navController: NavController) {
                     }
                 }
             )
-        }
+        },
+        contentWindowInsets = WindowInsets.safeDrawing
     ) { paddingValues ->
-        Column(
+        LazyColumn(
+            contentPadding = paddingValues,
             modifier = Modifier
-                .padding(paddingValues)
                 .wrapContentSize(Alignment.Center)
                 .fillMaxSize()
         ) {
 
-            Spacer(
-                modifier = Modifier.height(10.dp)
-            )
+            item {
+                Spacer(
+                    modifier = Modifier.height(10.dp)
+                )
+            }
 
-            Row(
-                horizontalArrangement = Arrangement.SpaceEvenly,
-                modifier = Modifier.fillMaxWidth()
-            ) {
-                ElevatedButton(
-                    onClick = {
-                        isVideo = true
-                        viewModel.fetchVideoFiles(videoPath)
-                    },
-                    enabled = !isVideo
+            item {
+                Row(
+                    horizontalArrangement = Arrangement.SpaceEvenly,
+                    modifier = Modifier.fillMaxWidth()
                 ) {
-                    Icon(
-                        painter = rememberVectorPainter(Icons.Default.VideoLibrary),
-                        ""
-                    )
-                    Text(
-                        text = "Videos"
-                    )
-                }
-                ElevatedButton(
-                    onClick = {
-                        isVideo = false
-                        viewModel.fetchMusicFiles(videoPath)
-                    },
-                    enabled = isVideo
-                ) {
-                    Icon(
-                        painter = rememberVectorPainter(Icons.Default.LibraryMusic),
-                        ""
-                    )
-                    Text(
-                        text = "Musics"
-                    )
+                    ElevatedButton(
+                        onClick = {
+                            isVideo = true
+                            viewModel.fetchVideoFiles(videoPath)
+                        },
+                        enabled = !isVideo
+                    ) {
+                        Icon(
+                            painter = rememberVectorPainter(Icons.Default.VideoLibrary),
+                            ""
+                        )
+                        Text(
+                            text = "Videos"
+                        )
+                    }
+                    ElevatedButton(
+                        onClick = {
+                            isVideo = false
+                            viewModel.fetchMusicFiles(videoPath)
+                        },
+                        enabled = isVideo
+                    ) {
+                        Icon(
+                            painter = rememberVectorPainter(Icons.Default.LibraryMusic),
+                            ""
+                        )
+                        Text(
+                            text = "Musics"
+                        )
+                    }
                 }
             }
 
             if (isVideo && videosListData.isEmpty() || !isVideo && musicsListData.isEmpty()) {
 
-                Text(
-                    text = "You haven't saved any ${if (isVideo) "videos" else "music"} yet. Save some to create your collection!",
-                    fontSize = 25.sp,
-                    textAlign = TextAlign.Center
-                )
+                item {
+                    Text(
+                        text = "You haven't saved any ${if (isVideo) "videos" else "music"} yet. Save some to create your collection!",
+                        fontSize = 25.sp,
+                        textAlign = TextAlign.Center
+                    )
+                }
             } else {
-                LazyColumn {
-                    if (isVideo) {
-                        itemsIndexed(videosListData) { index, searchItem ->
-                            ListItems(searchItem, true, mContext, navController, index)
-                        }
-                    }else {
-                        mediaItems = musicsListData
-                        itemsIndexed(musicsListData) { index, searchItem ->
-
-                            ListItems(
-                                searchItem, false,
-                                mContext, navController, index
-                            )
-
-                        }
+                if (isVideo) {
+                    itemsIndexed(videosListData) { index, searchItem ->
+                        ListItems(searchItem, true, mContext, navController, index)
                     }
+                } else {
+                    mediaItems = musicsListData
+                    itemsIndexed(musicsListData) { index, searchItem ->
 
+                        ListItems(
+                            searchItem, false,
+                            mContext, navController, index
+                        )
+
+                    }
                 }
             }
 
         }
     }
 }
-
 
 @Composable
 fun ListItems(

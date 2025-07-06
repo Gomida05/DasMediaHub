@@ -7,16 +7,20 @@ import androidx.compose.animation.core.tween
 import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.interaction.collectIsPressedAsState
 import androidx.compose.foundation.layout.Arrangement
-import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.imePadding
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.safeDrawing
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.Send
 import androidx.compose.material3.ButtonDefaults
@@ -24,6 +28,7 @@ import androidx.compose.material3.ElevatedButton
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
+import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
@@ -33,7 +38,6 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.scale
-import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import com.google.firebase.firestore.FirebaseFirestore
@@ -45,11 +49,15 @@ fun FeedbackComposable() {
 
     var feedbackText by remember { mutableStateOf("") }
 
-    Box(modifier = Modifier.fillMaxSize()) {
+    Scaffold(
+        contentWindowInsets = WindowInsets.safeDrawing
+    ) { safePadding->
         Column(
             modifier = Modifier
+                .padding(safePadding)
                 .fillMaxSize()
-                .padding(24.dp),
+                .imePadding()
+                .verticalScroll(rememberScrollState()),
             verticalArrangement = Arrangement.Top,
             horizontalAlignment = Alignment.CenterHorizontally
         ) {
@@ -72,12 +80,10 @@ fun FeedbackComposable() {
 
             Spacer(modifier = Modifier.height(24.dp))
 
-            SendFeedbackButton (
-                text = "Send",
+            SendFeedbackButton(
                 isEmpty = {
                     feedbackText.isNotBlank()
                 },
-                Icons.AutoMirrored.Default.Send,
                 onClick = {
                     if (feedbackText.isNotBlank()) {
                         sendFeedbackToFireStore(feedbackText)
@@ -91,10 +97,7 @@ fun FeedbackComposable() {
 
 @Composable
 private fun SendFeedbackButton(
-    text: String,
     isEmpty: ()-> Boolean,
-    icon: ImageVector,
-
     onClick: () -> Unit
 ){
     val interactionSource = remember { MutableInteractionSource() }
@@ -120,12 +123,12 @@ private fun SendFeedbackButton(
     ) {
 
         Text(
-            text = text,
+            text = "Send",
             style = MaterialTheme.typography.bodyLarge.copy(fontWeight = FontWeight.SemiBold)
         )
         Icon(
-            imageVector = icon,
-            contentDescription = text,
+            imageVector = Icons.AutoMirrored.Default.Send,
+            contentDescription = "sendIcon",
             modifier = Modifier
                 .size(25.dp)
                 .padding(end = 8.dp)

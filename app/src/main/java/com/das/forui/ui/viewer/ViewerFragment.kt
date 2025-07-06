@@ -1,6 +1,5 @@
 package com.das.forui.ui.viewer
 
-import android.annotation.SuppressLint
 import android.app.Activity
 import android.content.Context
 import android.content.Intent
@@ -33,10 +32,12 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.safeDrawing
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.layout.wrapContentSize
@@ -60,6 +61,7 @@ import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
@@ -69,7 +71,6 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.livedata.observeAsState
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
-import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -120,11 +121,8 @@ import com.das.forui.objectsAndData.ForUIKeyWords.NEW_INTENT_FOR_VIEWER
 import com.das.forui.objectsAndData.ForUIDataClass.VideoDetails
 import com.das.forui.objectsAndData.ForUIDataClass.VideosListData
 import com.das.forui.ui.viewer.GlobalVideoList.bundles
-import kotlinx.coroutines.delay
-import kotlinx.coroutines.launch
 
 
-@SuppressLint("InflateParams")
 @OptIn(UnstableApi::class)
 @Composable
 fun VideoPlayerScreen(
@@ -132,7 +130,6 @@ fun VideoPlayerScreen(
     arguments: Bundle?
 ) {
 
-//    listOfVideosListData.clear()
     var isInFullScreen by remember { mutableStateOf(false) }
     var showAlertDialog by remember { mutableStateOf(false) }
 
@@ -200,10 +197,13 @@ fun VideoPlayerScreen(
         }
     }
 
-    Box {
+    Scaffold(
+        contentWindowInsets = WindowInsets.safeDrawing
+    ) { paddings->
 
         Column(
             modifier = Modifier
+                .padding(paddings)
                 .fillMaxSize()
         ) {
             if (videoUrl.isNotEmpty() && !isLoading) {
@@ -220,24 +220,6 @@ fun VideoPlayerScreen(
                         MainActivity().requestAudioFocusFromMain(mContext, this)
                         addListener(MyExoPlayerListener(navController))
                     }
-                }
-
-
-
-                var controlsVisible by remember { mutableStateOf(true) }
-                val coroutineScope = rememberCoroutineScope()
-
-
-                fun startAutoHideTimer() {
-                    coroutineScope.launch {
-                        delay(4000) // 3 seconds
-                        controlsVisible = false
-                    }
-                }
-
-
-                LaunchedEffect(Unit) {
-                    startAutoHideTimer()
                 }
 
 
@@ -295,33 +277,6 @@ fun VideoPlayerScreen(
                         playerView.player = mExoPlayer
                     }
                 )
-
-                /*
-                Box(modifier = playerModifier) {
-                    PlayerSurface(
-                        mExoPlayer,
-                        surfaceType = SURFACE_TYPE_SURFACE_VIEW,
-                        modifier = scaledModifier
-                    )
-
-                    if (presentationState.coverSurface) {
-                        Box(
-                            Modifier
-                                .matchParentSize()
-                                .background(Color.Black)
-                        )
-                    }
-
-                    PlayerControls(
-                        mExoPlayer = mExoPlayer,
-                        isVisible = { controlsVisible },
-                        navigateUp = { navController.navigateUp() },
-                        fullScreen = { isFullScreen = it }
-                    )
-                }
-
-                */
-
             }
             else if (isLoading){
                 Box(

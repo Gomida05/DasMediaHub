@@ -7,17 +7,14 @@ import android.net.Uri
 import android.view.LayoutInflater
 import android.view.WindowManager
 import androidx.activity.compose.LocalActivity
+import androidx.annotation.OptIn
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
-import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
-import androidx.compose.runtime.rememberCoroutineScope
-import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.viewinterop.AndroidView
@@ -27,22 +24,19 @@ import androidx.core.view.WindowInsetsCompat
 import androidx.core.view.WindowInsetsControllerCompat
 import androidx.media3.common.MediaItem
 import androidx.media3.common.MediaMetadata
+import androidx.media3.common.util.UnstableApi
 import com.das.forui.MainActivity
 import com.das.forui.databased.PathSaver.getVideosDownloadPath
 import androidx.media3.exoplayer.ExoPlayer
 import androidx.media3.ui.PlayerView
-import androidx.navigation.NavController
 import com.das.forui.R
-import kotlinx.coroutines.delay
-import kotlinx.coroutines.launch
 import java.io.File
 
 
-
-
-@SuppressLint("UnsafeOptInUsageError", "SourceLockedOrientationActivity", "InflateParams")
+@SuppressLint("SourceLockedOrientationActivity")
+@OptIn(UnstableApi::class)
 @Composable
-fun ExoPlayerUI(navController: NavController, videoUri: String) {
+fun ExoPlayerUI(videoUri: String) {
 
     val mContext = LocalContext.current
     val activity = LocalActivity.current
@@ -76,22 +70,6 @@ fun ExoPlayerUI(navController: NavController, videoUri: String) {
         )
     )
 
-    var controlsVisible by remember { mutableStateOf(true) }
-    val coroutineScope = rememberCoroutineScope()
-
-    fun startAutoHideTimer() {
-        coroutineScope.launch {
-            delay(4000) // 3 seconds
-            controlsVisible = false
-        }
-    }
-
-
-    LaunchedEffect(Unit) {
-        setFullscreen(activity, true)
-        startAutoHideTimer()
-    }
-
     val window = activity?.window
 
     LaunchedEffect(mExoPlayer.isPlaying) {
@@ -104,8 +82,8 @@ fun ExoPlayerUI(navController: NavController, videoUri: String) {
 
     AndroidView(
         modifier = Modifier
-            .background(MaterialTheme.colorScheme.background)
-            .fillMaxSize(),
+            .fillMaxSize()
+            .background(MaterialTheme.colorScheme.background),
         factory = { context ->
             val view = LayoutInflater.from(context)
                 .inflate(R.layout.video_player_ui, null, false) as PlayerView
@@ -121,72 +99,6 @@ fun ExoPlayerUI(navController: NavController, videoUri: String) {
     )
 
 
-    /*
-
-    Scaffold(
-        modifier = Modifier
-            .fillMaxSize()
-    ) { paddingValue ->
-
-        val scaledModifier = Modifier
-            .fillMaxSize()
-            .padding(paddingValue)
-            .resizeWithContentScale(ContentScale.Fit, presentationState.videoSizeDp)
-            .pointerInput(Unit) {
-                detectTapGestures {
-                    if (controlsVisible) {
-                        controlsVisible = false
-                    } else {
-                        controlsVisible = true
-                        startAutoHideTimer()
-                    }
-                }
-            }
-
-        AndroidView(
-            modifier = scaledModifier,
-            factory = { context ->
-                val view = LayoutInflater.from(context)
-                    .inflate(R.layout.video_player_ui, null, false) as PlayerView
-
-                view.player = mExoPlayer
-                view.useController = true
-                view.hideController()
-                view
-            },
-            update = { playerView ->
-                playerView.player = mExoPlayer
-            }
-        )
-//
-//        PlayerSurface(
-//            mExoPlayer,
-//            surfaceType = SURFACE_TYPE_SURFACE_VIEW,
-//            modifier = scaledModifier
-//        )
-//
-//        if (presentationState.coverSurface) {
-//
-//            Box(
-//                Modifier
-//                    .fillMaxSize()
-//                    .background(Color.Black))
-//        }
-//
-//        PlayerControls(
-//            mExoPlayer = mExoPlayer,
-//            isVisible ={controlsVisible},
-//            navigateUp = {
-//                navController.navigateUp()
-//            },
-//            fullScreen = {
-//
-//            }
-//        )
-
-    }
-
-     */
     DisposableEffect(mExoPlayer) {
 
         onDispose {
