@@ -68,7 +68,6 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.livedata.observeAsState
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
@@ -455,7 +454,7 @@ fun VideoDetailsComposable(
 
     val dbForFav = DatabaseFavorite(mContext)
 
-    val videoDetails by viewModel.videoDetails.observeAsState()
+    val videoDetails by viewModel.videoDetails
     var isSaved by remember {
         mutableStateOf(
             dbForFav.isWatchUrlExist(videoId)

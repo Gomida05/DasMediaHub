@@ -15,7 +15,6 @@ import androidx.compose.material.icons.filled.Download
 import androidx.compose.material.icons.filled.Search
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
-import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
@@ -35,8 +34,6 @@ import com.das.forui.Screen.Downloads
 
 
 
-
-@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun HomePageComposable(navController: NavController) {
     val mContext = LocalContext.current

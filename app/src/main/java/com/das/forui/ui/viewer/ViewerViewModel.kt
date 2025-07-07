@@ -3,8 +3,6 @@ package com.das.forui.ui.viewer
 import android.util.Log
 import androidx.compose.runtime.State
 import androidx.compose.runtime.mutableStateOf
-import androidx.lifecycle.LiveData
-import androidx.lifecycle.MutableLiveData
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.das.forui.objectsAndData.Youtuber.formatDate
@@ -33,8 +31,8 @@ class ViewerViewModel : ViewModel() {
     private var _isLoadings = mutableStateOf(true)
     val isLoadings: State<Boolean> = _isLoadings
 
-    private val _videoDetails = MutableLiveData<VideoDetails>()
-    val videoDetails: LiveData<VideoDetails> = _videoDetails
+    private val _videoDetails = mutableStateOf<VideoDetails?>(null)
+    val videoDetails: State<VideoDetails?> = _videoDetails
 
     private val _searchResults = mutableStateOf<List<VideosListData>>(emptyList())
     val searchResults: State<List<VideosListData>> = _searchResults
@@ -77,7 +75,7 @@ class ViewerViewModel : ViewModel() {
                 }
 
                 if (videoDetails != null) {
-                    _videoDetails.postValue(
+                    _videoDetails.value =
                         VideoDetails(
                             title = videoDetails.title,
                             viewNumber = formatViews(videoDetails.viewNumber.toLong()),
@@ -85,7 +83,6 @@ class ViewerViewModel : ViewModel() {
                             channelName = videoDetails.channelName,
                             description = videoDetails.description
                         )
-                    )
                     println("here is one _1: $videoDetails \n also ${_videoDetails.value}")
                 } else {
                     _error.value = "Failed to fetch video details"

@@ -1,5 +1,6 @@
-package com.das.forui
+package com.das.forui.theme
 
+import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Shapes
@@ -15,7 +16,7 @@ import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import com.das.forui.databased.ThemePreferences.loadDarkModeState
+import com.das.forui.theme.ThemePreferences.loadDarkModeState
 
 @Composable
 fun CustomTheme(
@@ -23,7 +24,13 @@ fun CustomTheme(
 ) {
     val context = LocalContext.current
 
-    val isDarkTheme by loadDarkModeState(context)
+    val themeState by loadDarkModeState(context)
+
+    val isDarkTheme = when (themeState) {
+        AppTheme.DARK -> true
+        AppTheme.LIGHT -> false
+        AppTheme.SYSTEM -> isSystemInDarkTheme()
+    }
 
     val lightColors = lightColorScheme(
         primary = Color(0xFF000000),

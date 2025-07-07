@@ -82,6 +82,7 @@ import com.das.forui.ui.viewer.GlobalVideoList.bundles
 import com.das.forui.ui.viewer.VideoPlayerScreen
 import com.das.forui.ui.watchedVideos.WatchedVideosComposable
 import com.das.forui.Screen.*
+import com.das.forui.theme.CustomTheme
 import com.das.forui.ui.settings.FeedbackComposable
 import com.das.forui.ui.welcome.WelcomePage
 
