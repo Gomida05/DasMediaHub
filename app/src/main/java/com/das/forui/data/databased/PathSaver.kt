@@ -2,6 +2,7 @@ package com.das.forui.data.databased
 
 import android.content.Context
 import android.content.SharedPreferences
+import androidx.core.content.edit
 
 
 object PathSaver {
@@ -15,11 +16,11 @@ object PathSaver {
 
         if (downloadPath == null) {
             downloadPath = getMusicDefaultDownloadPath()
-            val editor = sharedPref.edit()
-            editor.putString(AUDIO_KEY, downloadPath)
-            editor.apply()
+            sharedPref.edit {
+                putString(AUDIO_KEY, downloadPath)
+            }
         }
-        return downloadPath.toString()
+        return downloadPath
     }
 
     private fun getMusicDefaultDownloadPath(): String {
@@ -28,10 +29,10 @@ object PathSaver {
 
     fun setAudioDownloadPath(context: Context, path: String) {
         val sharedPref: SharedPreferences = context.getSharedPreferences(PREF_NAME, Context.MODE_PRIVATE)
-        with(sharedPref.edit()) {
+        sharedPref.edit {
             // Replace the old path with the new one
             putString(AUDIO_KEY, path)
-            apply()  // Save the change asynchronously
+            // Save the change asynchronously
         }
     }
 
@@ -42,21 +43,20 @@ object PathSaver {
 
         if (downloadPath == null) {
             downloadPath = getMoviesDefaultDownloadPath()
-            val editor = sharedPref.edit()
-            editor.putString(VIDEO_KEY, downloadPath)
-            editor.apply()
+            sharedPref.edit {
+                putString(VIDEO_KEY, downloadPath)
+            }
         }
 
-        return downloadPath.toString()
+        return downloadPath
     }
 
 
     fun setMoviesDownloadPath(context: Context, path: String) {
         val sharedPref: SharedPreferences =context.getSharedPreferences(PREF_NAME, Context.MODE_PRIVATE)
-        with(sharedPref.edit()) {
+        sharedPref.edit {
             // Replace the old path with the new one
             putString(VIDEO_KEY, path)
-            apply()
         }
     }
 

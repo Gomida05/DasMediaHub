@@ -128,7 +128,7 @@ class WatchHistory(context: Context) : SQLiteOpenHelper(context, DATABASE_NAME, 
             cursor.close()
             db.close()
             return viewNumber
-        } catch (e: Exception) {
+        } catch (_: Exception) {
 //            MainActivity().alertUserError(e.message.toString())
             return null
         }
