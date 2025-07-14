@@ -2,8 +2,8 @@ package com.das.forui.mediacontroller
 
 import android.support.v4.media.session.PlaybackStateCompat
 import com.das.forui.R
-import com.das.forui.objectsAndData.ForUIKeyWords.ACTION_KILL
-import com.das.forui.objectsAndData.ForUIKeyWords.SET_SHUFFLE_MODE
+import com.das.forui.data.constants.Action.ACTION_KILL
+import com.das.forui.data.constants.Playback.SET_SHUFFLE_MODE
 
 
 object BackgroundPlayerStates {

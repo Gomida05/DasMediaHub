@@ -24,21 +24,21 @@ import androidx.media.app.NotificationCompat.MediaStyle
 import androidx.media.session.MediaButtonReceiver
 import com.das.forui.MainActivity
 import com.das.forui.R.drawable
-import com.das.forui.databased.PathSaver.getAudioDownloadPath
-import com.das.forui.objectsAndData.ForUIKeyWords.ACTION_KILL
-import com.das.forui.objectsAndData.ForUIKeyWords.ACTION_START
-import com.das.forui.objectsAndData.ForUIKeyWords.SET_SHUFFLE_MODE
+import com.das.forui.data.databased.PathSaver.getAudioDownloadPath
+import com.das.forui.data.constants.Action.ACTION_KILL
+import com.das.forui.data.constants.Action.ACTION_START
+import com.das.forui.data.constants.Playback.SET_SHUFFLE_MODE
 import androidx.media3.exoplayer.ExoPlayer
 import androidx.media3.common.MediaItem
 import androidx.media3.common.MediaMetadata
 import androidx.media3.common.PlaybackException
 import androidx.media3.common.Player
-import com.das.forui.objectsAndData.Youtuber.formatDateFromLong
+import com.das.forui.data.Youtuber.formatDateFromLong
 import com.das.forui.mediacontroller.BackgroundPlayerStates.setStateToPaused
 import com.das.forui.mediacontroller.BackgroundPlayerStates.setStateToLoading
 import com.das.forui.mediacontroller.BackgroundPlayerStates.setStateToPlaying
-import com.das.forui.objectsAndData.ForUIKeyWords.BACKGROUND_GROUND_PLAYER_NOTIFICATION
-import com.das.forui.objectsAndData.Youtuber.mediaItems
+import com.das.forui.data.constants.Notifications.BACKGROUND_GROUND_PLAYER_NOTIFICATION
+import com.das.forui.data.Youtuber.mediaItems
 import java.io.File
 
 

@@ -27,15 +27,15 @@ import com.bumptech.glide.request.transition.Transition
 import com.das.forui.MainActivity
 import com.das.forui.R.drawable
 import com.das.forui.mediacontroller.MediaSessionPlaybackState
-import com.das.forui.objectsAndData.ForUIKeyWords.ACTION_ADD_TO_WATCH_LATER
-import com.das.forui.objectsAndData.ForUIKeyWords.ACTION_KILL
-import com.das.forui.objectsAndData.ForUIKeyWords.ACTION_START
-import com.das.forui.objectsAndData.ForUIDataClass.VideosListData
+import com.das.forui.data.constants.Action.ACTION_ADD_TO_WATCH_LATER
+import com.das.forui.data.constants.Action.ACTION_KILL
+import com.das.forui.data.constants.Action.ACTION_START
+import com.das.forui.data.model.VideosListData
 import androidx.media3.exoplayer.ExoPlayer
 import androidx.media3.common.MediaItem
 import androidx.media3.common.PlaybackException
 import androidx.media3.common.Player
-import com.das.forui.objectsAndData.ForUIKeyWords.AUDIO_SERVICE_FROM_URL_NOTIFICATION
+import com.das.forui.data.constants.Notifications.AUDIO_SERVICE_FROM_URL_NOTIFICATION
 
 
 class AudioServiceFromUrl : Service() {

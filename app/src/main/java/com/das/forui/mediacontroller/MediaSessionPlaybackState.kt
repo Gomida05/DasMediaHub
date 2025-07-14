@@ -3,10 +3,10 @@ package com.das.forui.mediacontroller
 import android.content.Context
 import android.support.v4.media.session.PlaybackStateCompat
 import com.das.forui.R
-import com.das.forui.databased.DatabaseFavorite
-import com.das.forui.objectsAndData.ForUIKeyWords.ACTION_ADD_TO_WATCH_LATER
-import com.das.forui.objectsAndData.ForUIKeyWords.ACTION_KILL
-import com.das.forui.objectsAndData.ForUIDataClass.VideosListData
+import com.das.forui.data.databased.DatabaseFavorite
+import com.das.forui.data.constants.Action.ACTION_ADD_TO_WATCH_LATER
+import com.das.forui.data.constants.Action.ACTION_KILL
+import com.das.forui.data.model.VideosListData
 
 
 class MediaSessionPlaybackState(private val context: Context) {

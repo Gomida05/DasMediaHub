@@ -1,9 +1,8 @@
 from pytubefix import YouTube, Playlist
 from youtubesearchpython import Video, VideosSearch
-import json
-import traceback
+import json, traceback, youtubesearchpython
 
-
+print(youtubesearchpython.__version__)
 def get_video_url(video_url: str):
     try:
         yt = YouTube(video_url)
@@ -69,6 +68,7 @@ def Searcher(inputer: str):
     except Exception as e:
         print(e)
         return False
+
 
 def SearchWithLink(inputer: str):
     try:

@@ -1,55 +1,66 @@
 package com.das.forui.ui.home.searcher
 
 import android.app.Application
-import android.database.Cursor
-import androidx.compose.runtime.MutableState
 import androidx.compose.runtime.State
 import androidx.compose.runtime.mutableStateOf
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
-import com.das.forui.databased.SearchHistoryDB
-import kotlinx.coroutines.Dispatchers
+import com.das.forui.data.databased.room.database.SearchDatabase
+import com.das.forui.data.databased.room.dataclass.SearchData
+import com.das.forui.data.databased.room.repository.SearchRepo
 import kotlinx.coroutines.launch
-import kotlinx.coroutines.withContext
+
+class SearchPageViewMode(application: Application): AndroidViewModel(application) {
 
 
-class SearchPageViewMode(private val application: Application): AndroidViewModel(application) {
-    private val _searchHistory = mutableStateOf<List<String>>(emptyList())
-    val downloadedListData: MutableState<List<String>> = _searchHistory
+    private val db = SearchDatabase.getInstance(application)
+    private val repository = SearchRepo(db.searchDataDao())
 
-    private val _error = mutableStateOf("")
-    val error: State<String> = _error
+    private val _loading = mutableStateOf(false)
+    val isLoading: State<Boolean> = _loading
+
+    private val _searchHistory = mutableStateOf<List<SearchData>>(emptyList())
+    val searchHistory: State<List<SearchData>> = _searchHistory
+
+    private val _error = mutableStateOf<String?>(null)
+    val error: State<String?> = _error
+
+
+    fun addNew(searchKey: String) {
+        viewModelScope.launch {
+            try {
+                val id = System.currentTimeMillis().toString()
+                val searchData = SearchData(id = id, value = searchKey)
+                repository.insert(searchData)
+            } catch (e: Exception) {
+                println("Something went wrong: ${e.message}")
+            }
+        }
+    }
 
     fun fetchDatabase() {
+        _loading.value = true
+        _error.value = null
+
         viewModelScope.launch {
-            val result = withContext(Dispatchers.IO) {
-                fetchDataFromDatabase(application)
+            try {
+                val result = repository.getAllSearches()
+                _searchHistory.value = result
+            } catch (e: Exception) {
+                _error.value = "Something went wrong: ${e.localizedMessage}"
+            } finally {
+                _loading.value = false
             }
-            _searchHistory.value = result
         }
     }
 
-    private fun fetchDataFromDatabase(application: Application): List<String> {
-        try {
-            val dbHelper = SearchHistoryDB(application)
+    fun deleById(id: String) {
 
-            val cursor: Cursor? = dbHelper.getResults()
-            val urls = mutableListOf<String>()
-            cursor?.let {
-                while (it.moveToNext()) {
-                    val title = it.getString(it.getColumnIndexOrThrow("title"))
-                    title?.let { _ ->
-                        urls.add("$title ")
-                    } ?: run {}
-                }
-                it.close()
-            } ?: run {}
-
-            return urls.toList()
-        } catch (e: Exception) {
-            _error.value = e.message.toString()
+        viewModelScope.launch {
+            repository.delete(id)
+            fetchDatabase()
         }
-        return listOf("")
 
     }
+
 }

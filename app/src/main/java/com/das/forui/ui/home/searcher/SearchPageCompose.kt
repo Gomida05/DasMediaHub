@@ -26,6 +26,7 @@ import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.Download
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
+import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ElevatedButton
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
@@ -35,7 +36,7 @@ import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.MutableState
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -43,6 +44,7 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.rememberVectorPainter
 import androidx.compose.ui.input.nestedscroll.nestedScroll
 import androidx.compose.ui.layout.ContentScale
@@ -56,35 +58,38 @@ import androidx.navigation.NavController
 import coil.compose.AsyncImage
 import coil.request.ImageRequest
 import com.das.forui.MainActivity
-import com.das.forui.objectsAndData.Youtuber.youtubeExtractor
-import com.das.forui.objectsAndData.Youtuber.isValidYoutubeURL
-import com.das.forui.databased.SearchHistoryDB
-import com.das.forui.objectsAndData.ForUIKeyWords.NEW_INTENT_FOR_VIEWER
-import com.das.forui.objectsAndData.ForUIKeyWords.NEW_TEXT_FOR_RESULT
-import com.das.forui.objectsAndData.Youtuber.extractPlaylistId
-import com.das.forui.objectsAndData.Youtuber.isValidYouTubePlaylistUrl
+import com.das.forui.data.Youtuber.youtubeExtractor
+import com.das.forui.data.Youtuber.isValidYoutubeURL
+import com.das.forui.data.constants.Intents.NEW_INTENT_FOR_VIEWER
+import com.das.forui.data.constants.Intents.NEW_TEXT_FOR_RESULT
+import com.das.forui.data.Youtuber.extractPlaylistId
+import com.das.forui.data.Youtuber.isValidYouTubePlaylistUrl
 import com.das.forui.ui.viewer.GlobalVideoList.bundles
 import com.das.forui.Screen.ResultViewerPage
+import com.das.forui.data.databased.room.dataclass.SearchData
 
 @Composable
 fun SearchPageCompose(
     navController: NavController,
     newText: String
 ) {
+    val context = LocalContext.current
+    val viewMode: SearchPageViewMode = viewModel()
+
+    val searchHistory by viewMode.searchHistory
+    val isThereError by viewMode.error
+    val isLoading by viewMode.isLoading
 
     val topAppBarScroll = TopAppBarDefaults.exitUntilCollapsedScrollBehavior()
 
     val textState = remember { mutableStateOf(newText) }
-    val context = LocalContext.current
-    val androidViewMode: SearchPageViewMode = viewModel()
 
     var playListUrl by remember { mutableStateOf("") }
     var askToDownloadPlayList by remember { mutableStateOf(false) }
 
-
-    val settingsResults = remember { androidViewMode.downloadedListData}
-
-    val isThereError by androidViewMode.error
+    LaunchedEffect(Unit) {
+        viewMode.fetchDatabase()
+    }
 
 
     Scaffold(
@@ -149,9 +154,14 @@ fun SearchPageCompose(
                     onSearch = {
                         if (textState.value.isNotBlank()) {
                             keyEvent(
-                                navController,
-                                textState.value,
-                                context
+                                context = context,
+                                navController = navController,
+                                editTextText = textState.value,
+                                addIt = {
+                                    viewMode.addNew(
+                                        it
+                                    )
+                                }
                             ) { url ->
                                 askToDownloadPlayList = true
                                 playListUrl = url
@@ -163,18 +173,32 @@ fun SearchPageCompose(
 
             Spacer(modifier = Modifier.height(22.dp))
 
-            if (isThereError.isNotEmpty()){
-
+            if (!isThereError.isNullOrEmpty()) {
+                Text(
+                    text = isThereError ?: "Unknown error",
+                    color = Color.Red,
+                    modifier = Modifier.padding(16.dp),
+                    style = MaterialTheme.typography.bodyMedium
+                )
             }
-            else if (settingsResults.value.isNotEmpty()){
+            else if (isLoading) {
+                CircularProgressIndicator(modifier = Modifier.align(Alignment.CenterHorizontally))
+            }
+            else if (searchHistory.isNotEmpty()){
                 LazyColumn(
                     modifier = Modifier
                 ) {
-                    items(settingsResults.value) { settingsItem ->
+                    items(
+                        items = searchHistory,
+                        key = { it.id }
+                    ) { settingsItem ->
                         RecentlySearchList(
                             context,
-                            title = settingsItem,
-                            settingsResults,
+                            title = settingsItem.value,
+                            settingsResults = settingsItem,
+                            deleteThis = {
+                                viewMode.deleById(it)
+                            },
                             onButtonClicked = { text ->
                                 textState.value = text
                                 goSearch(context, navController, text)
@@ -209,7 +233,8 @@ fun SearchPageCompose(
 private fun RecentlySearchList(
     context: Context,
     title: String,
-    settingsResults: MutableState<List<String>>,
+    settingsResults: SearchData,
+    deleteThis: (String) -> Unit,
     onButtonClicked: (text: String)-> Unit
 ) {
 
@@ -237,8 +262,7 @@ private fun RecentlySearchList(
                     AlertDialog.Builder(context)
                         .setTitle("Are you sure you want to remove it from the list?")
                         .setPositiveButton("Yes") { _, _ ->
-                            SearchHistoryDB(context).deleteSearchList(title)
-                            settingsResults.value = settingsResults.value.filter { it != title }
+                            deleteThis(settingsResults.id)
                         }
                         .setNegativeButton("No") { _, _ ->
                         }
@@ -332,54 +356,57 @@ fun PlayListDownloadRequest(onDismissRequest: ()->Unit, mContext: Context, url: 
 
 
 private fun keyEvent(
+    context: Context,
     navController: NavController,
     editTextText: String,
-    context: Context,
-    isPlayList: (url: String)-> Unit
+    addIt: (String) -> Unit,
+    isPlayList: (url: String) -> Unit
 ) {
-
-        try {
-            if (isValidYoutubeURL(editTextText)) {
+    try {
+        when {
+            isValidYoutubeURL(editTextText) -> {
                 val videoId = youtubeExtractor(editTextText)
                 val bundled = Bundle().apply {
                     putString("View_ID", videoId)
                     putString("View_URL", "https://www.youtube.com/watch?v=$videoId")
                 }
-                bundles.putBundle(NEW_INTENT_FOR_VIEWER, bundled)
-            } else if (isValidYouTubePlaylistUrl(editTextText)){
 
-                isPlayList(editTextText)
-//                MainActivity().startPlayListDownload(
-//                    context,
-//                    editTextText
-//                )
-//                showDialogs(context, "PlayList Starting to download!")
+                // Safely use a globally declared Bundle
+                bundles.putBundle(NEW_INTENT_FOR_VIEWER, bundled)
+
             }
-            else {
-                SearchHistoryDB(context).insertData(editTextText)
+            isValidYouTubePlaylistUrl(editTextText) -> {
+                isPlayList(editTextText)
+            }
+            else -> {
+                addIt(editTextText)
                 goSearch(
                     context,
                     navController,
                     editTextText
                 )
             }
-        } catch (e: Exception) {
-            showDialogs(context,e.message.toString())
         }
+    } catch (e: Exception) {
+        showDialogs(context, e.message ?: "Unknown error")
     }
+}
 
-    private fun goSearch(
-        context: Context,
-        navController: NavController,
-        text: String
-    ) {
-        try {
-            bundles.putString(NEW_TEXT_FOR_RESULT, text)
-            navController.navigate(ResultViewerPage.route)
-        } catch (e: Exception) {
-            showDialogs(context, e.message.toString())
-        }
+private fun goSearch(
+    context: Context,
+    navController: NavController,
+    text: String
+) {
+    try {
+        bundles.putString(NEW_TEXT_FOR_RESULT, text)
+
+        navController.navigate(ResultViewerPage.route)
+
+    } catch (e: Exception) {
+        showDialogs(context, e.message.toString())
     }
+}
+
 
 private fun showDialogs(context: Context, message: String){
     Toast.makeText(context, message, Toast.LENGTH_SHORT).show()

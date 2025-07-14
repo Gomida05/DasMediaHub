@@ -5,11 +5,13 @@ import androidx.compose.runtime.State
 import androidx.compose.runtime.mutableStateOf
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import com.das.forui.objectsAndData.Youtuber.formatDate
-import com.das.forui.objectsAndData.Youtuber.formatViews
-import com.das.forui.objectsAndData.Youtuber.pythonInstant
-import com.das.forui.objectsAndData.ForUIDataClass.VideoDetails
-import com.das.forui.objectsAndData.ForUIDataClass.VideosListData
+import com.das.forui.data.Youtuber.formatDate
+import com.das.forui.data.Youtuber.formatViews
+import com.das.forui.data.Youtuber.pythonInstant
+import com.das.forui.data.model.VideoDetails
+import com.das.forui.data.model.VideosListData
+import com.das.forui.data.Youtuber.getListItemStreamUrl
+import com.das.forui.data.model.ItemsStreamUrlsForMediaItemData
 import com.google.gson.Gson
 import com.google.gson.JsonSyntaxException
 import com.google.gson.reflect.TypeToken
@@ -44,8 +46,8 @@ class ViewerViewModel : ViewModel() {
     fun loadVideoUrl(videoId: String) {
         viewModelScope.launch {
             try {
-
-                val variable = pythonInstant["get_video_url"]
+                val python = pythonInstant.getModule("main")
+                val variable = python["get_video_url"]
                 val result = withContext(Dispatchers.IO){
                     variable?.call("https://www.youtube.com/watch?v=$videoId").toString()
                 }
@@ -98,6 +100,23 @@ class ViewerViewModel : ViewModel() {
         }
     }
 
+    fun getListItemsStreamUrls(
+        data: VideosListData,
+        onSuccess: (ItemsStreamUrlsForMediaItemData) -> Unit,
+        onFailure: (String) -> Unit
+    ) {
+        viewModelScope.launch {
+            try {
+                val result = withContext(Dispatchers.IO) {
+                    getListItemStreamUrl(data)
+                }
+
+                onSuccess(result)
+            } catch (e: Exception) {
+                onFailure("Failed: ${e.message}")
+            }
+        }
+    }
 
     fun fetchSuggestions(title: String) {
         viewModelScope.launch {
@@ -114,7 +133,8 @@ class ViewerViewModel : ViewModel() {
 
     private fun callPythonSearchWithLink(inputText: String): VideoDetails? {
         return try {
-            val variable = pythonInstant["SearchWithLink"]?.call("https://www.youtube.com/watch?v=$inputText")
+            val python = pythonInstant.getModule("main")
+            val variable = python["SearchWithLink"]?.call("https://www.youtube.com/watch?v=$inputText")
             val result = variable.toString()
             println("python: $result")
 
@@ -136,8 +156,8 @@ class ViewerViewModel : ViewModel() {
 
     private fun callPythonSearchSuggestion(inputText: String): List<VideosListData>? {
         return try {
-
-            val getResultFromPython = pythonInstant["Searcher"]?.call(inputText).toString()
+            val python = pythonInstant.getModule("main")
+            val getResultFromPython = python["Searcher"]?.call(inputText).toString()
 
             val videosListDataListType = object : TypeToken<List<VideosListData>>() {}.type
             val result: List<VideosListData>? = Gson().fromJson(getResultFromPython, videosListDataListType)

@@ -53,8 +53,9 @@ import androidx.core.net.toUri
 import androidx.navigation.NavController
 import com.das.forui.Screen
 import com.das.forui.downloader.DownloaderClass
-import com.das.forui.objectsAndData.ForUIDataClass.AppUpdateInfo
-import com.google.firebase.auth.FirebaseAuth
+import com.das.forui.data.model.AppUpdateInfo
+import com.google.firebase.auth.ktx.auth
+import com.google.firebase.ktx.Firebase
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
@@ -70,7 +71,7 @@ fun SettingsComposable(navController: NavController) {
     val context = LocalContext.current
     val scrollBehavior = TopAppBarDefaults.exitUntilCollapsedScrollBehavior()
 
-    val auth = FirebaseAuth.getInstance()
+    val auth = Firebase.auth
     val isUserLoggedIn by remember { mutableStateOf(auth.currentUser != null) }
 
     Scaffold(
@@ -87,7 +88,11 @@ fun SettingsComposable(navController: NavController) {
                         modifier = Modifier
                             .fillMaxWidth()
                     )
-                }
+                },
+                colors = TopAppBarDefaults.topAppBarColors(
+                    containerColor = MaterialTheme.colorScheme.background,
+                    scrolledContainerColor = MaterialTheme.colorScheme.background
+                )
             )
         },
         contentWindowInsets = WindowInsets.safeDrawing
@@ -136,7 +141,7 @@ fun SettingsComposable(navController: NavController) {
 
 @Composable
 fun UserHeader() {
-    val auth = FirebaseAuth.getInstance()
+    val auth = Firebase.auth
 
     val name by remember { mutableStateOf(auth.currentUser?.displayName ?: "Guest") }
     val email by remember { mutableStateOf(auth.currentUser?.email?: "Coming soon") }

@@ -23,7 +23,6 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.automirrored.filled.PlaylistPlay
 import androidx.compose.material.icons.filled.MoreVert
 import androidx.compose.material.icons.outlined.Search
 import androidx.compose.material3.Button
@@ -59,12 +58,11 @@ import coil.compose.AsyncImage
 import coil.request.CachePolicy
 import coil.request.ImageRequest
 import com.das.forui.MainActivity
-import com.das.forui.MainApplication
-import com.das.forui.objectsAndData.ForUIKeyWords.ACTION_START
-import com.das.forui.objectsAndData.ForUIKeyWords.NEW_INTENT_FOR_VIEWER
-import com.das.forui.objectsAndData.ForUIDataClass.SearchResultFromMain
+import com.das.forui.data.constants.Action.ACTION_START
+import com.das.forui.data.constants.Intents.NEW_INTENT_FOR_VIEWER
+import com.das.forui.data.model.SearchResultFromMain
 import com.das.forui.services.AudioServiceFromUrl
-import com.das.forui.objectsAndData.ForUIDataClass.VideosListData
+import com.das.forui.data.model.VideosListData
 import com.das.forui.ui.viewer.GlobalVideoList.bundles
 import com.das.forui.ui.viewer.shimmerLoading
 import com.das.forui.Screen.VideoViewer
@@ -159,6 +157,7 @@ fun ResultViewerPage(
                         VideoItems(
                             mContext,
                             navController,
+                            viewModel,
                             searchItem
                         )
                     }
@@ -173,6 +172,7 @@ fun ResultViewerPage(
 fun VideoItems(
     context: Context,
     navController: NavController,
+    viewModel: ResultViewModel,
     searchItem: SearchResultFromMain
 ) {
     val videoId = searchItem.videoId
@@ -340,6 +340,7 @@ fun VideoItems(
                 videoId, title, viewsNumber, dateOfVideo,
                 duration, channelName, channelThumbnails
             ),
+            viewModel,
             onDismissRequest = { showDialog = false }
         )
     }
@@ -456,7 +457,7 @@ fun SkeletonSuggestionLoadingLayout() {
 }
 
 
-@Suppress("unused")
+/*
 @Composable
 fun PlayListItems(
     context: Context,
@@ -637,19 +638,51 @@ fun PlayListItems(
                 videoId, title, viewsNumber, dateOfVideo,
                 duration, channelName, channelThumbnails
             ),
+            viewModel,
             onDismissRequest = { showDialog = false }
         )
     }
 }
+
+*/
 
 
 @Composable
 private fun ShowAlertDialog(
     mContext: Context,
     selectedItem: VideosListData,
+    viewModel: ResultViewModel,
     onDismissRequest: () ->Unit
 ){
     val thumbnailUrl = "https://img.youtube.com/vi/${selectedItem.videoId}/0.jpg"
+
+    var shouldLoad by remember { mutableStateOf(false) }
+
+    if (shouldLoad) {
+        LaunchedEffect(Unit) {
+            viewModel.getListItemsStreamUrls(
+                selectedItem,
+                onSuccess = {
+                    val playIntent = Intent(mContext, AudioServiceFromUrl::class.java).apply {
+                            action = ACTION_START
+                            putExtra("videoId", selectedItem.videoId)
+                            putExtra("media_url", it.audioUrl)
+                            putExtra("title", selectedItem.title)
+                            putExtra("channelName", selectedItem.channelName)
+                            putExtra("viewNumber", selectedItem.views)
+                            putExtra("videoDate", selectedItem.dateOfVideo)
+                            putExtra("duration", selectedItem.duration)
+                        }
+                    mContext.startService(playIntent)
+                },
+                onFailure = {
+                    println("Error: $it")
+                }
+            )
+            shouldLoad = false
+        }
+    }
+
 
     Dialog(onDismissRequest = { onDismissRequest() }) {
         Card(
@@ -689,28 +722,7 @@ private fun ShowAlertDialog(
                 ) {
                     TextButton(
                         onClick = {
-                            MainApplication().getListItemsStreamUrls(
-                                selectedItem,
-                                onSuccess = { result ->
-                                    val playIntent =
-                                        Intent(mContext, AudioServiceFromUrl::class.java).apply {
-                                            action = ACTION_START
-                                            putExtra("videoId", selectedItem.videoId)
-                                            putExtra("media_url", result.audioUrl)
-                                            putExtra("title", selectedItem.title)
-                                            putExtra("channelName", selectedItem.channelName)
-                                            putExtra("viewNumber", selectedItem.views)
-                                            putExtra("videoDate", selectedItem.dateOfVideo)
-                                            putExtra("duration", selectedItem.duration)
-                                        }
-                                    mContext.startService(playIntent)
-                                },
-                                onFailure = { errorMessage ->
-                                    // Handle the error (e.g., show a dialog with the error message)
-                                    println("Error: $errorMessage")
-                                }
-                            )
-                            onDismissRequest()
+                            shouldLoad = true
                         },
                         modifier = Modifier.padding(4.dp),
                     ) {

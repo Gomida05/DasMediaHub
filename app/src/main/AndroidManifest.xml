@@ -28,7 +28,6 @@
     <!-- Required to allow Bluetooth connections and manage devices -->
     <uses-permission android:name="android.permission.BLUETOOTH"/>
     <uses-permission android:name="android.permission.BLUETOOTH_ADMIN"/>
-    <uses-permission android:name="android.permission.BLUETOOTH_ADMIN"/>
     <uses-permission android:name="android.permission.BLUETOOTH_SCAN"/>
     <uses-permission android:name="android.permission.BLUETOOTH_CONNECT"/>
 
@@ -39,7 +38,7 @@
     </queries>
 
     <application
-        android:name=".MainApplication"
+        android:name="com.chaquo.python.android.PyApplication"
         android:allowBackup="true"
         android:dataExtractionRules="@xml/data_extraction_rules"
         android:enableOnBackInvokedCallback="true"

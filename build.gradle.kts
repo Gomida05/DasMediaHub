@@ -5,4 +5,7 @@ plugins {
     alias(libs.plugins.kotlin.compose) apply false
     alias(libs.plugins.chaquo.python) apply false
     alias(libs.plugins.google.gms) apply false
+
+    //ksp
+    alias(libs.plugins.kotlin.devtools.ksp) apply false
 }

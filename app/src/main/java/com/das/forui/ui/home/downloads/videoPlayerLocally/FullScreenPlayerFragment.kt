@@ -26,7 +26,7 @@ import androidx.media3.common.MediaItem
 import androidx.media3.common.MediaMetadata
 import androidx.media3.common.util.UnstableApi
 import com.das.forui.MainActivity
-import com.das.forui.databased.PathSaver.getVideosDownloadPath
+import com.das.forui.data.databased.PathSaver.getVideosDownloadPath
 import androidx.media3.exoplayer.ExoPlayer
 import androidx.media3.ui.PlayerView
 import com.das.forui.R

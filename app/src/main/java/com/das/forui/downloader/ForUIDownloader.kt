@@ -1,7 +1,7 @@
 package com.das.forui.downloader
 
-import com.das.forui.objectsAndData.ForUIDataClass.AppUpdateInfo
-import com.das.forui.objectsAndData.ForUIDataClass.DownloadData
+import com.das.forui.data.model.AppUpdateInfo
+import com.das.forui.data.model.DownloadData
 
 
 interface ForUIDownloader {

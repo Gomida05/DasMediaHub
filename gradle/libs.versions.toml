@@ -1,6 +1,6 @@
 [versions]
 activityComposeVersion = "1.10.1"
-agp = "8.11.0"
+agp = "8.11.1"
 appcompatVersion = "1.7.1"
 coilComposeVersion = "2.7.0"
 coilVideoVersion = "2.7.0"
@@ -16,6 +16,7 @@ gms = "4.4.3"
 junitJunit = "4.13.2"
 kotlin = "2.2.0"
 kotlinStdlibVersion = "2.2.0"
+kspVertion = "2.2.0-2.0.2"
 lifecycleLivedataKtxVersion = "2.9.1"
 lifecycleViewmodelComposeVersion = "2.9.1"
 lifecycleViewmodelKtxVersion = "2.9.1"
@@ -36,6 +37,7 @@ runtimeAndroidVersion = "1.8.3"
 runtimeLivedataVersion = "1.8.3"
 uiViewbindingVersion = "1.8.3"
 firebaseFirestoreKtxVersion = "25.1.4"
+roomCompiler = "2.7.2"
 
 [libraries]
 activity-compose = { module = "androidx.activity:activity-compose", version.ref = "activityComposeVersion" }
@@ -77,6 +79,9 @@ ui-tooling = { module = "androidx.compose.ui:ui-tooling" }
 ui-tooling-preview = { module = "androidx.compose.ui:ui-tooling-preview" }
 ui-viewbinding = { module = "androidx.compose.ui:ui-viewbinding", version.ref = "uiViewbindingVersion" }
 firebase-firestore-ktx = { group = "com.google.firebase", name = "firebase-firestore-ktx", version.ref = "firebaseFirestoreKtxVersion" }
+androidx-room-compiler = { group = "androidx.room", name = "room-compiler", version.ref = "roomCompiler" }
+androidx-room-runtime = { group = "androidx.room", name = "room-runtime", version.ref = "roomCompiler" }
+
 
 [plugins]
 android-application = { id = "com.android.application", version.ref = "agp" }
@@ -84,3 +89,7 @@ kotlin-android = { id = "org.jetbrains.kotlin.android", version.ref = "kotlin" }
 kotlin-compose = { id = "org.jetbrains.kotlin.plugin.compose", version.ref = "kotlin" }
 chaquo-python = { id = "com.chaquo.python", version.ref = "chaquo" }
 google-gms = { id = "com.google.gms.google-services", version.ref = "gms" }
+
+#KSP
+kotlin-devtools-ksp = { id = "com.google.devtools.ksp", version.ref = "kspVertion"}
+

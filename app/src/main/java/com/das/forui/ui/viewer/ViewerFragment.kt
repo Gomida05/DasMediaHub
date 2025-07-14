@@ -111,14 +111,13 @@ import com.das.forui.MainActivity
 import com.das.forui.R
 import com.das.forui.ui.viewer.GlobalVideoList.listOfVideosListData
 import com.das.forui.ui.viewer.GlobalVideoList.previousVideosListData
-import com.das.forui.MainApplication
 import com.das.forui.Screen
-import com.das.forui.databased.DatabaseFavorite
-import com.das.forui.databased.WatchHistory
-import com.das.forui.objectsAndData.ForUIKeyWords.ACTION_START
-import com.das.forui.objectsAndData.ForUIKeyWords.NEW_INTENT_FOR_VIEWER
-import com.das.forui.objectsAndData.ForUIDataClass.VideoDetails
-import com.das.forui.objectsAndData.ForUIDataClass.VideosListData
+import com.das.forui.data.databased.DatabaseFavorite
+import com.das.forui.data.databased.WatchHistory
+import com.das.forui.data.constants.Action.ACTION_START
+import com.das.forui.data.constants.Intents.NEW_INTENT_FOR_VIEWER
+import com.das.forui.data.model.VideoDetails
+import com.das.forui.data.model.VideosListData
 import com.das.forui.ui.viewer.GlobalVideoList.bundles
 
 
@@ -362,7 +361,8 @@ fun VideoPlayerScreen(
                                 }
                                 CategoryItems(
                                     navController,
-                                    searchItem
+                                    searchItem,
+                                    viewModel
                                 )
                                 listOfVideosListData.add(searchItem)
 
@@ -719,7 +719,8 @@ fun ComingSoonAlertDialog(
 @Composable
 fun CategoryItems(
     navController: NavController,
-    searchItem: VideosListData
+    searchItem: VideosListData,
+    viewModel: ViewerViewModel
 ) {
     val context = LocalContext.current
     val videoId = searchItem.videoId
@@ -892,6 +893,7 @@ fun CategoryItems(
                 videoId, title, viewsNumber, dateOfVideo,
                 duration, channelName, channelThumbnails
             ),
+            viewModel,
             onDismissRequest = { showDialog = false }
         )
     }
@@ -980,9 +982,38 @@ private fun ShowDescriptionDialog(
 private fun ShowAlertDialog(
     mContext: Context,
     selectedItem: VideosListData,
+    viewModel: ViewerViewModel,
     onDismissRequest: () ->Unit
 ){
     val thumbnailUrl = "https://img.youtube.com/vi/${selectedItem.videoId}/0.jpg"
+
+
+    var shouldLoad by remember { mutableStateOf(false) }
+
+    if (shouldLoad) {
+        LaunchedEffect(Unit) {
+            viewModel.getListItemsStreamUrls(
+                selectedItem,
+                onSuccess = {
+                    val playIntent = Intent(mContext, AudioServiceFromUrl::class.java).apply {
+                        action = ACTION_START
+                        putExtra("videoId", selectedItem.videoId)
+                        putExtra("media_url", it.audioUrl)
+                        putExtra("title", selectedItem.title)
+                        putExtra("channelName", selectedItem.channelName)
+                        putExtra("viewNumber", selectedItem.views)
+                        putExtra("videoDate", selectedItem.dateOfVideo)
+                        putExtra("duration", selectedItem.duration)
+                    }
+                    mContext.startService(playIntent)
+                },
+                onFailure = {
+                    println("Error: $it")
+                }
+            )
+            shouldLoad = false
+        }
+    }
 
     Dialog(onDismissRequest = { onDismissRequest() }) {
         Card(
@@ -1022,26 +1053,7 @@ private fun ShowAlertDialog(
                 ) {
                     TextButton(
                         onClick = {
-                            MainApplication().getListItemsStreamUrls(
-                                selectedItem,
-                                onSuccess = { result ->
-                                    val playIntent = Intent(mContext, AudioServiceFromUrl::class.java).apply {
-                                            action = ACTION_START
-                                            putExtra("videoId", selectedItem.videoId)
-                                            putExtra("media_url", result.audioUrl)
-                                            putExtra("title", selectedItem.title)
-                                            putExtra("channelName", selectedItem.channelName)
-                                            putExtra("viewNumber", selectedItem.views)
-                                            putExtra("videoDate", selectedItem.dateOfVideo)
-                                            putExtra("duration", selectedItem.duration)
-                                        }
-                                    mContext.startService(playIntent)
-                                },
-                                onFailure = { errorMessage ->
-                                    // Handle the error (e.g., show a dialog with the error message)
-                                    println("Error: $errorMessage")
-                                }
-                            )
+                            shouldLoad = true
                             onDismissRequest()
                         },
                         modifier = Modifier.padding(4.dp),

@@ -4,8 +4,11 @@ import androidx.compose.runtime.State
 import androidx.compose.runtime.mutableStateOf
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import com.das.forui.objectsAndData.Youtuber.pythonInstant
-import com.das.forui.objectsAndData.ForUIDataClass.SearchResultFromMain
+import com.das.forui.data.Youtuber.pythonInstant
+import com.das.forui.data.model.SearchResultFromMain
+import com.das.forui.data.Youtuber.getListItemStreamUrl
+import com.das.forui.data.model.ItemsStreamUrlsForMediaItemData
+import com.das.forui.data.model.VideosListData
 import com.google.gson.Gson
 import com.google.gson.reflect.TypeToken
 import kotlinx.coroutines.Dispatchers
@@ -34,10 +37,30 @@ class ResultViewModel: ViewModel() {
         }
     }
 
+    fun getListItemsStreamUrls(
+        data: VideosListData,
+        onSuccess: (ItemsStreamUrlsForMediaItemData) -> Unit,
+        onFailure: (String) -> Unit
+    ) {
+        viewModelScope.launch {
+            try {
+                val result = withContext(Dispatchers.IO) {
+                    getListItemStreamUrl(data)
+                }
+
+                onSuccess(result)
+            } catch (e: Exception) {
+                onFailure("Failed: ${e.message}")
+            }
+        }
+    }
+
 
     private fun callPythonForSearchVideos(inputText: String): List<SearchResultFromMain>? {
         return try {
-            val variable = pythonInstant["Searcher"]?.call(inputText)
+            val python = pythonInstant.getModule("main")
+
+            val variable = python["Searcher"]?.call(inputText)
             if (variable.isNullOrEmpty() || variable.toString() == "False"){
                 _isThereError.value = variable.toString()
                 null
@@ -52,4 +75,6 @@ class ResultViewModel: ViewModel() {
             return null
         }
     }
+
+
 }

@@ -7,8 +7,11 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.State
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
-import com.das.forui.databased.DatabaseFavorite
-import com.das.forui.objectsAndData.ForUIDataClass.SavedVideosListData
+import com.das.forui.data.databased.DatabaseFavorite
+import com.das.forui.data.model.SavedVideosListData
+import com.das.forui.data.Youtuber.getListItemStreamUrl
+import com.das.forui.data.model.ItemsStreamUrlsForMediaItemData
+import com.das.forui.data.model.VideosListData
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
@@ -29,6 +32,24 @@ class WatchLaterViewModel(application: Application) : AndroidViewModel(applicati
             withContext(Dispatchers.Main) {
                 _searchResults.value = result ?: emptyList()
                 _isLoading.value = false
+            }
+        }
+    }
+
+    fun getListItemsStreamUrls(
+        data: VideosListData,
+        onSuccess: (ItemsStreamUrlsForMediaItemData) -> Unit,
+        onFailure: (String) -> Unit
+    ) {
+        viewModelScope.launch {
+            try {
+                val result = withContext(Dispatchers.IO) {
+                    getListItemStreamUrl(data)
+                }
+
+                onSuccess(result)
+            } catch (e: Exception) {
+                onFailure("Failed: ${e.message}")
             }
         }
     }

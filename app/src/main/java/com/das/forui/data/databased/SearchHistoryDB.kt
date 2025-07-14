@@ -1,4 +1,4 @@
-package com.das.forui.databased
+package com.das.forui.data.databased
 
 import android.content.ContentValues
 import android.content.Context

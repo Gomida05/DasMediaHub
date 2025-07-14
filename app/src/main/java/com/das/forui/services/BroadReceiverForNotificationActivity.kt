@@ -1,6 +1,5 @@
 package com.das.forui.services
 
-import android.annotation.SuppressLint
 import android.app.ActivityManager
 import android.app.DownloadManager
 import android.app.NotificationManager
@@ -11,17 +10,16 @@ import android.content.Context
 import android.content.Intent
 import android.widget.Toast
 import androidx.core.app.NotificationCompat
-import androidx.core.app.NotificationManagerCompat
 import com.das.forui.R
-import com.das.forui.objectsAndData.ForUIKeyWords.AUDIO_SERVICE_FROM_URL_NOTIFICATION
-import com.das.forui.objectsAndData.ForUIKeyWords.BACKGROUND_GROUND_PLAYER_NOTIFICATION
-import com.das.forui.objectsAndData.ForUIKeyWords.DOWNLOADER_NOTIFICATION_CHANNEL
-import com.das.forui.objectsAndData.ForUIKeyWords.EXCEPTED_DOWNLOAD_ID
+import com.das.forui.data.constants.Notifications.AUDIO_SERVICE_FROM_URL_NOTIFICATION
+import com.das.forui.data.constants.Notifications.BACKGROUND_GROUND_PLAYER_NOTIFICATION
+import com.das.forui.data.constants.Notifications.DOWNLOADER_NOTIFICATION_CHANNEL
+import com.das.forui.data.constants.DownloadConstants.EXCEPTED_DOWNLOAD_ID
 
 
 class BroadReceiverForNotificationActivity: BroadcastReceiver() {
 
-    @SuppressLint("MissingPermission")
+
     override fun onReceive(context: Context?, intent: Intent?) {
 
         when (intent?.action) {

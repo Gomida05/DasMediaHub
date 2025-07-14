@@ -62,12 +62,12 @@ import coil.request.ImageRequest
 import coil.request.videoFrameMillis
 import com.das.forui.R
 import com.das.forui.Screen
-import com.das.forui.databased.PathSaver.getVideosDownloadPath
-import com.das.forui.databased.PathSaver.getAudioDownloadPath
-import com.das.forui.objectsAndData.ForUIKeyWords.ACTION_START
-import com.das.forui.objectsAndData.ForUIKeyWords.PLAY_HERE_VIDEO
+import com.das.forui.data.databased.PathSaver.getVideosDownloadPath
+import com.das.forui.data.databased.PathSaver.getAudioDownloadPath
+import com.das.forui.data.constants.Action.ACTION_START
+import com.das.forui.data.constants.Playback.PLAY_HERE_VIDEO
 import com.das.forui.services.BackGroundPlayer
-import com.das.forui.objectsAndData.Youtuber.mediaItems
+import com.das.forui.data.Youtuber.mediaItems
 import com.das.forui.ui.viewer.GlobalVideoList.bundles
 import java.io.File
 

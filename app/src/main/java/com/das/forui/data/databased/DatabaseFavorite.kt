@@ -1,4 +1,4 @@
-package com.das.forui.databased
+package com.das.forui.data.databased
 
 import android.content.ContentValues
 import android.content.Context
@@ -7,44 +7,56 @@ import android.database.sqlite.SQLiteDatabase
 import android.database.sqlite.SQLiteOpenHelper
 import android.util.Log
 
-class WatchHistory(context: Context) : SQLiteOpenHelper(context, DATABASE_NAME, null, DATABASE_VERSION) {
-
+class DatabaseFavorite(context: Context) : SQLiteOpenHelper(context, DATABASE_NAME, null, DATABASE_VERSION) {
 
     override fun onCreate(db: SQLiteDatabase) {
         db.execSQL(SQL_CREATE_ENTRIES)
     }
 
-    override fun onUpgrade(db: SQLiteDatabase?, oldVersion: Int, newVersion: Int) {
+    override fun onUpgrade(db: SQLiteDatabase, oldVersion: Int, newVersion: Int) {
+        db.execSQL(SQL_DELETE_ENTRIES)
+        onCreate(db)
+    }
+
+    override fun onDowngrade(db: SQLiteDatabase?, oldVersion: Int, newVersion: Int) {
         if (db != null) {
             db.execSQL(SQL_DELETE_ENTRIES)
             onCreate(db)
         }
     }
 
-    fun insertNewVideo(
+
+
+    fun getResults(): Cursor {
+        val db = readableDatabase
+        return db.rawQuery("SELECT * FROM $FAVOURITE_TABLE_NAME ORDER BY rowid DESC", null)
+    }
+
+
+
+
+    fun isWatchUrlExist(url: String): Boolean {
+        val db = readableDatabase
+        val cursor = db.rawQuery("SELECT 1 FROM $FAVOURITE_TABLE_NAME WHERE video_id = ?", arrayOf(url))
+
+        val exists = cursor.count > 0
+        cursor.close()
+        db.close()
+
+        return exists // Return true if URL exists, otherwise false
+    }
+
+
+
+
+    fun insertData(
         videoId: String, title: String, videoDate:String, videoViewCount:String,
-        videoChannelName:String, duration:String, channelThumbnail: String
-    ): Boolean{
+        videoChannelName:String, duration:String,
+        channelThumbnail: String): Boolean {
         if(isWatchUrlExist(videoId)){
             return false
         }
-
         val db = this.writableDatabase
-        val countQuery = "SELECT COUNT(*) FROM $FAVOURITE_TABLE_NAME"
-        val cursor = db.rawQuery(countQuery, null)
-        var count = 0
-        if (cursor.moveToFirst()) {
-            count = cursor.getInt(0)
-        }
-        cursor.close()
-
-        // If there are more than 27 rows, delete the oldest
-        if (count >= 30) {
-            val deleteQuery = "DELETE FROM $FAVOURITE_TABLE_NAME WHERE rowid IN " +
-                    "(SELECT rowid FROM $FAVOURITE_TABLE_NAME ORDER BY rowid ASC LIMIT 1)"
-            db.execSQL(deleteQuery)
-        }
-
         val contentValues = ContentValues().apply {
             put("video_id", videoId)
             put("title", title)
@@ -60,24 +72,6 @@ class WatchHistory(context: Context) : SQLiteOpenHelper(context, DATABASE_NAME, 
         val result = db.insert(FAVOURITE_TABLE_NAME, null, contentValues)
         db.close()
         return result != -1L
-    }
-
-
-
-    private fun isWatchUrlExist(url: String): Boolean {
-        val db = readableDatabase
-        val cursor = db.rawQuery("SELECT 1 FROM Watched_Videos WHERE video_id = ?", arrayOf(url))
-
-        val exists = cursor.count > 0
-        cursor.close()
-        db.close()
-
-        return exists
-    }
-
-    fun getResults(): Cursor {
-        val db = readableDatabase
-        return db.rawQuery("SELECT * FROM $FAVOURITE_TABLE_NAME ORDER BY rowid DESC", null)
     }
 
 
@@ -105,6 +99,8 @@ class WatchHistory(context: Context) : SQLiteOpenHelper(context, DATABASE_NAME, 
         return viewNumber
     }
 
+
+
     fun getViewNumber(videoId: String): String? {
         val db = this.readableDatabase
         try {
@@ -128,7 +124,7 @@ class WatchHistory(context: Context) : SQLiteOpenHelper(context, DATABASE_NAME, 
             cursor.close()
             db.close()
             return viewNumber
-        } catch (e: Exception) {
+        } catch (_: Exception) {
 //            MainActivity().alertUserError(e.message.toString())
             return null
         }
@@ -245,15 +241,15 @@ class WatchHistory(context: Context) : SQLiteOpenHelper(context, DATABASE_NAME, 
         db.close()
         return rowsDeleted
     }
-    
-    companion object {
-        private const val FAVOURITE_TABLE_NAME = "Watched_Videos"
-        private const val DATABASE_VERSION = 1
-        private const val DATABASE_NAME = "history.db"
-        private const val SQL_CREATE_ENTRIES =
-            """ CREATE TABLE IF NOT EXISTS Watched_Videos ( video_id TEXT PRIMARY KEY, title TEXT NOT NULL, viewNumber TEXT NOT NULL, videoDate TEXT NOT NULL, videoChannelName TEXT NOT NULL, duration TEXT NOT NULL, channelThumbnail TEXT NOT NULL) """
 
-        private const val SQL_DELETE_ENTRIES = "DROP TABLE IF EXISTS Watched_Videos"
+    companion object {
+        private const val FAVOURITE_TABLE_NAME = "Saved_for_later"
+        private const val DATABASE_VERSION = 3
+        private const val DATABASE_NAME = "favorites.db"
+        private const val SQL_CREATE_ENTRIES =
+            """ CREATE TABLE IF NOT EXISTS $FAVOURITE_TABLE_NAME ( video_id TEXT PRIMARY KEY, title TEXT NOT NULL, viewNumber TEXT NOT NULL, videoDate TEXT NOT NULL, videoChannelName TEXT NOT NULL, duration TEXT NOT NULL, channelThumbnail TEXT NOT NULL) """
+
+        private const val SQL_DELETE_ENTRIES = "DROP TABLE IF EXISTS $FAVOURITE_TABLE_NAME"
     }
 
 }

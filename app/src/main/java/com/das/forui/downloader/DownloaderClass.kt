@@ -15,13 +15,15 @@ import android.provider.Settings
 import android.webkit.MimeTypeMap
 import androidx.core.app.NotificationCompat
 import com.das.forui.R
-import com.das.forui.databased.PathSaver.getAudioDownloadPath
-import com.das.forui.databased.PathSaver.getVideosDownloadPath
-import com.das.forui.objectsAndData.ForUIDataClass.AppUpdateInfo
-import com.das.forui.objectsAndData.ForUIDataClass.DownloadData
-import com.das.forui.objectsAndData.ForUIKeyWords.DOWNLOADER_NOTIFICATION_CHANNEL
-import com.das.forui.objectsAndData.ForUIKeyWords.EXCEPTED_DOWNLOAD_ID
+import com.das.forui.data.databased.PathSaver.getAudioDownloadPath
+import com.das.forui.data.databased.PathSaver.getVideosDownloadPath
+import com.das.forui.data.model.AppUpdateInfo
+import com.das.forui.data.model.DownloadData
+import com.das.forui.data.constants.Notifications.DOWNLOADER_NOTIFICATION_CHANNEL
+import com.das.forui.data.constants.DownloadConstants.EXCEPTED_DOWNLOAD_ID
 import java.io.File
+import androidx.core.net.toUri
+import androidx.core.content.edit
 
 
 class DownloaderClass(val context: Context): ForUIDownloader {
@@ -36,7 +38,7 @@ class DownloaderClass(val context: Context): ForUIDownloader {
         createNotificationChannel()
         val builder = createMediaNotificationForProgress(title)
 
-        val uri = Uri.parse(url)
+        val uri = url.toUri()
         val pathVideo = getVideosDownloadPath(context)
         createSingleDirectory(pathVideo)
         val customFilePath = File("$pathVideo/$title.mp4")
@@ -70,7 +72,7 @@ class DownloaderClass(val context: Context): ForUIDownloader {
         createNotificationChannel()
         val builder = createMediaNotificationForProgress(title)
 
-        val uri = Uri.parse(url)
+        val uri = url.toUri()
         val pathVideo = getAudioDownloadPath(context)
         createSingleDirectory(pathVideo)
         val customFilePath = File("$pathVideo/$title.mp3")
@@ -103,7 +105,7 @@ class DownloaderClass(val context: Context): ForUIDownloader {
         createNotificationChannel()
         val builder = createMediaNotificationForProgress(title)
 
-        val uri = Uri.parse(url)
+        val uri = url.toUri()
         val pathVideo = getVideosDownloadPath(context)
         createSingleDirectory(pathVideo)
         val customFilePath = File("$pathVideo/$playListName/$title.mp4")
@@ -137,7 +139,7 @@ class DownloaderClass(val context: Context): ForUIDownloader {
         createSingleDirectory(pathVideo)
         for (i in urls) {
             val builder = createMediaNotificationForProgress(i.title)
-            val uri = Uri.parse(i.url)
+            val uri = i.url.toUri()
             val customFilePath = File("$pathVideo/${i.title}.mp3")
 
             if (customFilePath.parentFile?.exists()!!) {
@@ -285,13 +287,13 @@ class DownloaderClass(val context: Context): ForUIDownloader {
             !context.packageManager.canRequestPackageInstalls()
         ) {
             val intent = Intent(Settings.ACTION_MANAGE_UNKNOWN_APP_SOURCES).apply {
-                data = Uri.parse("package:" + context.packageName)
+                data = ("package:" + context.packageName).toUri()
             }
             context.startActivity(intent)
             return
         }
 
-        val request = DownloadManager.Request(Uri.parse(appInfo.appURL))
+        val request = DownloadManager.Request(appInfo.appURL.toUri())
             .setTitle("Downloading Update")
             .setDescription("YouTube Downloader v${appInfo.versionName}")
             .setMimeType("application/vnd.android.package-archive")
@@ -303,7 +305,7 @@ class DownloaderClass(val context: Context): ForUIDownloader {
 
         val downloadId = downloadManager.enqueue(request)
         val prefs = context.getSharedPreferences("app_prefs", Context.MODE_PRIVATE)
-        prefs.edit().putLong(EXCEPTED_DOWNLOAD_ID, downloadId).apply()
+        prefs.edit { putLong(EXCEPTED_DOWNLOAD_ID, downloadId) }
 
     }
 

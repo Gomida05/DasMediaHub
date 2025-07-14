@@ -58,13 +58,12 @@ import coil.compose.AsyncImage
 import coil.request.CachePolicy
 import coil.request.ImageRequest
 import com.das.forui.MainActivity
-import com.das.forui.MainApplication
 import com.das.forui.R
-import com.das.forui.databased.DatabaseFavorite
-import com.das.forui.objectsAndData.ForUIKeyWords.ACTION_START
-import com.das.forui.objectsAndData.ForUIKeyWords.NEW_INTENT_FOR_VIEWER
-import com.das.forui.objectsAndData.ForUIDataClass.SavedVideosListData
-import com.das.forui.objectsAndData.ForUIDataClass.VideosListData
+import com.das.forui.data.databased.DatabaseFavorite
+import com.das.forui.data.constants.Action.ACTION_START
+import com.das.forui.data.constants.Intents.NEW_INTENT_FOR_VIEWER
+import com.das.forui.data.model.SavedVideosListData
+import com.das.forui.data.model.VideosListData
 import com.das.forui.services.AudioServiceFromUrl
 import com.das.forui.ui.viewer.GlobalVideoList.bundles
 
@@ -124,19 +123,26 @@ fun WatchLaterComposable(navController: NavController) {
                         Text(
                             text = "You don't have any saved videos int your collection!." +
                                     "\nSave some videos to add to your collection! ",
-                            style = MaterialTheme.typography.headlineMedium,
+                            style = MaterialTheme.typography.headlineMedium
+                                .copy(textAlign = TextAlign.Center),
                             fontSize = 20.sp,
-                            textAlign = TextAlign.Center,
+                            modifier = Modifier
+                                .fillMaxWidth()
                         )
                     }
                     item {
-                        Icon(
-                            imageVector = Icons.Default.VideoLibrary,
-                            "",
-
-                            modifier = Modifier
-                                .size(60.dp)
-                        )
+                        Box(
+                            contentAlignment = Alignment.Center,
+                            modifier = Modifier.fillMaxWidth()
+                        ) {
+                            Icon(
+                                imageVector = Icons.Default.VideoLibrary,
+                                contentDescription = "",
+                                modifier = Modifier
+                                    .size(60.dp)
+                                    .align(Alignment.Center)
+                            )
+                        }
                     }
                 } else {
                     items(searchResults, key = { it.watchUrl }) { searchItem ->
@@ -323,6 +329,7 @@ private fun CategoryItems(
         ShowAlertDialog(
             context,
             selectedItem,
+            viewModel,
             deleteTheItem = { selectedId->
                 DatabaseFavorite(context).deleteWatchUrl(selectedId)
                 viewModel.removeSearchItem(selectedItem)
@@ -414,9 +421,41 @@ private fun onClickListListener(
 private fun ShowAlertDialog(
     context: Context,
     selectedData: SavedVideosListData,
+    viewModel: WatchLaterViewModel,
     deleteTheItem: (selectedId: String) -> Unit,
     onDismissRequest: () ->Unit
 ){
+
+    var shouldLoad by remember { mutableStateOf(false) }
+
+    if (shouldLoad) {
+        LaunchedEffect(Unit) {
+            viewModel.getListItemsStreamUrls(
+                VideosListData(
+                    selectedData.watchUrl, selectedData.title, selectedData.viewer,
+                    selectedData.dateTime, selectedData.duration, selectedData.channelName, ""
+                ),
+                onSuccess = {
+                    val playIntent = Intent(context, AudioServiceFromUrl::class.java).apply {
+                        action = ACTION_START
+                        putExtra("videoId", selectedData.watchUrl)
+                        putExtra("media_url", it.audioUrl)
+                        putExtra("title", selectedData.title)
+                        putExtra("channelName", selectedData.channelName)
+                        putExtra("viewNumber", selectedData.viewer)
+                        putExtra("videoDate", selectedData.dateTime)
+                        putExtra("duration", selectedData.duration)
+                    }
+                    context.startService(playIntent)
+                },
+                onFailure = {
+                    println("Error: $it")
+                }
+            )
+            shouldLoad = false
+        }
+    }
+
     AlertDialog(
         onDismissRequest= onDismissRequest,
         title = {
@@ -436,33 +475,7 @@ private fun ShowAlertDialog(
          dismissButton = {
              TextButton(
             onClick = {
-                MainApplication().getListItemsStreamUrls(
-                    VideosListData(
-                        selectedData.watchUrl, selectedData.title, selectedData.viewer,
-                        selectedData.dateTime, selectedData.duration, selectedData.channelName, ""
-                    ),
-                    onSuccess = { result ->
-                        val playIntent =
-                            Intent(
-                                context,
-                                AudioServiceFromUrl::class.java
-                            ).apply {
-                                action = ACTION_START
-                                putExtra("videoId", selectedData.watchUrl)
-                                putExtra("media_url", result.audioUrl)
-                                putExtra("title", selectedData.title)
-                                putExtra("channelName", selectedData.channelName)
-                                putExtra("viewNumber", selectedData.viewer)
-                                putExtra("videoDate", selectedData.dateTime)
-                                putExtra("duration", selectedData.duration)
-                            }
-                        context.startService(playIntent)
-                    },
-                    onFailure = { errorMessage ->
-                        // Handle the error (e.g., show a dialog with the error message)
-                        println("Error: $errorMessage")
-                    }
-                )
+                shouldLoad = true
                 onDismissRequest()
             },
 

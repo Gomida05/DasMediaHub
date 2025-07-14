@@ -1,14 +1,13 @@
-package com.das.forui.objectsAndData
+package com.das.forui.data
 
 import android.os.Build
 import android.util.Log
 import androidx.media3.common.MediaItem
-import com.chaquo.python.Python.getInstance
-import com.das.forui.objectsAndData.ForUIKeyWords.YOUTUBE_HOST_1
-import com.das.forui.objectsAndData.ForUIKeyWords.YOUTUBE_HOST_2
-import com.das.forui.objectsAndData.ForUIKeyWords.YOUTUBE_HOST_3
-import com.das.forui.objectsAndData.ForUIKeyWords.YOUTUBE_REGEX
-import com.das.forui.objectsAndData.ForUIDataClass.PlayListDataClass
+import com.chaquo.python.Python
+import com.das.forui.data.constants.Youtube
+import com.das.forui.data.model.ItemsStreamUrlsForMediaItemData
+import com.das.forui.data.model.PlayListDataClass
+import com.das.forui.data.model.VideosListData
 import com.google.gson.Gson
 import com.google.gson.JsonSyntaxException
 import com.google.gson.reflect.TypeToken
@@ -24,9 +23,8 @@ import java.util.Date
 import java.util.Locale
 import java.util.regex.Pattern
 
-
 object Youtuber {
-    val pythonInstant = getInstance().getModule("main")
+    val pythonInstant = Python.getInstance()
     var mediaItems = mutableListOf<MediaItem>()
 
     /**
@@ -37,7 +35,7 @@ object Youtuber {
      */
     fun youtubeExtractor(url: String): String? {
 
-        val pattern = Regex(YOUTUBE_REGEX)
+        val pattern = Regex(Youtube.YOUTUBE_REGEX)
         val match = pattern.find((url))
         return match?.groups?.get(1)?.value
     }
@@ -86,11 +84,11 @@ object Youtuber {
             val url = URL(cleanedUrl)
 
             val host = url.host
-            if (host == YOUTUBE_HOST_1 || host == YOUTUBE_HOST_2) {
+            if (host == Youtube.YOUTUBE_HOST_1 || host == Youtube.YOUTUBE_HOST_2) {
                 val videoPattern = Pattern.compile("^/watch\\?v=([A-Za-z0-9_-]{11})$")
                 val matcher = videoPattern.matcher("${url.path}?${url.query}")
                 return matcher.matches()
-            } else if (host == YOUTUBE_HOST_3) {
+            } else if (host == Youtube.YOUTUBE_HOST_3) {
                 // Shortened YouTube URL (youtu.be/VIDEO_ID)
                 val videoPattern = Pattern.compile("^/([A-Za-z0-9_-]{11})$")
                 val matcher = videoPattern.matcher(url.path)  // Check the path only
@@ -113,6 +111,28 @@ object Youtuber {
     fun extractPlaylistId(url: String): String? {
         val regex = Regex(""".*[?&]list=([a-zA-Z0-9_-]+)""")
         return regex.find(url)?.groupValues?.get(1)
+    }
+
+
+    fun getListItemStreamUrl(data: VideosListData): ItemsStreamUrlsForMediaItemData {
+        val python = pythonInstant.getModule("main")
+        val variable = python["get_audio_url"]
+        val result = variable?.call("https://www.youtube.com/watch?v=${data.videoId}").toString()
+
+        if (result != "False") {
+            return ItemsStreamUrlsForMediaItemData(
+                result,
+                data.videoId,
+                data.title,
+                data.views,
+                data.dateOfVideo,
+                data.duration,
+                data.channelName,
+                data.channelThumbnailsUrl
+            )
+        } else {
+            throw Exception("Something went wrong: $result")
+        }
     }
 
 
@@ -162,7 +182,7 @@ object Youtuber {
         val days = totalSeconds / (3600 * 24)
 
         return when {
-            days > 0 -> String.format(
+            days > 0 -> String.Companion.format(
                 Locale.ENGLISH,
                 "%02d:%02d:%02d:%02d",
                 days,
@@ -171,7 +191,7 @@ object Youtuber {
                 seconds
             )
 
-            hours > 0 -> String.format(
+            hours > 0 -> String.Companion.format(
                 Locale.ENGLISH,
                 "%02d:%02d:%02d",
                 hours,
@@ -179,7 +199,7 @@ object Youtuber {
                 seconds
             )
 
-            else -> String.format(Locale.ENGLISH, "%02d:%02d", minutes, seconds)
+            else -> String.Companion.format(Locale.ENGLISH, "%02d:%02d", minutes, seconds)
         }
     }
 
@@ -190,8 +210,9 @@ object Youtuber {
         onFailure: (String) -> Unit
     ) {
         try {
+            val python = pythonInstant.getModule("main")
             CoroutineScope(Dispatchers.IO).launch {
-                val variable = pythonInstant["get_video_url"]
+                val variable = python["get_video_url"]
 
 
                 val result = variable?.call("https://www.youtube.com/watch?v=${videoId}").toString()
@@ -219,7 +240,8 @@ object Youtuber {
     ) {
         try {
             CoroutineScope(Dispatchers.IO).launch {
-                val variable = pythonInstant["get_audio_url"]
+                val python = pythonInstant.getModule("main")
+                val variable = python["get_audio_url"]
 
 
                 val result = variable?.call("https://www.youtube.com/watch?v=${videoId}").toString()
@@ -275,8 +297,9 @@ object Youtuber {
     private fun callPythonSearchSuggestion(inputText: String): List<PlayListDataClass>? {
         return try {
 
+            val python = pythonInstant.getModule("main")
 
-            val getResultFromPython = pythonInstant["getPlayListUrls"]?.call(inputText)
+            val getResultFromPython = python["getPlayListUrls"]?.call(inputText)
 
             if (!getResultFromPython.isNullOrEmpty()) {
                 val videosListDataListType = object : TypeToken<List<PlayListDataClass>>() {}.type

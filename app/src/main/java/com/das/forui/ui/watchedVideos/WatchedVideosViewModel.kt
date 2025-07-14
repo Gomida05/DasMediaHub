@@ -7,8 +7,11 @@ import androidx.compose.runtime.State
 import androidx.compose.runtime.mutableStateOf
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
-import com.das.forui.databased.WatchHistory
-import com.das.forui.objectsAndData.ForUIDataClass.SavedVideosListData
+import com.das.forui.data.databased.WatchHistory
+import com.das.forui.data.model.SavedVideosListData
+import com.das.forui.data.Youtuber.getListItemStreamUrl
+import com.das.forui.data.model.ItemsStreamUrlsForMediaItemData
+import com.das.forui.data.model.VideosListData
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
@@ -28,6 +31,24 @@ class WatchedVideosViewModel(application: Application): AndroidViewModel(applica
             _savedLists.value = result ?: emptyList()
             _isLoading.value = false
 
+        }
+    }
+
+    fun getListItemsStreamUrls(
+        data: VideosListData,
+        onSuccess: (ItemsStreamUrlsForMediaItemData) -> Unit,
+        onFailure: (String) -> Unit
+    ) {
+        viewModelScope.launch {
+            try {
+                val result = withContext(Dispatchers.IO) {
+                    getListItemStreamUrl(data)
+                }
+
+                onSuccess(result)
+            } catch (e: Exception) {
+                onFailure("Failed: ${e.message}")
+            }
         }
     }
 

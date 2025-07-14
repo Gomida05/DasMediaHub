@@ -54,8 +54,8 @@ import androidx.compose.ui.unit.dp
 import androidx.documentfile.provider.DocumentFile
 import androidx.navigation.NavController
 import com.das.forui.Screen
-import com.das.forui.databased.PathSaver.setAudioDownloadPath
-import com.das.forui.databased.PathSaver.setMoviesDownloadPath
+import com.das.forui.data.databased.PathSaver.setAudioDownloadPath
+import com.das.forui.data.databased.PathSaver.setMoviesDownloadPath
 import com.das.forui.theme.ThemePreferences.loadDarkModeState
 import com.das.forui.theme.ThemePreferences.saveDarkMode
 import com.das.forui.theme.AppTheme

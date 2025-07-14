@@ -6,6 +6,9 @@ plugins {
     alias(libs.plugins.kotlin.compose)
     alias(libs.plugins.chaquo.python)
     alias(libs.plugins.google.gms)
+
+    //ksp
+    alias(libs.plugins.kotlin.devtools.ksp)
 }
 
 
@@ -26,15 +29,13 @@ android {
         minSdk = 24
         targetSdk = 36
         versionCode = 3
-        versionName = "1.21"
+        versionName = "1.23"
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
         flavorDimensions.add("pyVersion")
         ndk {
             abiFilters.addAll(listOf("arm64-v8a", "x86_64"))
         }
-
-
     }
 
 
@@ -64,9 +65,7 @@ android {
     tasks.withType<org.jetbrains.kotlin.gradle.tasks.KotlinCompile>().configureEach {
         compilerOptions {
             jvmTarget.set(JvmTarget.JVM_17)
-//            allWarningsAsErrors.set(false)
             freeCompilerArgs.add("-opt-in=androidx.compose.material3.ExperimentalMaterial3Api")
-//            freeCompilerArgs.add("-Xlint:deprecation")
         }
     }
 
@@ -92,7 +91,7 @@ chaquopy {
         buildPython("C:\\Users\\esrom\\AppData\\Local\\Programs\\Python\\Python313\\python.exe")
 
         pip {
-            install("pytubefix")
+            install("pytubefix==8.12.1")
             install("youtube-search-python")
             install("httpx<0.28")
         }
@@ -109,6 +108,9 @@ chaquopy {
 
 dependencies {
 
+    //Room
+    implementation(libs.androidx.room.runtime)
+    ksp(libs.androidx.room.compiler)
 
     //Firebase dependencies
     implementation(platform(libs.firebase.bom))
