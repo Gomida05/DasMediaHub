@@ -53,7 +53,7 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
 import androidx.documentfile.provider.DocumentFile
 import androidx.navigation.NavController
-import com.das.forui.Screen
+import com.das.forui.NavScreens
 import com.das.forui.data.databased.PathSaver.setAudioDownloadPath
 import com.das.forui.data.databased.PathSaver.setMoviesDownloadPath
 import com.das.forui.theme.ThemePreferences.loadDarkModeState
@@ -111,7 +111,7 @@ fun UserSettingComposable(navController: NavController) {
                 Spacer(modifier = Modifier.height(12.dp))
                 SettingCard(title = "New Features") {
                     TestLoginPage1 {
-                        navController.navigate(Screen.LoginPage1.route)
+                        navController.navigate(NavScreens.LoginPage1.route)
                     }
                 }
             }

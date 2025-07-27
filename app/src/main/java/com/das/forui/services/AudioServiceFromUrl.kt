@@ -51,12 +51,30 @@ class AudioServiceFromUrl : Service() {
     private lateinit var durationFromActivity: String
     private var audioFocusRequest: AudioFocusRequest? = null
 
+    private val mediaSessionState = MediaSessionPlaybackState(this)
 
     override fun onCreate() {
         super.onCreate()
         createNotificationChannel()
         audioManager = getSystemService(AudioManager::class.java)
-        exoPlayer = ExoPlayer.Builder(this).build()
+        exoPlayer = ExoPlayer.Builder(this)
+            .build()
+
+        mediaSession = MediaSessionCompat(this, "AudioService").apply {
+            isActive = true
+            @Suppress("DEPRECATION")
+            setFlags(MediaSessionCompat.FLAG_HANDLES_MEDIA_BUTTONS or MediaSessionCompat.FLAG_HANDLES_TRANSPORT_CONTROLS)
+
+            setMediaButtonReceiver(
+                PendingIntent.getBroadcast(
+                this@AudioServiceFromUrl, 0,
+                Intent(Intent.ACTION_MEDIA_BUTTON),
+                PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
+            )
+            )
+
+        }
+
 
 
     }
@@ -64,17 +82,6 @@ class AudioServiceFromUrl : Service() {
 
     override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
 
-        mediaSession = MediaSessionCompat(this, "AudioService").apply {
-            isActive = true
-            @Suppress("DEPRECATION")
-            setFlags(MediaSessionCompat.FLAG_HANDLES_MEDIA_BUTTONS or MediaSessionCompat.FLAG_HANDLES_TRANSPORT_CONTROLS)
-
-            setMediaButtonReceiver(PendingIntent.getBroadcast(
-                this@AudioServiceFromUrl, 0,
-                Intent(Intent.ACTION_MEDIA_BUTTON),
-                PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE)
-            )
-        }
 
         mediaUrl = intent?.getStringExtra("media_url").orEmpty()
         val title =  intent?.getStringExtra("title").toString()
@@ -84,7 +91,6 @@ class AudioServiceFromUrl : Service() {
         videoViews = intent?.getStringExtra("viewNumber").toString()
         videoDate = intent?.getStringExtra("videoDate").toString()
         durationFromActivity = intent?.getStringExtra("duration").toString()
-
 
         val mediaDetails = VideosListData(
             videoId, title,
@@ -126,7 +132,7 @@ class AudioServiceFromUrl : Service() {
                 exoPlayer?.play()
 
                 mediaSession.setPlaybackState(
-                    MediaSessionPlaybackState(this).setStateToLoading(exoPlayer?.currentPosition!!, videoId)
+                    mediaSessionState.setStateToLoading(exoPlayer?.currentPosition!!, videoId)
                 )
                 mediaSession.setMetadata(
                     mediaMetaDetails(
@@ -405,7 +411,7 @@ class AudioServiceFromUrl : Service() {
             if (action.toString() == ACTION_ADD_TO_WATCH_LATER) {
 
                 mediaSession.setPlaybackState(
-                    MediaSessionPlaybackState(this@AudioServiceFromUrl).addItOrRemoveFromDB(
+                    mediaSessionState.addItOrRemoveFromDB(
                         exoPlayer?.currentPosition!!,
                         mediaDetails
                     )
@@ -475,7 +481,6 @@ class AudioServiceFromUrl : Service() {
         private val channelName: String
     ): Player.Listener {
 
-
         override fun onPositionDiscontinuity(
             oldPosition: Player.PositionInfo,
             newPosition: Player.PositionInfo,
@@ -485,7 +490,7 @@ class AudioServiceFromUrl : Service() {
             val currentPosition = newPosition.positionMs
 
             mediaSession.setPlaybackState(
-                MediaSessionPlaybackState(this@AudioServiceFromUrl).setStateToPlaying(
+                mediaSessionState.setStateToPlaying(
                     currentPosition, videoId
                 )
             )
@@ -499,15 +504,14 @@ class AudioServiceFromUrl : Service() {
 
             if (playbackState == Player.STATE_BUFFERING) {
                 mediaSession.setPlaybackState(
-                    MediaSessionPlaybackState(this@AudioServiceFromUrl)
-                        .setStateToLoading(
+                    mediaSessionState.setStateToLoading(
                             exoPlayer?.currentPosition!!, videoId
                         )
                 )
                 mediaSession.isActive = true
             } else if (playbackState == Player.STATE_ENDED) {
                 mediaSession.setPlaybackState(
-                    MediaSessionPlaybackState(this@AudioServiceFromUrl).setStateToPaused(
+                    mediaSessionState.setStateToPaused(
                         exoPlayer?.currentPosition!!, videoId
                     )
                 )
@@ -520,7 +524,7 @@ class AudioServiceFromUrl : Service() {
         override fun onPlayerError(error: PlaybackException) {
             super.onPlayerError(error)
             mediaSession.setPlaybackState(
-                MediaSessionPlaybackState(this@AudioServiceFromUrl).setStateToLoading(
+                mediaSessionState.setStateToLoading(
                     error.timestampMs, videoId
                 )
             )
@@ -533,7 +537,7 @@ class AudioServiceFromUrl : Service() {
             if (isPlaying) {
                 requestAudioFocusForAudioService()
                 mediaSession.setPlaybackState(
-                    MediaSessionPlaybackState(this@AudioServiceFromUrl).setStateToPlaying(
+                    mediaSessionState.setStateToPlaying(
                         exoPlayer?.currentPosition!!, videoId
                     )
                 )
@@ -549,7 +553,7 @@ class AudioServiceFromUrl : Service() {
             if (!isPlaying && exoPlayer?.isLoading!!) {
                 releaseAudioFocusForAudioService()
                 mediaSession.setPlaybackState(
-                    MediaSessionPlaybackState(this@AudioServiceFromUrl).setStateToLoading(
+                    mediaSessionState.setStateToLoading(
                         exoPlayer?.currentPosition!!, videoId
                     )
                 )
@@ -565,7 +569,7 @@ class AudioServiceFromUrl : Service() {
             if (!isPlaying) {
                 releaseAudioFocusForAudioService()
                 mediaSession.setPlaybackState(
-                    MediaSessionPlaybackState(this@AudioServiceFromUrl).setStateToPaused(
+                    mediaSessionState.setStateToPaused(
                         exoPlayer?.currentPosition!!, videoId
                     )
                 )
@@ -585,7 +589,7 @@ class AudioServiceFromUrl : Service() {
             if (!isLoading) {
                 requestAudioFocusForAudioService()
                 mediaSession.setPlaybackState(
-                    MediaSessionPlaybackState(this@AudioServiceFromUrl).setStateToPlaying(
+                    mediaSessionState.setStateToPlaying(
                         exoPlayer?.currentPosition!!, videoId
                     )
                 )
@@ -597,7 +601,7 @@ class AudioServiceFromUrl : Service() {
                 )
             } else {
                 mediaSession.setPlaybackState(
-                    MediaSessionPlaybackState(this@AudioServiceFromUrl).setStateToLoading(
+                    mediaSessionState.setStateToLoading(
                         exoPlayer?.currentPosition!!, videoId
                     )
                 )
@@ -609,15 +613,15 @@ class AudioServiceFromUrl : Service() {
 
 
     override fun stopService(name: Intent?): Boolean {
-        mediaSession.release()
         exoPlayer?.release()
+        mediaSession.release()
         return super.stopService(name)
     }
 
     override fun onDestroy() {
         super.onDestroy()
-        mediaSession.release()
         exoPlayer?.release()
+        mediaSession.release()
     }
 
     override fun onTaskRemoved(rootIntent: Intent?) {

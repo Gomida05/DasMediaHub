@@ -63,9 +63,9 @@ import com.das.forui.data.constants.Intents.NEW_INTENT_FOR_VIEWER
 import com.das.forui.data.model.SearchResultFromMain
 import com.das.forui.services.AudioServiceFromUrl
 import com.das.forui.data.model.VideosListData
-import com.das.forui.ui.viewer.GlobalVideoList.bundles
+import com.das.forui.data.constants.GlobalVideoList.bundles
 import com.das.forui.ui.viewer.shimmerLoading
-import com.das.forui.Screen.VideoViewer
+import com.das.forui.NavScreens.VideoViewer
 
 @Composable
 fun ResultViewerPage(

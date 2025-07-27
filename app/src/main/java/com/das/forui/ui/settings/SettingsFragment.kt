@@ -51,7 +51,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.core.net.toUri
 import androidx.navigation.NavController
-import com.das.forui.Screen
+import com.das.forui.NavScreens
 import com.das.forui.downloader.DownloaderClass
 import com.das.forui.data.model.AppUpdateInfo
 import com.google.firebase.auth.ktx.auth
@@ -404,7 +404,7 @@ private fun About_Us(mContext: Context){
 fun FeedbackButton(navController: NavController) {
     Card(
         onClick = {
-            navController.navigate(Screen.FeedbackScreen.route)
+            navController.navigate(NavScreens.FeedbackScreen.route)
         },
         modifier = Modifier
             .fillMaxWidth()

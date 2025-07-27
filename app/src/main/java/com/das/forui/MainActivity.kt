@@ -78,10 +78,10 @@ import com.das.forui.ui.settings.userSettings.UserSettingComposable
 import com.das.forui.ui.home.downloads.videoPlayerLocally.ExoPlayerUI
 import com.das.forui.ui.welcome.LoginPage
 import com.das.forui.ui.welcome.SignUpPage
-import com.das.forui.ui.viewer.GlobalVideoList.bundles
+import com.das.forui.data.constants.GlobalVideoList.bundles
 import com.das.forui.ui.viewer.VideoPlayerScreen
 import com.das.forui.ui.watchedVideos.WatchedVideosComposable
-import com.das.forui.Screen.*
+import com.das.forui.NavScreens.*
 import com.das.forui.theme.CustomTheme
 import com.das.forui.ui.settings.FeedbackComposable
 import com.das.forui.ui.welcome.WelcomePage

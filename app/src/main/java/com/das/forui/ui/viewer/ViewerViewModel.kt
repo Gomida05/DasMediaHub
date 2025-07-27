@@ -21,6 +21,8 @@ import kotlinx.coroutines.withContext
 
 
 class ViewerViewModel : ViewModel() {
+
+    private val gson = Gson()
     private val _videoUrl = mutableStateOf("")
     val videoUrl: State<String> = _videoUrl
 
@@ -38,8 +40,11 @@ class ViewerViewModel : ViewModel() {
 
     private val _searchResults = mutableStateOf<List<VideosListData>>(emptyList())
     val searchResults: State<List<VideosListData>> = _searchResults
-    private val _isLoadingVideos = mutableStateOf(true)
 
+    private val _isSuggestionError = mutableStateOf<String?>(null)
+    val isSuggestionError: State<String?> = _isSuggestionError
+
+    private val _isLoadingVideos = mutableStateOf(true)
     val isLoadingVideos: State<Boolean> = _isLoadingVideos
 
 
@@ -48,7 +53,7 @@ class ViewerViewModel : ViewModel() {
             try {
                 val python = pythonInstant.getModule("main")
                 val variable = python["get_video_url"]
-                val result = withContext(Dispatchers.IO){
+                val result = withContext(Dispatchers.IO) {
                     variable?.call("https://www.youtube.com/watch?v=$videoId").toString()
                 }
 
@@ -119,14 +124,21 @@ class ViewerViewModel : ViewModel() {
     }
 
     fun fetchSuggestions(title: String) {
+        _isLoadingVideos.value = true
+        _isSuggestionError.value = null
         viewModelScope.launch {
-            _isLoadingVideos.value = true
-            val result = withContext(Dispatchers.IO){
-                callPythonSearchSuggestion(title)
+            try {
+                val result = withContext(Dispatchers.IO) {
+                    callPythonSearchSuggestion(title)
+                }
+                _searchResults.value = result ?: emptyList()
+            } catch (j: JsonSyntaxException) {
+                _isSuggestionError.value = "Error parsing data: ${j.message}"
+            } catch (e: Exception) {
+                _isSuggestionError.value = "Something went wrong: ${e.message}"
+            } finally {
+                _isLoadingVideos.value = false
             }
-
-            _searchResults.value = result ?: emptyList()
-            _isLoadingVideos.value = false
 
         }
     }
@@ -134,20 +146,19 @@ class ViewerViewModel : ViewModel() {
     private fun callPythonSearchWithLink(inputText: String): VideoDetails? {
         return try {
             val python = pythonInstant.getModule("main")
-            val variable = python["SearchWithLink"]?.call("https://www.youtube.com/watch?v=$inputText")
+            val variable =
+                python["SearchWithLink"]?.call("https://www.youtube.com/watch?v=$inputText")
             val result = variable.toString()
-            println("python: $result")
 
             // Use Gson to parse the JSON string into a Map
             val resultMapType = object : TypeToken<VideoDetails>() {}.type
-            val resultMap:VideoDetails = Gson().fromJson(result, resultMapType)
+            val resultMap: VideoDetails = gson.fromJson(result, resultMapType)
             resultMap
 
-        }catch (e: JsonSyntaxException){
+        } catch (e: JsonSyntaxException) {
             Log.e("JSON Error", "Error parsing JSON ${e.message}")
             return null
-        }
-        catch (e: Exception) {
+        } catch (e: Exception) {
             e.printStackTrace()
             return null
         }
@@ -155,20 +166,12 @@ class ViewerViewModel : ViewModel() {
 
 
     private fun callPythonSearchSuggestion(inputText: String): List<VideosListData>? {
-        return try {
-            val python = pythonInstant.getModule("main")
-            val getResultFromPython = python["Searcher"]?.call(inputText).toString()
+        val python = pythonInstant.getModule("main")
+        val getResultFromPython = python["Searcher"]?.call(inputText).toString()
 
-            val videosListDataListType = object : TypeToken<List<VideosListData>>() {}.type
-            val result: List<VideosListData>? = Gson().fromJson(getResultFromPython, videosListDataListType)
-            result
-
-        } catch (e: JsonSyntaxException) {
-            Log.e("JSON Error", "Error parsing JSON: ${e.message}")
-            null
-        } catch (e: Exception) {
-            e.printStackTrace()
-            null
-        }
+        val videosListDataListType = object : TypeToken<List<VideosListData>>() {}.type
+        val result: List<VideosListData>? =
+            gson.fromJson(getResultFromPython, videosListDataListType)
+        return result
     }
 }

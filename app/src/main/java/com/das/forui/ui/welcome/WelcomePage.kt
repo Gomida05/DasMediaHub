@@ -34,7 +34,7 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.navigation.NavController
-import com.das.forui.Screen
+import com.das.forui.NavScreens
 
 
 @Composable
@@ -85,7 +85,7 @@ fun WelcomePage(navController: NavController) {
                         Button(
                             onClick = {
                                 visible.value = false
-                                navController.navigate(Screen.LoginPage1.route)
+                                navController.navigate(NavScreens.LoginPage1.route)
                             },
                             colors = ButtonDefaults.buttonColors(containerColor = Color.White)
                         ) {
@@ -105,7 +105,7 @@ fun WelcomePage(navController: NavController) {
                         Button(
                             onClick = {
                                 visible.value = false
-                                navController.navigate(Screen.SignUpPage.route)
+                                navController.navigate(NavScreens.SignUpPage.route)
                             },
                             colors = ButtonDefaults.buttonColors(containerColor = Color.White)
                         ) {
@@ -124,7 +124,7 @@ fun WelcomePage(navController: NavController) {
                                 visible.value = false
                                 navController.run {
                                     popBackStack()
-                                    navigate(Screen.Home.route)
+                                    navigate(NavScreens.Home.route)
                                 }
                             },
                             colors = ButtonDefaults.buttonColors(containerColor = Color.White)

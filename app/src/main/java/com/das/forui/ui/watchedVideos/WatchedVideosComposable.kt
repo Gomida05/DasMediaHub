@@ -65,9 +65,9 @@ import com.das.forui.data.model.VideosListData
 import com.das.forui.data.constants.Action.ACTION_START
 import com.das.forui.data.constants.Intents.NEW_INTENT_FOR_VIEWER
 import com.das.forui.services.AudioServiceFromUrl
-import com.das.forui.ui.viewer.GlobalVideoList.bundles
-import com.das.forui.Screen.VideoViewer
-import com.das.forui.Screen.Saved
+import com.das.forui.data.constants.GlobalVideoList.bundles
+import com.das.forui.NavScreens.VideoViewer
+import com.das.forui.NavScreens.Saved
 
 
 @Composable

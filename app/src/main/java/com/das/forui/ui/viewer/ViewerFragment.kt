@@ -109,16 +109,16 @@ import coil.request.ImageRequest
 import com.das.forui.services.AudioServiceFromUrl
 import com.das.forui.MainActivity
 import com.das.forui.R
-import com.das.forui.ui.viewer.GlobalVideoList.listOfVideosListData
-import com.das.forui.ui.viewer.GlobalVideoList.previousVideosListData
-import com.das.forui.Screen
+import com.das.forui.data.constants.GlobalVideoList.listOfVideosListData
+import com.das.forui.data.constants.GlobalVideoList.previousVideosListData
+import com.das.forui.NavScreens
 import com.das.forui.data.databased.DatabaseFavorite
 import com.das.forui.data.databased.WatchHistory
 import com.das.forui.data.constants.Action.ACTION_START
 import com.das.forui.data.constants.Intents.NEW_INTENT_FOR_VIEWER
 import com.das.forui.data.model.VideoDetails
 import com.das.forui.data.model.VideosListData
-import com.das.forui.ui.viewer.GlobalVideoList.bundles
+import com.das.forui.data.constants.GlobalVideoList.bundles
 
 
 @OptIn(UnstableApi::class)
@@ -462,16 +462,14 @@ fun VideoDetailsComposable(
     }
     val colorForFavIcon = if (isSystemInDarkTheme()) Color.Unspecified else Color.White
 
+    LaunchedEffect(videoId) {
+        viewModel.fetchVideoDetails(videoId)
+    }
     Column(
         modifier = Modifier
             .fillMaxSize()
     ) {
 
-
-        LaunchedEffect(videoId) {
-
-            viewModel.fetchVideoDetails(videoId)
-        }
 
 
 
@@ -925,7 +923,7 @@ private fun playThisOne(
     bundles.putBundle(NEW_INTENT_FOR_VIEWER, bundle)
     navController.run {
         popBackStack()
-        navigate(Screen.VideoViewer.route)
+        navigate(NavScreens.VideoViewer.route)
     }
 
 
@@ -983,8 +981,8 @@ private fun ShowAlertDialog(
     mContext: Context,
     selectedItem: VideosListData,
     viewModel: ViewerViewModel,
-    onDismissRequest: () ->Unit
-){
+    onDismissRequest: () -> Unit
+) {
     val thumbnailUrl = "https://img.youtube.com/vi/${selectedItem.videoId}/0.jpg"
 
 
@@ -1103,7 +1101,6 @@ private class MyExoPlayerListener(
         super.onPlaybackStateChanged(state)
         if (state == Player.STATE_ENDED) {
             playThisOne(navController,1)
-
         }
     }
 }
@@ -1469,10 +1466,4 @@ fun SpannableString.toAnnotatedString(): AnnotatedString {
             }
         }
     }
-}
-
-object GlobalVideoList {
-    val listOfVideosListData = mutableListOf<VideosListData>()
-    val previousVideosListData = mutableListOf<VideosListData>()
-    val bundles = Bundle()
 }

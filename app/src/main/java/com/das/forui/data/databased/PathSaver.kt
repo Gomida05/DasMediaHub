@@ -7,8 +7,6 @@ import androidx.core.content.edit
 
 object PathSaver {
 
-
-
     fun getAudioDownloadPath(context: Context): String {
 
         val sharedPref: SharedPreferences = context.getSharedPreferences(PREF_NAME, Context.MODE_PRIVATE)

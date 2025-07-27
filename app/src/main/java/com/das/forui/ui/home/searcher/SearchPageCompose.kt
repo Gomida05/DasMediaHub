@@ -64,8 +64,8 @@ import com.das.forui.data.constants.Intents.NEW_INTENT_FOR_VIEWER
 import com.das.forui.data.constants.Intents.NEW_TEXT_FOR_RESULT
 import com.das.forui.data.Youtuber.extractPlaylistId
 import com.das.forui.data.Youtuber.isValidYouTubePlaylistUrl
-import com.das.forui.ui.viewer.GlobalVideoList.bundles
-import com.das.forui.Screen.ResultViewerPage
+import com.das.forui.data.constants.GlobalVideoList.bundles
+import com.das.forui.NavScreens.ResultViewerPage
 import com.das.forui.data.databased.room.dataclass.SearchData
 
 @Composable

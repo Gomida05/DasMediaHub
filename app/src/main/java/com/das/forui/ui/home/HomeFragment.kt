@@ -29,14 +29,15 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.navigation.NavController
-import com.das.forui.Screen.Searcher
-import com.das.forui.Screen.Downloads
+import com.das.forui.NavScreens.Searcher
+import com.das.forui.NavScreens.Downloads
 
 
 
 @Composable
 fun HomePageComposable(navController: NavController) {
     val mContext = LocalContext.current
+
     Scaffold(
         topBar = {
             TopAppBar(

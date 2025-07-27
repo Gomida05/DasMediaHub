@@ -65,7 +65,7 @@ import com.das.forui.data.constants.Intents.NEW_INTENT_FOR_VIEWER
 import com.das.forui.data.model.SavedVideosListData
 import com.das.forui.data.model.VideosListData
 import com.das.forui.services.AudioServiceFromUrl
-import com.das.forui.ui.viewer.GlobalVideoList.bundles
+import com.das.forui.data.constants.GlobalVideoList.bundles
 
 
 

@@ -37,7 +37,7 @@ import androidx.compose.ui.text.input.VisualTransformation
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.navigation.NavController
-import com.das.forui.Screen
+import com.das.forui.NavScreens
 import com.google.firebase.auth.FirebaseAuth
 
 
@@ -136,7 +136,7 @@ fun LoginPage(
 
                 // Sign up text
                 TextButton(onClick = {
-                    navController.navigate(Screen.SignUpPage.route)
+                    navController.navigate(NavScreens.SignUpPage.route)
                 }) {
                     Text("Don't have an account? Sign up", color = Color.White)
                 }
