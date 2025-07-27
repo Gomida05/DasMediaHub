@@ -33,12 +33,12 @@ import androidx.media3.common.MediaItem
 import androidx.media3.common.MediaMetadata
 import androidx.media3.common.PlaybackException
 import androidx.media3.common.Player
-import com.das.forui.data.Youtuber.formatDateFromLong
+import com.das.forui.data.YouTuber.formatDateFromLong
 import com.das.forui.mediacontroller.BackgroundPlayerStates.setStateToPaused
 import com.das.forui.mediacontroller.BackgroundPlayerStates.setStateToLoading
 import com.das.forui.mediacontroller.BackgroundPlayerStates.setStateToPlaying
 import com.das.forui.data.constants.Notifications.BACKGROUND_GROUND_PLAYER_NOTIFICATION
-import com.das.forui.data.Youtuber.mediaItems
+import com.das.forui.data.YouTuber.mediaItems
 import java.io.File
 
 

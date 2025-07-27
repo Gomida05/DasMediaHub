@@ -58,12 +58,12 @@ import androidx.navigation.NavController
 import coil.compose.AsyncImage
 import coil.request.ImageRequest
 import com.das.forui.MainActivity
-import com.das.forui.data.Youtuber.youtubeExtractor
-import com.das.forui.data.Youtuber.isValidYoutubeURL
+import com.das.forui.data.YouTuber.youtubeExtractor
+import com.das.forui.data.YouTuber.isValidYoutubeURL
 import com.das.forui.data.constants.Intents.NEW_INTENT_FOR_VIEWER
 import com.das.forui.data.constants.Intents.NEW_TEXT_FOR_RESULT
-import com.das.forui.data.Youtuber.extractPlaylistId
-import com.das.forui.data.Youtuber.isValidYouTubePlaylistUrl
+import com.das.forui.data.YouTuber.extractPlaylistId
+import com.das.forui.data.YouTuber.isValidYouTubePlaylistUrl
 import com.das.forui.data.constants.GlobalVideoList.bundles
 import com.das.forui.NavScreens.ResultViewerPage
 import com.das.forui.data.databased.room.dataclass.SearchData

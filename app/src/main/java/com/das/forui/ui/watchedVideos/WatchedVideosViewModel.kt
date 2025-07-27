@@ -1,17 +1,12 @@
 package com.das.forui.ui.watchedVideos
 
 import android.app.Application
-import android.database.Cursor
-import android.widget.Toast
 import androidx.compose.runtime.State
 import androidx.compose.runtime.mutableStateOf
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
 import com.das.forui.data.databased.WatchHistory
 import com.das.forui.data.model.SavedVideosListData
-import com.das.forui.data.Youtuber.getListItemStreamUrl
-import com.das.forui.data.model.ItemsStreamUrlsForMediaItemData
-import com.das.forui.data.model.VideosListData
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
@@ -20,46 +15,40 @@ class WatchedVideosViewModel(application: Application): AndroidViewModel(applica
     private val _savedLists = mutableStateOf<List<SavedVideosListData>>(emptyList())
     val savedLists: State<List<SavedVideosListData>> = _savedLists
 
-    private val _isLoading = mutableStateOf(true)
+    private val _isLoading = mutableStateOf(false)
     val isLoading: State<Boolean> = _isLoading
 
+    private val _error = mutableStateOf<String?>(null)
+    val isError: State<String?> = _error
+
     fun fetchData() {
-        viewModelScope.launch {
-            val result = withContext(Dispatchers.IO) {
-                fetchDataFromDatabase()
-            }
-            _savedLists.value = result ?: emptyList()
-            _isLoading.value = false
-
-        }
-    }
-
-    fun getListItemsStreamUrls(
-        data: VideosListData,
-        onSuccess: (ItemsStreamUrlsForMediaItemData) -> Unit,
-        onFailure: (String) -> Unit
-    ) {
+        _isLoading.value = true
+        _error.value = null
         viewModelScope.launch {
             try {
                 val result = withContext(Dispatchers.IO) {
-                    getListItemStreamUrl(data)
+                    fetchDataFromDatabase()
                 }
-
-                onSuccess(result)
+                _savedLists.value = result ?: emptyList()
             } catch (e: Exception) {
-                onFailure("Failed: ${e.message}")
+                _error.value = "Something went wrong: ${e.message}"
             }
+            finally {
+                _isLoading.value = false
+            }
+
         }
     }
+
 
     private fun fetchDataFromDatabase(): MutableList<SavedVideosListData>? {
         val globalContext = getApplication<Application>().applicationContext
         val dbHelper = WatchHistory(globalContext)
-        val cursor: Cursor? = dbHelper.getResults()
+        val cursor = dbHelper.getResults()
 
         val savedVideosListData = mutableListOf<SavedVideosListData>()
         try {
-            cursor?.let {
+            cursor.let {
                 while (it.moveToNext()) {
                     val watchUrl = it.getString(it.getColumnIndexOrThrow("video_id"))
                     val title = dbHelper.getVideoTitle(watchUrl).toString()
@@ -86,8 +75,7 @@ class WatchedVideosViewModel(application: Application): AndroidViewModel(applica
 
             return savedVideosListData
         } catch (e: Exception) {
-            Toast.makeText(globalContext, "${e.message}", Toast.LENGTH_SHORT).show()
-            return null
+            throw e
         }
     }
 

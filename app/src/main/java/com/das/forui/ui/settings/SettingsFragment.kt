@@ -54,8 +54,8 @@ import androidx.navigation.NavController
 import com.das.forui.NavScreens
 import com.das.forui.downloader.DownloaderClass
 import com.das.forui.data.model.AppUpdateInfo
-import com.google.firebase.auth.ktx.auth
-import com.google.firebase.ktx.Firebase
+import com.google.firebase.Firebase
+import com.google.firebase.auth.auth
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch

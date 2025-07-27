@@ -66,6 +66,7 @@ import com.das.forui.data.model.VideosListData
 import com.das.forui.data.constants.GlobalVideoList.bundles
 import com.das.forui.ui.viewer.shimmerLoading
 import com.das.forui.NavScreens.VideoViewer
+import com.das.forui.data.YouTuber.loadStreamUrl
 
 @Composable
 fun ResultViewerPage(
@@ -157,7 +158,6 @@ fun ResultViewerPage(
                         VideoItems(
                             mContext,
                             navController,
-                            viewModel,
                             searchItem
                         )
                     }
@@ -172,7 +172,6 @@ fun ResultViewerPage(
 fun VideoItems(
     context: Context,
     navController: NavController,
-    viewModel: ResultViewModel,
     searchItem: SearchResultFromMain
 ) {
     val videoId = searchItem.videoId
@@ -340,7 +339,6 @@ fun VideoItems(
                 videoId, title, viewsNumber, dateOfVideo,
                 duration, channelName, channelThumbnails
             ),
-            viewModel,
             onDismissRequest = { showDialog = false }
         )
     }
@@ -651,7 +649,6 @@ fun PlayListItems(
 private fun ShowAlertDialog(
     mContext: Context,
     selectedItem: VideosListData,
-    viewModel: ResultViewModel,
     onDismissRequest: () ->Unit
 ){
     val thumbnailUrl = "https://img.youtube.com/vi/${selectedItem.videoId}/0.jpg"
@@ -660,7 +657,8 @@ private fun ShowAlertDialog(
 
     if (shouldLoad) {
         LaunchedEffect(Unit) {
-            viewModel.getListItemsStreamUrls(
+
+            loadStreamUrl(
                 selectedItem,
                 onSuccess = {
                     val playIntent = Intent(mContext, AudioServiceFromUrl::class.java).apply {

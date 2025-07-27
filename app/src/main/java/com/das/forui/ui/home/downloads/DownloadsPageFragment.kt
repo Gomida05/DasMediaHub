@@ -4,6 +4,7 @@ import android.content.Context
 import android.content.Intent
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
@@ -28,6 +29,7 @@ import androidx.compose.material.icons.filled.MusicNote
 import androidx.compose.material.icons.filled.Settings
 import androidx.compose.material.icons.filled.VideoLibrary
 import androidx.compose.material3.Card
+import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ElevatedButton
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
@@ -38,7 +40,6 @@ import androidx.compose.material3.TextButton
 import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
-import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -67,7 +68,7 @@ import com.das.forui.data.databased.PathSaver.getAudioDownloadPath
 import com.das.forui.data.constants.Action.ACTION_START
 import com.das.forui.data.constants.Playback.PLAY_HERE_VIDEO
 import com.das.forui.services.BackGroundPlayer
-import com.das.forui.data.Youtuber.mediaItems
+import com.das.forui.data.YouTuber.mediaItems
 import com.das.forui.data.constants.GlobalVideoList.bundles
 import java.io.File
 
@@ -75,14 +76,17 @@ import java.io.File
 @Composable
 fun DownloadsPageComposable(navController: NavController) {
 
-    val viewModel: DownloadsPageViewModel = viewModel()
+    val viewModel = viewModel<DownloadsPageViewModel>()
+
+    val videosListData by viewModel.videosListData
+    val musicsListData by viewModel.listMusic
+    val isLoading by viewModel.isLoading
+    val errorFound by viewModel.errorFound
 
     val mContext = LocalContext.current
 
     var isVideo by remember { mutableStateOf(true) }
 
-    val videosListData by viewModel.videosListData.collectAsState()
-    val musicsListData by viewModel.listMusic.collectAsState()
 
     val videoPath = getVideosDownloadPath(mContext)
     val audioPath = getAudioDownloadPath(mContext)
@@ -159,7 +163,6 @@ fun DownloadsPageComposable(navController: NavController) {
                     ElevatedButton(
                         onClick = {
                             isVideo = true
-                            viewModel.fetchVideoFiles(videoPath)
                         },
                         enabled = !isVideo
                     ) {
@@ -174,7 +177,6 @@ fun DownloadsPageComposable(navController: NavController) {
                     ElevatedButton(
                         onClick = {
                             isVideo = false
-                            viewModel.fetchMusicFiles(videoPath)
                         },
                         enabled = isVideo
                     ) {
@@ -189,6 +191,7 @@ fun DownloadsPageComposable(navController: NavController) {
                 }
             }
 
+
             if (isVideo && videosListData.isEmpty() || !isVideo && musicsListData.isEmpty()) {
 
                 item {
@@ -198,13 +201,40 @@ fun DownloadsPageComposable(navController: NavController) {
                         textAlign = TextAlign.Center
                     )
                 }
+            } else if (isLoading){
+                item {
+                    Box(
+                        modifier = Modifier.fillMaxSize()
+                    ) {
+                        CircularProgressIndicator(modifier = Modifier.align(Alignment.Center))
+                    }
+                }
+            } else if (!errorFound.isNullOrEmpty()){
+                item {
+                    Box(
+                        modifier = Modifier.fillMaxSize()
+                    ) {
+                        Text(
+                            text = errorFound.toString(),
+                            style = MaterialTheme.typography.bodyMedium
+                                .copy(color = MaterialTheme.colorScheme.error),
+                            modifier = Modifier.align(Alignment.Center)
+                        )
+                    }
+                }
             } else {
                 if (isVideo) {
                     itemsIndexed(videosListData) { index, searchItem ->
-                        ListItems(searchItem, true, mContext, navController, index)
+                        ListItems(
+                            itemDetails = searchItem,
+                            isVideo = true,
+                            mContext,
+                            navController,
+                            index
+                        )
                     }
                 } else {
-                    mediaItems = musicsListData
+                    mediaItems = musicsListData.toMutableList()
                     itemsIndexed(musicsListData) { index, searchItem ->
 
                         ListItems(

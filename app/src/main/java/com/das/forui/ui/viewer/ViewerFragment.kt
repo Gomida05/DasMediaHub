@@ -112,6 +112,7 @@ import com.das.forui.R
 import com.das.forui.data.constants.GlobalVideoList.listOfVideosListData
 import com.das.forui.data.constants.GlobalVideoList.previousVideosListData
 import com.das.forui.NavScreens
+import com.das.forui.data.YouTuber.loadStreamUrl
 import com.das.forui.data.databased.DatabaseFavorite
 import com.das.forui.data.databased.WatchHistory
 import com.das.forui.data.constants.Action.ACTION_START
@@ -362,7 +363,6 @@ fun VideoPlayerScreen(
                                 CategoryItems(
                                     navController,
                                     searchItem,
-                                    viewModel
                                 )
                                 listOfVideosListData.add(searchItem)
 
@@ -718,7 +718,6 @@ fun ComingSoonAlertDialog(
 fun CategoryItems(
     navController: NavController,
     searchItem: VideosListData,
-    viewModel: ViewerViewModel
 ) {
     val context = LocalContext.current
     val videoId = searchItem.videoId
@@ -886,12 +885,11 @@ fun CategoryItems(
 
     if (showDialog) {
         ShowAlertDialog(
-            mContext = context,
+            mContext = context.applicationContext,
             selectedItem = VideosListData(
                 videoId, title, viewsNumber, dateOfVideo,
                 duration, channelName, channelThumbnails
             ),
-            viewModel,
             onDismissRequest = { showDialog = false }
         )
     }
@@ -980,7 +978,6 @@ private fun ShowDescriptionDialog(
 private fun ShowAlertDialog(
     mContext: Context,
     selectedItem: VideosListData,
-    viewModel: ViewerViewModel,
     onDismissRequest: () -> Unit
 ) {
     val thumbnailUrl = "https://img.youtube.com/vi/${selectedItem.videoId}/0.jpg"
@@ -990,7 +987,7 @@ private fun ShowAlertDialog(
 
     if (shouldLoad) {
         LaunchedEffect(Unit) {
-            viewModel.getListItemsStreamUrls(
+            loadStreamUrl(
                 selectedItem,
                 onSuccess = {
                     val playIntent = Intent(mContext, AudioServiceFromUrl::class.java).apply {

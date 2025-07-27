@@ -59,6 +59,7 @@ import coil.request.CachePolicy
 import coil.request.ImageRequest
 import com.das.forui.MainActivity
 import com.das.forui.R
+import com.das.forui.data.YouTuber.loadStreamUrl
 import com.das.forui.data.databased.DatabaseFavorite
 import com.das.forui.data.constants.Action.ACTION_START
 import com.das.forui.data.constants.Intents.NEW_INTENT_FOR_VIEWER
@@ -329,7 +330,6 @@ private fun CategoryItems(
         ShowAlertDialog(
             context,
             selectedItem,
-            viewModel,
             deleteTheItem = { selectedId->
                 DatabaseFavorite(context).deleteWatchUrl(selectedId)
                 viewModel.removeSearchItem(selectedItem)
@@ -421,7 +421,6 @@ private fun onClickListListener(
 private fun ShowAlertDialog(
     context: Context,
     selectedData: SavedVideosListData,
-    viewModel: WatchLaterViewModel,
     deleteTheItem: (selectedId: String) -> Unit,
     onDismissRequest: () ->Unit
 ){
@@ -430,7 +429,7 @@ private fun ShowAlertDialog(
 
     if (shouldLoad) {
         LaunchedEffect(Unit) {
-            viewModel.getListItemsStreamUrls(
+            loadStreamUrl(
                 VideosListData(
                     selectedData.watchUrl, selectedData.title, selectedData.viewer,
                     selectedData.dateTime, selectedData.duration, selectedData.channelName, ""

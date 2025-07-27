@@ -33,6 +33,7 @@ import androidx.compose.material.icons.outlined.Home
 import androidx.compose.material.icons.outlined.Settings
 import androidx.compose.material.icons.outlined.WatchLater
 import androidx.compose.material3.Icon
+import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.material3.NavigationBar
 import androidx.compose.material3.NavigationBarDefaults
@@ -47,8 +48,8 @@ import androidx.media3.exoplayer.ExoPlayer
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
-import com.das.forui.data.Youtuber.youtubeExtractor
-import com.das.forui.data.Youtuber.isValidYoutubeURL
+import com.das.forui.data.YouTuber.youtubeExtractor
+import com.das.forui.data.YouTuber.isValidYoutubeURL
 import com.das.forui.data.constants.Playback.PLAY_HERE_VIDEO
 import com.das.forui.data.model.MyBottomNavData
 import androidx.compose.material3.NavigationBarItem
@@ -57,16 +58,16 @@ import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.ui.draw.clip
 import androidx.navigation.NavController
 import androidx.navigation.compose.currentBackStackEntryAsState
-import com.das.forui.data.Youtuber.getAudioStreamUrl
-import com.das.forui.data.Youtuber.getVideoStreamUrl
+import com.das.forui.data.YouTuber.getAudioStreamUrl
+import com.das.forui.data.YouTuber.getVideoStreamUrl
 import com.das.forui.downloader.DownloaderClass
 import com.das.forui.data.constants.Action.ACTION_START
 import com.das.forui.data.constants.Intents.NEW_INTENT_FOR_SEARCHER
 import com.das.forui.data.constants.Intents.NEW_INTENT_FOR_VIEWER
 import com.das.forui.data.constants.Intents.NEW_TEXT_FOR_RESULT
-import com.das.forui.data.Youtuber.extractPlaylistId
-import com.das.forui.data.Youtuber.getPlayListStreamUrl
-import com.das.forui.data.Youtuber.isValidYouTubePlaylistUrl
+import com.das.forui.data.YouTuber.extractPlaylistId
+import com.das.forui.data.YouTuber.getPlayListStreamUrl
+import com.das.forui.data.YouTuber.isValidYouTubePlaylistUrl
 import com.das.forui.services.BackGroundPlayer
 import com.das.forui.ui.home.downloads.DownloadsPageComposable
 import com.das.forui.ui.home.HomePageComposable
@@ -162,11 +163,16 @@ class MainActivity : ComponentActivity() {
         )
 
         Scaffold(
+            contentWindowInsets = WindowInsets(0, 0, 0, 0),
+            modifier = Modifier
+                .fillMaxSize(),
             bottomBar = {
                 if (currentRoute in listOf(Home.route, RecentlyWatched.route, Setting.route)) {
 
                     NavigationBar(
                         windowInsets = NavigationBarDefaults.windowInsets,
+                        containerColor = MaterialTheme.colorScheme.background,
+                        contentColor = MaterialTheme.colorScheme.primary,
                         modifier = Modifier
                             .clip(RoundedCornerShape(12))
                     ) {
@@ -200,9 +206,6 @@ class MainActivity : ComponentActivity() {
                     }
                 }
             },
-            contentWindowInsets = WindowInsets(0, 0, 0, 0),
-            modifier = Modifier
-                .fillMaxSize()
         ) { paddingValues ->
 
 //                val isUserLoggedIn by remember { mutableStateOf(FirebaseAuth.getInstance().currentUser != null) }
@@ -619,7 +622,9 @@ class MainActivity : ComponentActivity() {
 
     override fun onDestroy() {
         super.onDestroy()
-        intentListener?.let { unregisterIntentListener(it) }
+        intentListener?.let {
+            unregisterIntentListener(it)
+        }
         intentListeners.clear()
     }
 

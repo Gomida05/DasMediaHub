@@ -4,11 +4,8 @@ import androidx.compose.runtime.State
 import androidx.compose.runtime.mutableStateOf
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import com.das.forui.data.Youtuber.pythonInstant
+import com.das.forui.data.YouTuber.pythonInstant
 import com.das.forui.data.model.SearchResultFromMain
-import com.das.forui.data.Youtuber.getListItemStreamUrl
-import com.das.forui.data.model.ItemsStreamUrlsForMediaItemData
-import com.das.forui.data.model.VideosListData
 import com.google.gson.Gson
 import com.google.gson.reflect.TypeToken
 import kotlinx.coroutines.Dispatchers
@@ -19,7 +16,7 @@ class ResultViewModel: ViewModel() {
 
     private val _searchResults = mutableStateOf<List<SearchResultFromMain>>(emptyList())
     val searchResults: State<List<SearchResultFromMain>> = _searchResults
-    private val _isLoading = mutableStateOf(true)
+    private val _isLoading = mutableStateOf(false)
     val isLoading: State<Boolean> = _isLoading
 
     private val _isThereError = mutableStateOf<String?>(null)
@@ -28,42 +25,32 @@ class ResultViewModel: ViewModel() {
 
 
     fun fetchSuggestions(inputText: String) {
-        viewModelScope.launch {
-            val result = withContext(Dispatchers.IO){
-                callPythonForSearchVideos(inputText)
-            }
-            _searchResults.value = result ?: emptyList()
-            _isLoading.value = false
-        }
-    }
+        _isLoading.value = false
+        _isThereError.value = null
 
-    fun getListItemsStreamUrls(
-        data: VideosListData,
-        onSuccess: (ItemsStreamUrlsForMediaItemData) -> Unit,
-        onFailure: (String) -> Unit
-    ) {
         viewModelScope.launch {
             try {
-                val result = withContext(Dispatchers.IO) {
-                    getListItemStreamUrl(data)
-                }
+                val result = callPythonForSearchVideos(inputText)
+                _searchResults.value = result
 
-                onSuccess(result)
             } catch (e: Exception) {
-                onFailure("Failed: ${e.message}")
+                _isThereError.value = e.message
+            } finally {
+                _isLoading.value = false
             }
         }
     }
 
-
-    private fun callPythonForSearchVideos(inputText: String): List<SearchResultFromMain>? {
+    private suspend fun callPythonForSearchVideos(inputText: String): List<SearchResultFromMain> {
         return try {
             val python = pythonInstant.getModule("main")
 
-            val variable = python["Searcher"]?.call(inputText)
+            val variable = withContext(Dispatchers.IO){
+                python["Searcher"]?.call(inputText)
+            }
+
             if (variable.isNullOrEmpty() || variable.toString() == "False"){
-                _isThereError.value = variable.toString()
-                null
+                throw Exception(variable.toString())
             }else {
                 val videoListType = object : TypeToken<List<SearchResultFromMain>>() {}.type
                 val videoList: List<SearchResultFromMain> = Gson().fromJson(variable.toString(), videoListType)
@@ -71,8 +58,7 @@ class ResultViewModel: ViewModel() {
             }
         } catch (e: Exception) {
             e.printStackTrace()
-            _isThereError.value = e.message
-            return null
+            throw e
         }
     }
 

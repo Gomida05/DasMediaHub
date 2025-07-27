@@ -1,4 +1,6 @@
 import org.jetbrains.kotlin.gradle.dsl.JvmTarget
+import org.jetbrains.kotlin.konan.properties.Properties
+import java.io.FileInputStream
 
 plugins {
     alias(libs.plugins.android.application)
@@ -11,14 +13,17 @@ plugins {
     alias(libs.plugins.kotlin.devtools.ksp)
 }
 
-
+private val loadLocalProperties = Properties().apply {
+    load(FileInputStream(rootProject.file("local.properties")))
+}
 android {
     signingConfigs {
         create("py312Release") {
-            storeFile = file("C:\\Users\\esrom\\AndroidStudioProjects\\VideoDownloader\\app\\myRelease.jks")
-            storePassword = "Esrom@11"
-            keyAlias = "key1"
-            keyPassword = "Esrom@11"
+            // Replace with your own details in the local.properties file
+            storeFile = file(loadLocalProperties["KEYSTORE_FILE"] as String)
+            storePassword = loadLocalProperties["KEYSTORE_PASSWORD"] as String
+            keyAlias = loadLocalProperties["KEY_ALIAS"] as String
+            keyPassword = loadLocalProperties["KEY_PASSWORD"] as String
         }
     }
     namespace = "com.das.forui"
@@ -101,10 +106,11 @@ chaquopy {
             srcDir("src/main/python")
         }
     }
-
 }
 
-
+ksp {
+    arg("room.schemaLocation", "$projectDir/schemas")
+}
 
 dependencies {
 
@@ -116,6 +122,8 @@ dependencies {
     implementation(platform(libs.firebase.bom))
     implementation(libs.firebase.analytics)
     implementation(libs.firebase.storage)
+    implementation(libs.firebase.auth.ktx)
+    implementation(libs.firebase.firestore.ktx)
 
     implementation(libs.play.services.auth)
 
@@ -135,9 +143,6 @@ dependencies {
     implementation(libs.activity.compose)
 
     //preview
-    implementation(libs.ui.tooling.preview)
-    implementation(libs.firebase.auth.ktx)
-    implementation(libs.firebase.firestore.ktx)
     debugImplementation(libs.ui.tooling)
 
     //icons

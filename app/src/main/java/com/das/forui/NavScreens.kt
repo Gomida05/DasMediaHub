@@ -1,6 +1,6 @@
 package com.das.forui
-sealed class NavScreens(val route: String) {
 
+sealed class NavScreens(val route: String) {
     data object WelcomePage : NavScreens("Welcome Page")
     data object Home: NavScreens("Home")
     data object Searcher : NavScreens("searcher")

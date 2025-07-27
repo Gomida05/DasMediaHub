@@ -68,6 +68,7 @@ import com.das.forui.services.AudioServiceFromUrl
 import com.das.forui.data.constants.GlobalVideoList.bundles
 import com.das.forui.NavScreens.VideoViewer
 import com.das.forui.NavScreens.Saved
+import com.das.forui.data.YouTuber.loadStreamUrl
 
 
 @Composable
@@ -78,6 +79,7 @@ fun WatchedVideosComposable(navController: NavController) {
     val scrollBehavior = TopAppBarDefaults.enterAlwaysScrollBehavior()
     val searchResults by viewModel.savedLists
     val isLoading by viewModel.isLoading
+    val isError by viewModel.isError
 
     LaunchedEffect(Unit) {
         viewModel.fetchData()
@@ -126,6 +128,23 @@ fun WatchedVideosComposable(navController: NavController) {
             if (isLoading) {
                 item {
                     CircularProgressIndicator()
+                }
+            } else if (!isError.isNullOrEmpty()) {
+                item {
+                    Box(
+                        modifier = Modifier
+                            .padding(5.dp)
+                            .fillMaxSize()
+                    ) {
+                        Text(
+                            text = isError.toString(),
+                            style = MaterialTheme.typography.bodyMedium
+                                .copy(color = MaterialTheme.colorScheme.error),
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .align(Alignment.Center)
+                        )
+                    }
                 }
             } else {
                 if (searchResults.isEmpty()) {
@@ -341,7 +360,6 @@ private fun CategoryItems(
         ShowAlertDialog(
             context,
             selectedItem,
-            viewModel,
             deleteTheItem = { selectedId->
                 WatchHistory(context).deleteWatchUrl(selectedId)
                 viewModel.removeSearchItem(selectedItem)
@@ -433,7 +451,6 @@ private fun onClickListListener(
 private fun ShowAlertDialog(
     context: Context,
     selectedData: SavedVideosListData,
-    viewModel: WatchedVideosViewModel,
     deleteTheItem: (selectedId: String) -> Unit,
     onDismissRequest: () ->Unit
 ){
@@ -444,7 +461,7 @@ private fun ShowAlertDialog(
 
     if (shouldLoad) {
         LaunchedEffect(Unit) {
-            viewModel.getListItemsStreamUrls(
+            loadStreamUrl(
                 VideosListData(
                     selectedData.watchUrl, selectedData.title, selectedData.viewer,
                     selectedData.dateTime, selectedData.duration, selectedData.channelName, ""

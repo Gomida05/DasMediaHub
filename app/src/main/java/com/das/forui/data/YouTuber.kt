@@ -23,7 +23,7 @@ import java.util.Date
 import java.util.Locale
 import java.util.regex.Pattern
 
-object Youtuber {
+object YouTuber {
     val pythonInstant = Python.getInstance()
     var mediaItems = mutableListOf<MediaItem>()
 
@@ -98,7 +98,6 @@ object Youtuber {
             return false
         } catch (e: Exception) {
             println("error on isValidYoutubeUrl: ${e.message}")
-
             return false
         }
     }
@@ -113,11 +112,26 @@ object Youtuber {
         return regex.find(url)?.groupValues?.get(1)
     }
 
+    suspend fun loadStreamUrl(
+        data: VideosListData,
+        onSuccess: (ItemsStreamUrlsForMediaItemData) -> Unit,
+        onFailure: (Exception) -> Unit
+    ) {
+        try {
+            val result = getListItemStreamUrl(data)
 
-    fun getListItemStreamUrl(data: VideosListData): ItemsStreamUrlsForMediaItemData {
+            onSuccess(result)
+        } catch (e: Exception) {
+            onFailure(e)
+        }
+    }
+
+    private suspend fun getListItemStreamUrl(data: VideosListData): ItemsStreamUrlsForMediaItemData {
         val python = pythonInstant.getModule("main")
         val variable = python["get_audio_url"]
-        val result = variable?.call("https://www.youtube.com/watch?v=${data.videoId}").toString()
+        val result = withContext(Dispatchers.IO) {
+            variable?.call("https://www.youtube.com/watch?v=${data.videoId}").toString()
+        }
 
         if (result != "False") {
             return ItemsStreamUrlsForMediaItemData(

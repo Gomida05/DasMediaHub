@@ -5,13 +5,11 @@ import androidx.compose.runtime.State
 import androidx.compose.runtime.mutableStateOf
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import com.das.forui.data.Youtuber.formatDate
-import com.das.forui.data.Youtuber.formatViews
-import com.das.forui.data.Youtuber.pythonInstant
+import com.das.forui.data.YouTuber.formatDate
+import com.das.forui.data.YouTuber.formatViews
+import com.das.forui.data.YouTuber.pythonInstant
 import com.das.forui.data.model.VideoDetails
 import com.das.forui.data.model.VideosListData
-import com.das.forui.data.Youtuber.getListItemStreamUrl
-import com.das.forui.data.model.ItemsStreamUrlsForMediaItemData
 import com.google.gson.Gson
 import com.google.gson.JsonSyntaxException
 import com.google.gson.reflect.TypeToken
@@ -59,9 +57,8 @@ class ViewerViewModel : ViewModel() {
 
                 if (result != "False") {
                     _videoUrl.value = result
-
                 } else {
-                    _error.value = "Please check your internet connection"
+                    _error.value = "Something went wrong Please check your internet connection"
                 }
             } catch (e: Exception) {
                 _error.value = "Error: ${e.message}"
@@ -73,31 +70,24 @@ class ViewerViewModel : ViewModel() {
 
 
     fun fetchVideoDetails(videoId: String) {
+        _isLoadings.value = true
+
         viewModelScope.launch {
-            _isLoadings.value = true
-
             try {
-                val videoDetails = withContext(Dispatchers.IO) {
-                    callPythonSearchWithLink(videoId)
-                }
+                val videoDetails = callPythonSearchWithLink(videoId)
 
-                if (videoDetails != null) {
-                    _videoDetails.value =
-                        VideoDetails(
-                            title = videoDetails.title,
-                            viewNumber = formatViews(videoDetails.viewNumber.toLong()),
-                            date = formatDate(videoDetails.date),
-                            channelName = videoDetails.channelName,
-                            description = videoDetails.description
-                        )
-                    println("here is one _1: $videoDetails \n also ${_videoDetails.value}")
-                } else {
-                    _error.value = "Failed to fetch video details"
-
-                }
+                _videoDetails.value = VideoDetails(
+                        title = videoDetails.title,
+                        viewNumber = formatViews(videoDetails.viewNumber.toLong()),
+                        date = formatDate(videoDetails.date),
+                        channelName = videoDetails.channelName,
+                        description = videoDetails.description
+                )
+                println("here is one _1: $videoDetails \n also ${_videoDetails.value}")
+            } catch (js: JsonSyntaxException) {
+                _error.value = "Error while fetching data: ${js.message}"
             } catch (e: Exception) {
                 _error.value = "Error fetching video details: ${e.message}"
-
             } finally {
                 _isLoadings.value = false
 
@@ -105,32 +95,13 @@ class ViewerViewModel : ViewModel() {
         }
     }
 
-    fun getListItemsStreamUrls(
-        data: VideosListData,
-        onSuccess: (ItemsStreamUrlsForMediaItemData) -> Unit,
-        onFailure: (String) -> Unit
-    ) {
-        viewModelScope.launch {
-            try {
-                val result = withContext(Dispatchers.IO) {
-                    getListItemStreamUrl(data)
-                }
-
-                onSuccess(result)
-            } catch (e: Exception) {
-                onFailure("Failed: ${e.message}")
-            }
-        }
-    }
 
     fun fetchSuggestions(title: String) {
         _isLoadingVideos.value = true
         _isSuggestionError.value = null
         viewModelScope.launch {
             try {
-                val result = withContext(Dispatchers.IO) {
-                    callPythonSearchSuggestion(title)
-                }
+                val result = callPythonSearchSuggestion(title)
                 _searchResults.value = result ?: emptyList()
             } catch (j: JsonSyntaxException) {
                 _isSuggestionError.value = "Error parsing data: ${j.message}"
@@ -143,11 +114,12 @@ class ViewerViewModel : ViewModel() {
         }
     }
 
-    private fun callPythonSearchWithLink(inputText: String): VideoDetails? {
+    private suspend fun callPythonSearchWithLink(inputText: String): VideoDetails {
         return try {
             val python = pythonInstant.getModule("main")
-            val variable =
+            val variable = withContext(Dispatchers.IO) {
                 python["SearchWithLink"]?.call("https://www.youtube.com/watch?v=$inputText")
+            }
             val result = variable.toString()
 
             // Use Gson to parse the JSON string into a Map
@@ -157,17 +129,19 @@ class ViewerViewModel : ViewModel() {
 
         } catch (e: JsonSyntaxException) {
             Log.e("JSON Error", "Error parsing JSON ${e.message}")
-            return null
+            throw e
         } catch (e: Exception) {
             e.printStackTrace()
-            return null
+            throw e
         }
     }
 
 
-    private fun callPythonSearchSuggestion(inputText: String): List<VideosListData>? {
+    private suspend fun callPythonSearchSuggestion(inputText: String): List<VideosListData>? {
         val python = pythonInstant.getModule("main")
-        val getResultFromPython = python["Searcher"]?.call(inputText).toString()
+        val getResultFromPython = withContext(Dispatchers.IO){
+            python["Searcher"]?.call(inputText).toString()
+        }
 
         val videosListDataListType = object : TypeToken<List<VideosListData>>() {}.type
         val result: List<VideosListData>? =
