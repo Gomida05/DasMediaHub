@@ -38,7 +38,6 @@ class DownloaderClass(val context: Context): ForUIDownloader {
         createNotificationChannel()
         val builder = createMediaNotificationForProgress(title)
 
-        val uri = url.toUri()
         val pathVideo = getVideosDownloadPath(context)
         createSingleDirectory(pathVideo)
         val customFilePath = File("$pathVideo/$title.mp4")
@@ -47,7 +46,7 @@ class DownloaderClass(val context: Context): ForUIDownloader {
             customFilePath.parentFile?.mkdirs()
         }
         val customUri = Uri.fromFile(customFilePath)
-        val request = DownloadManager.Request(uri)
+        val request = DownloadManager.Request(url.toUri())
             .setTitle("Downloading Video")
             .setDescription("Video download in progress")
             .setAllowedNetworkTypes(DownloadManager.Request.NETWORK_WIFI or DownloadManager.Request.NETWORK_MOBILE)

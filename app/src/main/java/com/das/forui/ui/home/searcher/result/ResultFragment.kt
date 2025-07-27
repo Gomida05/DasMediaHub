@@ -10,14 +10,12 @@ import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.safeDrawing
-import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
@@ -64,9 +62,9 @@ import com.das.forui.data.model.SearchResultFromMain
 import com.das.forui.services.AudioServiceFromUrl
 import com.das.forui.data.model.VideosListData
 import com.das.forui.data.constants.GlobalVideoList.bundles
-import com.das.forui.ui.viewer.shimmerLoading
 import com.das.forui.NavScreens.VideoViewer
 import com.das.forui.data.YouTuber.loadStreamUrl
+import com.das.forui.ui.viewer.CustomMethods.SkeletonSuggestionLoadingLayout
 
 @Composable
 fun ResultViewerPage(
@@ -129,7 +127,7 @@ fun ResultViewerPage(
                     Box(
                         contentAlignment = Alignment.Center
                     ){
-                        SkeletonSuggestionLoadingLayout()
+                        SkeletonSuggestionLoadingLayout(true)
                     }
                 }
             } else {
@@ -248,7 +246,8 @@ fun VideoItems(
             }
             Row(
                 modifier = Modifier
-                    .fillMaxSize()
+                    .fillMaxSize(),
+                horizontalArrangement = Arrangement.SpaceBetween
             ) {
 
 
@@ -343,307 +342,6 @@ fun VideoItems(
         )
     }
 }
-
-
-@Composable
-fun SkeletonSuggestionLoadingLayout() {
-
-    Column(
-        modifier = Modifier
-            .fillMaxSize()
-            .shimmerLoading()
-    ) {
-        // Placeholder for each video item (image + text)
-        repeat(5) { // Repeat for a few video items to show skeletons
-
-
-            Box(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .height(193.dp)
-                    .background(Color.Gray.copy(alpha = 0.17f))
-            ) {
-                Text(
-                    text = "",
-                    maxLines = 1,
-                    color = Color.White,
-                    textAlign = TextAlign.Center,
-                    modifier = Modifier
-                        .padding(end = 3.dp, bottom = 3.dp)
-                        .align(Alignment.BottomEnd)
-                        .background(Color.Gray.copy(alpha = 0.5f), RoundedCornerShape(5.dp))
-                        .height(20.dp)
-                        .width(50.dp)
-                        .shimmerLoading()
-                )
-            }
-            Row(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .background(Color.Gray.copy(alpha = 0.2f)) // Placeholder background
-            ) {
-
-                // Channel Profile Image
-                Box(
-                    modifier = Modifier
-                        .size(40.dp, 40.dp)
-                        .clip(RoundedCornerShape(100))
-                        .shimmerLoading()
-                        .background(Color.Gray.copy(alpha = 0.2f))
-                )
-                Column(
-                    modifier = Modifier
-                        .fillMaxWidth(0.95f)
-                ) {
-                    //Title
-                    Text(
-                        text = "",
-                        modifier = Modifier
-                            .padding(start = 6.dp, end = 6.dp)
-                            .fillMaxWidth()
-                            .height(16.dp)
-                            .shimmerLoading()
-                            .background(Color.Gray.copy(alpha = 0.3f))
-                    )
-
-                    // Channel name, views, and date placeholders
-
-                    Row(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .padding(8.dp)
-                    ) {
-                        Box(
-                            modifier = Modifier
-                                .width(100.dp)
-                                .height(12.dp)
-                                .shimmerLoading()
-                                .background(Color.Gray.copy(alpha = 0.3f))
-                        )
-                        Spacer(modifier = Modifier.width(10.dp))
-                        Box(
-                            modifier = Modifier
-                                .width(60.dp)
-                                .height(12.dp)
-                                .shimmerLoading()
-                                .background(Color.Gray.copy(alpha = 0.3f))
-                        )
-                        Spacer(modifier = Modifier.width(10.dp))
-                        Box(
-                            modifier = Modifier
-                                .width(90.dp)
-                                .height(12.dp)
-                                .shimmerLoading()
-                                .background(Color.Gray.copy(alpha = 0.3f))
-                        )
-                    }
-                }
-
-                Box(
-                    modifier = Modifier
-                        .width(9.dp)
-                        .height(40.dp)
-                        .shimmerLoading()
-                        .background(Color.Gray.copy(alpha = 0.3f))
-
-                ) { }
-
-            }
-
-        }
-    }
-}
-
-
-/*
-@Composable
-fun PlayListItems(
-    context: Context,
-    navController: NavController,
-    searchItem: SearchResultFromMain
-) {
-    val videoId = searchItem.videoId
-    val title = searchItem.title
-    val viewsNumber = searchItem.views
-    val dateOfVideo = searchItem.dateOfVideo
-    val channelName = searchItem.channelName
-    val duration = searchItem.duration
-    val videoThumbnailURL = searchItem.videoId
-    val channelThumbnails = searchItem.channelThumbnailsUrl
-
-    var showDialog by remember { mutableStateOf(false) }
-
-    val imageRequest = remember {
-        ImageRequest.Builder(context)
-            .data("https://img.youtube.com/vi/$videoThumbnailURL/0.jpg")
-            .crossfade(true)
-            .memoryCachePolicy(CachePolicy.ENABLED)
-            .diskCachePolicy(CachePolicy.ENABLED)
-            .build()
-    }
-    Box(
-        modifier = Modifier
-            .clip(RoundedCornerShape(1))
-            .fillMaxWidth()
-            .padding(bottom = 3.dp, top = 3.dp)
-            .combinedClickable(
-                onClick = {
-                    val bundle = Bundle().apply {
-                        putString("View_ID", videoId)
-                        putString("View_URL", "https://www.youtube.com/watch?v=$videoId")
-                        putString("View_Title", title)
-                        putString("View_Number", viewsNumber)
-                        putString("dateOfVideo", dateOfVideo)
-                        putString("channelName", channelName)
-                        putString("channel_Thumbnails", channelThumbnails)
-                    }
-                    bundles.putBundle(NEW_INTENT_FOR_VIEWER, bundle)
-                    navController.navigate(VideoViewer.route)
-
-                },
-                onLongClick = {
-                    showDialog = true
-                }
-            )
-    ) {
-        Column(
-            modifier = Modifier
-                .height(260.dp)
-                .fillMaxWidth()
-
-        ) {
-            Box {
-                AsyncImage(
-                    model = imageRequest,
-                    contentDescription = "Category Image",
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .height(210.dp),
-                    alignment = Alignment.Center,
-                    contentScale = ContentScale.Crop
-                )
-                Text(
-                    text = duration,
-                    maxLines = 1,
-                    color = Color.White,
-                    textAlign = TextAlign.Center,
-                    modifier = Modifier
-                        .padding(end = 3.dp, bottom = 3.dp)
-                        .align(Alignment.BottomEnd)
-                        .background(Color(0xCC2C2B2B), RoundedCornerShape(5.dp))
-                )
-            }
-            Row(
-                modifier = Modifier
-                    .fillMaxSize()
-            ) {
-
-
-                IconButton(
-                    onClick = {
-                        Toast.makeText(context, channelName, Toast.LENGTH_SHORT).show()
-                    }
-                ) {
-                    AsyncImage(
-                        model = ImageRequest.Builder(context)
-                            .data(channelThumbnails)
-                            .crossfade(true)
-                            .build(),
-                        contentDescription = "Category Image",
-                        modifier = Modifier
-                            .fillMaxSize(),
-                        alignment = Alignment.Center,
-                        contentScale = ContentScale.Crop
-                    )
-                }
-                Column(
-                    modifier = Modifier
-                        .width(285.dp)
-                        .padding(3.dp)
-                ) {
-
-
-                    Text(
-                        text = title,
-                        maxLines = 1,
-                        fontSize = 15.sp,
-                        textAlign = TextAlign.Start,
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .padding(start = 2.dp)
-                    )
-                    Row {
-                        Text(
-                            text = channelName,
-                            maxLines = 1,
-                            fontSize = 12.sp,
-                            textAlign = TextAlign.Start,
-                            modifier = Modifier
-                                .width(112.dp)
-                                .padding(start = 2.dp)
-                        )
-                        Row(
-                            modifier = Modifier
-                                .padding(start = 5.dp, end = 5.dp)
-                        ){
-                            Icon(
-                                imageVector = Icons.AutoMirrored.Default.PlaylistPlay,
-                                ""
-                            )
-                            Text(
-                                text = "$viewsNumber Videos",
-                                maxLines = 1,
-                                fontSize = 12.sp,
-                                textAlign = TextAlign.Center,
-                                modifier = Modifier
-                                    .width(55.dp)
-                                    .padding(start = 5.dp, end = 5.dp)
-                            )
-                        }
-                        Text(
-                            text = dateOfVideo,
-                            maxLines = 1,
-                            fontSize = 12.sp,
-                            textAlign = TextAlign.Center,
-                            modifier = Modifier
-                                .width(100.dp)
-                                .padding(start = 2.dp)
-                        )
-                    }
-
-                }
-/*                IconButton(
-                    onClick = {
-                        showDialog = true
-                    }
-
-
-                ) {
-                    Icon(
-                        painter = rememberVectorPainter(Icons.Default.MoreVert),
-                        contentDescription = "Back"
-                    )
-                }
-                */
-            }
-        }
-    }
-
-    if (showDialog) {
-        ShowAlertDialog(
-            mContext = context,
-            selectedItem = VideosListData(
-                videoId, title, viewsNumber, dateOfVideo,
-                duration, channelName, channelThumbnails
-            ),
-            viewModel,
-            onDismissRequest = { showDialog = false }
-        )
-    }
-}
-
-*/
-
 
 @Composable
 private fun ShowAlertDialog(

@@ -32,31 +32,31 @@ fun CustomTheme(
         AppTheme.SYSTEM -> isSystemInDarkTheme()
     }
 
-    val lightColors = lightColorScheme(
-        primary = Color(0xFF000000),
+    val customLightColors = lightColorScheme(
+        primary = Color.Black,
         onPrimary = Color.White,
-        primaryContainer = Color(0xFFE0E0E0),
-        secondary = Color(0xFF03DAC5),
-        onSecondary = Color.Black,
-        background = Color(0xFFFFFFFF),
-        onBackground = Color.Black,
-        surface = Color(0xFFFFFFFF),
-        onSurface = Color.Black,
+        primaryContainer = Color(0xFFD0E7FF),
+        secondary = Color(0xFFFF6F61),
+        onSecondary = Color.White,
+        background = Color(0xFFF9FAFB),
+        onBackground = Color(0xFF1C1C1C),
+//        surface = Color.Red,
+        onSurface = Color(0xFF333333)
     )
 
-    val darkColors = darkColorScheme(
+    val customDarkColors = darkColorScheme(
         primary = Color.White,
         onPrimary = Color.Black,
-        primaryContainer = Color(0xFF121212),
-        secondary = Color(0xFF03DAC5),
+        primaryContainer = Color(0xFF003366),
+        secondary = Color(0xFFFFA07A),
         onSecondary = Color.Black,
-        background = Color(0xFF121212),
+        background = Color(0xFF0E0E0E),
         onBackground = Color.White,
-        surface = Color(0xFF121212),
-        onSurface = Color.White,
+        surface = Color(0xFF1A1A1A),
+        onSurface = Color(0xFFE0E0E0)
     )
 
-    val colors = if (isDarkTheme) darkColors else lightColors
+    val colors = if (isDarkTheme) customDarkColors else customLightColors
 
     val lightPrimary = Color.Black
 

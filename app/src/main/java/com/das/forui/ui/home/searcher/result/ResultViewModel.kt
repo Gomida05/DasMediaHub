@@ -25,7 +25,7 @@ class ResultViewModel: ViewModel() {
 
 
     fun fetchSuggestions(inputText: String) {
-        _isLoading.value = false
+        _isLoading.value = true
         _isThereError.value = null
 
         viewModelScope.launch {

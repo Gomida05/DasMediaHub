@@ -4,25 +4,14 @@ import android.app.Activity
 import android.content.Context
 import android.content.Intent
 import android.content.pm.ActivityInfo
-import android.graphics.Typeface.BOLD
-import android.graphics.Typeface.ITALIC
 import android.os.Bundle
 import android.text.SpannableString
-import android.text.style.BackgroundColorSpan
-import android.text.style.ForegroundColorSpan
-import android.text.style.StyleSpan
 import android.text.style.URLSpan
 import android.view.LayoutInflater
 import android.view.WindowManager
 import android.widget.Toast
 import androidx.activity.compose.LocalActivity
 import androidx.annotation.OptIn
-import androidx.compose.animation.core.LinearEasing
-import androidx.compose.animation.core.RepeatMode
-import androidx.compose.animation.core.animateFloat
-import androidx.compose.animation.core.infiniteRepeatable
-import androidx.compose.animation.core.rememberInfiniteTransition
-import androidx.compose.animation.core.tween
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.combinedClickable
@@ -55,12 +44,12 @@ import androidx.compose.material.icons.filled.MusicNote
 import androidx.compose.material.icons.filled.Share
 import androidx.compose.material.icons.filled.SmartDisplay
 import androidx.compose.material3.AlertDialog
-import androidx.compose.material3.Button
 import androidx.compose.material3.Card
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
@@ -70,26 +59,17 @@ import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.composed
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.draw.drawWithCache
-import androidx.compose.ui.geometry.Offset
-import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.rememberVectorPainter
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
-import androidx.compose.ui.text.AnnotatedString
-import androidx.compose.ui.text.SpanStyle
-import androidx.compose.ui.text.buildAnnotatedString
-import androidx.compose.ui.text.font.FontStyle
-import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
-import androidx.compose.ui.text.style.TextDecoration
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.viewinterop.AndroidView
@@ -120,6 +100,9 @@ import com.das.forui.data.constants.Intents.NEW_INTENT_FOR_VIEWER
 import com.das.forui.data.model.VideoDetails
 import com.das.forui.data.model.VideosListData
 import com.das.forui.data.constants.GlobalVideoList.bundles
+import com.das.forui.ui.viewer.CustomMethods.SkeletonSuggestionLoadingLayout
+import com.das.forui.ui.viewer.CustomMethods.SkeletonLoadingLayout
+import com.das.forui.ui.viewer.CustomMethods.toAnnotatedString
 
 
 @OptIn(UnstableApi::class)
@@ -303,9 +286,11 @@ fun VideoPlayerScreen(
 
                 }
 
-
             }
             if (!isInFullScreen){
+                LaunchedEffect(videoID) {
+                    viewModel.fetchVideoDetails(videoID)
+                }
                 LazyColumn {
 
                     item(videoID) {
@@ -360,7 +345,7 @@ fun VideoPlayerScreen(
                                     videoChannelThumbnails = searchItem.channelThumbnailsUrl
                                     videoDuration = searchItem.duration
                                 }
-                                CategoryItems(
+                                VideoLists(
                                     navController,
                                     searchItem,
                                 )
@@ -448,23 +433,20 @@ fun VideoDetailsComposable(
     finished: (title: VideoDetails) ->Unit
 ) {
 
-    var showDescriptionDialog by remember { mutableStateOf(false) }
-    var comingSoonDialog by remember { mutableStateOf(false) }
+    var showDescriptionDialog by rememberSaveable { mutableStateOf(false) }
+    var comingSoonDialog by rememberSaveable { mutableStateOf(false) }
     val isLoading by viewModel.isLoadings
 
     val dbForFav = DatabaseFavorite(mContext)
 
     val videoDetails by viewModel.videoDetails
-    var isSaved by remember {
+    var isSaved by rememberSaveable {
         mutableStateOf(
             dbForFav.isWatchUrlExist(videoId)
         )
     }
     val colorForFavIcon = if (isSystemInDarkTheme()) Color.Unspecified else Color.White
 
-    LaunchedEffect(videoId) {
-        viewModel.fetchVideoDetails(videoId)
-    }
     Column(
         modifier = Modifier
             .fillMaxSize()
@@ -565,8 +547,7 @@ fun VideoDetailsComposable(
                 modifier = Modifier
                     .fillMaxWidth()
             ) {
-
-                Button(
+                OutlinedButton(
                     onClick = {
                         val shareIntent = Intent(Intent.ACTION_SEND).apply {
                             type = "text/plain"
@@ -587,7 +568,7 @@ fun VideoDetailsComposable(
                         ""
                     )
                 }
-                Button(
+                OutlinedButton(
                     onClick = {
                         if (isSaved) {
                             dbForFav.deleteWatchUrl(videoId)
@@ -619,7 +600,7 @@ fun VideoDetailsComposable(
                         tint = if (isSaved) Color.Red else colorForFavIcon
                     )
                 }
-                Button(
+                OutlinedButton(
                     onClick = {
                         downloadAsMusic(title)
                     },
@@ -631,7 +612,7 @@ fun VideoDetailsComposable(
                     )
                 }
 
-                Button(
+                OutlinedButton(
                     onClick = {
                         downloadAsVideo(
                             title
@@ -645,7 +626,7 @@ fun VideoDetailsComposable(
                     )
                 }
 
-                Button(
+                OutlinedButton(
                     onClick = {
                         clickForMore()
                     },
@@ -678,44 +659,9 @@ fun VideoDetailsComposable(
 }
 
 
-@Composable
-fun ComingSoonAlertDialog(
-    onDismissRequest: () -> Unit
-) {
-    AlertDialog(
-        onDismissRequest,
-        icon = {
-            Image(
-                imageVector = Icons.Default.Info,
-                ""
-            )
-        },
-        title = {
-            Text(
-                "Sorry this feature is still underdevelopment!"
-            )
-        },
-
-        text = {
-            Text(
-                "Thanks for your understanding"
-            )
-        },
-        confirmButton = {
-            TextButton(
-                onClick = onDismissRequest
-            ) {
-                Text(
-                    "Okay"
-                )
-            }
-        }
-    )
-}
-
 
 @Composable
-fun CategoryItems(
+private fun VideoLists(
     navController: NavController,
     searchItem: VideosListData,
 ) {
@@ -785,9 +731,9 @@ fun CategoryItems(
 
             Row(
                 modifier = Modifier
-                    .fillMaxSize()
+                    .fillMaxSize(),
+                horizontalArrangement = Arrangement.SpaceBetween
             ) {
-
 
                 IconButton(
                     onClick = {
@@ -927,6 +873,41 @@ private fun playThisOne(
 
 }
 
+
+@Composable
+private fun ComingSoonAlertDialog(
+    onDismissRequest: () -> Unit
+) {
+    AlertDialog(
+        onDismissRequest,
+        icon = {
+            Image(
+                imageVector = Icons.Default.Info,
+                ""
+            )
+        },
+        title = {
+            Text(
+                "Sorry this feature is still underdevelopment!"
+            )
+        },
+
+        text = {
+            Text(
+                "Thanks for your understanding"
+            )
+        },
+        confirmButton = {
+            TextButton(
+                onClick = onDismissRequest
+            ) {
+                Text(
+                    "Okay"
+                )
+            }
+        }
+    )
+}
 
 @Composable
 private fun ShowDescriptionDialog(
@@ -1105,223 +1086,7 @@ private class MyExoPlayerListener(
 
 
 
-@Composable
-fun SkeletonSuggestionLoadingLayout() {
-    // Placeholder UI for loading state
-    Column(
-        modifier = Modifier
-            .fillMaxWidth()
-            .height(495.dp)
-            .padding(8.dp)
-            .shimmerLoading()
-    ) {
-        // Placeholder for each video item (image + text)
-        repeat(5) { // Repeat for a few video items to show skeletons
 
-
-            Box(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .height(193.dp)
-                    .background(Color.Gray.copy(alpha = 0.17f))
-            ) {
-                Text(
-                    text = "",
-                    maxLines = 1,
-                    color = Color.White,
-                    textAlign = TextAlign.Center,
-                    modifier = Modifier
-                        .padding(end = 3.dp, bottom = 3.dp)
-                        .align(Alignment.BottomEnd)
-                        .background(Color.Gray.copy(alpha = 0.5f), RoundedCornerShape(5.dp))
-                        .height(20.dp)
-                        .width(50.dp)
-                        .shimmerLoading()
-                )
-            }
-            Row(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .background(Color.Gray.copy(alpha = 0.2f)) // Placeholder background
-            ) {
-
-                // Channel Profile Image
-                Box(
-                    modifier = Modifier
-                        .size(40.dp, 40.dp)
-                        .clip(RoundedCornerShape(100))
-                        .shimmerLoading()
-                        .background(Color.Gray.copy(alpha = 0.2f))
-                )
-                Column(
-                    modifier = Modifier
-                        .fillMaxWidth(0.95f)
-                ) {
-                    //Title
-                    Text(
-                        text = "",
-                        modifier = Modifier
-                            .padding(start = 6.dp, end = 6.dp)
-                            .fillMaxWidth()
-                            .height(16.dp)
-                            .shimmerLoading()
-                            .background(Color.Gray.copy(alpha = 0.3f))
-                    )
-
-                    // Channel name, views, and date placeholders
-
-                    Row(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .padding(8.dp)
-                    ) {
-                        Box(
-                            modifier = Modifier
-                                .width(100.dp)
-                                .height(12.dp)
-                                .shimmerLoading()
-                                .background(Color.Gray.copy(alpha = 0.3f))
-                        )
-                        Spacer(modifier = Modifier.width(10.dp))
-                        Box(
-                            modifier = Modifier
-                                .width(60.dp)
-                                .height(12.dp)
-                                .shimmerLoading()
-                                .background(Color.Gray.copy(alpha = 0.3f))
-                        )
-                        Spacer(modifier = Modifier.width(10.dp))
-                        Box(
-                            modifier = Modifier
-                                .width(90.dp)
-                                .height(12.dp)
-                                .shimmerLoading()
-                                .background(Color.Gray.copy(alpha = 0.3f))
-                        )
-                    }
-                }
-
-                Box(
-                    modifier = Modifier
-                        .width(9.dp)
-                        .height(40.dp)
-                        .shimmerLoading()
-                        .background(Color.Gray.copy(alpha = 0.3f))
-
-                ) { }
-
-            }
-
-        }
-    }
-}
-
-fun Modifier.shimmerLoading(
-    durationMillis: Int = 1000
-): Modifier = composed {
-    val transition = rememberInfiniteTransition(label = "")
-
-    val translateAnim by transition.animateFloat(
-        initialValue = 0f,
-        targetValue = 1000f,
-        animationSpec = infiniteRepeatable(
-            animation = tween(durationMillis, easing = LinearEasing),
-            repeatMode = RepeatMode.Restart
-        ),
-        label = ""
-    )
-
-    this.drawWithCache {
-        val shimmerColors = listOf(
-            Color.LightGray.copy(alpha = 0.3f),
-            Color.LightGray.copy(alpha = 0.9f),
-            Color.LightGray.copy(alpha = 0.3f),
-        )
-
-        val brush = Brush.linearGradient(
-            colors = shimmerColors,
-            start = Offset(translateAnim - 200f, 0f),
-            end = Offset(translateAnim, size.height)
-        )
-
-        onDrawBehind {
-            drawRect(brush = brush)
-        }
-    }
-}
-
-
-
-@Composable
-fun SkeletonLoadingLayout() {
-    // This can be your custom skeleton loader UI
-    Column(
-        modifier = Modifier.fillMaxWidth()
-    ) {
-        Box(
-            modifier = Modifier
-                .fillMaxWidth()
-                .height(24.dp)
-                .background(Color.Gray.copy(alpha = 0.3f))
-                .shimmerLoading()
-        )
-
-        Spacer(modifier = Modifier.height(5.dp))
-
-        // Thumbnail and other details placeholders
-        Row(
-            horizontalArrangement = Arrangement.SpaceAround,
-            modifier = Modifier.fillMaxWidth()
-        ) {
-            Box(
-                modifier = Modifier
-                    .size(34.dp)
-                    .clip(RoundedCornerShape(100))
-                    .shimmerLoading()
-                    .background(Color.Gray.copy(alpha = 0.3f))
-            )
-            Box(
-                modifier = Modifier
-                    .shimmerLoading()
-                    .width(142.dp)
-                    .height(16.dp)
-                    .background(Color.Gray.copy(alpha = 0.3f))
-            )
-            Box(
-                modifier = Modifier
-                    .shimmerLoading()
-                    .width(52.dp)
-                    .height(16.dp)
-                    .background(Color.Gray.copy(alpha = 0.3f))
-            )
-            Box(
-                modifier = Modifier
-                    .shimmerLoading()
-                    .width(62.dp)
-                    .height(16.dp)
-                    .background(Color.Gray.copy(alpha = 0.3f))
-            )
-        }
-
-        Spacer(modifier = Modifier.height(8.dp))
-
-        // Action buttons placeholders
-        Row(
-            horizontalArrangement = Arrangement.SpaceAround,
-            modifier = Modifier.fillMaxWidth()
-        ) {
-            repeat(5) {
-                Box(
-                    modifier = Modifier
-                        .size(40.dp)
-                        .clip(RoundedCornerShape(22))
-                        .background(Color.Gray.copy(alpha = 0.3f))
-                        .shimmerLoading()
-                )
-            }
-        }
-    }
-}
 
 
 @Composable
@@ -1416,51 +1181,3 @@ private fun AskToPlay(
 
 
 
-fun SpannableString.toAnnotatedString(): AnnotatedString {
-    return buildAnnotatedString {
-        append(this@toAnnotatedString.toString())
-        getSpans(0, length, Any::class.java).forEach { span ->
-            val start = getSpanStart(span)
-            val end = getSpanEnd(span)
-            when (span) {
-                is ForegroundColorSpan -> addStyle(
-                    style = SpanStyle(color = Color(span.foregroundColor)),
-                    start = start,
-                    end = end
-                )
-                is BackgroundColorSpan -> addStyle(
-                    style = SpanStyle(background = Color(span.backgroundColor)),
-                    start = start,
-                    end = end
-                )
-                is StyleSpan -> when (span.style) {
-                    BOLD -> addStyle(
-                        style = SpanStyle(fontWeight = FontWeight.Bold),
-                        start = start,
-                        end = end
-                    )
-                    ITALIC -> addStyle(
-                        style = SpanStyle(fontStyle = FontStyle.Italic),
-                        start = start,
-                        end = end
-                    )
-                    // Add more style span cases as needed
-                }
-                is URLSpan -> {
-                    addStyle(
-                        style = SpanStyle(color = Color.Blue, textDecoration = TextDecoration.Underline),
-                        start = start,
-                        end = end
-                    )
-                    addStringAnnotation(
-                        tag = "link",
-                        annotation = span.url,
-                        start = start,
-                        end = end
-                    )
-                }
-                // Add more span cases as needed
-            }
-        }
-    }
-}

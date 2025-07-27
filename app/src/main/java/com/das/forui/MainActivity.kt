@@ -163,7 +163,7 @@ class MainActivity : ComponentActivity() {
         )
 
         Scaffold(
-            contentWindowInsets = WindowInsets(0, 0, 0, 0),
+            contentWindowInsets = WindowInsets(1, 1, 1, 1),
             modifier = Modifier
                 .fillMaxSize(),
             bottomBar = {

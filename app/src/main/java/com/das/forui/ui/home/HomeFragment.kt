@@ -21,12 +21,11 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBar
+import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.graphics.vector.rememberVectorPainter
 import androidx.compose.ui.platform.LocalContext
-import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.navigation.NavController
 import com.das.forui.NavScreens.Searcher
@@ -42,12 +41,13 @@ fun HomePageComposable(navController: NavController) {
         topBar = {
             TopAppBar(
                 title = {
-                    Text(
-                        text = "YouTube Downloader",
-                        style = MaterialTheme.typography.headlineMedium
-                            .copy(textAlign = TextAlign.Center),
-                        modifier = Modifier.fillMaxWidth()
-                    )
+                    Box(Modifier.fillMaxWidth()) {
+                        Text(
+                            text = "YouTube Downloader",
+                            style = MaterialTheme.typography.headlineSmall,
+                            modifier = Modifier.align(Alignment.Center)
+                        )
+                    }
                 },
                 navigationIcon = {
                     IconButton(
@@ -57,12 +57,12 @@ fun HomePageComposable(navController: NavController) {
                     ) {
                         Icon(
                             imageVector = Icons.Default.AccountCircle,
-                            contentDescription = "Profile"
+                            contentDescription = "Profile",
+                            tint = MaterialTheme.colorScheme.primary
                         )
                     }
                 },
                 actions = {
-
                     IconButton(
                         onClick = {
                             navController.navigate(Downloads.route)
@@ -70,56 +70,48 @@ fun HomePageComposable(navController: NavController) {
                     ) {
                         Icon(
                             imageVector = Icons.Default.Download,
-                            contentDescription = "Downloads"
+                            contentDescription = "Downloads",
+                            tint = MaterialTheme.colorScheme.primary
                         )
                     }
-                }
+                },
+                colors = TopAppBarDefaults.topAppBarColors(
+                    containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.2f)
+                )
             )
         },
         contentWindowInsets = WindowInsets.safeDrawing,
-        modifier = Modifier
-            .fillMaxSize()
-    ) {
+        modifier = Modifier.fillMaxSize()
+    ) { padding ->
         Box(
             modifier = Modifier
-                .padding(it)
+                .padding(padding)
                 .fillMaxSize()
         ) {
-
 
             Button(
                 onClick = {
                     navController.navigate(Searcher.route)
                 },
+                shape = RoundedCornerShape(30.dp),
                 modifier = Modifier
                     .align(Alignment.Center)
-                    .size(325.dp, 60.dp),
-                shape = RoundedCornerShape(35),
-                elevation = ButtonDefaults.elevatedButtonElevation()
+                    .size(width = 300.dp, height = 60.dp),
+                elevation = ButtonDefaults.buttonElevation(defaultElevation = 6.dp)
             ) {
-                Box(
-                    modifier = Modifier.fillMaxSize()
-                ) {
-                    Icon(
-                        painter = rememberVectorPainter(Icons.Default.Search),
-                        "",
-                        modifier = Modifier
-                            .align(Alignment.CenterStart)
+                Icon(
+                    imageVector = Icons.Default.Search,
+                    contentDescription = "Search Icon",
+                    modifier = Modifier
+                        .padding(end = 8.dp)
+                        .size(22.dp)
+                )
 
-                    )
-
-                    Text(
-                        text = "Search or Insert URL",
-                        textAlign = TextAlign.Center,
-                        modifier = Modifier
-                            .align(Alignment.Center)
-                    )
-                }
-
+                Text(
+                    text = "Search or Paste URL",
+                    style = MaterialTheme.typography.bodyLarge
+                )
             }
-
         }
-
     }
-
 }
