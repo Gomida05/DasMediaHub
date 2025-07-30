@@ -1,6 +1,4 @@
 *.iml
-/app/myRelease.jks
-/app/myReleases.jks
 .gradle
 /local.properties
 /.idea/caches
