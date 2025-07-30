@@ -1,5 +1,5 @@
 *.iml
-*.jks
+/app/myRelease.jks
 .gradle
 /local.properties
 /.idea/caches
