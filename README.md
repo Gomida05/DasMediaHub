@@ -1,71 +1,85 @@
-# DASMEDIAHUB  
-*Transforming Media Experience with Limitless Innovation*
+# 🎬 DasMediaHub
 
-<div align="center">
+**Transforming Media Experience with Limitless Innovation**
 
-![last-commit](https://img.shields.io/github/last-commit/Gomida05/DasMediaHub?style=flat&logo=git&logoColor=white&color=0080ff)
-![repo-top-language](https://img.shields.io/github/languages/top/Gomida05/DasMediaHub?style=flat&color=0080ff)
-![repo-language-count](https://img.shields.io/github/languages/count/Gomida05/DasMediaHub?style=flat&color=0080ff)
+An extensible, multi-module Android media framework supporting background media playback, theme customization, content discovery, and smart download management.
 
-**Built with:**
-
-![JSON](https://img.shields.io/badge/JSON-000000.svg?style=flat&logo=JSON&logoColor=white)
-![Gradle](https://img.shields.io/badge/Gradle-02303A.svg?style=flat&logo=Gradle&logoColor=white)
-![XML](https://img.shields.io/badge/XML-005FAD.svg?style=flat&logo=XML&logoColor=white)
-![Python](https://img.shields.io/badge/Python-3776AB.svg?style=flat&logo=Python&logoColor=white)
-![bat](https://img.shields.io/badge/bat-31369E.svg?style=flat&logo=bat&logoColor=white)
-![Kotlin](https://img.shields.io/badge/Kotlin-7F52FF.svg?style=flat&logo=Kotlin&logoColor=white)
-
-</div>
+![Last Commit](https://img.shields.io/github/last-commit/Gomida05/DasMediaHub)
+![Top Language](https://img.shields.io/github/languages/top/Gomida05/DasMediaHub)
+![Repo Languages](https://img.shields.io/github/languages/count/Gomida05/DasMediaHub)
 
 ---
 
 ## 📚 Table of Contents
 
-- [Overview](#overview)
-- [Getting Started](#getting-started)
-  - [Prerequisites](#prerequisites)
-  - [Installation](#installation)
-  - [Usage](#usage)
-  - [Testing](#testing)
+- [🧾 Overview](#-overview)
+- [🔍 Why DasMediaHub?](#-why-dasmediahub)
+- [🚀 Getting Started](#-getting-started)
+- [🛠 Installation](#-installation)
 
 ---
 
 ## 🧾 Overview
 
-**DasMediaHub** is an all-in-one media management framework tailored for Android and multi-module projects, enabling seamless media playback, downloads, and user interactions. It integrates advanced media controls, background services, and customizable UI components to streamline app development.
+**DasMediaHub** is an all-in-one Android media platform. It enables seamless media consumption through:
 
-### 🔍 Why DasMediaHub?
+- 🔊 Audio and video playback with background support
+- 📥 File and app update download management
+- 🔎 YouTube-powered content search and preview
+- 🧱 Modular architecture supporting Kotlin, Compose, XML, and Python tools
 
-This project simplifies the development of feature-rich media applications by providing a robust architecture for:
+---
 
-- 🎨 **🖍️ Customizable UI & Themes**: Dynamic light/dark modes and personalized themes for a cohesive user experience.
-- 🚀 **🎧 Background Media Playback**: Persistent audio and video controls with PiP support and media session management.
-- 📥 **📡 Efficient Download Management**: Reliable handling of media and app updates with integrated notifications.
-- 🔍 **🧭 Advanced Search & Content Discovery**: YouTube integration with real-time search, history, and media preview.
-- 🔔 **🛎️ Notifications & Media Controls**: Seamless user engagement through system notifications and media controls.
-- 🔧 **🛠️ Modular & Extensible Architecture**: Simplified multi-module setup with Gradle, Kotlin, Compose, and Python integrations.
+## 🔍 Why DasMediaHub?
+
+| Feature                         | Description                                                                 |
+|---------------------------------|-----------------------------------------------------------------------------|
+| 🎨 Custom Themes & Light/Dark   | Fully themeable Compose UI with user personalization                       |
+| 🎧 Background Media Playback    | ExoPlayer & MediaSession support with PiP and controls                     |
+| 📥 Download Management          | Background-safe download manager with progress and notifications           |
+| 🔍 Smart Discovery              | YouTube API integration, search history, and result previews               |
+| 🛎️ Notification Integration    | Native Android notifications for media and download controls               |
+| 🧱 Multi-Module Project         | Separation of concerns using Gradle + Kotlin DSL modules                   |
+| 🐍 Kotlin + Python Integration  | Python for automation, metadata scraping, or future ML enhancements        |
 
 ---
 
 ## 🚀 Getting Started
 
-### 🛠 Installation
+### 📦 Prerequisites
 
-1. Run the following commands to set up and start the project:
+- Android Studio Electric Eel or later
+- Kotlin 1.9+
+- Gradle 8.0+
+- Python 3.9+
+- Git CLI
 
-   ```sh
-   # Clone the repository
-   git clone https://github.com/Gomida05/DasMediaHub
+## 🛠 Installation
 
-   # Navigate to the project directory
-   cd DasMediaHub
+```bash
+# Clone the repository
+git clone https://github.com/Gomida05/DasMediaHub.git
 
-   # Install dependencies and build
-   gradle build
+# Move into the project directory
+cd DasMediaHub
 
-   # ▶️ Usage: Run the app
-   gradle run
+# Sync and build the project
+./gradlew build
+```
 
-   # 🧪 Testing: Run tests using your test framework
-   gradle test
+---
+
+## 🔐 Required Local Configuration
+
+Before building or releasing the app, you must create a `local.properties` file in the root directory of the project (same level as `build.gradle`). This file should contain the following entries:
+
+```properties
+# Path to your local Python interpreter
+PYTHON_PATH=/usr/bin/python3
+
+# Release keystore configuration (used for signing the app)
+KEYSTORE_FILE=/absolute/path/to/your/release.jks
+KEYSTORE_PASSWORD=your_keystore_password
+KEY_ALIAS=your_key_alias
+KEY_PASSWORD=your_key_password
+```
