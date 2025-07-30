@@ -76,7 +76,7 @@
                 <category android:name="android.intent.category.BROWSABLE" />
 
                 <data android:scheme="https" android:host="gomida05.github.io"
-                    android:pathPrefix="/com.das.forui" />
+                    android:pathPrefix="/com.das.mediaHub" />
             </intent-filter>
 
 

@@ -9,8 +9,8 @@
         tools:targetApi="n_mr1">
         <intent
             android:action="android.intent.action.SEND"
-            android:targetPackage="com.das.forui"
-            android:targetClass="com.das.forui.MainActivity"
+            android:targetPackage="com.das.mediaHub"
+            android:targetClass="com.das.mediaHub.MainActivity"
             android:mimeType="text/plain">
             <extra android:name="android.intent.extra.TEXT" android:value="Search12.23.58/'[0][-"/>
         </intent>
@@ -25,9 +25,9 @@
         tools:targetApi="n_mr1">
         <intent
             android:action="android.intent.action.SEND"
-            android:targetPackage="com.das.forui"
+            android:targetPackage="com.das.mediaHub"
             android:mimeType="text/plain"
-            android:targetClass="com.das.forui.MainActivity">
+            android:targetClass="com.das.mediaHub.MainActivity">
             <extra android:name="android.intent.extra.TEXT" android:value="DownloadsPageFragment12.23.58/'[0][-"/>
         </intent>
     </shortcut>

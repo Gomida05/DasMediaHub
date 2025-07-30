@@ -13,5 +13,5 @@ dependencyResolutionManagement {
     }
 }
 
-rootProject.name = "ForUI"
+rootProject.name = "DasMediaHub"
 include(":app")

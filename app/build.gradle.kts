@@ -19,18 +19,18 @@ private val loadLocalProperties = Properties().apply {
 android {
     signingConfigs {
         create("release") {
-            // Replace with your own details in the local.properties file
+            // Please make sure to replace with your own details in the local.properties file
             storeFile = file(loadLocalProperties["KEYSTORE_FILE"] as String)
             storePassword = loadLocalProperties["KEYSTORE_PASSWORD"] as String
             keyAlias = loadLocalProperties["KEY_ALIAS"] as String
             keyPassword = loadLocalProperties["KEY_PASSWORD"] as String
         }
     }
-    namespace = "com.das.forui"
+    namespace = "com.das.mediaHub"
     compileSdk = 36
 
     defaultConfig {
-        applicationId = "com.das.forui"
+        applicationId = "com.das.mediaHub"
         minSdk = 24
         targetSdk = 36
         versionCode = 3

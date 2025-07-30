@@ -20,7 +20,7 @@
 # hide the original source file name.
 #-renamesourcefileattribute SourceFile
 
--keep class com.das.forui.** { *; }
+-keep class com.das.mediaHub.** { *; }
 
 # Keep Firebase services
 -keep class com.google.firebase.** { *; }
@@ -32,7 +32,7 @@
 -keep class com.google.gson.reflect.TypeToken { *; }
 -keep class * extends com.google.gson.reflect.TypeToken
 
--dontwarn com.das.forui.MainApplication$Youtuber
+-dontwarn com.das.mediaHub.MainApplication$Youtuber
 
 
 -dontwarn com.android.org.conscrypt.SSLParametersImpl
