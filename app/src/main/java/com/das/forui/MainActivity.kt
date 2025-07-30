@@ -13,7 +13,8 @@ import android.content.Intent.EXTRA_TEXT
 import android.content.pm.PackageManager
 import android.media.AudioManager
 import android.net.Uri
-import android.os.Build
+import android.os.Build.VERSION
+import android.os.Build.VERSION_CODES
 import android.os.Build.VERSION_CODES.TIRAMISU
 import android.os.Bundle
 import android.util.Log
@@ -314,7 +315,7 @@ class MainActivity : ComponentActivity() {
         createNotificationChannel()
         createGroupNotificationChannel()
         createMediaGroupNotificationChannel()
-        if (Build.VERSION.SDK_INT >= TIRAMISU) {
+        if (VERSION.SDK_INT >= TIRAMISU) {
             if (ContextCompat.checkSelfPermission(this,
                     arrayOf(
                         POST_NOTIFICATIONS,
@@ -342,7 +343,7 @@ class MainActivity : ComponentActivity() {
     private fun newReceivedMediaTypeVideo(navController: NavController, myIntent: Intent){
 
         @Suppress("DEPRECATION")
-        val videoUri = if (Build.VERSION.SDK_INT >= TIRAMISU) {
+        val videoUri = if (VERSION.SDK_INT >= TIRAMISU) {
             myIntent.getParcelableExtra(
                 EXTRA_STREAM, Uri::class.java)
         } else myIntent.getParcelableExtra(EXTRA_STREAM)
@@ -356,10 +357,9 @@ class MainActivity : ComponentActivity() {
         myIntent: Intent
     ){
         @Suppress("DEPRECATION")
-        val audioUri = if (Build.VERSION.SDK_INT >= TIRAMISU) {
-            myIntent.getParcelableExtra(
-                EXTRA_STREAM, Uri::class.java)
-        } else myIntent.getParcelableExtra(EXTRA_STREAM)
+        val audioUri = if (VERSION.SDK_INT >= TIRAMISU) myIntent.getParcelableExtra(EXTRA_STREAM, Uri::class.java)
+        else myIntent.getParcelableExtra(EXTRA_STREAM)
+
         val playIntent = Intent(this, BackGroundPlayer::class.java).apply {
             action = ACTION_START
             putExtra("media_id", audioUri?.path)
@@ -481,7 +481,7 @@ class MainActivity : ComponentActivity() {
 
 
     private fun createMediaGroupNotificationChannel() {
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+        if (VERSION.SDK_INT >= VERSION_CODES.O) {
             val serviceChannel = NotificationChannelGroup(
                 "MNGC",
                 "MediaPlayer notifications"
@@ -493,7 +493,7 @@ class MainActivity : ComponentActivity() {
     }
     
     private fun createGroupNotificationChannel(){
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+        if (VERSION.SDK_INT >= VERSION_CODES.O) {
             val serviceChannel = NotificationChannelGroup(
                 "NGC",
                 "Download notification"
@@ -546,7 +546,7 @@ class MainActivity : ComponentActivity() {
                 POST_NOTIFICATIONS
             ) != PackageManager.PERMISSION_GRANTED
         ) {
-            if (Build.VERSION.SDK_INT >= TIRAMISU) {
+            if (VERSION.SDK_INT >= TIRAMISU) {
                 ActivityCompat.requestPermissions(this, arrayOf(POST_NOTIFICATIONS), 0)
             }
             return
@@ -556,7 +556,7 @@ class MainActivity : ComponentActivity() {
 
     private fun createNotificationChannel() {
         // Only create the channel for Android 8.0 (API level 26) or higher
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+        if (VERSION.SDK_INT >= VERSION_CODES.O) {
             val channelId = "error_searching"
             val channelName = "Error Notifications"
             val importance = NotificationManager.IMPORTANCE_HIGH

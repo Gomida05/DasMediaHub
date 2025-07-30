@@ -30,7 +30,7 @@
     <uses-permission android:name="android.permission.BLUETOOTH_ADMIN"/>
     <uses-permission android:name="android.permission.BLUETOOTH_SCAN"/>
     <uses-permission android:name="android.permission.BLUETOOTH_CONNECT"/>
-
+    <uses-permission android:name="android.permission.WAKE_LOCK"/>
 
     <queries>
         <package android:name="com.das.musicplayer" />
@@ -75,8 +75,8 @@
                 <category android:name="android.intent.category.DEFAULT"/>
                 <category android:name="android.intent.category.BROWSABLE" />
 
-                <data android:scheme="https" android:host="myfirstpythontokotlinasbackend.onrender.com"
-                    android:pathPrefix="/YouTube Downloader" />
+                <data android:scheme="https" android:host="gomida05.github.io"
+                    android:pathPrefix="/com.das.forui" />
             </intent-filter>
 
 

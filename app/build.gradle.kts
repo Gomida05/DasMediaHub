@@ -18,7 +18,7 @@ private val loadLocalProperties = Properties().apply {
 }
 android {
     signingConfigs {
-        create("py312Release") {
+        create("release") {
             // Replace with your own details in the local.properties file
             storeFile = file(loadLocalProperties["KEYSTORE_FILE"] as String)
             storePassword = loadLocalProperties["KEYSTORE_PASSWORD"] as String
@@ -54,7 +54,7 @@ android {
                 getDefaultProguardFile("proguard-android-optimize.txt"),
                 "proguard-rules.pro"
             )
-            signingConfig = signingConfigs.getByName("py312Release")
+            signingConfig = signingConfigs.getByName("release")
         }
     }
 
@@ -81,19 +81,13 @@ android {
     }
 
 
-    productFlavors {
-        create("py312") {
-            dimension = "pyVersion"
-            version = "3.13"
-        }
-    }
 }
 
 
 chaquopy {
     defaultConfig {
         version = "3.13"
-        buildPython("C:\\Users\\esrom\\AppData\\Local\\Programs\\Python\\Python313\\python.exe")
+        buildPython(loadLocalProperties["PYTHON_PATH"] as String)
 
         pip {
             install("pytubefix==8.12.1")

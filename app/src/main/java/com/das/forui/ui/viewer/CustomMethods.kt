@@ -38,6 +38,7 @@ import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.AnnotatedString
+import androidx.compose.ui.text.LinkAnnotation
 import androidx.compose.ui.text.SpanStyle
 import androidx.compose.ui.text.buildAnnotatedString
 import androidx.compose.ui.text.font.FontStyle
@@ -300,22 +301,22 @@ object CustomMethods {
                             start = start,
                             end = end
                         )
-                        // Add more style span cases as needed
                     }
                     is URLSpan -> {
                         addStyle(
-                            style = SpanStyle(color = Color.Blue, textDecoration = TextDecoration.Underline),
+                            style = SpanStyle(
+                                color = Color.Blue,
+                                textDecoration = TextDecoration.Underline
+                            ),
                             start = start,
                             end = end
                         )
-                        addStringAnnotation(
-                            tag = "link",
-                            annotation = span.url,
+                        addLink(
+                            url = LinkAnnotation.Url(span.url),
                             start = start,
                             end = end
                         )
                     }
-                    // Add more span cases as needed
                 }
             }
         }

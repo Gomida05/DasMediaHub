@@ -1,21 +1,22 @@
 package com.das.forui.ui.viewer
 
 import android.app.Activity
+import android.app.PictureInPictureParams
 import android.content.Context
 import android.content.Intent
 import android.content.pm.ActivityInfo
+import android.os.Build
 import android.os.Bundle
 import android.text.SpannableString
 import android.text.style.URLSpan
+import android.util.Log
 import android.view.LayoutInflater
-import android.view.WindowManager
 import android.widget.Toast
 import androidx.activity.compose.LocalActivity
 import androidx.annotation.OptIn
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.combinedClickable
-import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -25,6 +26,7 @@ import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.safeDrawing
 import androidx.compose.foundation.layout.size
@@ -32,7 +34,10 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.layout.wrapContentSize
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.text.selection.SelectionContainer
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.More
 import androidx.compose.material.icons.filled.Error
@@ -59,6 +64,7 @@ import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
@@ -74,6 +80,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.viewinterop.AndroidView
 import androidx.compose.ui.window.Dialog
+import androidx.core.net.toUri
 import androidx.core.view.WindowCompat
 import androidx.core.view.WindowInsetsCompat
 import androidx.core.view.WindowInsetsControllerCompat
@@ -92,6 +99,7 @@ import com.das.forui.R
 import com.das.forui.data.constants.GlobalVideoList.listOfVideosListData
 import com.das.forui.data.constants.GlobalVideoList.previousVideosListData
 import com.das.forui.NavScreens
+import com.das.forui.WakeLockHelper
 import com.das.forui.data.YouTuber.loadStreamUrl
 import com.das.forui.data.databased.DatabaseFavorite
 import com.das.forui.data.databased.WatchHistory
@@ -100,6 +108,7 @@ import com.das.forui.data.constants.Intents.NEW_INTENT_FOR_VIEWER
 import com.das.forui.data.model.VideoDetails
 import com.das.forui.data.model.VideosListData
 import com.das.forui.data.constants.GlobalVideoList.bundles
+import com.das.forui.findActivity
 import com.das.forui.ui.viewer.CustomMethods.SkeletonSuggestionLoadingLayout
 import com.das.forui.ui.viewer.CustomMethods.SkeletonLoadingLayout
 import com.das.forui.ui.viewer.CustomMethods.toAnnotatedString
@@ -115,12 +124,40 @@ fun VideoPlayerScreen(
     var isInFullScreen by remember { mutableStateOf(false) }
     var showAlertDialog by remember { mutableStateOf(false) }
 
+    var shouldEnterPipMode by remember { mutableStateOf(false) }
+
     val viewModel: ViewerViewModel = viewModel()
 
 
     val videoID = arguments?.getString("View_ID").toString()
 
     val mContext = LocalContext.current
+
+    val currentShouldEnterPipMode by rememberUpdatedState(newValue = shouldEnterPipMode)
+    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O &&
+        Build.VERSION.SDK_INT < Build.VERSION_CODES.S
+    ) {
+        val context = LocalContext.current
+        DisposableEffect(context) {
+            val onUserLeaveBehavior = Runnable {
+                    context.findActivity()
+                        .enterPictureInPictureMode(PictureInPictureParams.Builder().build())
+
+            }
+            context.findActivity().addOnUserLeaveHintListener(
+                onUserLeaveBehavior
+            )
+            onDispose {
+                context.findActivity().removeOnUserLeaveHintListener(
+                    onUserLeaveBehavior
+                )
+            }
+        }
+    } else {
+        Log.i("PiP info", "API does not support PiP")
+    }
+
+
     var videoTitle by remember {
         mutableStateOf(
             arguments?.getString("View_Title")
@@ -193,41 +230,39 @@ fun VideoPlayerScreen(
 
                 val mExoPlayer = remember(mContext) {
 
-                    ExoPlayer.Builder(mContext).build().apply {
-                        hasNextMediaItem()
-                        setMediaItem(MediaItem.fromUri(videoUrl))
-                        prepare()
-                        play()
-
-                        MainActivity().requestAudioFocusFromMain(mContext, this)
-                        addListener(MyExoPlayerListener(navController))
-                    }
+                    ExoPlayer.Builder(mContext)
+                        .build()
+                        .apply {
+                            setMediaItem(MediaItem.fromUri(videoUrl.toUri()))
+                            prepare()
+                            play()
+                            MainActivity().requestAudioFocusFromMain(mContext, this)
+                            addListener(MyExoPlayerListener(navController))
+                        }
                 }
 
 
                 DisposableEffect(mExoPlayer) {
-                    val window = activity?.window
 
-                    window?.addFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON)
-
+                    WakeLockHelper.acquireWakeLock(mContext.applicationContext)
                     onDispose {
-                        window?.clearFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON)
+                        WakeLockHelper.releaseWakeLock()
                         mExoPlayer.release()
                         setFullscreen(activity, false)
                     }
                 }
 
-
-
-                LaunchedEffect(mExoPlayer.isPlaying) {
-                    val window = activity?.window
-                    if (mExoPlayer.isPlaying) {
-                        window?.addFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON)
-
-                    } else {
-                        window?.clearFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON)
+                mExoPlayer.addListener(object : Player.Listener {
+                    override fun onIsPlayingChanged(isPlaying: Boolean) {
+                        shouldEnterPipMode = isPlaying
+                        if (isPlaying) {
+                            WakeLockHelper.acquireWakeLock(mContext.applicationContext)
+                        } else {
+                            WakeLockHelper.releaseWakeLock()
+                        }
                     }
-                }
+                })
+
                 val playerModifier = if (isInFullScreen) {
                     Modifier
                         .fillMaxSize()
@@ -241,17 +276,21 @@ fun VideoPlayerScreen(
 
 
 
+
                 AndroidView(
                     modifier = playerModifier,
                     factory = { context ->
                         val view = LayoutInflater.from(context)
                             .inflate(R.layout.video_player_ui, null, false) as PlayerView
 
-                        view.player = mExoPlayer
-                        view.useController = true
-                        view.setFullscreenButtonState(isInFullScreen)
-                        view.setFullscreenButtonClickListener { isFullscreen ->
-                            isInFullScreen = isFullscreen
+                        view.apply {
+                            player = mExoPlayer
+                            useController = true
+                            keepScreenOn = true
+                            setFullscreenButtonState(isInFullScreen)
+                            setFullscreenButtonClickListener { isFullscreen ->
+                                isInFullScreen = isFullscreen
+                            }
                         }
                         view
                     },
@@ -445,7 +484,7 @@ fun VideoDetailsComposable(
             dbForFav.isWatchUrlExist(videoId)
         )
     }
-    val colorForFavIcon = if (isSystemInDarkTheme()) Color.Unspecified else Color.White
+//    val colorForFavIcon = if (isSystemInDarkTheme()) Color.White else Color.Black
 
     Column(
         modifier = Modifier
@@ -597,7 +636,7 @@ fun VideoDetailsComposable(
                             }
                         ),
                         contentDescription = if (isSaved) "Saved" else "Not Saved",
-                        tint = if (isSaved) Color.Red else colorForFavIcon
+                        tint = if (isSaved) Color.Red else MaterialTheme.colorScheme.primary
                     )
                 }
                 OutlinedButton(
@@ -910,10 +949,7 @@ private fun ComingSoonAlertDialog(
 }
 
 @Composable
-private fun ShowDescriptionDialog(
-    text: String,
-    onDismissRequest: () -> Unit
-) {
+private fun ShowDescriptionDialog(text: String, onDismissRequest: () -> Unit) {
 
     val urlPattern = """https?://\S+""".toRegex()
 
@@ -936,12 +972,22 @@ private fun ShowDescriptionDialog(
             )
         },
         text = {
-            Text(
-                text = spannable.toAnnotatedString(),
-                fontSize = 14.sp,
-                modifier = Modifier
-                    .padding(10.dp)
-            )
+            SelectionContainer {
+                Column(
+                    modifier = Modifier
+                        .heightIn(max = 250.dp)
+                        .verticalScroll(rememberScrollState())
+                        .padding(10.dp)
+                ) {
+                    Text(
+                        text = spannable.toAnnotatedString(),
+                        style = MaterialTheme.typography.bodySmall
+                            .copy(textAlign = TextAlign.Start, fontSize = 14.sp),
+                        modifier = Modifier
+                            .fillMaxWidth()
+                    )
+                }
+            }
         },
         confirmButton = {
             TextButton(
