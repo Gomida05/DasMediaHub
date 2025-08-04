@@ -28,19 +28,24 @@ import androidx.compose.material.icons.filled.Save
 import androidx.compose.material.icons.filled.Update
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Card
+import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.Icon
 import androidx.compose.material3.LargeTopAppBar
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
+import androidx.compose.material3.SnackbarHost
+import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.material3.VerticalDivider
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.setValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
-import androidx.compose.runtime.setValue
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -50,19 +55,14 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.core.net.toUri
+import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavController
 import com.das.mediaHub.NavScreens
 import com.das.mediaHub.downloader.DownloaderClass
 import com.das.mediaHub.data.model.AppUpdateInfo
 import com.google.firebase.Firebase
 import com.google.firebase.auth.auth
-import kotlinx.coroutines.CoroutineScope
-import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
-import kotlinx.coroutines.withContext
-import org.json.JSONObject
-import java.net.HttpURLConnection
-import java.net.URL
 
 
 @Composable
@@ -70,13 +70,38 @@ fun SettingsComposable(navController: NavController) {
 
     val context = LocalContext.current
     val scrollBehavior = TopAppBarDefaults.exitUntilCollapsedScrollBehavior()
+    val viewModel = viewModel<SettingsViewModel>()
 
     val auth = Firebase.auth
     val isUserLoggedIn by remember { mutableStateOf(auth.currentUser != null) }
 
+    var showDialog by remember { mutableStateOf(false) }
+
+    val isLoading by viewModel.isLoading
+    val error by viewModel.foundError
+    val appInfo by viewModel.apkInfo
+
+    val snackBarHostState = remember { SnackbarHostState() }
+    val scope = rememberCoroutineScope()
+
+    if (isLoading) {
+        LoadingDialog {
+            viewModel.cancelLoading()
+        }
+    }
+
+    if (!error.isNullOrEmpty()) {
+        ErrorDialog(error.toString(), onDismiss = {
+            viewModel.clearError()
+        }) {
+            viewModel.retryLoad()
+        }
+    }
+
     Scaffold(
         modifier = Modifier
             .nestedScroll(scrollBehavior.nestedScrollConnection),
+        snackbarHost = { SnackbarHost(snackBarHostState) },
         topBar = {
             LargeTopAppBar(
                 scrollBehavior = scrollBehavior,
@@ -125,7 +150,15 @@ fun SettingsComposable(navController: NavController) {
                 VerticalDivider(modifier = Modifier.padding(vertical = 1.dp))
             }
 
-            item { Check_for_update(context) }
+            item {
+                Check_for_update {
+                    scope.launch {
+                        snackBarHostState.showSnackbar("Downloading app")
+                    }
+                    viewModel.loadJson()
+                    showDialog = true
+                }
+            }
             item { About_Us(context) }
 
             item { FeedbackButton(navController) }
@@ -134,10 +167,72 @@ fun SettingsComposable(navController: NavController) {
         }
     }
 
+    if(showDialog && !appInfo.isEmpty()){
+        ShowAlertDialog(
+            context = context,
+            appInfo = appInfo,
+            snackBar = snackBarHostState,
+            onDismissRequest = {
+                showDialog = false
+            },
+        )
+    }
+
 }
 
 
+@Composable
+fun LoadingDialog(
+    onCancel: () -> Unit
+) {
+    AlertDialog(
+        onDismissRequest = {},
+        confirmButton = {
+            TextButton(onClick = onCancel) {
+                Text("Cancel")
+            }
+        },
+        title = {
+            Text("Loading")
+        },
+        text = {
+            Row(
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                CircularProgressIndicator(modifier = Modifier.size(20.dp))
+                Spacer(modifier = Modifier.width(16.dp))
+                Text("Please wait while we fetch update info.")
+            }
+        }
+    )
+}
 
+@Composable
+fun ErrorDialog(
+    message: String,
+    onDismiss: () -> Unit,
+    onRetry: (() -> Unit)? = null
+) {
+    AlertDialog(
+        onDismissRequest = { },
+        confirmButton = {
+            Row {
+                if (onRetry != null) {
+                    TextButton(onClick = onRetry) {
+                        Text("Retry")
+                    }
+                }
+                TextButton(onClick = onDismiss) {
+                    Text("Dismiss")
+                }
+            }
+        },
+        title = { Text("Error") },
+        text = {
+            Text(text = message)
+        }
+    )
+}
 
 @Composable
 fun UserHeader() {
@@ -253,22 +348,10 @@ private fun Account(context: Context) {
 
 
 @Composable
-private fun Check_for_update(mContext: Context){
-
-    var showDialog by remember { mutableStateOf(false) }
-    var appInfo by remember { mutableStateOf<AppUpdateInfo?>(null) }
+private fun Check_for_update(onClick: () -> Unit){
 
     Card(
-        onClick = {
-            checkForAppUpdate(
-                mContext
-            ) { newV, info ->
-                if (newV) {
-                    appInfo = info
-                    showDialog = true
-                }
-            }
-        },
+        onClick = onClick,
         modifier = Modifier
             .fillMaxWidth()
             .padding(4.dp)
@@ -304,15 +387,9 @@ private fun Check_for_update(mContext: Context){
 
     }
 
-    if(showDialog && appInfo != null){
-        ShowAlertDialog(
-            mContext,
-            appInfo!!,
-            onDismissRequest = {
-                showDialog = false
-            },
-        )
-    }
+
+
+
 }
 
 @Composable
@@ -459,15 +536,41 @@ fun AppVersionInfo() {
 fun ShowAlertDialog(
     context: Context,
     appInfo: AppUpdateInfo,
+    snackBar: SnackbarHostState,
     onDismissRequest: () -> Unit,
-){
+) {
+    // Get current version info
+    val packageInfo = context.packageManager.getPackageInfo(context.packageName, 0)
+    val currentVersionCode = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.P)
+        packageInfo.longVersionCode
+    else
+        @Suppress("DEPRECATION")
+        packageInfo.versionCode.toLong()
+
+    val currentVersionName = try {
+        packageInfo.versionName?.toDoubleOrNull()
+    } catch (_: Exception) {
+        null
+    }
+
+    val isNewerVersion = appInfo.versionCode > currentVersionCode ||
+            (currentVersionName != null && (appInfo.versionName.toDoubleOrNull()
+                ?: 0.0) > currentVersionName)
+
+    // Show message if already up-to-date
+    if (!isNewerVersion) {
+        LaunchedEffect(Unit) {
+            snackBar.showSnackbar( "You're up to date")
+            onDismissRequest()
+        }
+        return
+    }
+
 
     AlertDialog(
-        onDismissRequest = onDismissRequest,
+        onDismissRequest = {},
         title = {
-            Text(
-                "Update Available: v${appInfo.versionName}"
-            )
+            Text("Update Available: v${appInfo.versionName}")
         },
         text = {
             Text("Changelog:\n${appInfo.whatsNew}")
@@ -492,8 +595,6 @@ fun ShowAlertDialog(
     )
 }
 
-
-
 private fun goToWeb(mContext: Context) {
 
     val url = "https://gomida05.github.io/".toUri()
@@ -503,69 +604,6 @@ private fun goToWeb(mContext: Context) {
     mContext.startActivity(browserIntent)
 }
 
-
-
-fun checkForAppUpdate(
-    context: Context,
-    isThereNew: (isThere: Boolean, appInfo: AppUpdateInfo?) ->Unit
-) {
-
-    CoroutineScope(Dispatchers.IO).launch {
-        try {
-            val url = URL("https://github.com/Gomida05/Gomida05/raw/refs/heads/main/AppToDownload.json")
-            val connection = url.openConnection() as HttpURLConnection
-            connection.requestMethod = "GET"
-            val inputStream = connection.inputStream
-            val response = inputStream.bufferedReader().use { it.readText() }
-
-            val jsonObject = JSONObject(response)
-            val appsObject = jsonObject.getJSONObject("apps")
-            val ytDownloader = appsObject.optJSONObject("YouTube Downloader")
-            val latestVersionCode = ytDownloader?.getInt("latestVersionCode")!!
-            val latestVersionName = ytDownloader.getString("latestVersionName")
-            val apkUrl = ytDownloader.getString("apkUrl")
-            val changelog = ytDownloader.getString("changelog")
-
-            val appInfo = AppUpdateInfo(
-                latestVersionCode,
-                latestVersionName,
-                apkUrl,
-                changelog
-            )
-
-            val currentVersionCode = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.P) {
-                context.packageManager
-                    .getPackageInfo(context.packageName, 0).longVersionCode
-            } else {
-                @Suppress("DEPRECATION")
-                context.packageManager
-                    .getPackageInfo(context.packageName, 0).versionCode.toLong()
-            }
-
-            val currentVersionName = context.packageManager
-                .getPackageInfo(context.packageName, 0).versionName?.toDouble()
-
-            if (latestVersionCode > currentVersionCode || latestVersionName.toDouble() > currentVersionName!!)
-            {
-                withContext(Dispatchers.Main) {
-                    isThereNew(true, appInfo)
-                }
-            } else {
-                withContext(Dispatchers.Main) {
-                    isThereNew(false, null)
-                    showDialogs(context, "You're up to date")
-                }
-            }
-
-        } catch (e: Exception) {
-            withContext(Dispatchers.Main) {
-                isThereNew(false, null)
-                showDialogs(context, "Update check failed: ${e.localizedMessage}")
-            }
-        }
-    }
-
-}
 
 
 

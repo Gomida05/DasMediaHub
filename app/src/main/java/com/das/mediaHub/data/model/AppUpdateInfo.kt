@@ -5,4 +5,17 @@ data class AppUpdateInfo(
     val versionName: String,
     val appURL: String,
     val whatsNew: String
-)
+) {
+    companion object {
+        val EMPTY = AppUpdateInfo(
+            versionCode = -1,
+            versionName = "",
+            appURL = "",
+            whatsNew = ""
+        )
+    }
+
+    fun isEmpty(): Boolean {
+        return versionCode== -1 && appURL.isEmpty()
+    }
+}

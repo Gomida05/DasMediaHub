@@ -57,6 +57,7 @@ import androidx.compose.material3.NavigationBarItem
 import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.ui.draw.clip
+import androidx.core.content.FileProvider
 import androidx.navigation.NavController
 import androidx.navigation.compose.currentBackStackEntryAsState
 import com.das.mediaHub.data.YouTuber.getAudioStreamUrl
@@ -84,9 +85,11 @@ import com.das.mediaHub.data.constants.GlobalVideoList.bundles
 import com.das.mediaHub.ui.viewer.VideoPlayerScreen
 import com.das.mediaHub.ui.watchedVideos.WatchedVideosComposable
 import com.das.mediaHub.NavScreens.*
+import com.das.mediaHub.data.constants.DownloadConstants.DOWNLOAD_FINISHED
 import com.das.mediaHub.theme.CustomTheme
 import com.das.mediaHub.ui.settings.FeedbackComposable
 import com.das.mediaHub.ui.welcome.WelcomePage
+import java.io.File
 
 
 class MainActivity : ComponentActivity() {
@@ -307,7 +310,27 @@ class MainActivity : ComponentActivity() {
             }
         } else if (newIntent.action == Intent.ACTION_VIEW) {
             newMediaIntent(navController, newIntent.data)
+        } else if (newIntent.action == DOWNLOAD_FINISHED) {
+            requestToInstall(newIntent)
         }
+    }
+
+    private fun requestToInstall(intent: Intent) {
+        val apkPath = intent.getStringExtra("apk_path") ?: return
+        val apkFile = File(apkPath)
+
+        val apkUri = FileProvider.getUriForFile(
+            this,
+            "${this.packageName}.file-provider",
+            apkFile
+        )
+
+        val installIntent = Intent(Intent.ACTION_VIEW).apply {
+            setDataAndType(apkUri, "application/vnd.android.package-archive")
+            flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_GRANT_READ_URI_PERMISSION
+        }
+
+        startActivity(installIntent)
     }
 
     override fun onStart() {

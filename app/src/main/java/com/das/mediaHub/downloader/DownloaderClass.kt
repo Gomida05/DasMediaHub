@@ -303,9 +303,9 @@ class DownloaderClass(val context: Context): ForUIDownloader {
             )
 
         val downloadId = downloadManager.enqueue(request)
+
         val prefs = context.getSharedPreferences("app_prefs", Context.MODE_PRIVATE)
         prefs.edit { putLong(EXCEPTED_DOWNLOAD_ID, downloadId) }
-
     }
 
 

@@ -13,5 +13,8 @@
         name="video_file"
         path="Movies"/>
 
-
+    <external-path
+        name="download"
+        path="Download/" />
 </paths>
+

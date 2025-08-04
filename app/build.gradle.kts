@@ -33,8 +33,8 @@ android {
         applicationId = "com.das.mediaHub"
         minSdk = 24
         targetSdk = 36
-        versionCode = 3
-        versionName = "1.23"
+        versionCode = 4
+        versionName = "1.24"
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
         flavorDimensions.add("pyVersion")
