@@ -1,27 +1,18 @@
 package com.das.mediaHub
 
-import android.content.Context
-import android.os.PowerManager
+import android.app.Activity
+import android.view.WindowManager
 
 object WakeLockHelper {
-    private var wakeLock: PowerManager.WakeLock? = null
-
-    fun acquireWakeLock(context: Context) {
-        if (wakeLock?.isHeld == true) return
-
-        val powerManager = context.getSystemService(Context.POWER_SERVICE) as PowerManager
-        wakeLock = powerManager.newWakeLock(
-            PowerManager.PARTIAL_WAKE_LOCK,
-            "App::WakeLockTag"
-        ).apply {
-            acquire(10 * 60 * 1000L) // 10 minutes max
+    internal fun acquireWakeLock(activity: Activity?) {
+        activity?.let {
+            it.window?.addFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON)
         }
     }
 
-    fun releaseWakeLock() {
-        if (wakeLock?.isHeld == true) {
-            wakeLock?.release()
+    internal fun releaseWakeLock(activity: Activity?) {
+        activity?.let {
+            it.window?.clearFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON)
         }
-        wakeLock = null
     }
 }

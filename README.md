@@ -32,15 +32,15 @@ An extensible, multi-module Android media framework supporting background media 
 
 ## 🔍 Why DasMediaHub?
 
-| Feature                         | Description                                                                 |
-|---------------------------------|-----------------------------------------------------------------------------|
-| 🎨 Custom Themes & Light/Dark   | Fully themeable Compose UI with user personalization                       |
-| 🎧 Background Media Playback    | ExoPlayer & MediaSession support with PiP and controls                     |
-| 📥 Download Management          | Background-safe download manager with progress and notifications           |
-| 🔍 Smart Discovery              | YouTube API integration, search history, and result previews               |
-| 🛎️ Notification Integration    | Native Android notifications for media and download controls               |
-| 🧱 Multi-Module Project         | Separation of concerns using Gradle + Kotlin DSL modules                   |
-| 🐍 Kotlin + Python Integration  | Python for automation, metadata scraping, or future ML enhancements        |
+| Feature                        | Description                                                         |
+|--------------------------------|---------------------------------------------------------------------|
+| 🎨 Custom Themes & Light/Dark  | Fully themeable Compose UI with user personalization                |
+| 🎧 Background Media Playback   | ExoPlayer & MediaSession support with PiP and controls              |
+| 📥 Download Management         | Background-safe download manager with progress and notifications    |
+| 🔍 Smart Discovery             | YouTube API integration, search history, and result previews        |
+| 🛎️ Notification Integration   | Native Android notifications for media and download controls        |
+| 🧱 Multi-Module Project        | Separation of concerns using Gradle + Kotlin DSL modules            |
+| 🐍 Kotlin + Python Integration | Python for automation, metadata scraping, or future ML enhancements |
 
 ---
 

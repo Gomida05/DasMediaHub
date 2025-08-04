@@ -1,17 +1,13 @@
 package com.das.mediaHub.ui.viewer
 
 import android.app.Activity
-import android.app.PictureInPictureParams
 import android.content.Context
 import android.content.Intent
 import android.content.pm.ActivityInfo
-import android.os.Build
 import android.os.Bundle
 import android.text.SpannableString
 import android.text.style.URLSpan
-import android.util.Log
 import android.view.LayoutInflater
-import android.widget.Toast
 import androidx.activity.compose.LocalActivity
 import androidx.annotation.OptIn
 import androidx.compose.foundation.Image
@@ -56,6 +52,8 @@ import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Scaffold
+import androidx.compose.material3.SnackbarHost
+import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
@@ -64,7 +62,7 @@ import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
-import androidx.compose.runtime.rememberUpdatedState
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
@@ -86,7 +84,6 @@ import androidx.core.view.WindowInsetsCompat
 import androidx.core.view.WindowInsetsControllerCompat
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.media3.common.MediaItem
-import androidx.media3.common.Player
 import androidx.media3.common.util.UnstableApi
 import androidx.media3.exoplayer.ExoPlayer
 import androidx.media3.ui.PlayerView
@@ -108,10 +105,11 @@ import com.das.mediaHub.data.constants.Intents.NEW_INTENT_FOR_VIEWER
 import com.das.mediaHub.data.model.VideoDetails
 import com.das.mediaHub.data.model.VideosListData
 import com.das.mediaHub.data.constants.GlobalVideoList.bundles
-import com.das.mediaHub.findActivity
+import com.das.mediaHub.mediacontroller.PlayerListener
 import com.das.mediaHub.ui.viewer.CustomMethods.SkeletonSuggestionLoadingLayout
 import com.das.mediaHub.ui.viewer.CustomMethods.SkeletonLoadingLayout
 import com.das.mediaHub.ui.viewer.CustomMethods.toAnnotatedString
+import kotlinx.coroutines.launch
 
 
 @OptIn(UnstableApi::class)
@@ -120,74 +118,51 @@ fun VideoPlayerScreen(
     navController: NavController,
     arguments: Bundle?
 ) {
+    val snackBarHostState = remember { SnackbarHostState() }
+    val scope = rememberCoroutineScope()
+    var isInFullScreen by rememberSaveable { mutableStateOf(false) }
+    var showAlertDialog by rememberSaveable { mutableStateOf(false) }
 
-    var isInFullScreen by remember { mutableStateOf(false) }
-    var showAlertDialog by remember { mutableStateOf(false) }
 
-    var shouldEnterPipMode by remember { mutableStateOf(false) }
-
-    val viewModel: ViewerViewModel = viewModel()
+    val viewModel = viewModel<ViewerViewModel>()
 
 
     val videoID = arguments?.getString("View_ID").toString()
 
-    val mContext = LocalContext.current
-
-    val currentShouldEnterPipMode by rememberUpdatedState(newValue = shouldEnterPipMode)
-    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O &&
-        Build.VERSION.SDK_INT < Build.VERSION_CODES.S
-    ) {
-        val context = LocalContext.current
-        DisposableEffect(context) {
-            val onUserLeaveBehavior = Runnable {
-                    context.findActivity()
-                        .enterPictureInPictureMode(PictureInPictureParams.Builder().build())
-
-            }
-            context.findActivity().addOnUserLeaveHintListener(
-                onUserLeaveBehavior
-            )
-            onDispose {
-                context.findActivity().removeOnUserLeaveHintListener(
-                    onUserLeaveBehavior
-                )
-            }
-        }
-    } else {
-        Log.i("PiP info", "API does not support PiP")
-    }
+    val mContext = LocalContext.current.applicationContext
 
 
-    var videoTitle by remember {
+
+    var videoTitle by rememberSaveable {
         mutableStateOf(
             arguments?.getString("View_Title")
         )
     }
 
-    var videoDuration by remember {
+    var videoDuration by rememberSaveable {
         mutableStateOf(
             arguments?.getString("duration")
         )
     }
 
-    var videoViews by remember {
+    var videoViews by rememberSaveable {
         mutableStateOf(
             arguments?.getString("View_Number")
         )
     }
 
-    var videoDate by remember {
+    var videoDate by rememberSaveable {
         mutableStateOf(
             arguments?.getString("dateOfVideo")
         )
     }
-    var videoChannelName by remember {
+    var videoChannelName by rememberSaveable {
         mutableStateOf(
             arguments?.getString("channelName")
         )
     }
 
-    var videoChannelThumbnails by remember {
+    var videoChannelThumbnails by rememberSaveable {
         mutableStateOf(
             arguments?.getString("channel_Thumbnails")
         )
@@ -196,6 +171,7 @@ fun VideoPlayerScreen(
 
     val isLoadingVideos by viewModel.isLoadingVideos
     val videosListResult by viewModel.searchResults
+    val suggestionError by viewModel.isSuggestionError
 
     val videoUrl by viewModel.videoUrl
 
@@ -204,8 +180,16 @@ fun VideoPlayerScreen(
     val isThereError by viewModel.error
 
     val activity = LocalActivity.current
+
+    val mExoPlayer = remember(mContext) {
+
+        ExoPlayer.Builder(mContext)
+            .build()
+    }
+
     LaunchedEffect(videoID) {
         viewModel.loadVideoUrl(videoID)
+        viewModel.fetchVideoDetails(videoID)
     }
 
 
@@ -216,8 +200,37 @@ fun VideoPlayerScreen(
         }
     }
 
+    DisposableEffect(mExoPlayer) {
+
+        WakeLockHelper.acquireWakeLock(activity)
+        onDispose {
+            WakeLockHelper.releaseWakeLock(activity)
+            mExoPlayer.release()
+            setFullscreen(activity, false)
+        }
+    }
+
+    if (videoUrl.isNotEmpty() && !isLoading) {
+        mExoPlayer.apply {
+            setMediaItem(MediaItem.fromUri(videoUrl.toUri()))
+            prepare()
+            play()
+            MainActivity().requestAudioFocusFromMain(mContext, this)
+            addListener(
+                PlayerListener(
+                    activity = activity,
+                    navController = navController,
+                    scope = scope,
+                    snackBar = snackBarHostState
+                )
+            )
+        }
+    }
+
+
     Scaffold(
-        contentWindowInsets = WindowInsets.safeDrawing
+        contentWindowInsets = WindowInsets.safeDrawing,
+        snackbarHost = { SnackbarHost(snackBarHostState) }
     ) { paddings->
 
         Column(
@@ -227,41 +240,6 @@ fun VideoPlayerScreen(
         ) {
             if (videoUrl.isNotEmpty() && !isLoading) {
 
-
-                val mExoPlayer = remember(mContext) {
-
-                    ExoPlayer.Builder(mContext)
-                        .build()
-                        .apply {
-                            setMediaItem(MediaItem.fromUri(videoUrl.toUri()))
-                            prepare()
-                            play()
-                            MainActivity().requestAudioFocusFromMain(mContext, this)
-                            addListener(MyExoPlayerListener(navController))
-                        }
-                }
-
-
-                DisposableEffect(mExoPlayer) {
-
-                    WakeLockHelper.acquireWakeLock(mContext.applicationContext)
-                    onDispose {
-                        WakeLockHelper.releaseWakeLock()
-                        mExoPlayer.release()
-                        setFullscreen(activity, false)
-                    }
-                }
-
-                mExoPlayer.addListener(object : Player.Listener {
-                    override fun onIsPlayingChanged(isPlaying: Boolean) {
-                        shouldEnterPipMode = isPlaying
-                        if (isPlaying) {
-                            WakeLockHelper.acquireWakeLock(mContext.applicationContext)
-                        } else {
-                            WakeLockHelper.releaseWakeLock()
-                        }
-                    }
-                })
 
                 val playerModifier = if (isInFullScreen) {
                     Modifier
@@ -282,14 +260,13 @@ fun VideoPlayerScreen(
                     factory = { context ->
                         val view = LayoutInflater.from(context)
                             .inflate(R.layout.video_player_ui, null, false) as PlayerView
-
                         view.apply {
                             player = mExoPlayer
                             useController = true
                             keepScreenOn = true
                             setFullscreenButtonState(isInFullScreen)
-                            setFullscreenButtonClickListener { isFullscreen ->
-                                isInFullScreen = isFullscreen
+                            setFullscreenButtonClickListener {
+                                isInFullScreen = it
                             }
                         }
                         view
@@ -326,10 +303,7 @@ fun VideoPlayerScreen(
                 }
 
             }
-            if (!isInFullScreen){
-                LaunchedEffect(videoID) {
-                    viewModel.fetchVideoDetails(videoID)
-                }
+            if (!isInFullScreen) {
                 LazyColumn {
 
                     item(videoID) {
@@ -343,14 +317,20 @@ fun VideoPlayerScreen(
                                 showAlertDialog = true
                             },
                             downloadAsVideo = {
-                                Toast.makeText(mContext, "Downloading has started", Toast.LENGTH_SHORT)
-                                    .show()
+                                scope.launch {
+                                    snackBarHostState.showSnackbar(
+                                        message = "Downloading has started"
+                                    )
+                                }
                                 MainActivity().startDownloadingVideo(mContext, videoID, it)
-//                            DownloaderClass(mContext).downloadVideo(videoUrl, it, "mp4")
+
                             },
                             downloadAsMusic = {
-                                Toast.makeText(mContext, "Downloading has started", Toast.LENGTH_SHORT)
-                                    .show()
+                                scope.launch {
+                                    snackBarHostState.showSnackbar(
+                                        message = "Downloading has started"
+                                    )
+                                }
                                 MainActivity().startDownloadingAudio(mContext, videoID, it)
 
                             },
@@ -368,29 +348,31 @@ fun VideoPlayerScreen(
                         item {
                             SkeletonSuggestionLoadingLayout()
                         }
-                    } else {
-                        if (videosListResult.isEmpty()) {
-                            item {
-
+                    } else if (!suggestionError.isNullOrEmpty() || videosListResult.isEmpty()) {
+                        item {
+                            Box(
+                                modifier = Modifier
+                                    .align(Alignment.CenterHorizontally),
+                                contentAlignment = Alignment.Center
+                            ) {
                                 Text(
-                                    text = "No results found",
+                                    text = "can't find any videos",
                                     fontSize = 18.sp,
                                     textAlign = TextAlign.Center
                                 )
                             }
-                        } else {
-                            items(videosListResult) { searchItem ->
-                                if (searchItem.videoId == videoID) {
-                                    videoChannelThumbnails = searchItem.channelThumbnailsUrl
-                                    videoDuration = searchItem.duration
-                                }
-                                VideoLists(
-                                    navController,
-                                    searchItem,
-                                )
-                                listOfVideosListData.add(searchItem)
-
+                        }
+                    } else {
+                        items(videosListResult) { searchItem ->
+                            if (searchItem.videoId == videoID) {
+                                videoChannelThumbnails = searchItem.channelThumbnailsUrl
+                                videoDuration = searchItem.duration
                             }
+                            VideoLists(
+                                navController,
+                                searchItem,
+                            )
+                            listOfVideosListData.add(searchItem)
 
                         }
 
@@ -403,12 +385,10 @@ fun VideoPlayerScreen(
 
     LaunchedEffect(isInFullScreen) {
 
-        activity?.let {
-
+        activity.let {
             setFullscreen(it, isInFullScreen)
 
-            // Optional: lock orientation when fullscreen
-            it.requestedOrientation = if (isInFullScreen) {
+            it?.requestedOrientation = if (isInFullScreen) {
                 ActivityInfo.SCREEN_ORIENTATION_SENSOR
             } else {
                 ActivityInfo.SCREEN_ORIENTATION_UNSPECIFIED
@@ -436,27 +416,6 @@ fun VideoPlayerScreen(
         )
     }
 }
-
-
-
-
-
-fun setFullscreen(activity: Activity?, fullscreen: Boolean) {
-
-    activity?.let {
-        WindowCompat.setDecorFitsSystemWindows(it.window, !fullscreen)
-        val controller = WindowInsetsControllerCompat(it.window, it.window.decorView)
-
-        if (fullscreen) {
-            controller.hide(WindowInsetsCompat.Type.systemBars())
-            controller.systemBarsBehavior =
-                WindowInsetsControllerCompat.BEHAVIOR_SHOW_TRANSIENT_BARS_BY_SWIPE
-        } else {
-            controller.show(WindowInsetsCompat.Type.systemBars())
-        }
-    }
-}
-
 
 
 @Composable
@@ -883,7 +842,7 @@ private fun VideoLists(
 
 
 
-private fun playThisOne(
+fun playThisOne(
     navController: NavController,
     gotIndex: Int = 1,
     videosListDataDetails: VideosListData = listOfVideosListData[gotIndex]
@@ -1118,18 +1077,6 @@ private fun ShowAlertDialog(
 
 
 
-private class MyExoPlayerListener(
-    private val navController: NavController
-) : Player.Listener {
-    override fun onPlaybackStateChanged(state: Int) {
-        super.onPlaybackStateChanged(state)
-        if (state == Player.STATE_ENDED) {
-            playThisOne(navController,1)
-        }
-    }
-}
-
-
 
 
 
@@ -1222,8 +1169,18 @@ private fun AskToPlay(
 }
 
 
+private fun setFullscreen(activity: Activity?, fullscreen: Boolean) {
 
+    activity?.let {
+        WindowCompat.setDecorFitsSystemWindows(it.window, !fullscreen)
+        val controller = WindowInsetsControllerCompat(it.window, it.window.decorView)
 
-
-
-
+        if (fullscreen) {
+            controller.hide(WindowInsetsCompat.Type.systemBars())
+            controller.systemBarsBehavior =
+                WindowInsetsControllerCompat.BEHAVIOR_SHOW_TRANSIENT_BARS_BY_SWIPE
+        } else {
+            controller.show(WindowInsetsCompat.Type.systemBars())
+        }
+    }
+}

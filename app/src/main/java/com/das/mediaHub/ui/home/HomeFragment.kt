@@ -1,6 +1,5 @@
 package com.das.mediaHub.ui.home
 
-import android.widget.Toast
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.fillMaxSize
@@ -15,44 +14,42 @@ import androidx.compose.material.icons.filled.Download
 import androidx.compose.material.icons.filled.Search
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
+import androidx.compose.material3.ElevatedButton
 import androidx.compose.material3.Icon
-import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBar
-import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.navigation.NavController
+import com.das.mediaHub.NavScreens
 import com.das.mediaHub.NavScreens.Searcher
 import com.das.mediaHub.NavScreens.Downloads
 
 
-
 @Composable
 fun HomePageComposable(navController: NavController) {
-    val mContext = LocalContext.current
 
     Scaffold(
         topBar = {
             TopAppBar(
                 title = {
-                    Box(Modifier.fillMaxWidth()) {
                         Text(
-                            text = "YouTube Downloader",
-                            style = MaterialTheme.typography.headlineSmall,
-                            modifier = Modifier.align(Alignment.Center)
+                            text = "DasMediaHub",
+                            style = MaterialTheme.typography.headlineMedium
+                                .copy(textAlign = TextAlign.Center),
+                            modifier = Modifier
+                                .fillMaxWidth()
                         )
-                    }
                 },
                 navigationIcon = {
-                    IconButton(
+                    ElevatedButton(
                         onClick = {
-                            Toast.makeText(mContext, "Coming soon!", Toast.LENGTH_SHORT).show()
+                            navController.navigate(NavScreens.LoginPage1.route)
                         }
                     ) {
                         Icon(
@@ -63,7 +60,7 @@ fun HomePageComposable(navController: NavController) {
                     }
                 },
                 actions = {
-                    IconButton(
+                    ElevatedButton(
                         onClick = {
                             navController.navigate(Downloads.route)
                         }
@@ -75,9 +72,6 @@ fun HomePageComposable(navController: NavController) {
                         )
                     }
                 },
-                colors = TopAppBarDefaults.topAppBarColors(
-                    containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.2f)
-                )
             )
         },
         contentWindowInsets = WindowInsets.safeDrawing,
@@ -88,7 +82,6 @@ fun HomePageComposable(navController: NavController) {
                 .padding(padding)
                 .fillMaxSize()
         ) {
-
             Button(
                 onClick = {
                     navController.navigate(Searcher.route)

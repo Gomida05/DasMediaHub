@@ -47,6 +47,8 @@ class ViewerViewModel : ViewModel() {
 
 
     fun loadVideoUrl(videoId: String) {
+        _isLoading.value = true
+        _error.value = ""
         viewModelScope.launch {
             try {
                 val python = pythonInstant.getModule("main")
@@ -71,17 +73,17 @@ class ViewerViewModel : ViewModel() {
 
     fun fetchVideoDetails(videoId: String) {
         _isLoadings.value = true
-
+        _error.value = ""
         viewModelScope.launch {
             try {
                 val videoDetails = callPythonSearchWithLink(videoId)
 
                 _videoDetails.value = VideoDetails(
-                        title = videoDetails.title,
-                        viewNumber = formatViews(videoDetails.viewNumber.toLong()),
-                        date = formatDate(videoDetails.date),
-                        channelName = videoDetails.channelName,
-                        description = videoDetails.description
+                    title = videoDetails.title,
+                    viewNumber = formatViews(videoDetails.viewNumber.toLong()),
+                    date = formatDate(videoDetails.date),
+                    channelName = videoDetails.channelName,
+                    description = videoDetails.description
                 )
                 println("here is one _1: $videoDetails \n also ${_videoDetails.value}")
             } catch (js: JsonSyntaxException) {
@@ -102,9 +104,9 @@ class ViewerViewModel : ViewModel() {
         viewModelScope.launch {
             try {
                 val result = callPythonSearchSuggestion(title)
-                _searchResults.value = result ?: emptyList()
+                _searchResults.value = result
             } catch (j: JsonSyntaxException) {
-                _isSuggestionError.value = "Error parsing data: ${j.message}"
+                _isSuggestionError.value = "Error parsing data: ${j.localizedMessage}"
             } catch (e: Exception) {
                 _isSuggestionError.value = "Something went wrong: ${e.message}"
             } finally {
@@ -137,15 +139,23 @@ class ViewerViewModel : ViewModel() {
     }
 
 
-    private suspend fun callPythonSearchSuggestion(inputText: String): List<VideosListData>? {
-        val python = pythonInstant.getModule("main")
-        val getResultFromPython = withContext(Dispatchers.IO){
-            python["Searcher"]?.call(inputText).toString()
-        }
+    private suspend fun callPythonSearchSuggestion(inputText: String): List<VideosListData> {
 
-        val videosListDataListType = object : TypeToken<List<VideosListData>>() {}.type
-        val result: List<VideosListData>? =
-            gson.fromJson(getResultFromPython, videosListDataListType)
-        return result
+        return try {
+            val python = pythonInstant.getModule("main")
+            val getResultFromPython = withContext(Dispatchers.IO) {
+                python["Searcher"]?.call(inputText).toString()
+            }
+
+            val videosListDataListType = object : TypeToken<List<VideosListData>>() {}.type
+            val result: List<VideosListData> = gson.fromJson(getResultFromPython, videosListDataListType)
+            result
+        } catch (e: JsonSyntaxException) {
+            Log.e("JSON Error", "Error parsing JSON ${e.message}")
+            throw e
+        } catch (e: Exception) {
+            e.printStackTrace()
+            throw e
+        }
     }
 }

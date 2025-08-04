@@ -70,14 +70,14 @@ import com.das.mediaHub.data.YouTuber.extractPlaylistId
 import com.das.mediaHub.data.YouTuber.getPlayListStreamUrl
 import com.das.mediaHub.data.YouTuber.isValidYouTubePlaylistUrl
 import com.das.mediaHub.services.BackGroundPlayer
-import com.das.mediaHub.ui.home.downloads.DownloadsPageComposable
+import com.das.mediaHub.ui.downloads.DownloadsPageComposable
 import com.das.mediaHub.ui.home.HomePageComposable
-import com.das.mediaHub.ui.home.searcher.result.ResultViewerPage
-import com.das.mediaHub.ui.home.searcher.SearchPageCompose
+import com.das.mediaHub.ui.result.ResultViewerPage
+import com.das.mediaHub.ui.search.SearchPageCompose
 import com.das.mediaHub.ui.settings.watch_later.WatchLaterComposable
 import com.das.mediaHub.ui.settings.SettingsComposable
 import com.das.mediaHub.ui.settings.userSettings.UserSettingComposable
-import com.das.mediaHub.ui.home.downloads.videoPlayerLocally.ExoPlayerUI
+import com.das.mediaHub.ui.downloads.videoPlayerLocally.ExoPlayerUI
 import com.das.mediaHub.ui.welcome.LoginPage
 import com.das.mediaHub.ui.welcome.SignUpPage
 import com.das.mediaHub.data.constants.GlobalVideoList.bundles
@@ -622,10 +622,12 @@ class MainActivity : ComponentActivity() {
 
     override fun onDestroy() {
         super.onDestroy()
+
         intentListener?.let {
             unregisterIntentListener(it)
         }
         intentListeners.clear()
+        WakeLockHelper.releaseWakeLock(this)
     }
 
 }

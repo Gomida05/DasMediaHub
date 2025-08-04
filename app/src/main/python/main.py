@@ -1,8 +1,8 @@
 from pytubefix import YouTube, Playlist
 from youtubesearchpython import Video, VideosSearch
-import json, traceback, youtubesearchpython
+import json, traceback
 
-print(youtubesearchpython.__version__)
+
 def get_video_url(video_url: str):
     try:
         yt = YouTube(video_url)
@@ -18,7 +18,7 @@ def get_audio_url(media_url):
         yt = YouTube(media_url)
         stream = yt.streams.get_audio_only()
 
-        return stream.url
+        return str(stream.url)
     except Exception as e:
         print(f"error in url {e}")
         return False

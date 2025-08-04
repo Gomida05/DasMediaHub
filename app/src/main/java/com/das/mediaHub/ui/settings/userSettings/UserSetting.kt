@@ -63,7 +63,7 @@ import com.das.mediaHub.theme.AppTheme
 
 @Composable
 fun UserSettingComposable(navController: NavController) {
-    val context = LocalContext.current
+    val context = LocalContext.current.applicationContext
 
     val snackBarHostState = remember { SnackbarHostState() }
 
