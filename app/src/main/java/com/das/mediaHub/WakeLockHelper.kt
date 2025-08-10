@@ -3,7 +3,7 @@ package com.das.mediaHub
 import android.app.Activity
 import android.view.WindowManager
 
-object WakeLockHelper {
+internal object WakeLockHelper {
     internal fun acquireWakeLock(activity: Activity?) {
         activity?.let {
             it.window?.addFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON)

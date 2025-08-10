@@ -10,7 +10,6 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
-import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
@@ -21,6 +20,7 @@ import androidx.core.view.WindowInsetsCompat
 import androidx.core.view.WindowInsetsControllerCompat
 import androidx.media3.common.MediaItem
 import androidx.media3.common.MediaMetadata
+import androidx.media3.common.Player
 import com.das.mediaHub.MainActivity
 import com.das.mediaHub.data.databased.PathSaver.getVideosDownloadPath
 import androidx.media3.exoplayer.ExoPlayer
@@ -54,9 +54,23 @@ fun LocalVideoPlayer(videoUri: String) {
     val mExoPlayer = remember(mContext) {
         ExoPlayer.Builder(mContext).build().apply {
             setMediaItem(mediaItem)
-            playWhenReady = true
             prepare()
+            playWhenReady = true
             MainActivity().requestAudioFocusFromMain(mContext, this)
+            addListener(
+                object : Player.Listener  {
+                    override fun onIsPlayingChanged(isPlaying: Boolean) {
+                        super.onIsPlayingChanged(isPlaying)
+                        if (isPlaying) {
+                            WakeLockHelper.acquireWakeLock(activity)
+                            shouldEnterPipMode = true
+                        } else {
+                            shouldEnterPipMode = false
+                            WakeLockHelper.releaseWakeLock(activity)
+                        }
+                    }
+                }
+            )
         }
     }
     mExoPlayer.addMediaItems(
@@ -66,15 +80,6 @@ fun LocalVideoPlayer(videoUri: String) {
         )
     )
 
-    LaunchedEffect(mExoPlayer.isPlaying) {
-        if (mExoPlayer.isPlaying) {
-            WakeLockHelper.acquireWakeLock(activity)
-            shouldEnterPipMode = true
-        } else {
-            shouldEnterPipMode = false
-            WakeLockHelper.releaseWakeLock(activity)
-        }
-    }
 
     AndroidView(
         modifier = Modifier
@@ -95,10 +100,12 @@ fun LocalVideoPlayer(videoUri: String) {
 
 
     DisposableEffect(mExoPlayer) {
-
+        shouldEnterPipMode = true
+        WakeLockHelper.releaseWakeLock(activity)
         onDispose {
             mExoPlayer.release()
             WakeLockHelper.releaseWakeLock(activity)
+            shouldEnterPipMode = false
             activity?.requestedOrientation = ActivityInfo.SCREEN_ORIENTATION_UNSPECIFIED
 
             setFullscreen(activity, false)

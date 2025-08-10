@@ -282,7 +282,7 @@ fun VideoPlayerScreen(
                             ) as PlayerView
                         view.apply {
                             player = mExoPlayer
-                            useController = isInPipMode
+                            useController = !isInPipMode
                             keepScreenOn = true
                             setFullscreenButtonState(isInFullScreen)
                             setFullscreenButtonClickListener {
