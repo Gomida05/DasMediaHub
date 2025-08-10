@@ -426,7 +426,6 @@ private fun ShowAlertDialog(
                     TextButton(
                         onClick = {
                             MainActivity().startDownloadingAudio(
-                                mContext,
                                 selectedItem.videoId,
                                 selectedItem.title
                             )
@@ -439,7 +438,6 @@ private fun ShowAlertDialog(
                     TextButton(
                         onClick = {
                             MainActivity().startDownloadingVideo(
-                                mContext,
                                 selectedItem.videoId,
                                 selectedItem.title
                             )

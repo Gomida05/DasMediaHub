@@ -13,7 +13,7 @@ import com.das.mediaHub.data.constants.DownloadConstants.EXCEPTED_DOWNLOAD_ID
 import com.das.mediaHub.data.constants.Notifications.DOWNLOADER_NOTIFICATION_CHANNEL
 import java.io.File
 
-class DownloadReceiver: BroadcastReceiver() {
+class ReceiverNotActive: BroadcastReceiver() {
 
     override fun onReceive(context: Context, intent: Intent) {
 

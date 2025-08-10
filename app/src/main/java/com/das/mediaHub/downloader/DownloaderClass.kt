@@ -26,7 +26,7 @@ import androidx.core.net.toUri
 import androidx.core.content.edit
 
 
-class DownloaderClass(val context: Context): ForUIDownloader {
+class DownloaderClass(private val context: Context): Downloader {
 
     private val downloadManager = context.getSystemService(DownloadManager::class.java)
     private val notificationManager = context.getSystemService(NotificationManager::class.java)

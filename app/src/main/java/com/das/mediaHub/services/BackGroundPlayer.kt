@@ -33,6 +33,7 @@ import androidx.media3.common.MediaItem
 import androidx.media3.common.MediaMetadata
 import androidx.media3.common.PlaybackException
 import androidx.media3.common.Player
+import com.das.mediaHub.Receiver
 import com.das.mediaHub.data.YouTuber.formatDateFromLong
 import com.das.mediaHub.mediacontroller.BackgroundPlayerStates.setStateToPaused
 import com.das.mediaHub.mediacontroller.BackgroundPlayerStates.setStateToLoading
@@ -205,7 +206,7 @@ class BackGroundPlayer: Service() {
 
     private fun createMediaNotification(): Notification {
 
-        val deleteIntent = Intent(this, BroadReceiverForNotificationActivity::class.java).apply {
+        val deleteIntent = Intent(this, Receiver::class.java).apply {
                 action = BACKGROUND_GROUND_PLAYER_NOTIFICATION
             }
         val deletePendingIntent = PendingIntent.getBroadcast(

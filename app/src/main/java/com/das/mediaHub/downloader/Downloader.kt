@@ -4,7 +4,7 @@ import com.das.mediaHub.data.model.AppUpdateInfo
 import com.das.mediaHub.data.model.DownloadData
 
 
-interface ForUIDownloader {
+interface Downloader {
 
     fun downloadVideo(url: String, title: String): Long
 

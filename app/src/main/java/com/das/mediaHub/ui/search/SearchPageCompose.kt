@@ -330,7 +330,6 @@ fun PlayListDownloadRequest(onDismissRequest: ()->Unit, mContext: Context, url: 
                 onClick = {
                     onDismissRequest()
                     MainActivity().startPlayListDownload(
-                        context = mContext,
                         playListUrl = url
                     )
 

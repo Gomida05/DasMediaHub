@@ -107,6 +107,8 @@ class MainActivity : ComponentActivity() {
 
     private var intentListener: ((Intent) -> Unit)? = null
 
+    private val downloaderClass = DownloaderClass(this.applicationContext)
+
     override fun onCreate(savedInstanceState: Bundle?) {
         enableEdgeToEdge()
         super.onCreate(savedInstanceState)
@@ -500,12 +502,11 @@ class MainActivity : ComponentActivity() {
         }
     }
 
-    fun startDownloadingVideo(context: Context, videoId: String, title: String){
+    fun startDownloadingVideo(videoId: String, title: String){
 
         getVideoStreamUrl(videoId,
             onSuccess = {
-                DownloaderClass(context)
-                    .downloadVideo(it, title)
+                downloaderClass.downloadVideo(it, title)
             },
             onFailure = {
                 showDialogs(it)
@@ -514,14 +515,13 @@ class MainActivity : ComponentActivity() {
     }
 
     fun startPlayListDownload(
-        context: Context, playListUrl: String
+        playListUrl: String
     ){
         getPlayListStreamUrl(
             playListUrl,
             onSuccess = { playListName, videoList ->
                 for (i in videoList){
-                    DownloaderClass(context)
-                        .downloadVideosPlayList(
+                    downloaderClass.downloadVideosPlayList(
                             i.url,
                             playListName,
                             i.title
@@ -535,12 +535,11 @@ class MainActivity : ComponentActivity() {
     }
 
 
-    fun startDownloadingAudio(context: Context, videoId: String, title: String){
+    fun startDownloadingAudio(videoId: String, title: String){
 
         getAudioStreamUrl(videoId,
             onSuccess = {
-                DownloaderClass(context)
-                    .downloadMusic(it, title)
+                downloaderClass.downloadMusic(it, title)
             },
             onFailure = {
                 showDialogs(it)

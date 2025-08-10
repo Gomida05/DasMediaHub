@@ -341,7 +341,7 @@ fun VideoPlayerScreen(
                                         message = "Downloading has started"
                                     )
                                 }
-                                MainActivity().startDownloadingVideo(mContext, videoID, it)
+                                MainActivity().startDownloadingVideo(videoID, it)
 
                             },
                             downloadAsMusic = {
@@ -350,7 +350,7 @@ fun VideoPlayerScreen(
                                         message = "Downloading has started"
                                     )
                                 }
-                                MainActivity().startDownloadingAudio(mContext, videoID, it)
+                                MainActivity().startDownloadingAudio(videoID, it)
 
                             },
                             finished = {
@@ -1063,7 +1063,6 @@ private fun ShowAlertDialog(
                     TextButton(
                         onClick = {
                             MainActivity().startDownloadingAudio(
-                                mContext,
                                 selectedItem.videoId,
                                 selectedItem.title
                             )
@@ -1076,7 +1075,6 @@ private fun ShowAlertDialog(
                     TextButton(
                         onClick = {
                             MainActivity().startDownloadingVideo(
-                                mContext,
                                 selectedItem.videoId,
                                 selectedItem.title
                             )

@@ -35,6 +35,7 @@ import androidx.media3.exoplayer.ExoPlayer
 import androidx.media3.common.MediaItem
 import androidx.media3.common.PlaybackException
 import androidx.media3.common.Player
+import com.das.mediaHub.Receiver
 import com.das.mediaHub.data.constants.Notifications.AUDIO_SERVICE_FROM_URL_NOTIFICATION
 
 
@@ -194,7 +195,7 @@ class AudioServiceFromUrl : Service() {
     private fun createMediaNotification(): Notification {
 
 
-        val deleteIntent = Intent(this, BroadReceiverForNotificationActivity::class.java).apply {
+        val deleteIntent = Intent(this, Receiver::class.java).apply {
             action = AUDIO_SERVICE_FROM_URL_NOTIFICATION
         }
         val deletePendingIntent = PendingIntent.getBroadcast(

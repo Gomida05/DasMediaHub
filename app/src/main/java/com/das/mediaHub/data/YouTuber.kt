@@ -23,7 +23,7 @@ import java.util.Date
 import java.util.Locale
 import java.util.regex.Pattern
 
-object YouTuber {
+internal object YouTuber {
     val pythonInstant = Python.getInstance()
     var mediaItems = mutableListOf<MediaItem>()
 
@@ -77,11 +77,9 @@ object YouTuber {
     fun isValidYoutubeURL(youTubeUrl: String): Boolean {
         try {
             val trimmedUrl = youTubeUrl.trim()
-            val cleanedUrl =
-                if (trimmedUrl.endsWith("&feature=shared"))
-                    trimmedUrl.removeSuffix("&feature=shared") else trimmedUrl
+                .removeSuffix("&feature=shared")
 
-            val url = URL(cleanedUrl)
+            val url = URL(trimmedUrl)
 
             val host = url.host
             if (host == Youtube.YOUTUBE_HOST_1 || host == Youtube.YOUTUBE_HOST_2) {
@@ -225,26 +223,24 @@ object YouTuber {
     ) {
         try {
             val python = pythonInstant.getModule("main")
-            CoroutineScope(Dispatchers.IO).launch {
+            CoroutineScope(Dispatchers.Main).launch {
                 val variable = python["get_video_url"]
 
 
-                val result = variable?.call("https://www.youtube.com/watch?v=${videoId}").toString()
-
+                val result = withContext(Dispatchers.IO) {
+                    variable?.call("https://www.youtube.com/watch?v=${videoId}").toString()
+                }
                 if (result != "False") {
-                    withContext(Dispatchers.Main) {
-                        onSuccess(result)
-                    }
+
+                    onSuccess(result)
                 } else {
-                    withContext(Dispatchers.Main) {
-                        onFailure("Something went wrong with result: $result")
-                    }
+                    onFailure("Something went wrong with result: $result")
+
                 }
             }
         } catch (e: Exception) {
             onFailure("Something went wrong with result: ${e.message}")
         }
-
     }
 
     fun getAudioStreamUrl(
