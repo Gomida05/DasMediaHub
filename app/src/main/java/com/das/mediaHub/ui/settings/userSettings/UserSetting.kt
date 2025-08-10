@@ -111,7 +111,7 @@ fun UserSettingComposable(navController: NavController) {
                 Spacer(modifier = Modifier.height(12.dp))
                 SettingCard(title = "New Features") {
                     TestLoginPage1 {
-                        navController.navigate(NavScreens.LoginPage1.route)
+                        navController.navigate(NavScreens.SignInPage.route)
                     }
                 }
             }

@@ -2,6 +2,7 @@
 <manifest xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:tools="http://schemas.android.com/tools">
 
+
     <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
     <uses-permission android:name="android.permission.READ_MEDIA_VIDEO" />
     <uses-permission android:name="android.permission.READ_MEDIA_AUDIO" />
@@ -39,6 +40,7 @@
 
     <application
         android:name="com.chaquo.python.android.PyApplication"
+        android:appComponentFactory = "androidx.core.app.CoreComponentFactory"
         android:allowBackup="true"
         android:enableOnBackInvokedCallback="true"
         android:icon="@mipmap/launcher"
@@ -137,7 +139,7 @@
 
         <provider
             android:name="androidx.core.content.FileProvider"
-            android:authorities="${applicationId}.file-provider"
+            android:authorities = "com.das.mediaHub.file-provider"
             android:exported="false"
             android:grantUriPermissions="true">
 

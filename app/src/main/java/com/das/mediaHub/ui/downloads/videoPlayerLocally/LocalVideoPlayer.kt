@@ -1,13 +1,10 @@
 package com.das.mediaHub.ui.downloads.videoPlayerLocally
 
-import android.annotation.SuppressLint
 import android.app.Activity
 import android.content.pm.ActivityInfo
 import android.net.Uri
 import android.view.LayoutInflater
-import android.view.WindowManager
 import androidx.activity.compose.LocalActivity
-import androidx.annotation.OptIn
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.material3.MaterialTheme
@@ -24,19 +21,18 @@ import androidx.core.view.WindowInsetsCompat
 import androidx.core.view.WindowInsetsControllerCompat
 import androidx.media3.common.MediaItem
 import androidx.media3.common.MediaMetadata
-import androidx.media3.common.util.UnstableApi
 import com.das.mediaHub.MainActivity
 import com.das.mediaHub.data.databased.PathSaver.getVideosDownloadPath
 import androidx.media3.exoplayer.ExoPlayer
 import androidx.media3.ui.PlayerView
+import com.das.mediaHub.PIP.shouldEnterPipMode
 import com.das.mediaHub.R
+import com.das.mediaHub.WakeLockHelper
 import java.io.File
 
 
-@SuppressLint("SourceLockedOrientationActivity")
-@OptIn(UnstableApi::class)
 @Composable
-fun ExoPlayerUI(videoUri: String) {
+fun LocalVideoPlayer(videoUri: String) {
 
     val mContext = LocalContext.current
     val activity = LocalActivity.current
@@ -70,13 +66,13 @@ fun ExoPlayerUI(videoUri: String) {
         )
     )
 
-    val window = activity?.window
-
     LaunchedEffect(mExoPlayer.isPlaying) {
         if (mExoPlayer.isPlaying) {
-            window?.addFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON)
+            WakeLockHelper.acquireWakeLock(activity)
+            shouldEnterPipMode = true
         } else {
-            window?.clearFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON)
+            shouldEnterPipMode = false
+            WakeLockHelper.releaseWakeLock(activity)
         }
     }
 
@@ -90,7 +86,6 @@ fun ExoPlayerUI(videoUri: String) {
 
             view.player = mExoPlayer
             view.useController = true
-            view.hideController()
             view
         },
         update = { playerView ->
@@ -103,8 +98,8 @@ fun ExoPlayerUI(videoUri: String) {
 
         onDispose {
             mExoPlayer.release()
-            window?.clearFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON)
-            activity?.requestedOrientation = ActivityInfo.SCREEN_ORIENTATION_PORTRAIT
+            WakeLockHelper.releaseWakeLock(activity)
+            activity?.requestedOrientation = ActivityInfo.SCREEN_ORIENTATION_UNSPECIFIED
 
             setFullscreen(activity, false)
         }

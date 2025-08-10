@@ -1,6 +1,5 @@
 package com.das.mediaHub.ui.search
 
-import android.app.AlertDialog
 import android.content.Context
 import android.os.Bundle
 import android.widget.Toast
@@ -25,6 +24,7 @@ import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.Close
+import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.Download
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.CircularProgressIndicator
@@ -35,18 +35,19 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.graphics.vector.rememberVectorPainter
 import androidx.compose.ui.input.nestedscroll.nestedScroll
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
@@ -74,7 +75,7 @@ fun SearchPageCompose(
     navController: NavController,
     newText: String
 ) {
-    val context = LocalContext.current
+    val context = LocalContext.current.applicationContext
     val viewMode = viewModel<SearchPageViewMode>()
 
     val searchHistory by viewMode.searchHistory
@@ -187,16 +188,14 @@ fun SearchPageCompose(
             }
             else if (searchHistory.isNotEmpty()){
                 LazyVerticalGrid (
-                    columns = GridCells.Fixed(4),
-                    contentPadding = PaddingValues(5.dp),
-                    horizontalArrangement = Arrangement.SpaceBetween
+                    columns = GridCells.Adaptive(minSize = 160.dp),
+                    contentPadding = PaddingValues(5.dp)
                 ) {
                     items(
                         items = searchHistory,
                         key = { it.id }
                     ) { settingsItem ->
                         RecentlySearchList(
-                            context,
                             title = settingsItem.value,
                             settingsResults = settingsItem,
                             deleteThis = {
@@ -234,53 +233,69 @@ fun SearchPageCompose(
 
 @Composable
 private fun RecentlySearchList(
-    context: Context,
     title: String,
     settingsResults: SearchData,
     deleteThis: (String) -> Unit,
-    onButtonClicked: (text: String)-> Unit
+    onButtonClicked: (text: String) -> Unit
 ) {
-        Row (
+    var showDeleteConfirm by remember { mutableStateOf(false) }
+
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(4.dp),
+        horizontalArrangement = Arrangement.SpaceBetween,
+        verticalAlignment = Alignment.CenterVertically
+    ) {
+        TextButton(
+            onClick = {
+                onButtonClicked(title)
+            },
             modifier = Modifier
-                .fillMaxWidth(),
-            horizontalArrangement = Arrangement.Absolute.SpaceBetween,
-            verticalAlignment = Alignment.CenterVertically
+                .weight(1f)
         ) {
-            ElevatedButton(
-                onClick = {
-                    onButtonClicked(title)
-                },
-                contentPadding = PaddingValues(12.dp)
-            ) {
-                Text(
-                    text = title,
-                    style = MaterialTheme.typography.bodySmall,
-//                        .copy(fontSize = 8.sp),
-                    overflow = TextOverflow.Ellipsis
-                )
-            }
-
-            IconButton(
-                onClick = {
-
-                    AlertDialog.Builder(context)
-                        .setTitle("Are you sure you want to remove it from the list?")
-                        .setPositiveButton("Yes") { _, _ ->
-                            deleteThis(settingsResults.id)
-                        }
-                        .setNegativeButton("No") { _, _ ->
-                        }
-                        .show()
-
-
-                }
-            ) {
-                Icon(
-                    painter = rememberVectorPainter(Icons.Default.Close),
-                    ""
-                )
-            }
+            Text(
+                text = title,
+                style = MaterialTheme.typography.bodySmall,
+                overflow = TextOverflow.Ellipsis,
+                maxLines = 1
+            )
         }
+
+
+        IconButton(
+            onClick = { showDeleteConfirm = true }
+        ) {
+            Icon(
+                imageVector = Icons.Default.Delete,
+                contentDescription = "Delete Search",
+                tint = MaterialTheme.colorScheme.error
+            )
+        }
+    }
+
+    if (showDeleteConfirm) {
+        AlertDialog(
+            onDismissRequest = { showDeleteConfirm = false },
+            title = { Text("Remove Search") },
+            text = { Text("Are you sure you want to remove \"$title\" from your search history?") },
+            confirmButton = {
+                TextButton(
+                    onClick = {
+                        deleteThis(settingsResults.id)
+                        showDeleteConfirm = false
+                    }
+                ) {
+                    Text("Delete", color = MaterialTheme.colorScheme.error)
+                }
+            },
+            dismissButton = {
+                TextButton(onClick = { showDeleteConfirm = false }) {
+                    Text("Cancel")
+                }
+            }
+        )
+    }
 }
 
 
@@ -315,8 +330,8 @@ fun PlayListDownloadRequest(onDismissRequest: ()->Unit, mContext: Context, url: 
                 onClick = {
                     onDismissRequest()
                     MainActivity().startPlayListDownload(
-                        mContext,
-                        url
+                        context = mContext,
+                        playListUrl = url
                     )
 
                 }

@@ -85,7 +85,7 @@ fun WelcomePage(navController: NavController) {
                         Button(
                             onClick = {
                                 visible.value = false
-                                navController.navigate(NavScreens.LoginPage1.route)
+                                navController.navigate(NavScreens.SignInPage.route)
                             },
                             colors = ButtonDefaults.buttonColors(containerColor = Color.White)
                         ) {

@@ -15,6 +15,8 @@ sealed class NavScreens(val route: String) {
     data object Setting : NavScreens("Setting")
     data object FeedbackScreen: NavScreens("Feedback")
 
-    data object LoginPage1 : NavScreens("login page1")
-    data object SignUpPage : NavScreens("signup page")
+    data object SignInPage : NavScreens("sign in page")
+    data object SignUpPage : NavScreens("sign up page")
+
+    data object AccountSetting : NavScreens("User account settings page")
 }

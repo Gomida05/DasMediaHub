@@ -71,18 +71,17 @@ android {
         compilerOptions {
             jvmTarget.set(JvmTarget.JVM_17)
             freeCompilerArgs.add("-opt-in=androidx.compose.material3.ExperimentalMaterial3Api")
+
         }
     }
 
 
     buildFeatures {
-        viewBinding = true
         compose = true
     }
 
 
 }
-
 
 chaquopy {
     defaultConfig {
@@ -121,7 +120,6 @@ dependencies {
 
     implementation(libs.play.services.auth)
 
-    implementation(libs.lottie.compose)
     implementation(libs.coil.compose)
     implementation(libs.coil.video)
 

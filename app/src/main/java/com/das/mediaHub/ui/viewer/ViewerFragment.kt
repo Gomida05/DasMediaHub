@@ -96,6 +96,8 @@ import com.das.mediaHub.R
 import com.das.mediaHub.data.constants.GlobalVideoList.listOfVideosListData
 import com.das.mediaHub.data.constants.GlobalVideoList.previousVideosListData
 import com.das.mediaHub.NavScreens
+import com.das.mediaHub.PIP.rememberIsInPipMode
+import com.das.mediaHub.PIP.shouldEnterPipMode
 import com.das.mediaHub.WakeLockHelper
 import com.das.mediaHub.data.YouTuber.loadStreamUrl
 import com.das.mediaHub.data.databased.DatabaseFavorite
@@ -124,10 +126,13 @@ fun VideoPlayerScreen(
     var showAlertDialog by rememberSaveable { mutableStateOf(false) }
 
 
+
     val viewModel = viewModel<ViewerViewModel>()
 
 
-    val videoID = arguments?.getString("View_ID").toString()
+    val videoID = rememberSaveable {
+        arguments?.getString("View_ID").toString()
+    }
 
     val mContext = LocalContext.current.applicationContext
 
@@ -181,10 +186,20 @@ fun VideoPlayerScreen(
 
     val activity = LocalActivity.current
 
-    val mExoPlayer = remember(mContext) {
-
+    val mExoPlayer = remember {
         ExoPlayer.Builder(mContext)
             .build()
+            .apply {
+                addListener(
+                    PlayerListener(
+                        activity = activity,
+                        navController = navController,
+                        scope = scope,
+                        snackBar = snackBarHostState
+                    )
+                )
+            }
+
     }
 
     LaunchedEffect(videoID) {
@@ -200,32 +215,32 @@ fun VideoPlayerScreen(
         }
     }
 
-    DisposableEffect(mExoPlayer) {
-
+    DisposableEffect(Unit) {
         WakeLockHelper.acquireWakeLock(activity)
+
         onDispose {
             WakeLockHelper.releaseWakeLock(activity)
             mExoPlayer.release()
             setFullscreen(activity, false)
+            shouldEnterPipMode = false
         }
     }
 
-    if (videoUrl.isNotEmpty() && !isLoading) {
-        mExoPlayer.apply {
-            setMediaItem(MediaItem.fromUri(videoUrl.toUri()))
-            prepare()
-            play()
-            MainActivity().requestAudioFocusFromMain(mContext, this)
-            addListener(
-                PlayerListener(
-                    activity = activity,
-                    navController = navController,
-                    scope = scope,
-                    snackBar = snackBarHostState
-                )
-            )
+    LaunchedEffect(videoUrl, isLoading) {
+        if (videoUrl.isNotEmpty() && !isLoading) {
+            if (mExoPlayer.currentMediaItem == null) {
+                mExoPlayer.apply {
+                    setMediaItem(MediaItem.fromUri(videoUrl.toUri()))
+                    mExoPlayer.prepare()
+                    mExoPlayer.play()
+                }
+            }
+
+            (activity as? MainActivity)?.requestAudioFocusFromMain(mContext, mExoPlayer)
         }
     }
+
+    val isInPipMode = rememberIsInPipMode()
 
 
     Scaffold(
@@ -244,25 +259,30 @@ fun VideoPlayerScreen(
                 val playerModifier = if (isInFullScreen) {
                     Modifier
                         .fillMaxSize()
-                        .background(MaterialTheme.colorScheme.background)
                 } else {
                     Modifier
                         .height(220.dp)
                         .fillMaxWidth()
-                        .background(MaterialTheme.colorScheme.background)
                 }
 
 
 
-
                 AndroidView(
-                    modifier = playerModifier,
+                    modifier = playerModifier
+                        .background(MaterialTheme.colorScheme.background)
+                        .then(
+                            if (isInPipMode) Modifier.fillMaxSize() else Modifier
+                        ),
                     factory = { context ->
                         val view = LayoutInflater.from(context)
-                            .inflate(R.layout.video_player_ui, null, false) as PlayerView
+                            .inflate(
+                                R.layout.video_player_ui,
+                                null,
+                                false
+                            ) as PlayerView
                         view.apply {
                             player = mExoPlayer
-                            useController = true
+                            useController = isInPipMode
                             keepScreenOn = true
                             setFullscreenButtonState(isInFullScreen)
                             setFullscreenButtonClickListener {
@@ -275,14 +295,13 @@ fun VideoPlayerScreen(
                         playerView.player = mExoPlayer
                     }
                 )
-            }
-            else if (isLoading){
+            } else if (isLoading) {
                 Box(
                     modifier = Modifier
-                        .height(220.dp)
+                        .height(height = 220.dp)
                         .fillMaxWidth()
                         .background(Color.Black)
-                ){
+                ) {
                     CircularProgressIndicator(modifier = Modifier.align(Alignment.Center))
                 }
             }
@@ -419,7 +438,7 @@ fun VideoPlayerScreen(
 
 
 @Composable
-fun VideoDetailsComposable(
+private fun VideoDetailsComposable(
     mContext: Context,
     videoId: String,
     channelThumbnailURL: String,

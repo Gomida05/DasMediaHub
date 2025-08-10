@@ -5,6 +5,7 @@ import androidx.compose.material3.SnackbarHostState
 import androidx.media3.common.PlaybackException
 import androidx.media3.common.Player
 import androidx.navigation.NavController
+import com.das.mediaHub.PIP.shouldEnterPipMode
 import com.das.mediaHub.WakeLockHelper
 import com.das.mediaHub.ui.viewer.playThisOne
 import kotlinx.coroutines.CoroutineScope
@@ -32,8 +33,10 @@ class PlayerListener(
 
     override fun onIsPlayingChanged(isPlaying: Boolean) {
         if (isPlaying) {
+            shouldEnterPipMode = true
             WakeLockHelper.acquireWakeLock(activity)
         } else {
+            shouldEnterPipMode = false
             WakeLockHelper.releaseWakeLock(activity)
         }
     }

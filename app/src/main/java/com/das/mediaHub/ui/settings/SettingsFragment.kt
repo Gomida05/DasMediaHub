@@ -2,9 +2,8 @@ package com.das.mediaHub.ui.settings
 
 import android.content.Context
 import android.content.Intent
-import android.content.pm.PackageManager
 import android.os.Build
-import android.widget.Toast
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -45,7 +44,7 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.setValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
-import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -61,28 +60,29 @@ import com.das.mediaHub.NavScreens
 import com.das.mediaHub.downloader.DownloaderClass
 import com.das.mediaHub.data.model.AppUpdateInfo
 import com.google.firebase.Firebase
+import com.google.firebase.auth.FirebaseUser
 import com.google.firebase.auth.auth
-import kotlinx.coroutines.launch
 
 
 @Composable
-fun SettingsComposable(navController: NavController) {
+fun SettingsComposable(
+    navController: NavController,
+    showPopMessage: (String)-> Unit
+) {
 
     val context = LocalContext.current
     val scrollBehavior = TopAppBarDefaults.exitUntilCollapsedScrollBehavior()
     val viewModel = viewModel<SettingsViewModel>()
 
     val auth = Firebase.auth
-    val isUserLoggedIn by remember { mutableStateOf(auth.currentUser != null) }
 
-    var showDialog by remember { mutableStateOf(false) }
+    var showDialog by rememberSaveable { mutableStateOf(false) }
 
     val isLoading by viewModel.isLoading
     val error by viewModel.foundError
     val appInfo by viewModel.apkInfo
 
     val snackBarHostState = remember { SnackbarHostState() }
-    val scope = rememberCoroutineScope()
 
     if (isLoading) {
         LoadingDialog {
@@ -124,12 +124,19 @@ fun SettingsComposable(navController: NavController) {
     ) {
         LazyColumn(
             contentPadding = it,
+            horizontalAlignment = Alignment.CenterHorizontally,
             modifier = Modifier
                 .fillMaxSize()
         ) {
 
-            if (isUserLoggedIn) {
-                item { UserHeader() }
+            auth.currentUser?.let { user->
+                item {
+                    UserHeader(
+                        user
+                    ) {
+                        navController.navigate(NavScreens.AccountSetting.route)
+                    }
+                }
             }
 
             item {
@@ -137,12 +144,7 @@ fun SettingsComposable(navController: NavController) {
             }
 
             item { Saved(navController) }
-            item { Account(context) }
 
-
-            item {
-                VerticalDivider(modifier = Modifier.padding(vertical = 1.dp))
-            }
 
             item { Appearance(navController) }
 
@@ -152,14 +154,15 @@ fun SettingsComposable(navController: NavController) {
 
             item {
                 Check_for_update {
-                    scope.launch {
-                        snackBarHostState.showSnackbar("Downloading app")
-                    }
                     viewModel.loadJson()
                     showDialog = true
                 }
             }
-            item { About_Us(context) }
+            item {
+                About_Us {
+                    goToWeb(context)
+                }
+            }
 
             item { FeedbackButton(navController) }
             item { AppVersionInfo() }
@@ -172,6 +175,9 @@ fun SettingsComposable(navController: NavController) {
             context = context,
             appInfo = appInfo,
             snackBar = snackBarHostState,
+            showPopMessage = {
+                showPopMessage(it)
+            },
             onDismissRequest = {
                 showDialog = false
             },
@@ -235,16 +241,19 @@ fun ErrorDialog(
 }
 
 @Composable
-fun UserHeader() {
-    val auth = Firebase.auth
+fun UserHeader(user: FirebaseUser, onClick: () -> Unit) {
 
-    val name by remember { mutableStateOf(auth.currentUser?.displayName ?: "Guest") }
-    val email by remember { mutableStateOf(auth.currentUser?.email?: "Coming soon") }
+    val name by rememberSaveable { mutableStateOf(user.displayName ?: "Sign in/Up now") }
+    val email by rememberSaveable { mutableStateOf(user.email ?: "") }
 
     Row(
         modifier = Modifier
             .fillMaxWidth()
-            .padding(16.dp),
+            .padding(16.dp)
+            .clip(RoundedCornerShape(22))
+            .clickable{
+                onClick()
+            },
         verticalAlignment = Alignment.CenterVertically
     ) {
         Icon(
@@ -270,7 +279,7 @@ private fun Saved(navController: NavController){
         modifier = Modifier
             .fillMaxWidth()
             .padding(4.dp)
-            .clip(RoundedCornerShape(25))
+            .clip(shape = RoundedCornerShape(25))
 
     ) {
 
@@ -283,7 +292,7 @@ private fun Saved(navController: NavController){
         ) {
             Icon(
                 imageVector = Icons.Default.Save,
-                "",
+                contentDescription = "Saved videos",
                 modifier = Modifier
                     .align(Alignment.CenterStart)
             )
@@ -302,49 +311,6 @@ private fun Saved(navController: NavController){
 
     }
 }
-
-@Composable
-private fun Account(context: Context) {
-    Card(
-        onClick = {
-            openMusicApp(context)
-        },
-        modifier = Modifier
-            .fillMaxWidth()
-            .padding(4.dp)
-            .clip(RoundedCornerShape(25))
-
-    ) {
-
-
-        Box(
-            modifier = Modifier
-                .fillMaxWidth()
-                .align(Alignment.CenterHorizontally)
-                .padding(25.dp)
-        ) {
-            Icon(
-                imageVector = Icons.Default.AccountCircle,
-                "",
-                modifier = Modifier
-                    .align(Alignment.CenterStart)
-            )
-            Text(
-                text = "Account",
-                fontSize = 16.sp,
-                style = MaterialTheme.typography.headlineSmall,
-                modifier = Modifier.align(Alignment.Center)
-            )
-            Icon(
-                imageVector = Icons.AutoMirrored.Default.ArrowForward,
-                "",
-                modifier = Modifier.align(Alignment.CenterEnd)
-            )
-        }
-
-    }
-}
-
 
 
 @Composable
@@ -435,11 +401,9 @@ private fun Appearance(navController: NavController){
 }
 
 @Composable
-private fun About_Us(mContext: Context){
+private fun About_Us(onClick: () -> Unit){
     Card(
-        onClick = {
-            goToWeb(mContext)
-        },
+        onClick = onClick,
         modifier = Modifier
             .fillMaxWidth()
             .padding(4.dp)
@@ -537,6 +501,7 @@ fun ShowAlertDialog(
     context: Context,
     appInfo: AppUpdateInfo,
     snackBar: SnackbarHostState,
+    showPopMessage: (String) -> Unit,
     onDismissRequest: () -> Unit,
 ) {
     // Get current version info
@@ -560,6 +525,7 @@ fun ShowAlertDialog(
     // Show message if already up-to-date
     if (!isNewerVersion) {
         LaunchedEffect(Unit) {
+            showPopMessage("You're up to date")
             snackBar.showSnackbar( "You're up to date")
             onDismissRequest()
         }
@@ -603,26 +569,3 @@ private fun goToWeb(mContext: Context) {
 
     mContext.startActivity(browserIntent)
 }
-
-
-
-
-
-private fun showDialogs(context: Context, inputText: String = "coming soon") {
-    Toast.makeText(context, inputText, Toast.LENGTH_SHORT).show()
-}
-
-
-fun openMusicApp(context: Context){
-    try {
-        val musicApp = context.packageManager.getLaunchIntentForPackage("com.das.musicplayer")
-        context.startActivity(musicApp)
-    }catch (_: PackageManager.NameNotFoundException){
-        showDialogs(context, "App Not founded!")
-    }
-    catch (_: Exception){
-        showDialogs(context,"App not opening!")
-    }
-}
-
-

@@ -7,7 +7,9 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import androidx.media3.common.MediaItem
 import androidx.media3.common.MediaMetadata
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 import java.io.File
 import java.text.SimpleDateFormat
 import java.util.Date
@@ -16,6 +18,7 @@ import java.util.Locale
 
 class DownloadsPageViewModel : ViewModel() {
 
+    private val dateFormat = SimpleDateFormat("dd/MM/yyyy", Locale.getDefault())
     private val _videosListData = mutableStateOf<List<MediaItem>>(emptyList())
     val videosListData: State<List<MediaItem>> = _videosListData
 
@@ -32,7 +35,9 @@ class DownloadsPageViewModel : ViewModel() {
         viewModelScope.launch {
 
             try{
-                val result = loadVideos(pathLocation)
+                val result = withContext(Dispatchers.IO){
+                    loadVideos(pathLocation)
+                }
                 _videosListData.value = result
             } catch (e: Exception) {
                 _error.value = "Something went wrong: ${e.message}"
@@ -47,7 +52,9 @@ class DownloadsPageViewModel : ViewModel() {
         _error.value = null
         viewModelScope.launch {
             try {
-                val result = loadMusics(pathLocation)
+                val result = withContext(Dispatchers.IO) {
+                    loadMusics(pathLocation)
+                }
                 _listMusic.value = result
             } catch (e: Exception) {
                 _error.value = "Something went wrong: ${e.message}"
@@ -57,11 +64,12 @@ class DownloadsPageViewModel : ViewModel() {
         }
     }
 
-    private fun loadVideos(pathLocation: String): MutableList<MediaItem> {
+    private fun loadVideos(pathLocation: String): List<MediaItem> {
         val downloadedList = mutableListOf<MediaItem>()
         val pathOfFiles = File(pathLocation)
         if (pathOfFiles.exists()) {
-            pathOfFiles.listFiles()?.forEach { file ->
+            val files = pathOfFiles.listFiles() ?: emptyArray()
+            for (file in files ) {
                 val lastModified = file.lastModified()
                 val formattedDate = formatDate(lastModified)
                 val fileSizeFormatted = formatFileSize(file.length())
@@ -84,11 +92,12 @@ class DownloadsPageViewModel : ViewModel() {
         return downloadedList
     }
 
-    private fun loadMusics(pathLocation: String): MutableList<MediaItem> {
+    private fun loadMusics(pathLocation: String): List<MediaItem> {
         val musicMutableList = mutableListOf<MediaItem>()
         val pathOfFiles = File(pathLocation)
         if (pathOfFiles.exists()) {
-            pathOfFiles.listFiles()?.forEach { file ->
+            val files = pathOfFiles.listFiles() ?: emptyArray()
+            for (file in files ){
                 val lastModified = file.lastModified()
                 val formattedDate = formatDate(lastModified)
                 val fileSizeFormatted = formatFileSize(file.length())
@@ -106,8 +115,6 @@ class DownloadsPageViewModel : ViewModel() {
                         .setTag(fileSizeFormatted)
                         .build()
                 )
-
-
             }
         }
         return musicMutableList
@@ -116,7 +123,6 @@ class DownloadsPageViewModel : ViewModel() {
 
     private fun formatDate(timestamp: Long): String {
         val date = Date(timestamp)
-        val dateFormat = SimpleDateFormat("dd/MM/yyyy", Locale.getDefault())
         return dateFormat.format(date)
     }
 

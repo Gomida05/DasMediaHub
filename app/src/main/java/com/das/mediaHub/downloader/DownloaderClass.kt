@@ -14,7 +14,7 @@ import android.os.Looper
 import android.provider.Settings
 import android.webkit.MimeTypeMap
 import androidx.core.app.NotificationCompat
-import com.das.mediaHub.R
+import androidx.media3.session.R
 import com.das.mediaHub.data.databased.PathSaver.getAudioDownloadPath
 import com.das.mediaHub.data.databased.PathSaver.getVideosDownloadPath
 import com.das.mediaHub.data.model.AppUpdateInfo
@@ -245,7 +245,7 @@ class DownloaderClass(val context: Context): ForUIDownloader {
         val ourNotification = NotificationCompat.Builder(context, DOWNLOADER_NOTIFICATION_CHANNEL)
             .setContentTitle(title)
             .setContentText("Download in progress...")
-            .setSmallIcon(R.drawable.music_note_24dp)
+            .setSmallIcon(R.drawable.media_session_service_notification_ic_music_note)
             .setOngoing(true)
             .setCategory(NotificationCompat.CATEGORY_TRANSPORT)
             .setProgress(100, 0, true)

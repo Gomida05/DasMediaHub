@@ -6,6 +6,7 @@ import android.Manifest.permission.READ_MEDIA_VIDEO
 import android.app.NotificationChannel
 import android.app.NotificationChannelGroup
 import android.app.NotificationManager
+import android.app.PictureInPictureParams
 import android.content.Context
 import android.content.Intent
 import android.content.Intent.EXTRA_STREAM
@@ -18,6 +19,7 @@ import android.os.Build.VERSION_CODES
 import android.os.Build.VERSION_CODES.TIRAMISU
 import android.os.Bundle
 import android.util.Log
+import android.util.Rational
 import android.widget.Toast
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
@@ -56,10 +58,16 @@ import com.das.mediaHub.data.model.MyBottomNavData
 import androidx.compose.material3.NavigationBarItem
 import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.draw.clip
 import androidx.core.content.FileProvider
 import androidx.navigation.NavController
+import androidx.navigation.NavType
 import androidx.navigation.compose.currentBackStackEntryAsState
+import androidx.navigation.navArgument
 import com.das.mediaHub.data.YouTuber.getAudioStreamUrl
 import com.das.mediaHub.data.YouTuber.getVideoStreamUrl
 import com.das.mediaHub.downloader.DownloaderClass
@@ -71,24 +79,30 @@ import com.das.mediaHub.data.YouTuber.extractPlaylistId
 import com.das.mediaHub.data.YouTuber.getPlayListStreamUrl
 import com.das.mediaHub.data.YouTuber.isValidYouTubePlaylistUrl
 import com.das.mediaHub.services.BackGroundPlayer
-import com.das.mediaHub.ui.downloads.DownloadsPageComposable
+import com.das.mediaHub.ui.downloads.DownloadsComposable
 import com.das.mediaHub.ui.home.HomePageComposable
 import com.das.mediaHub.ui.result.ResultViewerPage
 import com.das.mediaHub.ui.search.SearchPageCompose
 import com.das.mediaHub.ui.settings.watch_later.WatchLaterComposable
 import com.das.mediaHub.ui.settings.SettingsComposable
 import com.das.mediaHub.ui.settings.userSettings.UserSettingComposable
-import com.das.mediaHub.ui.downloads.videoPlayerLocally.ExoPlayerUI
-import com.das.mediaHub.ui.welcome.LoginPage
-import com.das.mediaHub.ui.welcome.SignUpPage
+import com.das.mediaHub.ui.downloads.videoPlayerLocally.LocalVideoPlayer
+import com.das.mediaHub.ui.account.LoginPage
+import com.das.mediaHub.ui.account.signup.SignUpPage
 import com.das.mediaHub.data.constants.GlobalVideoList.bundles
 import com.das.mediaHub.ui.viewer.VideoPlayerScreen
 import com.das.mediaHub.ui.watchedVideos.WatchedVideosComposable
 import com.das.mediaHub.NavScreens.*
+import com.das.mediaHub.PIP.shouldEnterPipMode
 import com.das.mediaHub.data.constants.DownloadConstants.DOWNLOAD_FINISHED
 import com.das.mediaHub.theme.CustomTheme
+import com.das.mediaHub.ui.TopPopupNotification
+import com.das.mediaHub.ui.account.AccountSettingsPage
+import com.das.mediaHub.ui.account.ReviewChangesPage
 import com.das.mediaHub.ui.settings.FeedbackComposable
 import com.das.mediaHub.ui.welcome.WelcomePage
+import com.google.firebase.Firebase
+import com.google.firebase.auth.auth
 import java.io.File
 
 
@@ -99,8 +113,8 @@ class MainActivity : ComponentActivity() {
     private var intentListener: ((Intent) -> Unit)? = null
 
     override fun onCreate(savedInstanceState: Bundle?) {
-        super.onCreate(savedInstanceState)
         enableEdgeToEdge()
+        super.onCreate(savedInstanceState)
         setContent {
             CustomTheme {
                 MainLauncherPageComposable()
@@ -122,6 +136,8 @@ class MainActivity : ComponentActivity() {
         intentListeners.remove(listener)
     }
 
+    private val auth = Firebase.auth
+
 
     @Composable
     fun MainLauncherPageComposable() {
@@ -131,6 +147,7 @@ class MainActivity : ComponentActivity() {
 
         val currentRoute = navController.currentBackStackEntryAsState().value?.destination?.route
 
+        var showNotificationDialog by remember { mutableStateOf<String?>(null) }
 
         LaunchedEffect(Unit) {
             intent?.let {
@@ -167,7 +184,8 @@ class MainActivity : ComponentActivity() {
         )
 
         Scaffold(
-            contentWindowInsets = WindowInsets(1, 1, 1, 1),
+            contentWindowInsets = WindowInsets(0, 0, 0, 0),
+            containerColor = MaterialTheme.colorScheme.background,
             modifier = Modifier
                 .fillMaxSize(),
             bottomBar = {
@@ -213,8 +231,7 @@ class MainActivity : ComponentActivity() {
         ) { paddingValues ->
 
 //                val isUserLoggedIn by remember { mutableStateOf(FirebaseAuth.getInstance().currentUser != null) }
-            val startDestination =
-                Home.route //if (isUserLoggedIn) Home.route else WelcomePage.route
+            val startDestination = Home.route //if (isUserLoggedIn) Home.route else WelcomePage.route
             NavHost(
                 navController = navController,
                 startDestination = startDestination,
@@ -229,7 +246,9 @@ class MainActivity : ComponentActivity() {
                     WatchedVideosComposable(navController)
                 }
                 composable(Setting.route) {
-                    SettingsComposable(navController)
+                    SettingsComposable(navController) {
+                        showNotificationDialog = it
+                    }
                 }
 
                 composable(VideoViewer.route) {
@@ -248,7 +267,7 @@ class MainActivity : ComponentActivity() {
                     )
                 }
                 composable(Downloads.route) {
-                    DownloadsPageComposable(navController)
+                    DownloadsComposable(navController)
                 }
                 composable(Searcher.route) {
 
@@ -262,7 +281,7 @@ class MainActivity : ComponentActivity() {
 
                 }
                 composable(ExoPlayerUI.route) {
-                    ExoPlayerUI(
+                    LocalVideoPlayer(
                         bundles.getString(PLAY_HERE_VIDEO).toString()
                     )
                 }
@@ -271,8 +290,30 @@ class MainActivity : ComponentActivity() {
                     WatchLaterComposable(navController)
                 }
 
-                composable(LoginPage1.route) {
+                composable(SignInPage.route) {
                     LoginPage(navController)
+                }
+                composable(AccountSetting.route) {
+                    if (auth.currentUser != null) {
+                        AccountSettingsPage(navController, auth)
+                    } else {
+                        LoginPage(navController)
+                    }
+                }
+                composable(
+                    "review_changes/{name}/{email}/{password}",
+                    arguments = listOf(
+                        navArgument("name") { type = NavType.StringType },
+                        navArgument("email") { type = NavType.StringType },
+                        navArgument("password") { type = NavType.StringType }
+                    )
+                ) { backStackEntry ->
+                    ReviewChangesPage(
+                        navController,
+                        backStackEntry.arguments?.getString("name") ?: "",
+                        backStackEntry.arguments?.getString("email") ?: "",
+                        backStackEntry.arguments?.getString("password") ?: ""
+                    )
                 }
                 composable(WelcomePage.route) {
                     WelcomePage(navController)
@@ -285,7 +326,31 @@ class MainActivity : ComponentActivity() {
                 }
             }
         }
+
+        showNotificationDialog?.let {
+            TopPopupNotification(
+                it,
+                true,
+                onDismiss = {
+                    showNotificationDialog = null
+                }
+            )
+        }
     }
+
+    override fun onUserLeaveHint() {
+        super.onUserLeaveHint()
+        if (shouldEnterPipMode) {
+
+            if (VERSION.SDK_INT >= VERSION_CODES.O) {
+                val params = PictureInPictureParams.Builder()
+                    .setAspectRatio(Rational(16, 9))
+                    .build()
+                enterPictureInPictureMode(params)
+            }
+        }
+    }
+
 
     private fun listenNewIntent(
         navController: NavController,
@@ -640,6 +705,11 @@ class MainActivity : ComponentActivity() {
         if (result != AudioManager.AUDIOFOCUS_REQUEST_GRANTED) {
 
         }
+    }
+
+    override fun onPause() {
+        super.onPause()
+        WakeLockHelper.releaseWakeLock(this)
     }
 
 

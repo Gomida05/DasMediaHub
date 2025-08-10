@@ -10,7 +10,7 @@ coreKtxVersion = "1.16.0"
 chaquo = "16.1.0"
 coreSplashscreenVersion = "1.0.1"
 firebaseAuthKtxVersion = "23.2.1"
-firebaseBomVersion = "34.0.0"
+firebaseBomVersion = "34.1.0"
 glideVersion = "4.16.0"
 gsonVersion = "2.13.1"
 gms = "4.4.3"
@@ -21,7 +21,6 @@ kspVertion = "2.2.0-2.0.2"
 lifecycleLivedataKtxVersion = "2.9.2"
 lifecycleViewmodelComposeVersion = "2.9.2"
 lifecycleViewmodelKtxVersion = "2.9.2"
-lottieComposeVersion = "6.6.7"
 media3Version = "1.8.0"
 mediaVersion = "1.7.0"
 navigationVersion = "2.9.3"
@@ -52,7 +51,6 @@ junit = { module = "junit:junit", version.ref = "junitJunit" }
 lifecycle-livedata-ktx = { module = "androidx.lifecycle:lifecycle-livedata-ktx", version.ref = "lifecycleLivedataKtxVersion" }
 lifecycle-viewmodel-compose = { module = "androidx.lifecycle:lifecycle-viewmodel-compose", version.ref = "lifecycleViewmodelComposeVersion" }
 lifecycle-viewmodel-ktx = { module = "androidx.lifecycle:lifecycle-viewmodel-ktx", version.ref = "lifecycleViewmodelKtxVersion" }
-lottie-compose = { module = "com.airbnb.android:lottie-compose", version.ref = "lottieComposeVersion" }
 material-icons-extended = { module = "androidx.compose.material:material-icons-extended" }
 material3 = { module = "androidx.compose.material3:material3" }
 media = { module = "androidx.media:media", version.ref = "mediaVersion" }
