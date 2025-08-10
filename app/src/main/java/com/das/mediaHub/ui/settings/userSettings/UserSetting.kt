@@ -19,7 +19,6 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
-import androidx.compose.material.icons.filled.AccountCircle
 import androidx.compose.material.icons.filled.Contrast
 import androidx.compose.material.icons.filled.DarkMode
 import androidx.compose.material.icons.filled.Folder
@@ -30,6 +29,7 @@ import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.DropdownMenuItem
+import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
@@ -53,7 +53,6 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
 import androidx.documentfile.provider.DocumentFile
 import androidx.navigation.NavController
-import com.das.mediaHub.NavScreens
 import com.das.mediaHub.data.databased.PathSaver.setAudioDownloadPath
 import com.das.mediaHub.data.databased.PathSaver.setMoviesDownloadPath
 import com.das.mediaHub.theme.ThemePreferences.loadDarkModeState
@@ -108,26 +107,15 @@ fun UserSettingComposable(navController: NavController) {
                 }
             }
             item {
-                Spacer(modifier = Modifier.height(12.dp))
-                SettingCard(title = "New Features") {
-                    TestLoginPage1 {
-                        navController.navigate(NavScreens.SignInPage.route)
+                Column {
+                    Spacer(modifier = Modifier.height(12.dp))
+                    SettingCard(title = "Settings") {
+                        SecuritySettings {
+                            showSnackBar = true
+                        }
                     }
-                }
-            }
-            item {
-                Spacer(modifier = Modifier.height(12.dp))
-                SettingCard(title = "Settings") {
-                    SecuritySettings {
-                        showSnackBar = true
-                    }
-                }
-            }
-
-            item {
-                Spacer(modifier = Modifier.height(12.dp))
-                SettingCard(title = "Settings") {
-
+                    HorizontalDivider()
+                    Spacer(modifier = Modifier.height(12.dp))
                     Change_Downloading_Location {
                         showAlertDialog = true
                     }
@@ -155,24 +143,6 @@ fun SecuritySettings(onClick: () -> Unit) {
         Spacer(modifier = Modifier.width(16.dp))
         Text("Security Settings")
     }
-}
-
-@Composable
-private fun TestLoginPage1(onClick: () -> Unit) {
-    Row(
-        modifier = Modifier
-            .fillMaxWidth()
-            .clickable {
-                onClick()
-            }
-            .padding(12.dp),
-        verticalAlignment = Alignment.CenterVertically
-    ) {
-        Icon(Icons.Default.AccountCircle, contentDescription = null)
-        Spacer(modifier = Modifier.width(16.dp))
-        Text("Test Login page 1")
-    }
-
 }
 
 @Composable

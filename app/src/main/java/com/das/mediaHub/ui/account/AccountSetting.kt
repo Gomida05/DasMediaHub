@@ -1,8 +1,6 @@
 package com.das.mediaHub.ui.account
 
-import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
-import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
@@ -12,22 +10,22 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.rememberScrollState
-import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.foundation.text.KeyboardActions
+import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.automirrored.filled.Logout
 import androidx.compose.material.icons.filled.AccountCircle
-import androidx.compose.material.icons.filled.Check
 import androidx.compose.material.icons.filled.Delete
-import androidx.compose.material.icons.filled.Edit
-import androidx.compose.material.icons.filled.Save
+import androidx.compose.material.icons.filled.Lock
+import androidx.compose.material.icons.filled.Security
 import androidx.compose.material.icons.filled.Visibility
 import androidx.compose.material.icons.filled.VisibilityOff
 import androidx.compose.material3.AlertDialog
-import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Card
+import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
@@ -41,40 +39,31 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
-import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.text.input.ImeAction
+import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.text.input.VisualTransformation
-import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.navigation.NavController
-import com.das.mediaHub.theme.CustomTheme
+import com.das.mediaHub.NavScreens
+import com.das.mediaHub.data.model.TopPopUp
+import com.das.mediaHub.ui.TopPopupNotification.showNotificationDialog
+import com.google.firebase.auth.EmailAuthProvider
 import com.google.firebase.auth.FirebaseAuth
-
-@Preview
-@Composable
-fun Previews() {
-    CustomTheme {
-//        AccountSettingsPage(
-//            navController = rememberNavController()
-//        )
-    }
-}
 
 @Composable
 fun AccountSettingsPage(navController: NavController, auth: FirebaseAuth) {
-    val currentUser = auth.currentUser
-    val originalName = currentUser?.displayName ?: ""
-    val originalEmail = currentUser?.email ?: ""
 
-    var name by rememberSaveable { mutableStateOf(originalName) }
-    var email by rememberSaveable { mutableStateOf(originalEmail) }
-    var password by rememberSaveable { mutableStateOf("") }
-    var showPassword by rememberSaveable { mutableStateOf(false) }
+    val currentUser = auth.currentUser
+    val name = currentUser?.displayName ?: "Unnamed User"
+    val email = currentUser?.email
     var showDeleteDialog by remember { mutableStateOf(false) }
+
+
+
 
     Scaffold(
         topBar = {
@@ -96,101 +85,59 @@ fun AccountSettingsPage(navController: NavController, auth: FirebaseAuth) {
             verticalArrangement = Arrangement.spacedBy(24.dp)
         ) {
 
-            // Avatar Section
+            // Avatar and User Info
             Column(
                 horizontalAlignment = Alignment.CenterHorizontally,
-                modifier = Modifier
-                    .align(Alignment.CenterHorizontally)
+                modifier = Modifier.align(Alignment.CenterHorizontally)
             ) {
-                Box {
-                    Icon(
-                        Icons.Default.AccountCircle,
-                        contentDescription = null,
-                        modifier = Modifier.size(100.dp),
-                        tint = MaterialTheme.colorScheme.primary
-                    )
-                    IconButton(
-                        onClick = {
-
-                        },
-                        modifier = Modifier
-                            .align(Alignment.BottomEnd)
-                            .background(MaterialTheme.colorScheme.primary, CircleShape)
-                            .size(28.dp)
-                    ) {
-                        Icon(Icons.Default.Edit, contentDescription = "Edit Picture", tint = Color.White)
-                    }
-                }
+                Icon(
+                    Icons.Default.AccountCircle,
+                    contentDescription = null,
+                    modifier = Modifier.size(100.dp),
+                    tint = MaterialTheme.colorScheme.primary
+                )
                 Spacer(modifier = Modifier.height(8.dp))
-                Text(name.ifEmpty { "Unnamed User" }, style = MaterialTheme.typography.titleMedium)
-                Text(email, style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
-            }
-
-            // Profile Section
-            Card {
-                Column(modifier = Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
-                    Text("Profile", style = MaterialTheme.typography.titleMedium)
-                    OutlinedTextField(
-                        value = name,
-                        onValueChange = { name = it },
-                        label = { Text("Full Name") },
-                        singleLine = true,
-                        modifier = Modifier.fillMaxWidth()
-                    )
-                    OutlinedTextField(
-                        value = email,
-                        onValueChange = { email = it },
-                        label = { Text("Email Address") },
-                        singleLine = true,
-                        modifier = Modifier.fillMaxWidth()
-                    )
-                }
-            }
-
-            // Security Section
-            Card {
-                Column(modifier = Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
-                    Text("Security", style = MaterialTheme.typography.titleMedium)
-                    OutlinedTextField(
-                        value = password,
-                        onValueChange = { password = it },
-                        label = { Text("Password") },
-                        singleLine = true,
-                        visualTransformation = if (showPassword) VisualTransformation.None else PasswordVisualTransformation(),
-                        trailingIcon = {
-                            IconButton(onClick = { showPassword = !showPassword }) {
-                                Icon(
-                                    imageVector = if (showPassword) Icons.Default.VisibilityOff else Icons.Default.Visibility,
-                                    contentDescription = null
-                                )
-                            }
-                        },
-                        modifier = Modifier.fillMaxWidth()
-                    )
-                }
-            }
-
-            Button(
-                onClick = {
-                    navController.navigate("review_changes/${name}/${email}/${password}")
-                },
-                modifier = Modifier.fillMaxWidth(),
-                enabled = (name != originalName) || (email != originalEmail) || password.isNotBlank()
-            ) {
-                Icon(Icons.Default.Save, contentDescription = null)
-                Spacer(modifier = Modifier.width(8.dp))
-                Text("Save Changes")
+                Text(name, style = MaterialTheme.typography.titleMedium)
+                Text(email ?: "", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
             }
 
             // Account Actions
             Card {
-                Column(modifier = Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
+                Column(
+                    modifier = Modifier
+                        .padding(16.dp),
+                    verticalArrangement = Arrangement.spacedBy(12.dp)
+                ) {
                     Text("Account Actions", style = MaterialTheme.typography.titleMedium)
-                    OutlinedButton(onClick = { auth.signOut() }, modifier = Modifier.fillMaxWidth()) {
+
+                    OutlinedButton(
+                        onClick = {
+                            navController.navigate(route = NavScreens.ChangePassword.route)
+                        },
+                        modifier = Modifier.fillMaxWidth()
+                    ) {
+                        Icon(imageVector = Icons.Default.Lock, contentDescription = null)
+                        Spacer(modifier = Modifier.width(8.dp))
+                        Text("Change Password")
+                    }
+
+                    OutlinedButton(
+                        onClick = {
+                            auth.signOut()
+                            showNotificationDialog = TopPopUp(
+                                    message = "You have successfully sign out",
+                                    icon = Icons.AutoMirrored.Default.Logout
+                                )
+                            navController.popBackStack()
+
+                        },
+                        modifier = Modifier.fillMaxWidth()
+                    ) {
                         Icon(Icons.AutoMirrored.Default.Logout, contentDescription = null)
                         Spacer(modifier = Modifier.width(8.dp))
                         Text("Logout")
                     }
+
                     OutlinedButton(
                         onClick = { showDeleteDialog = true },
                         modifier = Modifier.fillMaxWidth(),
@@ -204,82 +151,110 @@ fun AccountSettingsPage(navController: NavController, auth: FirebaseAuth) {
             }
         }
 
-        if (showDeleteDialog) {
-            AlertDialog(
-                onDismissRequest = { showDeleteDialog = false },
-                title = { Text("Delete Account") },
-                text = { Text("Are you sure you want to delete your account? This cannot be undone.") },
-                confirmButton = {
-                    TextButton(onClick = {
-                        showDeleteDialog = false
-                        currentUser?.delete()
-                    }) {
-                        Text("Delete", color = MaterialTheme.colorScheme.error)
-                    }
-                },
-                dismissButton = {
-                    TextButton(onClick = { showDeleteDialog = false }) {
-                        Text("Cancel")
-                    }
-                }
-            )
-        }
     }
-}
+    if (showDeleteDialog) {
+        var password by remember { mutableStateOf("") }
+        var showPassword by remember { mutableStateOf(false) }
+        var errorMessage by remember { mutableStateOf<String?>(null) }
 
+        var isLoading by remember { mutableStateOf(false) }
 
-@Composable
-fun ReviewChangesPage(navController: NavController, name: String, email: String, password: String) {
-    Scaffold(
-        topBar = {
-            TopAppBar(
-                title = { Text("Review Changes") },
-                navigationIcon = {
-                    IconButton(onClick = { navController.popBackStack() }) {
-                        Icon(Icons.AutoMirrored.Default.ArrowBack, contentDescription = "Back")
+        fun deleteAccount() {
+            if (!email.isNullOrEmpty() && password.isNotBlank()) {
+                isLoading = true
+                errorMessage = null
+                val credential = EmailAuthProvider.getCredential(email, password)
+                currentUser.reauthenticate(credential).addOnCompleteListener { task ->
+                    if (task.isSuccessful) {
+                        currentUser.delete()
+                        isLoading = false
+                        showDeleteDialog = false
+                        showNotificationDialog = TopPopUp(
+                            message = "You have successfully delete your account",
+                            icon = Icons.Default.Security
+                        )
+                        navController.popBackStack()
+                    } else {
+                        isLoading = false
+                        errorMessage = "Incorrect password. Please try again."
+                        password = ""
                     }
                 }
-            )
-        }
-    ) { padding ->
-        Column(
-            modifier = Modifier
-                .padding(padding)
-                .padding(16.dp),
-            verticalArrangement = Arrangement.spacedBy(16.dp)
-        ) {
-            Text("You're about to update the following:", style = MaterialTheme.typography.titleMedium)
 
-            if (name.isNotBlank()) {
-                Text("• Name: $name")
-            }
-            if (email.isNotBlank()) {
-                Text("• Email: $email")
-            }
-            if (password.isNotBlank()) {
-                Text("• Password: (will be changed securely)")
-            }
-
-            Spacer(modifier = Modifier.height(20.dp))
-
-            Button(
-                onClick = {
-                    // TODO: Actually update Firebase user details here
-                    navController.popBackStack()
-                },
-                modifier = Modifier.fillMaxWidth()
-            ) {
-                Icon(Icons.Default.Check, contentDescription = null)
-                Spacer(modifier = Modifier.width(8.dp))
-                Text("Confirm Changes")
-            }
-
-            OutlinedButton(
-                onClick = { navController.popBackStack() },
-                modifier = Modifier.fillMaxWidth()
-            ) {
-                Text("Cancel")
             }
         }
+
+        AlertDialog(
+            onDismissRequest = {  },
+            title = { Text("Delete Account") },
+            text = {
+                Column {
+                    Text("Are you sure you want to delete your account? This cannot be undone.")
+                    Spacer(modifier = Modifier.height(16.dp))
+
+                    OutlinedTextField(
+                        value = password,
+                        onValueChange = {
+                            password = it
+                            errorMessage = null
+                        },
+                        isError = errorMessage != null,
+                        label = { Text("Enter your password to confirm") },
+                        enabled = !isLoading,
+                        singleLine = true,
+                        visualTransformation = if (showPassword) VisualTransformation.None else PasswordVisualTransformation(),
+                        trailingIcon = {
+                            IconButton(onClick = { showPassword = !showPassword }) {
+                                Icon(
+                                    imageVector = if (showPassword) Icons.Default.VisibilityOff else Icons.Default.Visibility,
+                                    contentDescription = if (showPassword) "Hide password" else "Show password"
+                                )
+                            }
+                        },
+                        keyboardOptions = KeyboardOptions.Default.copy(
+                            keyboardType = KeyboardType.Password,
+                            imeAction = ImeAction.Done
+                        ),
+                        keyboardActions = KeyboardActions(
+                            onDone = {
+                                deleteAccount()
+                            }
+                        ),
+                        modifier = Modifier.fillMaxWidth()
+                    )
+
+                    if (errorMessage != null) {
+                        Text(
+                            text = errorMessage ?: "",
+                            style = MaterialTheme.typography.bodySmall
+                                .copy(color = MaterialTheme.colorScheme.error)
+                        )
+                    }
+
+                    if (isLoading) {
+                        Spacer(modifier = Modifier.height(16.dp))
+                        CircularProgressIndicator(modifier = Modifier.align(Alignment.CenterHorizontally))
+                    }
+                }
+            },
+            confirmButton = {
+                TextButton(
+                    onClick = {
+                        deleteAccount()
+                    },
+                    enabled = password.isNotBlank() && !isLoading
+                ) {
+                    Text("Delete", color = MaterialTheme.colorScheme.error)
+                }
+            },
+            dismissButton = {
+                TextButton(
+                    onClick = { showDeleteDialog = false },
+                    enabled = !isLoading
+                ) {
+                    Text("Cancel")
+                }
+            }
+        )
     }
 }

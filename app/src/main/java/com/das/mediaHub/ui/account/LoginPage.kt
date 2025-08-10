@@ -16,6 +16,7 @@ import androidx.compose.foundation.text.KeyboardActions
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.filled.Logout
 import androidx.compose.material.icons.filled.Visibility
 import androidx.compose.material.icons.filled.VisibilityOff
 import androidx.compose.material3.ElevatedButton
@@ -28,13 +29,18 @@ import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.remember
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.autofill.ContentDataType
+import androidx.compose.ui.autofill.ContentType
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.semantics.contentDataType
+import androidx.compose.ui.semantics.contentType
+import androidx.compose.ui.semantics.onAutofillText
+import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.input.KeyboardType
@@ -44,22 +50,20 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.navigation.NavController
 import com.das.mediaHub.NavScreens
+import com.das.mediaHub.data.model.TopPopUp
 import com.das.mediaHub.data.model.user.LoginUserData
-import com.google.firebase.Firebase
+import com.das.mediaHub.ui.TopPopupNotification.showNotificationDialog
 import com.google.firebase.auth.FirebaseAuth
-import com.google.firebase.auth.auth
 
 @Composable
 fun LoginPage(
-    navController: NavController
+    navController: NavController,
+    auth: FirebaseAuth
 ) {
     val email = rememberSaveable { mutableStateOf("") }
     val password = rememberSaveable { mutableStateOf("") }
     var isPasswordVisible by rememberSaveable { mutableStateOf(false) }
     var message by rememberSaveable { mutableStateOf<String?>(null) }
-
-    val auth = remember { Firebase.auth }
-
 
     Scaffold(
         contentWindowInsets = WindowInsets.safeDrawing
@@ -99,11 +103,20 @@ fun LoginPage(
                     onValueChange = { email.value = it },
                     label = { Text("Email") },
                     singleLine = true,
-                    keyboardOptions = KeyboardOptions(
+                    keyboardOptions = KeyboardOptions.Default.copy(
                         keyboardType = KeyboardType.Email,
                         imeAction = ImeAction.Next
                     ),
-                    modifier = Modifier.fillMaxWidth()
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .semantics {
+                            contentType = ContentType.EmailAddress
+                            contentDataType = ContentDataType.Text
+                            onAutofillText {
+                                email.value = it.text
+                                true
+                            }
+                        }
                 )
 
                 Spacer(modifier = Modifier.height(16.dp))
@@ -111,9 +124,13 @@ fun LoginPage(
                 // Password Field
                 OutlinedTextField(
                     value = password.value,
-                    onValueChange = { password.value = it },
+                    onValueChange = {
+                        password.value = it
+                        message = null
+                    },
                     label = { Text("Password") },
                     singleLine = true,
+                    isError = message != null,
                     visualTransformation = if (isPasswordVisible) VisualTransformation.None else PasswordVisualTransformation(),
                     trailingIcon = {
                         IconButton(onClick = { isPasswordVisible = !isPasswordVisible }) {
@@ -124,7 +141,7 @@ fun LoginPage(
                             )
                         }
                     },
-                    keyboardOptions = KeyboardOptions(
+                    keyboardOptions = KeyboardOptions.Default.copy(
                         keyboardType = KeyboardType.Password,
                         imeAction = ImeAction.Done
                     ),
@@ -132,7 +149,16 @@ fun LoginPage(
                         onDone = {
                             val user = LoginUserData(email = email.value, password = password.value)
                             loginUser(auth,user) { success, error ->
-                                message = if (success) "Login Successful" else error
+                                if (success) {
+                                    message = null
+                                    showNotificationDialog = TopPopUp(
+                                        message = "You have successfully Login",
+                                        icon = Icons.AutoMirrored.Default.Logout
+                                    )
+                                    navController.popBackStack()
+                                } else {
+                                    message = error
+                                }
                             }
                         }
                     ),
@@ -146,7 +172,16 @@ fun LoginPage(
                     onClick = {
                         val user = LoginUserData(email = email.value, password = password.value)
                         loginUser(auth = auth, userDetails = user) { success, error ->
-                            message = if (success) "Login Successful" else error
+                            if (success) {
+                                message = null
+                                showNotificationDialog = TopPopUp(
+                                    message = "You have successfully Login",
+                                    icon = Icons.AutoMirrored.Default.Logout
+                                )
+                                navController.popBackStack()
+                            } else {
+                                message = error
+                            }
                         }
 
                     },
@@ -171,7 +206,8 @@ fun LoginPage(
                 }
 
                 message?.let {
-                    Text(it, color = if (it == "Login Successful") Color.Green else Color.Red)
+                    Text(text = it, color = Color.Red)
+                    password.value = ""
                 }
             }
 

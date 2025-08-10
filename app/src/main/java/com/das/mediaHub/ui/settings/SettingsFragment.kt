@@ -20,6 +20,7 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowForward
 import androidx.compose.material.icons.filled.AccountCircle
+import androidx.compose.material.icons.filled.Android
 import androidx.compose.material.icons.filled.ColorLens
 import androidx.compose.material.icons.filled.Feedback
 import androidx.compose.material.icons.filled.Info
@@ -59,6 +60,7 @@ import androidx.navigation.NavController
 import com.das.mediaHub.NavScreens
 import com.das.mediaHub.downloader.DownloaderClass
 import com.das.mediaHub.data.model.AppUpdateInfo
+import com.das.mediaHub.data.model.TopPopUp
 import com.google.firebase.Firebase
 import com.google.firebase.auth.FirebaseUser
 import com.google.firebase.auth.auth
@@ -67,7 +69,7 @@ import com.google.firebase.auth.auth
 @Composable
 fun SettingsComposable(
     navController: NavController,
-    showPopMessage: (String)-> Unit
+    showPopMessage: (TopPopUp)-> Unit
 ) {
 
     val context = LocalContext.current
@@ -176,7 +178,12 @@ fun SettingsComposable(
             appInfo = appInfo,
             snackBar = snackBarHostState,
             showPopMessage = {
-                showPopMessage(it)
+                showPopMessage(
+                    TopPopUp(
+                        message = it,
+                        icon = Icons.Default.Android
+                    )
+                )
             },
             onDismissRequest = {
                 showDialog = false

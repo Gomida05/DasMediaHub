@@ -30,24 +30,14 @@ import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
-import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavController
-import androidx.navigation.compose.rememberNavController
 import com.das.mediaHub.NavScreens
 import com.das.mediaHub.data.model.user.SignUpUserData
-import com.das.mediaHub.theme.CustomTheme
 
 
-@Preview
-@Composable
-fun TestingApp(){
-    CustomTheme {
-        SignUpPage(navController = rememberNavController())
-    }
-}
 @Composable
 fun SignUpPage(navController: NavController) {
 

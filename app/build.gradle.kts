@@ -33,8 +33,8 @@ android {
         applicationId = "com.das.mediaHub"
         minSdk = 24
         targetSdk = 36
-        versionCode = 4
-        versionName = "1.24"
+        versionCode = 5
+        versionName = "1.25"
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
         flavorDimensions.add("pyVersion")
@@ -135,6 +135,7 @@ dependencies {
     implementation(libs.activity.compose)
 
     //preview
+    implementation(libs.ui.tooling.preview)
     debugImplementation(libs.ui.tooling)
 
     //icons

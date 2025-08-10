@@ -68,6 +68,7 @@ play-services-auth = { module = "com.google.android.gms:play-services-auth", ver
 runtime-android = { module = "androidx.compose.runtime:runtime-android", version.ref = "runtimeAndroidVersion" }
 runtime-livedata = { module = "androidx.compose.runtime:runtime-livedata", version.ref = "runtimeLivedataVersion" }
 ui-tooling = { module = "androidx.compose.ui:ui-tooling" }
+ui-tooling-preview = { module = "androidx.compose.ui:ui-tooling-preview" }
 ui-viewbinding = { module = "androidx.compose.ui:ui-viewbinding", version.ref = "uiViewbindingVersion" }
 firebase-firestore-ktx = { group = "com.google.firebase", name = "firebase-firestore-ktx", version.ref = "firebaseFirestoreKtxVersion" }
 androidx-room-compiler = { group = "androidx.room", name = "room-compiler", version.ref = "roomCompiler" }

@@ -19,4 +19,5 @@ sealed class NavScreens(val route: String) {
     data object SignUpPage : NavScreens("sign up page")
 
     data object AccountSetting : NavScreens("User account settings page")
+    data object ChangePassword : NavScreens("change_password")
 }

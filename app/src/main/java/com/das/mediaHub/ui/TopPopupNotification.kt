@@ -17,8 +17,6 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.Android
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.Icon
@@ -26,37 +24,41 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.zIndex
+import com.das.mediaHub.data.model.TopPopUp
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import kotlin.math.roundToInt
 
-@Composable
-fun TopPopupNotification(
-    message: String = "App is ready for update. Click here to update.",
-    visible: Boolean,
-    onDismiss: () -> Unit,
-    durationMillis: Long = 5000
-) {
-    val offsetY = remember { Animatable(0f) }
-    val coroutineScope = rememberCoroutineScope()
+object TopPopupNotification {
+    var showNotificationDialog by mutableStateOf<TopPopUp?>(null)
 
-    LaunchedEffect(visible) {
-        if (visible) {
-            offsetY.snapTo(0f)
+    @Composable
+    fun TopPopupNotification(
+        value: TopPopUp,
+        onDismiss: () -> Unit,
+        durationMillis: Long = 4000
+    ) {
+        val offsetY = remember { Animatable(-100f) } // start above screen
+        val coroutineScope = rememberCoroutineScope()
+
+        LaunchedEffect(Unit) {
+            offsetY.snapTo(-100f)
+            offsetY.animateTo(0f)
             delay(durationMillis)
             onDismiss()
         }
-    }
 
-    if (visible) {
 
         val dragModifier = Modifier.pointerInput(Unit) {
             detectVerticalDragGestures(
@@ -91,6 +93,7 @@ fun TopPopupNotification(
         ) {
             Box(
                 Modifier
+                    .padding(6.dp)
                     .fillMaxWidth()
                     .padding(horizontal = 16.dp, vertical = 16.dp)
                     .zIndex(1f),
@@ -104,10 +107,10 @@ fun TopPopupNotification(
                     shape = RoundedCornerShape(12.dp),
                     colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.background),
                     modifier = Modifier
-                        .offset { IntOffset(0, offsetY.value.roundToInt()) }
-                        .then(dragModifier)
                         .fillMaxWidth()
                         .height(70.dp)
+                        .offset { IntOffset(0, offsetY.value.roundToInt()) }
+                        .then(dragModifier)
                 ) {
                     Row(
                         verticalAlignment = Alignment.CenterVertically,
@@ -115,14 +118,14 @@ fun TopPopupNotification(
                             .padding(horizontal = 16.dp, vertical = 12.dp)
                     ) {
                         Icon(
-                            imageVector = Icons.Default.Android,
+                            imageVector = value.icon,
                             contentDescription = "Notification Icon",
                             tint = MaterialTheme.colorScheme.primary,
                             modifier = Modifier.size(24.dp)
                         )
                         Spacer(modifier = Modifier.width(12.dp))
                         Text(
-                            text = message,
+                            text = value.message,
                             style = MaterialTheme.typography.bodyMedium,
                             modifier = Modifier.weight(1f)
                         )

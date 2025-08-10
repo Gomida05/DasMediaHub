@@ -58,16 +58,10 @@ import com.das.mediaHub.data.model.MyBottomNavData
 import androidx.compose.material3.NavigationBarItem
 import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
-import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.remember
-import androidx.compose.runtime.setValue
 import androidx.compose.ui.draw.clip
 import androidx.core.content.FileProvider
 import androidx.navigation.NavController
-import androidx.navigation.NavType
 import androidx.navigation.compose.currentBackStackEntryAsState
-import androidx.navigation.navArgument
 import com.das.mediaHub.data.YouTuber.getAudioStreamUrl
 import com.das.mediaHub.data.YouTuber.getVideoStreamUrl
 import com.das.mediaHub.downloader.DownloaderClass
@@ -96,9 +90,10 @@ import com.das.mediaHub.NavScreens.*
 import com.das.mediaHub.PIP.shouldEnterPipMode
 import com.das.mediaHub.data.constants.DownloadConstants.DOWNLOAD_FINISHED
 import com.das.mediaHub.theme.CustomTheme
-import com.das.mediaHub.ui.TopPopupNotification
+import com.das.mediaHub.ui.TopPopupNotification.TopPopupNotification
+import com.das.mediaHub.ui.TopPopupNotification.showNotificationDialog
 import com.das.mediaHub.ui.account.AccountSettingsPage
-import com.das.mediaHub.ui.account.ReviewChangesPage
+import com.das.mediaHub.ui.account.ChangePasswordPage
 import com.das.mediaHub.ui.settings.FeedbackComposable
 import com.das.mediaHub.ui.welcome.WelcomePage
 import com.google.firebase.Firebase
@@ -146,8 +141,6 @@ class MainActivity : ComponentActivity() {
 
 
         val currentRoute = navController.currentBackStackEntryAsState().value?.destination?.route
-
-        var showNotificationDialog by remember { mutableStateOf<String?>(null) }
 
         LaunchedEffect(Unit) {
             intent?.let {
@@ -291,30 +284,19 @@ class MainActivity : ComponentActivity() {
                 }
 
                 composable(SignInPage.route) {
-                    LoginPage(navController)
+                    LoginPage(navController, auth)
                 }
                 composable(AccountSetting.route) {
                     if (auth.currentUser != null) {
                         AccountSettingsPage(navController, auth)
                     } else {
-                        LoginPage(navController)
+                        LoginPage(navController, auth)
                     }
                 }
-                composable(
-                    "review_changes/{name}/{email}/{password}",
-                    arguments = listOf(
-                        navArgument("name") { type = NavType.StringType },
-                        navArgument("email") { type = NavType.StringType },
-                        navArgument("password") { type = NavType.StringType }
-                    )
-                ) { backStackEntry ->
-                    ReviewChangesPage(
-                        navController,
-                        backStackEntry.arguments?.getString("name") ?: "",
-                        backStackEntry.arguments?.getString("email") ?: "",
-                        backStackEntry.arguments?.getString("password") ?: ""
-                    )
+                composable(ChangePassword.route) {
+                    ChangePasswordPage(navController, auth)
                 }
+
                 composable(WelcomePage.route) {
                     WelcomePage(navController)
                 }
@@ -330,7 +312,6 @@ class MainActivity : ComponentActivity() {
         showNotificationDialog?.let {
             TopPopupNotification(
                 it,
-                true,
                 onDismiss = {
                     showNotificationDialog = null
                 }

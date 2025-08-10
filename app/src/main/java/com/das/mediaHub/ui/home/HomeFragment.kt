@@ -49,15 +49,14 @@ fun HomePageComposable(navController: NavController) {
                 title = {
                     Text(
                         text = "DasMediaHub",
-                        style = MaterialTheme.typography.titleLarge,
+                        style = MaterialTheme.typography.titleLarge
+                            .copy(textAlign = TextAlign.Center),
                         modifier = Modifier.fillMaxWidth(),
-                        textAlign = TextAlign.Center
                     )
                 },
                 navigationIcon = {
                     IconButton(
                         onClick = {
-
                             navController.navigate(NavScreens.AccountSetting.route)
                         }
                     ) {
