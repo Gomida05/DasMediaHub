@@ -10,5 +10,5 @@ data class SignUpUserData(
      * This represent the user's uid id and not raw password
      */
     val password: String,
-    val photoUri: Uri = Uri.EMPTY
+    val photoUri: Uri? = Uri.EMPTY
 )

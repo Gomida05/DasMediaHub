@@ -1,21 +1,18 @@
 package com.das.mediaHub.data.model
 
+import kotlinx.serialization.SerialName
+import kotlinx.serialization.Serializable
+
+@Serializable
 data class AppUpdateInfo(
-    val versionCode: Int,
-    val versionName: String,
-    val appURL: String,
-    val whatsNew: String
+    @SerialName("latestVersionCode") val versionCode: Int,
+    @SerialName("latestVersionName") val versionName: String,
+    @SerialName("apkUrl") val appURL: String,
+    @SerialName("changelog") val whatsNew: String
 ) {
     companion object {
-        val EMPTY = AppUpdateInfo(
-            versionCode = -1,
-            versionName = "",
-            appURL = "",
-            whatsNew = ""
-        )
+        val EMPTY = AppUpdateInfo(-1, "", "", "")
     }
 
-    fun isEmpty(): Boolean {
-        return versionCode== -1 && appURL.isEmpty()
-    }
+    fun isEmpty() = versionCode == -1 && appURL.isEmpty()
 }

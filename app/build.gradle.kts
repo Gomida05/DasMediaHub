@@ -8,9 +8,9 @@ plugins {
     alias(libs.plugins.kotlin.compose)
     alias(libs.plugins.chaquo.python)
     alias(libs.plugins.google.gms)
+    alias(libs.plugins.kotlin.serialization)
 
-    //ksp
-    alias(libs.plugins.kotlin.devtools.ksp)
+    id("kotlin-parcelize")
 }
 
 private val loadLocalProperties = Properties().apply {
@@ -41,6 +41,7 @@ android {
         ndk {
             abiFilters.addAll(listOf("arm64-v8a", "x86_64"))
         }
+        buildConfigField("String", "MY_WEB_CLIENT_ID", "\"${loadLocalProperties["MY_WEB_CLIENT_ID"]}\"")
     }
 
 
@@ -78,6 +79,7 @@ android {
 
     buildFeatures {
         compose = true
+        buildConfig = true
     }
 
 
@@ -101,15 +103,8 @@ chaquopy {
     }
 }
 
-ksp {
-    arg("room.schemaLocation", "$projectDir/schemas")
-}
 
 dependencies {
-
-    //Room
-    implementation(libs.androidx.room.runtime)
-    ksp(libs.androidx.room.compiler)
 
     //Firebase dependencies
     implementation(platform(libs.firebase.bom))
@@ -136,20 +131,19 @@ dependencies {
 
     //preview
     implementation(libs.ui.tooling.preview)
+    implementation(libs.googleid)
     debugImplementation(libs.ui.tooling)
 
     //icons
     implementation(libs.material.icons.extended)
 
-
+    //browser
+    implementation(libs.browser)
 
     implementation(libs.lifecycle.viewmodel.compose)
 
     implementation(libs.core.ktx)
     implementation(libs.media)
-
-
-    implementation(libs.gson)
 
     implementation(libs.glide)
     implementation(libs.runtime.android)
@@ -170,6 +164,9 @@ dependencies {
     implementation(libs.media3.exoplayer)
     implementation(libs.media3.common)
     implementation(libs.media3.common.ktx)
+
+    //serialization JSON
+    implementation(libs.kotlinx.serialization.json)
 
 
     testImplementation(libs.junit)

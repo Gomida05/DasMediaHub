@@ -7,9 +7,7 @@ import android.app.NotificationManager
 import android.app.PendingIntent
 import android.content.Intent
 import android.graphics.BitmapFactory
-import android.media.AudioAttributes
-import android.media.AudioFocusRequest
-import android.media.AudioManager
+import android.graphics.drawable.Icon
 import android.os.Build
 import android.os.Bundle
 import android.os.IBinder
@@ -22,9 +20,12 @@ import androidx.core.app.NotificationCompat
 import androidx.core.net.toUri
 import androidx.media.app.NotificationCompat.MediaStyle
 import androidx.media.session.MediaButtonReceiver
+import androidx.media3.common.AudioAttributes
+import androidx.media3.common.C
+import androidx.media3.common.C.AUDIO_CONTENT_TYPE_MOVIE
 import com.das.mediaHub.MainActivity
 import com.das.mediaHub.R.drawable
-import com.das.mediaHub.data.databased.PathSaver.getAudioDownloadPath
+import com.das.mediaHub.data.local.PathSaver
 import com.das.mediaHub.data.constants.Action.ACTION_KILL
 import com.das.mediaHub.data.constants.Action.ACTION_START
 import com.das.mediaHub.data.constants.Playback.SET_SHUFFLE_MODE
@@ -48,21 +49,24 @@ class BackGroundPlayer: Service() {
     private val channelId = "MusicPlayerNotification"
     private var exoPlayer: ExoPlayer? = null
     lateinit var mediaSession: MediaSessionCompat
-    private lateinit var audioManager: AudioManager
+    private lateinit var notificationManager: NotificationManager
     private var mediaId: Int = 0
-    private var audioFocusRequest: AudioFocusRequest? = null
-
 
     override fun onCreate() {
         super.onCreate()
+        notificationManager = getSystemService(NotificationManager::class.java)
         createNotificationChannel()
-        audioManager = getSystemService(AudioManager::class.java)
-        exoPlayer = ExoPlayer.Builder(this).build()
 
+        exoPlayer = ExoPlayer.Builder(this)
+            .setAudioAttributes(
+                AudioAttributes.Builder()
+                    .setUsage(C.USAGE_MEDIA)
+                    .setContentType(AUDIO_CONTENT_TYPE_MOVIE)
+                    .build(), true
+            )
+            .setHandleAudioBecomingNoisy(true)
+            .build()
 
-    }
-
-    override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
         mediaSession = MediaSessionCompat(this, "BackGroundPlayer").apply {
             isActive = true
             @Suppress("DEPRECATION")
@@ -76,26 +80,14 @@ class BackGroundPlayer: Service() {
                 )
             )
         }
+    }
 
+    override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
+
+        val currentMediaItem = exoPlayer?.currentMediaItem
         if (intent != null) {
             mediaId = intent.getIntExtra("media_id", 0)
         }
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 
 
         mediaSession.setCallback(
@@ -105,32 +97,11 @@ class BackGroundPlayer: Service() {
 
             ACTION_START -> {
 
-                if (exoPlayer?.isPlaying!!) {
-                    if (exoPlayer?.currentMediaItemIndex != mediaId) {
-                        exoPlayer?.apply {
-                            pause()
-                            seekTo(mediaId, 0)
-                        }
-                        exoPlayer?.addListener(
-                            ExoPlayerListener(
-                                exoPlayer?.currentMediaItem?.mediaId!!
-                            )
-                        )
-                        mediaSession.setPlaybackState(
-                            setStateToPlaying(
-                                exoPlayer?.currentPosition!!,
-                                exoPlayer?.shuffleModeEnabled!!
-                            )
-                        )
-                        mediaSession.setMetadata(
-                            mediaMetaDetails(
-                                exoPlayer?.currentMediaItem?.mediaMetadata?.title.toString(),
-                                exoPlayer?.currentMediaItem?.mediaId!!,
-                                exoPlayer?.duration!!
-                            )
-                        )
+                if (exoPlayer?.isPlaying == true && exoPlayer?.currentMediaItemIndex != mediaId) {
+                    exoPlayer?.apply {
+                        seekTo(mediaId, 0)
                     }
-                } else if (exoPlayer?.currentMediaItem == null) {
+                } else if (currentMediaItem == null) {
                     val listMediaItems = mediaItems.ifEmpty { fetchDataFromFolder() }
                     exoPlayer?.apply {
                         setMediaItems(listMediaItems)
@@ -138,29 +109,28 @@ class BackGroundPlayer: Service() {
                         prepare()
                         play()
                     }
-
-
-                    exoPlayer?.addListener(
-                        ExoPlayerListener(
-                            exoPlayer?.currentMediaItem?.mediaId!!
-                        )
+                }
+                exoPlayer?.addListener(
+                    ExoPlayerListener(
+                        currentMediaItem?.mediaId ?: ""
                     )
-                    mediaSession.setPlaybackState(
+                )
+                mediaSession.apply {
+                    setPlaybackState(
                         setStateToPlaying(
                             exoPlayer?.currentPosition!!,
                             exoPlayer?.shuffleModeEnabled!!
                         )
                     )
-                    mediaSession.setMetadata(
+                    setMetadata(
                         mediaMetaDetails(
                             exoPlayer?.currentMediaItem?.mediaMetadata?.title.toString(),
                             exoPlayer?.currentMediaItem?.mediaId!!,
                             exoPlayer?.duration!!
                         )
                     )
-
-
                 }
+
             }
 
         }
@@ -196,8 +166,7 @@ class BackGroundPlayer: Service() {
                 setSound(null, null)
             }
 
-            val manager = getSystemService(NotificationManager::class.java)
-            manager?.createNotificationChannel(serviceChannel)
+            notificationManager.createNotificationChannel(serviceChannel)
         }
     }
 
@@ -238,93 +207,16 @@ class BackGroundPlayer: Service() {
         val notification= NotificationCompat.Builder(this, channelId)
             .setContentIntent(pendingIntent)
             .setSmallIcon(drawable.music_note_24dp)
+            .setLargeIcon(Icon.createWithResource(this, drawable.music_note_24dp))
             .setStyle(mediaStyle)
             .setDeleteIntent(deletePendingIntent)
             .build()
 
 
-        getSystemService(NotificationManager::class.java).notify(95, notification)
+        notificationManager.notify(95, notification)
         return notification
     }
 
-
-
-
-    private val audioFocusChangeListener = AudioManager.OnAudioFocusChangeListener { focusChange ->
-
-        when (focusChange) {
-            AudioManager.AUDIOFOCUS_GAIN -> {
-                // Audio focus gained, resume playback if it was paused
-                if (exoPlayer?.playWhenReady == false) {
-                    exoPlayer?.play()
-                }
-            }
-            AudioManager.AUDIOFOCUS_LOSS -> {
-                if (exoPlayer?.playWhenReady == true) {
-                    exoPlayer?.pause()
-                }
-            }
-            AudioManager.AUDIOFOCUS_LOSS_TRANSIENT -> {
-                // Temporarily lost audio focus (e.g., incoming call), pause playback
-                if (exoPlayer?.playWhenReady == true) {
-                    exoPlayer?.pause()
-                }
-            }
-            AudioManager.AUDIOFOCUS_LOSS_TRANSIENT_CAN_DUCK -> {
-                // Lost audio focus but can duck (e.g., lower volume)
-                if (exoPlayer?.playWhenReady == true) {
-                    exoPlayer?.volume = 0.1f // Lower volume when focus is lost transiently
-                }
-            }
-        }
-    }
-
-
-
-    @Suppress("DEPRECATION")
-    private fun releaseAudioFocusForAudioService() {
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
-            audioFocusRequest?.let {
-                audioManager.abandonAudioFocusRequest(it)
-                audioFocusRequest = null
-            }
-        } else {
-            audioManager.abandonAudioFocus(null)
-        }
-    }
-
-    @Suppress("DEPRECATION")
-    private fun requestAudioFocusForAudioService() {
-        audioManager = this.getSystemService(AUDIO_SERVICE) as AudioManager
-
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
-            val audioAttributes = AudioAttributes.Builder()
-                .setUsage(AudioAttributes.USAGE_MEDIA)
-                .setContentType(AudioAttributes.CONTENT_TYPE_MUSIC)
-                .build()
-
-            audioFocusRequest = AudioFocusRequest.Builder(AudioManager.AUDIOFOCUS_GAIN)
-
-                .setAudioAttributes(audioAttributes)
-                .setOnAudioFocusChangeListener(audioFocusChangeListener)
-                .build()
-
-            val focusRequestResult = audioManager.requestAudioFocus(audioFocusRequest!!)
-            if (focusRequestResult == AudioManager.AUDIOFOCUS_REQUEST_FAILED) {
-                Log.e("AudioService", "Failed to gain audio focus")
-            }
-        } else {
-            // For older versions, use the deprecated method
-            val result = audioManager.requestAudioFocus(
-                audioFocusChangeListener,
-                AudioManager.STREAM_MUSIC,
-                AudioManager.AUDIOFOCUS_GAIN
-            )
-            if (result == AudioManager.AUDIOFOCUS_REQUEST_FAILED) {
-                Log.e("AudioService", "Failed to gain audio focus")
-            }
-        }
-    }
 
     private fun mediaMetaDetails(
         title: String,
@@ -341,12 +233,11 @@ class BackGroundPlayer: Service() {
                 "unknown album"
             )
             .putLong(MediaMetadataCompat.METADATA_KEY_DURATION, duration)
-
-//            .putBitmap(
             .putBitmap(MediaMetadataCompat.METADATA_KEY_DISPLAY_ICON,
-                    BitmapFactory.decodeResource(resources, drawable.music_note_24dp)
+                    BitmapFactory.decodeResource(resources,  androidx.media3.session.R.drawable.media_session_service_notification_ic_music_note)
             )
-        return metadata.build()
+            .build()
+        return metadata
     }
 
 
@@ -364,8 +255,6 @@ class BackGroundPlayer: Service() {
 
         override fun onPlay() {
             super.onPlay()
-
-            requestAudioFocusForAudioService()
             exoPlayer?.play()
             mediaSession.setPlaybackState(
                 setStateToPlaying(
@@ -377,8 +266,6 @@ class BackGroundPlayer: Service() {
 
         override fun onPause() {
             super.onPause()
-            println("here is it from1")
-            releaseAudioFocusForAudioService()
             exoPlayer?.pause()
             mediaSession.setPlaybackState(
                 setStateToPaused(
@@ -447,10 +334,9 @@ class BackGroundPlayer: Service() {
                     it.release()
                 }
                 mediaSession.release()
-                exoPlayer?.release()
                 stopSelf()
-                val notificationManager = getSystemService(NotificationManager::class.java)
-                notificationManager?.cancel(1)
+
+                notificationManager.cancel(1)
 
             }
         }
@@ -506,36 +392,48 @@ class BackGroundPlayer: Service() {
     }
 
 
-    private fun fetchDataFromFolder(): MutableList<MediaItem> {
-
-        val fileLists = mutableListOf<MediaItem>()
-        val pathOfMusics = File(
-            getAudioDownloadPath(this)
+    private fun fetchDataFromFolder(): List<MediaItem> {
+        val pathSaver = PathSaver(this)
+        val result = mutableListOf<MediaItem>()
+        val musicDir = File(
+            pathSaver.getAudioDownloadPath()
         )
+        if (!musicDir.exists() || !musicDir.isDirectory) return emptyList()
+        try {
+            musicDir.listFiles()?.asSequence()
+                ?.filter { it.isFile && it.extension.lowercase() == "mp3" }
+                ?.forEach { file ->
+                    try {
+                        val lastModified = file.lastModified()
+                        val formattedDate = formatDateFromLong(lastModified)
+                        val fileSizeFormatted = formatFileSize(this, file.length())
 
-        if (pathOfMusics.exists()) {
-            pathOfMusics.listFiles()?.forEach { file ->
-                val lastModified = file.lastModified()
-                val formattedDate = formatDateFromLong(lastModified)
-                val fileSizeFormatted = formatFileSize(this, file.length())
-                val mediaMetaData = MediaMetadata.Builder()
-                    .setTitle(file.name.removeSuffix(".mp3"))
-                    .setDescription(formattedDate)
-                    .setMediaType(MediaMetadata.MEDIA_TYPE_MUSIC)
-                    .build()
-                fileLists.add(
-                    MediaItem.Builder()
-                        .setMediaId(file.toUri().toString())
-                        .setUri(file.toUri())
-                        .setMediaMetadata(mediaMetaData)
-                        .setTag(fileSizeFormatted)
-                        .build()
-                )
+                        val metaData = MediaMetadata.Builder()
+                            .setTitle(file.nameWithoutExtension)
+                            .setDescription(formattedDate)
+                            .setMediaType(MediaMetadata.MEDIA_TYPE_MUSIC)
+                            .build()
 
-
-            }
+                        result.add(
+                            MediaItem.Builder()
+                                .setMediaId(file.toUri().toString())
+                                .setUri(file.toUri())
+                                .setMediaMetadata(metaData)
+                                .setTag(fileSizeFormatted)
+                                .build()
+                        )
+                    } catch (e: Exception) {
+                        Log.e("fetchDataFromFolder", "Error reading file: ${file.name}", e)
+                        return result
+                    }
+                }
+        } catch (e: SecurityException) {
+            Log.e("fetchDataFromFolder", "Permission error accessing folder", e)
+        } catch (e: Exception) {
+            Log.e("fetchDataFromFolder", "Unexpected error", e)
         }
-        return fileLists
+
+        return result
 
     }
 
@@ -608,7 +506,6 @@ class BackGroundPlayer: Service() {
             super.onPlayWhenReadyChanged(playWhenReady, reason)
             if (playWhenReady) {
 
-                requestAudioFocusForAudioService()
                 mediaSession.setPlaybackState(
                     setStateToPlaying(
                         exoPlayer?.currentPosition!!,
@@ -624,7 +521,6 @@ class BackGroundPlayer: Service() {
                 )
 
             } else {
-                releaseAudioFocusForAudioService()
                 mediaSession.setPlaybackState(
                     setStateToPaused(
                         exoPlayer?.currentPosition!!,

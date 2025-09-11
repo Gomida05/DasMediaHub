@@ -40,7 +40,7 @@ import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import kotlin.math.roundToInt
 
-object TopPopupNotification {
+internal object TopPopupNotification {
     var showNotificationDialog by mutableStateOf<TopPopUp?>(null)
 
     @Composable

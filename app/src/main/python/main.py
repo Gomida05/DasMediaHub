@@ -41,7 +41,7 @@ def getPlayListUrls(youtube_url):
             for video in play_list.videos
         ]
 
-        return data
+        return json.dumps(data)
     except Exception as e:
         print(f"There is an error in searching that playlist {e}")
         return False
@@ -51,20 +51,8 @@ def Searcher(inputer: str):
     try:
         search = VideosSearch(inputer, limit=30)
         results = search.result()
-        data = [
-            {
-                'videoId': str(video['id']),
-                'title': str(video['title']),
-                'views': str(video["viewCount"]["short"]),
-                'dateOfVideo': str(video["publishedTime"]),
-                'duration': str(video['duration']),
-                'channelName': str(video['channel']['name']),
-                'channelThumbnailsUrl': str(video['channel']['thumbnails'][0]["url"])
-            }
-            for video in results['result']
-        ]
 
-        return json.dumps(data)
+        return json.dumps(results)
     except Exception as e:
         print(e)
         return False

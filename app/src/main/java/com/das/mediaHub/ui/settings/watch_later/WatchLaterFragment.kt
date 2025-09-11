@@ -60,7 +60,7 @@ import coil.request.ImageRequest
 import com.das.mediaHub.MainActivity
 import com.das.mediaHub.R
 import com.das.mediaHub.data.YouTuber.loadStreamUrl
-import com.das.mediaHub.data.databased.DatabaseFavorite
+import com.das.mediaHub.data.local.DatabaseFavorite
 import com.das.mediaHub.data.constants.Action.ACTION_START
 import com.das.mediaHub.data.constants.Intents.NEW_INTENT_FOR_VIEWER
 import com.das.mediaHub.data.model.SavedVideosListData
@@ -74,7 +74,7 @@ import com.das.mediaHub.data.constants.GlobalVideoList.bundles
 fun WatchLaterComposable(navController: NavController) {
 
 
-    val viewModel: WatchLaterViewModel = viewModel()
+    val viewModel = viewModel<WatchLaterViewModel>()
     val scrollBehavior = TopAppBarDefaults.enterAlwaysScrollBehavior()
     val searchResults by viewModel.searchResults
     val isLoading by viewModel.isLoading

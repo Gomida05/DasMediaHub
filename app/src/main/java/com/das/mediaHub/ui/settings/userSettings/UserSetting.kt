@@ -41,10 +41,10 @@ import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -53,29 +53,22 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
 import androidx.documentfile.provider.DocumentFile
 import androidx.navigation.NavController
-import com.das.mediaHub.data.databased.PathSaver.setAudioDownloadPath
-import com.das.mediaHub.data.databased.PathSaver.setMoviesDownloadPath
-import com.das.mediaHub.theme.ThemePreferences.loadDarkModeState
-import com.das.mediaHub.theme.ThemePreferences.saveDarkMode
-import com.das.mediaHub.theme.AppTheme
+import com.das.mediaHub.data.local.PathSaver
+import com.das.mediaHub.ui.theme.ThemePreferences.loadDarkModeState
+import com.das.mediaHub.ui.theme.ThemePreferences.saveDarkMode
+import com.das.mediaHub.ui.theme.AppTheme
+import kotlinx.coroutines.launch
 
 
 @Composable
 fun UserSettingComposable(navController: NavController) {
-    val context = LocalContext.current.applicationContext
+    val context = LocalContext.current
 
     val snackBarHostState = remember { SnackbarHostState() }
-
-    var showSnackBar by remember { mutableStateOf(false) }
+    val scope = rememberCoroutineScope()
 
     var showAlertDialog by remember { mutableStateOf(false) }
 
-    LaunchedEffect(showSnackBar) {
-        if (showSnackBar) {
-            snackBarHostState.showSnackbar("Currently under development")
-            showSnackBar = false
-        }
-    }
 
 
     Scaffold(
@@ -111,7 +104,9 @@ fun UserSettingComposable(navController: NavController) {
                     Spacer(modifier = Modifier.height(12.dp))
                     SettingCard(title = "Settings") {
                         SecuritySettings {
-                            showSnackBar = true
+                            scope.launch {
+                                snackBarHostState.showSnackbar("Currently under development")
+                            }
                         }
                     }
                     HorizontalDivider()
@@ -123,7 +118,7 @@ fun UserSettingComposable(navController: NavController) {
             }
         }
     }
-    FolderPickerDialog(context, showAlertDialog, onDismiss = { showAlertDialog = false })
+    FolderPickerDialog(showAlertDialog, onDismiss = { showAlertDialog = false })
 
 }
 
@@ -186,7 +181,7 @@ fun SettingCard(title: String, content: @Composable () -> Unit) {
 
 @Composable
 fun DarkModeToggleWithPrefs(context: Context) {
-    val themeState by loadDarkModeState(context)
+    val themeState by loadDarkModeState()
     var expanded by remember { mutableStateOf(false) }
 
     Row(
@@ -242,7 +237,9 @@ fun DarkModeToggleWithPrefs(context: Context) {
 
 
 @Composable
-fun FolderPickerDialog(context: Context, showDialog: Boolean, onDismiss: () -> Unit) {
+fun FolderPickerDialog(showDialog: Boolean, onDismiss: () -> Unit) {
+
+    val context = LocalContext.current.applicationContext
 
     val audioPickerLauncher = rememberLauncherForActivityResult(
         contract = ActivityResultContracts.OpenDocumentTree(),
@@ -313,17 +310,14 @@ fun AlertDialogPathChoose(
 
 private fun extractFolderPath(path: String): String {
     val prefix = "/tree/primary:"
-    return if (path.startsWith(prefix)) {
-        path.removePrefix(prefix)
-    } else {
-        path
-    }
+    return path.removePrefix(prefix)
 }
 
 
 
 private fun getFolderPathFromUri(mContext: Context, uri: Uri, type: String): String? {
-    val path = uri.path
+
+    val pathSaver = PathSaver(mContext)
 
     try {
 
@@ -332,14 +326,14 @@ private fun getFolderPathFromUri(mContext: Context, uri: Uri, type: String): Str
 
         if (documentFile != null && documentFile.isDirectory) {
 
-            val pather = "/storage/emulated/0/${extractFolderPath(path.toString())}"
+            val pather = "/storage/emulated/0/${extractFolderPath(uri.path.toString())}"
             if (type == "video") {
 
-                setMoviesDownloadPath(mContext, pather)
+                pathSaver.setMoviesDownloadPath(pather)
 
             } else if (type == "audio") {
 
-                setAudioDownloadPath(mContext, pather)
+                pathSaver.setAudioDownloadPath(pather)
 
             }
         } else {
@@ -350,5 +344,5 @@ private fun getFolderPathFromUri(mContext: Context, uri: Uri, type: String): Str
         println("Error: ${e.message}")
     }
 
-    return path
+    return uri.path
 }

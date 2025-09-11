@@ -5,16 +5,14 @@ import androidx.compose.runtime.State
 import androidx.compose.runtime.mutableStateOf
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
-import com.das.mediaHub.data.databased.room.database.SearchDatabase
-import com.das.mediaHub.data.databased.room.dataclass.SearchData
-import com.das.mediaHub.data.databased.room.repository.SearchRepo
+import com.das.mediaHub.data.local.SearchHistoryDB
+import com.das.mediaHub.data.model.SearchData
 import kotlinx.coroutines.launch
 
 class SearchPageViewMode(application: Application): AndroidViewModel(application) {
 
 
-    private val db = SearchDatabase.getInstance(application)
-    private val repository = SearchRepo(db.searchDataDao())
+    private val db = SearchHistoryDB(getApplication())
 
     private val _loading = mutableStateOf(false)
     val isLoading: State<Boolean> = _loading
@@ -31,7 +29,7 @@ class SearchPageViewMode(application: Application): AndroidViewModel(application
             try {
                 val id = System.currentTimeMillis().toString()
                 val searchData = SearchData(id = id, value = searchKey)
-                repository.insert(searchData)
+                db.insert(searchData)
             } catch (e: Exception) {
                 println("Something went wrong: ${e.message}")
             }
@@ -44,7 +42,7 @@ class SearchPageViewMode(application: Application): AndroidViewModel(application
 
         viewModelScope.launch {
             try {
-                val result = repository.getAllSearches()
+                val result = db.getAllSearches()
                 _searchHistory.value = result
             } catch (e: Exception) {
                 _error.value = "Something went wrong: ${e.localizedMessage}"
@@ -57,7 +55,7 @@ class SearchPageViewMode(application: Application): AndroidViewModel(application
     fun deleById(id: String) {
 
         viewModelScope.launch {
-            repository.delete(id)
+            db.delete(id)
             fetchDatabase()
         }
 

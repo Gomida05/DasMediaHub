@@ -59,7 +59,7 @@ import coil.request.CachePolicy
 import coil.request.ImageRequest
 import com.das.mediaHub.MainActivity
 import com.das.mediaHub.R
-import com.das.mediaHub.data.databased.WatchHistory
+import com.das.mediaHub.data.local.WatchHistory
 import com.das.mediaHub.data.model.SavedVideosListData
 import com.das.mediaHub.data.model.VideosListData
 import com.das.mediaHub.data.constants.Action.ACTION_START
@@ -75,7 +75,7 @@ import com.das.mediaHub.data.YouTuber.loadStreamUrl
 fun WatchedVideosComposable(navController: NavController) {
 
 
-    val viewModel: WatchedVideosViewModel = viewModel()
+    val viewModel = viewModel<WatchedVideosViewModel>()
     val scrollBehavior = TopAppBarDefaults.enterAlwaysScrollBehavior()
     val searchResults by viewModel.savedLists
     val isLoading by viewModel.isLoading
@@ -99,8 +99,7 @@ fun WatchedVideosComposable(navController: NavController) {
                     ) {
                         Icon(
                             imageVector = Icons.Default.VideoLibrary,
-                            "",
-
+                            contentDescription = "Saved videos",
                             modifier = Modifier
                                 .align(Alignment.CenterVertically)
                         )
@@ -453,14 +452,13 @@ private fun ShowAlertDialog(
     selectedData: SavedVideosListData,
     deleteTheItem: (selectedId: String) -> Unit,
     onDismissRequest: () ->Unit
-){
-
+) {
 
 
     var shouldLoad by remember { mutableStateOf(false) }
 
-    if (shouldLoad) {
-        LaunchedEffect(Unit) {
+    LaunchedEffect(shouldLoad) {
+        if (shouldLoad) {
             loadStreamUrl(
                 VideosListData(
                     selectedData.watchUrl, selectedData.title, selectedData.viewer,
@@ -486,7 +484,6 @@ private fun ShowAlertDialog(
             shouldLoad = false
         }
     }
-
     AlertDialog(
         onDismissRequest= onDismissRequest,
         title = {

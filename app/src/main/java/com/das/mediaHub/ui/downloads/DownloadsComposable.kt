@@ -80,13 +80,12 @@ import coil.request.ImageRequest
 import coil.request.videoFrameMillis
 import com.das.mediaHub.R
 import com.das.mediaHub.NavScreens
-import com.das.mediaHub.data.databased.PathSaver.getVideosDownloadPath
-import com.das.mediaHub.data.databased.PathSaver.getAudioDownloadPath
 import com.das.mediaHub.data.constants.Action.ACTION_START
 import com.das.mediaHub.data.constants.Playback.PLAY_HERE_VIDEO
 import com.das.mediaHub.services.BackGroundPlayer
 import com.das.mediaHub.data.YouTuber.mediaItems
 import com.das.mediaHub.data.constants.GlobalVideoList.bundles
+import com.das.mediaHub.data.local.PathSaver
 import java.io.File
 import kotlin.collections.set
 
@@ -106,11 +105,13 @@ fun DownloadsComposable(navController: NavController, tabIndex: Int = 0) {
 
     val mContext = LocalContext.current
 
+    val pathSaver = PathSaver(mContext)
 
 
 
-    val videoPath = getVideosDownloadPath(mContext)
-    val audioPath = getAudioDownloadPath(mContext)
+
+    val videoPath = pathSaver.getVideosDownloadPath()
+    val audioPath = pathSaver.getAudioDownloadPath()
     val tabs = PageEnum.entries
 
 

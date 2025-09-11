@@ -62,23 +62,37 @@ class SettingsViewModel: ViewModel() {
         val url = URL("https://github.com/Gomida05/Gomida05/raw/refs/heads/main/AppToDownload.json")
         val connection = url.openConnection() as HttpURLConnection
         connection.requestMethod = "GET"
-        val inputStream = connection.inputStream
-        val response = inputStream.bufferedReader().use { it.readText() }
 
-        val jsonObject = JSONObject(response)
-        val appsObject = jsonObject.getJSONObject("apps")
-        val ytDownloader = appsObject.optJSONObject("DasMediaHub")
-        val latestVersionCode = ytDownloader?.getInt("latestVersionCode")!!
-        val latestVersionName = ytDownloader.getString("latestVersionName")
-        val apkUrl = ytDownloader.getString("apkUrl")
-        val changelog = ytDownloader.getString("changelog")
+        try {
+            val response = connection.inputStream.bufferedReader().use { it.readText() }
+            val jsonObject = JSONObject(response)
+            val appsObject = jsonObject.optJSONObject("apps")
+                ?: return@withContext AppUpdateInfo.EMPTY
 
-        AppUpdateInfo(
-            latestVersionCode,
-            latestVersionName,
-            apkUrl,
-            changelog
-        )
+            val dasMediaHub = appsObject.optJSONObject("DasMediaHub")
+                ?: return@withContext AppUpdateInfo.EMPTY
+
+            val latestVersionCode = dasMediaHub.optInt("latestVersionCode", -1)
+            val latestVersionName = dasMediaHub.optString("latestVersionName", "")
+            val apkUrl = dasMediaHub.optString("apkUrl", "")
+            val changelog = dasMediaHub.optString("changelog", "")
+
+            if (latestVersionCode == -1 || apkUrl.isEmpty()) {
+                AppUpdateInfo.EMPTY
+            } else {
+                AppUpdateInfo(
+                    versionCode = latestVersionCode,
+                    versionName = latestVersionName,
+                    appURL = apkUrl,
+                    whatsNew = changelog
+                )
+            }
+        } catch (e: Exception) {
+            e.printStackTrace()
+            AppUpdateInfo.EMPTY
+        } finally {
+            connection.disconnect()
+        }
     }
 
 }

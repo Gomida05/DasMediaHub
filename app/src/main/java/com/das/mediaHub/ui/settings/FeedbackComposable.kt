@@ -133,6 +133,7 @@ fun FeedbackComposable() {
                     onValueChange = {
                         if (it.length <= charLimit) feedbackText = it
                     },
+                    enabled = !isSending,
                     label = { Text("Your message") },
                     placeholder = { Text("I’d like to suggest...") },
                     supportingText = {

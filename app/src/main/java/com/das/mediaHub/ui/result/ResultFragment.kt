@@ -59,13 +59,13 @@ import coil.request.ImageRequest
 import com.das.mediaHub.MainActivity
 import com.das.mediaHub.data.constants.Action.ACTION_START
 import com.das.mediaHub.data.constants.Intents.NEW_INTENT_FOR_VIEWER
-import com.das.mediaHub.data.model.SearchResultFromMain
 import com.das.mediaHub.services.AudioServiceFromUrl
 import com.das.mediaHub.data.model.VideosListData
 import com.das.mediaHub.data.constants.GlobalVideoList.bundles
 import com.das.mediaHub.NavScreens.VideoViewer
 import com.das.mediaHub.data.YouTuber.loadStreamUrl
-import com.das.mediaHub.ui.viewer.CustomMethods.SkeletonSuggestionLoadingLayout
+import com.das.mediaHub.data.model.searcher.Video
+import com.das.mediaHub.ui.players.videoPlayer.CustomMethods.SkeletonSuggestionLoadingLayout
 
 @Composable
 fun ResultViewerPage(navController: NavController, data: String) {
@@ -151,7 +151,7 @@ fun ResultViewerPage(navController: NavController, data: String) {
 
                     else -> {
                         items(
-                            searchResults, key = { it.videoId }
+                            searchResults, key = { it.id }
                         ) { searchItem ->
 
                             VideoItems(
@@ -172,16 +172,16 @@ fun ResultViewerPage(navController: NavController, data: String) {
 fun VideoItems(
     context: Context,
     navController: NavController,
-    searchItem: SearchResultFromMain
+    searchItem: Video
 ) {
-    val videoId = searchItem.videoId
+    val videoId = searchItem.id
     val title = searchItem.title
-    val viewsNumber = searchItem.views
-    val dateOfVideo = searchItem.dateOfVideo
-    val channelName = searchItem.channelName
-    val duration = searchItem.duration
-    val videoThumbnailURL = searchItem.videoId
-    val channelThumbnails = searchItem.channelThumbnailsUrl
+    val viewsNumber = searchItem.viewCount?.short ?: 0.toString()
+    val dateOfVideo = searchItem.publishedTime ?: ""
+    val channelName = searchItem.channel?.name ?: ""
+    val duration = searchItem.duration ?: 0.toString()
+    val videoThumbnailURL = searchItem.id
+    val channelThumbnails = searchItem.channel?.thumbnails?.get(0)?.url ?: ""
 
     var showDialog by remember { mutableStateOf(false) }
 

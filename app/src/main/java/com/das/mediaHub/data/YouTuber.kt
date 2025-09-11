@@ -8,13 +8,10 @@ import com.das.mediaHub.data.constants.Youtube
 import com.das.mediaHub.data.model.ItemsStreamUrlsForMediaItemData
 import com.das.mediaHub.data.model.PlayListDataClass
 import com.das.mediaHub.data.model.VideosListData
-import com.google.gson.Gson
-import com.google.gson.JsonSyntaxException
-import com.google.gson.reflect.TypeToken
-import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
+import kotlinx.serialization.SerializationException
+import kotlinx.serialization.json.Json
 import java.net.URL
 import java.text.SimpleDateFormat
 import java.time.ZonedDateTime
@@ -26,6 +23,11 @@ import java.util.regex.Pattern
 internal object YouTuber {
     val pythonInstant = Python.getInstance()
     var mediaItems = mutableListOf<MediaItem>()
+
+    private val jsonParser = Json {
+        ignoreUnknownKeys = true
+        coerceInputValues = true
+    }
 
     /**
      * Extracts the YouTube video ID from a given URL using a predefined regex.
@@ -117,7 +119,6 @@ internal object YouTuber {
     ) {
         try {
             val result = getListItemStreamUrl(data)
-
             onSuccess(result)
         } catch (e: Exception) {
             onFailure(e)
@@ -216,117 +217,98 @@ internal object YouTuber {
     }
 
 
-    fun getVideoStreamUrl(
+    suspend fun getVideoStreamUrl(
         videoId: String,
         onSuccess: (streamUrl: String) -> Unit,
         onFailure: (String) -> Unit
     ) {
         try {
             val python = pythonInstant.getModule("main")
-            CoroutineScope(Dispatchers.Main).launch {
-                val variable = python["get_video_url"]
+            val result = withContext(Dispatchers.IO) {
+                python["get_video_url"]?.call("https://www.youtube.com/watch?v=${videoId}").toString()
+            }
 
+            if (result != "False") {
 
-                val result = withContext(Dispatchers.IO) {
-                    variable?.call("https://www.youtube.com/watch?v=${videoId}").toString()
-                }
-                if (result != "False") {
+                onSuccess(result)
+            } else {
+                onFailure("Something went wrong with result: $result")
 
-                    onSuccess(result)
-                } else {
-                    onFailure("Something went wrong with result: $result")
-
-                }
             }
         } catch (e: Exception) {
             onFailure("Something went wrong with result: ${e.message}")
         }
     }
 
-    fun getAudioStreamUrl(
+    suspend fun getAudioStreamUrl(
         videoId: String,
         onSuccess: (streamUrl: String) -> Unit,
         onFailure: (String) -> Unit
     ) {
         try {
-            CoroutineScope(Dispatchers.IO).launch {
-                val python = pythonInstant.getModule("main")
-                val variable = python["get_audio_url"]
-
-
-                val result = variable?.call("https://www.youtube.com/watch?v=${videoId}").toString()
-
-                if (result != "False") {
-                    // Switch to the main thread for UI updates
-                    withContext(Dispatchers.Main) {
-                        onSuccess(result)
-                    }
-                } else {
-                    withContext(Dispatchers.Main) {
-                        onFailure("Something went wrong with result: $result")
-                    }
-                }
+            val python = pythonInstant.getModule("main")
+            val result = withContext(Dispatchers.IO) {
+                python["get_audio_url"]
+                    ?.call("https://www.youtube.com/watch?v=${videoId}").toString()
             }
+            if (result != "False") {
+                onSuccess(result)
+            } else {
+                onFailure("Something went wrong with result: $result")
+            }
+
         } catch (e: Exception) {
             onFailure("Something went wrong with result: ${e.message}")
         }
-
     }
 
-    fun getPlayListStreamUrl(
+    suspend fun getPlayListStreamUrl(
         playListUrl: String,
         onSuccess: (playListName: String, videoList: List<PlayListDataClass>) -> Unit,
         onFailure: (String) -> Unit
     ) {
         try {
-            CoroutineScope(Dispatchers.IO).launch {
+            val result = callPythonSearchSuggestion(playListUrl)
 
-
-                val result = callPythonSearchSuggestion(playListUrl)
-
-                if (!result.isNullOrEmpty()) {
-                    // Switch to the main thread for UI updates
-                    withContext(Dispatchers.Main) {
-                        onSuccess(
-                            "Testing PLayList Downloader",
-                            result
-                        )
-                    }
-                } else {
-                    withContext(Dispatchers.Main) {
-                        onFailure("Something went wrong with result: $result")
-                    }
-                }
+            if (!result.isNullOrEmpty()) {
+                // Switch to the main thread for UI updates
+                onSuccess(
+                    "Testing PLayList Downloader",
+                    result
+                )
+            } else {
+                onFailure("Something went wrong with result: $result")
             }
         } catch (e: Exception) {
             onFailure("Something went wrong with result: ${e.message}")
         }
+
     }
 
 
-    private fun callPythonSearchSuggestion(inputText: String): List<PlayListDataClass>? {
+    private suspend fun callPythonSearchSuggestion(inputText: String): List<PlayListDataClass>? {
         return try {
 
             val python = pythonInstant.getModule("main")
 
-            val getResultFromPython = python["getPlayListUrls"]?.call(inputText)
+            val getResultFromPython = withContext(Dispatchers.IO){
+                python["getPlayListUrls"]?.call(inputText)
+            }
 
             if (!getResultFromPython.isNullOrEmpty()) {
-                val videosListDataListType = object : TypeToken<List<PlayListDataClass>>() {}.type
 
-                val result: List<PlayListDataClass>? = Gson().fromJson(getResultFromPython.toString(), videosListDataListType)
-                Log.e("Python Playlist Result", "yes result is here")
+                val result = jsonParser.decodeFromString<List<PlayListDataClass>?>(getResultFromPython.toString())
                 result
             }
             else{
-                null
+                throw Exception("Couldn't get any result back")
             }
-        } catch (e: JsonSyntaxException) {
+        } catch (e: SerializationException) {
             Log.e("JSON Error", "Error parsing JSON: ${e.message}")
-            null
+            throw e
         } catch (e: Exception) {
             e.printStackTrace()
-            null
+            throw e
         }
     }
 

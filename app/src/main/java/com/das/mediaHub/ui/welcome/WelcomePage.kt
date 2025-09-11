@@ -7,19 +7,20 @@ import androidx.compose.animation.fadeOut
 import androidx.compose.animation.slideInHorizontally
 import androidx.compose.animation.slideInVertically
 import androidx.compose.animation.slideOutVertically
+import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Spacer
-import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.safeDrawing
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
-import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
@@ -27,35 +28,39 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.navigation.NavController
 import com.das.mediaHub.NavScreens
-
+import com.das.mediaHub.R
 
 @Composable
-fun WelcomePage(navController: NavController) {
+fun WelcomePage(
+    navController: NavController,
+    onSignInAnonymously: () -> Unit
+) {
     val visible = remember { mutableStateOf(false) }
 
-    // Trigger the animations when the page loads
+
+
     LaunchedEffect(Unit) {
         visible.value = true
     }
 
-    Scaffold(
-        contentWindowInsets = WindowInsets.safeDrawing
-    ) { paddingValues ->
+
         Box(
             modifier = Modifier
-                .padding(paddingValues)
+//                .padding(paddingValues)
                 .fillMaxSize()
                 .background(
                     Brush.verticalGradient(
-                        listOf(Color(0xFF6A11CB), Color(0xFF2575FC))
+                        colors = listOf(Color(0xFF6A11CB), Color(0xFF25FCBF))
                     )
                 ),
             contentAlignment = Alignment.Center
@@ -65,34 +70,52 @@ fun WelcomePage(navController: NavController) {
                 enter = fadeIn(animationSpec = tween(800)) + slideInVertically(initialOffsetY = { it }),
                 exit = fadeOut(animationSpec = tween(300)) + slideOutVertically(targetOffsetY = { it })
             ) {
-                Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                Column(
+                    horizontalAlignment = Alignment.CenterHorizontally,
+                    modifier = Modifier
+                        .padding(24.dp)
+                        .background(
+                            Color.White.copy(alpha = 0.15f),
+                            shape = RoundedCornerShape(24.dp)
+                        )
+                        .padding(24.dp)
+                        .verticalScroll(rememberScrollState())
+                ) {
+                    // App Title
                     Text(
-                        text = "✨ Welcome to MyCoolApp ✨",
-                        fontSize = 32.sp,
-                        textAlign = TextAlign.Center,
-                        color = Color.White,
+                        text = "✨ DasMediaHub ✨",
+                        fontSize = 30.sp,
                         fontWeight = FontWeight.Bold,
+                        textAlign = TextAlign.Center,
+                        color = Color.White
+                    )
+                    Image(
+                        painter = painterResource(R.mipmap.launcher_foreground),
+                        contentDescription = "App icon",
                         modifier = Modifier
-                            .fillMaxWidth()
+                            .clip(RoundedCornerShape(17))
+                            .background(Color.Green)
                     )
 
-                    Spacer(modifier = Modifier.height(40.dp))
+                    Spacer(modifier = Modifier.height(32.dp))
+
+                    // Buttons
+                    val buttonColors = ButtonDefaults.buttonColors(containerColor = Color.White)
+                    val buttonTextColor = Color(0xFF2575FC)
 
                     AnimatedVisibility(
                         visible = visible.value,
-                        enter = fadeIn(tween(1000)) + slideInHorizontally(initialOffsetX = { -it }),
+                        enter = fadeIn(tween(1000)) + slideInHorizontally(initialOffsetX = { -it })
                     ) {
                         Button(
-                            onClick = {
-                                visible.value = false
-                                navController.navigate(NavScreens.SignInPage.route)
-                            },
-                            colors = ButtonDefaults.buttonColors(containerColor = Color.White)
+                            onClick = { navController.navigate(NavScreens.SignInPage.route) },
+                            colors = buttonColors,
+                            shape = RoundedCornerShape(20),
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .height(50.dp)
                         ) {
-                            Text(
-                                "I Already Have an Account",
-                                color = Color(0xFF2575FC)
-                            )
+                            Text("I Already Have an Account", color = buttonTextColor)
                         }
                     }
 
@@ -100,16 +123,17 @@ fun WelcomePage(navController: NavController) {
 
                     AnimatedVisibility(
                         visible = visible.value,
-                        enter = fadeIn(tween(1200)) + slideInHorizontally(initialOffsetX = { it }),
+                        enter = fadeIn(tween(1200)) + slideInHorizontally(initialOffsetX = { it })
                     ) {
                         Button(
-                            onClick = {
-                                visible.value = false
-                                navController.navigate(NavScreens.SignUpPage.route)
-                            },
-                            colors = ButtonDefaults.buttonColors(containerColor = Color.White)
+                            onClick = { navController.navigate(NavScreens.SignUpPage.route) },
+                            colors = buttonColors,
+                            shape = RoundedCornerShape(20),
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .height(50.dp)
                         ) {
-                            Text("I’m New Here", color = Color(0xFF2575FC))
+                            Text("I’m New Here", color = buttonTextColor)
                         }
                     }
 
@@ -117,23 +141,21 @@ fun WelcomePage(navController: NavController) {
 
                     AnimatedVisibility(
                         visible = visible.value,
-                        enter = fadeIn(tween(1200)) + slideInHorizontally(initialOffsetX = { it }),
+                        enter = fadeIn(tween(1400)) + slideInHorizontally(initialOffsetX = { -it })
                     ) {
                         Button(
-                            onClick = {
-                                visible.value = false
-                                navController.run {
-                                    popBackStack()
-                                    navigate(NavScreens.Home.route)
-                                }
-                            },
-                            colors = ButtonDefaults.buttonColors(containerColor = Color.White)
+                            onClick = { onSignInAnonymously() },
+                            colors = buttonColors,
+                            shape = RoundedCornerShape(20),
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .height(50.dp)
                         ) {
-                            Text("Continue without sign in", color = Color(0xFF2575FC))
+                            Text("Continue without Sign In", color = buttonTextColor)
                         }
                     }
                 }
-            }
+
         }
     }
 }

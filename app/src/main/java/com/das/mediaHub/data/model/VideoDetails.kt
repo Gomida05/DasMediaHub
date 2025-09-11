@@ -1,5 +1,8 @@
 package com.das.mediaHub.data.model
 
+import kotlinx.serialization.Serializable
+
+@Serializable
 data class VideoDetails(
     val title: String,
     val description: String,

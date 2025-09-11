@@ -68,7 +68,7 @@ import com.das.mediaHub.data.YouTuber.extractPlaylistId
 import com.das.mediaHub.data.YouTuber.isValidYouTubePlaylistUrl
 import com.das.mediaHub.data.constants.GlobalVideoList.bundles
 import com.das.mediaHub.NavScreens.ResultViewerPage
-import com.das.mediaHub.data.databased.room.dataclass.SearchData
+import com.das.mediaHub.data.model.SearchData
 
 @Composable
 fun SearchPageCompose(

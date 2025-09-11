@@ -15,8 +15,7 @@ import android.provider.Settings
 import android.webkit.MimeTypeMap
 import androidx.core.app.NotificationCompat
 import androidx.media3.session.R
-import com.das.mediaHub.data.databased.PathSaver.getAudioDownloadPath
-import com.das.mediaHub.data.databased.PathSaver.getVideosDownloadPath
+import com.das.mediaHub.data.local.PathSaver
 import com.das.mediaHub.data.model.AppUpdateInfo
 import com.das.mediaHub.data.model.DownloadData
 import com.das.mediaHub.data.constants.Notifications.DOWNLOADER_NOTIFICATION_CHANNEL
@@ -31,6 +30,8 @@ class DownloaderClass(private val context: Context): Downloader {
     private val downloadManager = context.getSystemService(DownloadManager::class.java)
     private val notificationManager = context.getSystemService(NotificationManager::class.java)
 
+    private val pathSaver = PathSaver(context)
+
 
 
     override fun downloadVideo(url: String, title: String): Long {
@@ -38,7 +39,7 @@ class DownloaderClass(private val context: Context): Downloader {
         createNotificationChannel()
         val builder = createMediaNotificationForProgress(title)
 
-        val pathVideo = getVideosDownloadPath(context)
+        val pathVideo = pathSaver.getVideosDownloadPath()
         createSingleDirectory(pathVideo)
         val customFilePath = File("$pathVideo/$title.mp4")
 
@@ -72,7 +73,7 @@ class DownloaderClass(private val context: Context): Downloader {
         val builder = createMediaNotificationForProgress(title)
 
         val uri = url.toUri()
-        val pathVideo = getAudioDownloadPath(context)
+        val pathVideo = pathSaver.getAudioDownloadPath()
         createSingleDirectory(pathVideo)
         val customFilePath = File("$pathVideo/$title.mp3")
 
@@ -105,7 +106,7 @@ class DownloaderClass(private val context: Context): Downloader {
         val builder = createMediaNotificationForProgress(title)
 
         val uri = url.toUri()
-        val pathVideo = getVideosDownloadPath(context)
+        val pathVideo = pathSaver.getVideosDownloadPath()
         createSingleDirectory(pathVideo)
         val customFilePath = File("$pathVideo/$playListName/$title.mp4")
 
@@ -134,7 +135,7 @@ class DownloaderClass(private val context: Context): Downloader {
 
     override fun downloadPlayListMusic(urls: List<DownloadData>): Long {
         createNotificationChannel()
-        val pathVideo = getAudioDownloadPath(context)
+        val pathVideo = pathSaver.getAudioDownloadPath()
         createSingleDirectory(pathVideo)
         for (i in urls) {
             val builder = createMediaNotificationForProgress(i.title)

@@ -3,7 +3,7 @@ package com.das.mediaHub.mediacontroller
 import android.content.Context
 import android.support.v4.media.session.PlaybackStateCompat
 import com.das.mediaHub.R
-import com.das.mediaHub.data.databased.DatabaseFavorite
+import com.das.mediaHub.data.local.DatabaseFavorite
 import com.das.mediaHub.data.constants.Action.ACTION_ADD_TO_WATCH_LATER
 import com.das.mediaHub.data.constants.Action.ACTION_KILL
 import com.das.mediaHub.data.model.VideosListData

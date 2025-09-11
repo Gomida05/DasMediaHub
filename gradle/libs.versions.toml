@@ -1,40 +1,39 @@
 [versions]
-activityComposeVersion = "1.10.1"
-agp = "8.12.0"
+activityComposeVersion = "1.11.0"
+agp = "8.13.0"
 appcompatVersion = "1.7.1"
+browserVersion = "1.9.0"
 coilComposeVersion = "2.7.0"
 coilVideoVersion = "2.7.0"
-composeBomVersion = "2025.07.00"
+composeBomVersion = "2025.09.00"
 constraintlayoutVersion = "2.2.1"
-coreKtxVersion = "1.16.0"
+coreKtxVersion = "1.17.0"
 chaquo = "16.1.0"
-coreSplashscreenVersion = "1.0.1"
 firebaseAuthKtxVersion = "23.2.1"
-firebaseBomVersion = "34.1.0"
-glideVersion = "4.16.0"
-gsonVersion = "2.13.1"
+firebaseBomVersion = "34.2.0"
+glideVersion = "5.0.4"
 gms = "4.4.3"
 junitJunit = "4.13.2"
-kotlin = "2.2.0"
-kotlinStdlibVersion = "2.2.0"
-kspVertion = "2.2.0-2.0.2"
-lifecycleLivedataKtxVersion = "2.9.2"
-lifecycleViewmodelComposeVersion = "2.9.2"
-lifecycleViewmodelKtxVersion = "2.9.2"
+kotlin = "2.2.20"
+kotlinStdlibVersion = "2.2.10"
+kotlinxSerializationJsonVersion = "1.9.0"
+lifecycleLivedataKtxVersion = "2.9.3"
+lifecycleViewmodelComposeVersion = "2.9.3"
+lifecycleViewmodelKtxVersion = "2.9.3"
 media3Version = "1.8.0"
-mediaVersion = "1.7.0"
-navigationVersion = "2.9.3"
+mediaVersion = "1.7.1"
+navigationVersion = "2.9.4"
 playServicesAuthVersion = "21.4.0"
-runtimeAndroidVersion = "1.8.3"
-runtimeLivedataVersion = "1.8.3"
-uiViewbindingVersion = "1.8.3"
+runtimeAndroidVersion = "1.9.1"
+runtimeLivedataVersion = "1.9.1"
+uiViewbindingVersion = "1.9.1"
 firebaseFirestoreKtxVersion = "25.1.4"
-roomCompiler = "2.7.2"
+googleidVersion = "1.1.1"
 
 [libraries]
 activity-compose = { module = "androidx.activity:activity-compose", version.ref = "activityComposeVersion" }
-androidx-core-splashscreen = { module = "androidx.core:core-splashscreen", version.ref = "coreSplashscreenVersion" }
 appcompat = { module = "androidx.appcompat:appcompat", version.ref = "appcompatVersion" }
+browser = { module = "androidx.browser:browser", version.ref = "browserVersion" }
 coil-video = { module = "io.coil-kt:coil-video", version.ref = "coilVideoVersion" }
 coil-compose = { module = "io.coil-kt:coil-compose", version.ref = "coilComposeVersion" }
 compose-bom = { module = "androidx.compose:compose-bom", version.ref = "composeBomVersion" }
@@ -45,7 +44,6 @@ firebase-auth-ktx = { module = "com.google.firebase:firebase-auth-ktx", version.
 firebase-bom = { module = "com.google.firebase:firebase-bom", version.ref = "firebaseBomVersion" }
 firebase-storage = { module = "com.google.firebase:firebase-storage" }
 glide = { module = "com.github.bumptech.glide:glide", version.ref = "glideVersion" }
-gson = { module = "com.google.code.gson:gson", version.ref = "gsonVersion" }
 kotlin-stdlib = { module = "org.jetbrains.kotlin:kotlin-stdlib", version.ref = "kotlinStdlibVersion" }
 junit = { module = "junit:junit", version.ref = "junitJunit" }
 lifecycle-livedata-ktx = { module = "androidx.lifecycle:lifecycle-livedata-ktx", version.ref = "lifecycleLivedataKtxVersion" }
@@ -71,8 +69,8 @@ ui-tooling = { module = "androidx.compose.ui:ui-tooling" }
 ui-tooling-preview = { module = "androidx.compose.ui:ui-tooling-preview" }
 ui-viewbinding = { module = "androidx.compose.ui:ui-viewbinding", version.ref = "uiViewbindingVersion" }
 firebase-firestore-ktx = { group = "com.google.firebase", name = "firebase-firestore-ktx", version.ref = "firebaseFirestoreKtxVersion" }
-androidx-room-compiler = { group = "androidx.room", name = "room-compiler", version.ref = "roomCompiler" }
-androidx-room-runtime = { group = "androidx.room", name = "room-runtime", version.ref = "roomCompiler" }
+kotlinx-serialization-json = { module = "org.jetbrains.kotlinx:kotlinx-serialization-json", version.ref = "kotlinxSerializationJsonVersion" }
+googleid = { group = "com.google.android.libraries.identity.googleid", name = "googleid", version.ref = "googleidVersion" }
 
 
 [plugins]
@@ -81,7 +79,4 @@ kotlin-android = { id = "org.jetbrains.kotlin.android", version.ref = "kotlin" }
 kotlin-compose = { id = "org.jetbrains.kotlin.plugin.compose", version.ref = "kotlin" }
 chaquo-python = { id = "com.chaquo.python", version.ref = "chaquo" }
 google-gms = { id = "com.google.gms.google-services", version.ref = "gms" }
-
-#KSP
-kotlin-devtools-ksp = { id = "com.google.devtools.ksp", version.ref = "kspVertion"}
-
+kotlin-serialization = { id = "org.jetbrains.kotlin.plugin.serialization", version.ref = "kotlin" }

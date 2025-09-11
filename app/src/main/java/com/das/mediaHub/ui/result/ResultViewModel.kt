@@ -5,28 +5,33 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.das.mediaHub.data.YouTuber.pythonInstant
-import com.das.mediaHub.data.model.SearchResultFromMain
-import com.google.gson.Gson
-import com.google.gson.reflect.TypeToken
+import com.das.mediaHub.data.model.searcher.SearchResponse
+import com.das.mediaHub.data.model.searcher.Video
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
+import kotlinx.serialization.json.Json
 
 class ResultViewModel: ViewModel() {
 
-    private val _searchResults = mutableStateOf<List<SearchResultFromMain>>(emptyList())
-    val searchResults: State<List<SearchResultFromMain>> = _searchResults
+    private val jsonParser = Json {
+        ignoreUnknownKeys = true
+        coerceInputValues = true
+    }
+
+    private val _searchResults = mutableStateOf<List<Video>>(emptyList())
+    val searchResults: State<List<Video>> = _searchResults
     private val _isLoading = mutableStateOf(false)
     val isLoading: State<Boolean> = _isLoading
 
-    private val _isThereError = mutableStateOf<String?>(null)
+    private val _error = mutableStateOf<String?>(null)
 
-    val error = _isThereError
+    val error = _error
 
 
     fun fetchSuggestions(inputText: String) {
         _isLoading.value = true
-        _isThereError.value = null
+        _error.value = null
 
         viewModelScope.launch {
             try {
@@ -34,14 +39,14 @@ class ResultViewModel: ViewModel() {
                 _searchResults.value = result
 
             } catch (e: Exception) {
-                _isThereError.value = e.message
+                _error.value = e.message
             } finally {
                 _isLoading.value = false
             }
         }
     }
 
-    private suspend fun callPythonForSearchVideos(inputText: String): List<SearchResultFromMain> {
+    private suspend fun callPythonForSearchVideos(inputText: String): List<Video> {
         return try {
             val python = pythonInstant.getModule("main")
 
@@ -52,9 +57,8 @@ class ResultViewModel: ViewModel() {
             if (variable.isNullOrEmpty() || variable.toString() == "False"){
                 throw Exception(variable.toString())
             }else {
-                val videoListType = object : TypeToken<List<SearchResultFromMain>>() {}.type
-                val videoList: List<SearchResultFromMain> = Gson().fromJson(variable.toString(), videoListType)
-                videoList
+                val videoList = jsonParser.decodeFromString<SearchResponse>(variable.toString())
+                videoList.result
             }
         } catch (e: Exception) {
             e.printStackTrace()

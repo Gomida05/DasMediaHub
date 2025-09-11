@@ -1,0 +1,101 @@
+package com.das.mediaHub.ui.theme
+
+import androidx.compose.foundation.isSystemInDarkTheme
+import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.Shapes
+import androidx.compose.material3.Typography
+import androidx.compose.material3.darkColorScheme
+import androidx.compose.material3.lightColorScheme
+import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.text.TextStyle
+import androidx.compose.ui.text.font.FontFamily
+import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
+import com.das.mediaHub.ui.theme.ThemePreferences.loadDarkModeState
+
+@Composable
+fun CustomTheme(
+    content: @Composable () -> Unit
+) {
+    val themeState by loadDarkModeState()
+
+    val isDarkTheme = when (themeState) {
+        AppTheme.DARK -> true
+        AppTheme.LIGHT -> false
+        AppTheme.SYSTEM -> isSystemInDarkTheme()
+    }
+
+    val customLightColors = lightColorScheme(
+        primary = Color.Black,
+        onPrimary = Color.White,
+        primaryContainer = Color(0xFF376E6E),
+        secondary = Color(0xFFFF6F61),
+        onSecondary = Color.White,
+        background = Color(0xFFF9FAFB),
+        onBackground = Color(0xFF1C1C1C),
+//        surface = Color.Red,
+        onSurface = Color(0xFF333333)
+    )
+
+    val customDarkColors = darkColorScheme(
+        primary = Color.White,
+        onPrimary = Color.Black,
+        primaryContainer = Color(0xFF003366),
+        secondary = Color(0xFFFFA07A),
+        onSecondary = Color.Black,
+        background = Color(0xFF0E0E0E),
+        onBackground = Color.White,
+        surface = Color(0xFF1A1A1A),
+        onSurface = Color(0xFFE0E0E0),
+    )
+
+    val colors = if (isDarkTheme) customDarkColors else customLightColors
+
+    val lightPrimary = Color.Black
+
+    val whiteColor = Color(0xFFFFFFFF)
+
+    val customShapes = Shapes(
+        small = RoundedCornerShape(4.dp),
+        medium = RoundedCornerShape(6.dp),
+        large = RoundedCornerShape(8.dp)
+    )
+    val customFontFamily = FontFamily.Default
+
+    val customTypography = Typography(
+        headlineLarge = TextStyle(
+            fontFamily = customFontFamily,
+            color = if (isDarkTheme)
+                whiteColor else lightPrimary,
+            fontWeight = FontWeight.Bold,
+            fontSize = 40.sp
+        ),
+        headlineMedium = TextStyle(
+            fontFamily = customFontFamily,
+            color = if (isDarkTheme)
+                whiteColor else lightPrimary,
+            fontWeight = FontWeight.SemiBold,
+            fontSize = 26.sp
+        ),
+        headlineSmall = TextStyle(
+            fontFamily = customFontFamily,
+            color = if (isDarkTheme)
+                whiteColor else lightPrimary,
+            fontWeight = FontWeight.Normal,
+            fontSize = 19.sp
+        )
+        // Define other text styles like h3, body1, body2, etc.
+    )
+
+    MaterialTheme(
+
+        colorScheme = colors,
+        typography = customTypography,
+        shapes = customShapes,
+        content = content
+    )
+}

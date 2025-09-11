@@ -3,16 +3,12 @@ package com.das.mediaHub
 import android.Manifest.permission.POST_NOTIFICATIONS
 import android.Manifest.permission.READ_MEDIA_AUDIO
 import android.Manifest.permission.READ_MEDIA_VIDEO
-import android.app.NotificationChannel
-import android.app.NotificationChannelGroup
-import android.app.NotificationManager
 import android.app.PictureInPictureParams
 import android.content.Context
 import android.content.Intent
 import android.content.Intent.EXTRA_STREAM
 import android.content.Intent.EXTRA_TEXT
 import android.content.pm.PackageManager
-import android.media.AudioManager
 import android.net.Uri
 import android.os.Build.VERSION
 import android.os.Build.VERSION_CODES
@@ -24,22 +20,12 @@ import android.widget.Toast
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.Home
-import androidx.compose.material.icons.filled.Settings
-import androidx.compose.material.icons.filled.WatchLater
-import androidx.compose.material.icons.outlined.Home
-import androidx.compose.material.icons.outlined.Settings
-import androidx.compose.material.icons.outlined.WatchLater
-import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.Text
-import androidx.compose.material3.NavigationBar
-import androidx.compose.material3.NavigationBarDefaults
 import androidx.compose.material3.Scaffold
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
@@ -47,19 +33,20 @@ import androidx.core.app.ActivityCompat
 import androidx.core.app.NotificationCompat
 import androidx.core.app.NotificationManagerCompat
 import androidx.core.content.ContextCompat
-import androidx.media3.exoplayer.ExoPlayer
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
 import com.das.mediaHub.data.YouTuber.youtubeExtractor
 import com.das.mediaHub.data.YouTuber.isValidYoutubeURL
 import com.das.mediaHub.data.constants.Playback.PLAY_HERE_VIDEO
-import com.das.mediaHub.data.model.MyBottomNavData
-import androidx.compose.material3.NavigationBarItem
 import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
-import androidx.compose.ui.draw.clip
+import androidx.compose.runtime.remember
+import androidx.compose.ui.Alignment
+import androidx.compose.ui.unit.dp
+import androidx.compose.ui.zIndex
 import androidx.core.content.FileProvider
+import androidx.lifecycle.lifecycleScope
 import androidx.navigation.NavController
 import androidx.navigation.compose.currentBackStackEntryAsState
 import com.das.mediaHub.data.YouTuber.getAudioStreamUrl
@@ -80,24 +67,26 @@ import com.das.mediaHub.ui.search.SearchPageCompose
 import com.das.mediaHub.ui.settings.watch_later.WatchLaterComposable
 import com.das.mediaHub.ui.settings.SettingsComposable
 import com.das.mediaHub.ui.settings.userSettings.UserSettingComposable
-import com.das.mediaHub.ui.downloads.videoPlayerLocally.LocalVideoPlayer
-import com.das.mediaHub.ui.account.LoginPage
-import com.das.mediaHub.ui.account.signup.SignUpPage
+import com.das.mediaHub.ui.players.videoPlayerLocally.LocalVideoPlayer
+import com.das.mediaHub.ui.auth.LoginPage
+import com.das.mediaHub.ui.auth.signup.SignUpPage
 import com.das.mediaHub.data.constants.GlobalVideoList.bundles
-import com.das.mediaHub.ui.viewer.VideoPlayerScreen
+import com.das.mediaHub.ui.players.videoPlayer.OnlineVideoPlayer
 import com.das.mediaHub.ui.watchedVideos.WatchedVideosComposable
 import com.das.mediaHub.NavScreens.*
+import com.das.mediaHub.OnLaunchComponents.BottomNavItems
 import com.das.mediaHub.PIP.shouldEnterPipMode
 import com.das.mediaHub.data.constants.DownloadConstants.DOWNLOAD_FINISHED
-import com.das.mediaHub.theme.CustomTheme
+import com.das.mediaHub.ui.theme.CustomTheme
 import com.das.mediaHub.ui.TopPopupNotification.TopPopupNotification
 import com.das.mediaHub.ui.TopPopupNotification.showNotificationDialog
-import com.das.mediaHub.ui.account.AccountSettingsPage
-import com.das.mediaHub.ui.account.ChangePasswordPage
+import com.das.mediaHub.ui.auth.AccountSettingsPage
+import com.das.mediaHub.ui.auth.ChangePasswordPage
 import com.das.mediaHub.ui.settings.FeedbackComposable
 import com.das.mediaHub.ui.welcome.WelcomePage
 import com.google.firebase.Firebase
 import com.google.firebase.auth.auth
+import kotlinx.coroutines.launch
 import java.io.File
 
 
@@ -106,8 +95,9 @@ class MainActivity : ComponentActivity() {
     private val intentListeners = mutableSetOf<(Intent) -> Unit>()
 
     private var intentListener: ((Intent) -> Unit)? = null
+    private var auth = Firebase.auth
 
-    private val downloaderClass = DownloaderClass(this.applicationContext)
+
 
     override fun onCreate(savedInstanceState: Bundle?) {
         enableEdgeToEdge()
@@ -118,6 +108,7 @@ class MainActivity : ComponentActivity() {
             }
         }
     }
+
 
 
     override fun onNewIntent(intent: Intent) {
@@ -133,14 +124,12 @@ class MainActivity : ComponentActivity() {
         intentListeners.remove(listener)
     }
 
-    private val auth = Firebase.auth
 
 
     @Composable
     fun MainLauncherPageComposable() {
 
         val navController = rememberNavController()
-
 
         val currentRoute = navController.currentBackStackEntryAsState().value?.destination?.route
 
@@ -160,23 +149,9 @@ class MainActivity : ComponentActivity() {
             }
         }
 
-        val bottomNavigationItems = listOf(
-            MyBottomNavData(
-                title = Home.route,
-                selectedIcon = Icons.Filled.Home,
-                unselectedIcon = Icons.Outlined.Home
-            ),
-            MyBottomNavData(
-                title = RecentlyWatched.route,
-                selectedIcon = Icons.Filled.WatchLater,
-                unselectedIcon = Icons.Outlined.WatchLater
-            ),
-            MyBottomNavData(
-                title = Setting.route,
-                selectedIcon = Icons.Filled.Settings,
-                unselectedIcon = Icons.Outlined.Settings
-            )
-        )
+
+
+        val startDestination = remember { Home.route }
 
         Scaffold(
             contentWindowInsets = WindowInsets(0, 0, 0, 0),
@@ -184,49 +159,27 @@ class MainActivity : ComponentActivity() {
             modifier = Modifier
                 .fillMaxSize(),
             bottomBar = {
-                if (currentRoute in listOf(Home.route, RecentlyWatched.route, Setting.route)) {
-
-                    NavigationBar(
-                        windowInsets = NavigationBarDefaults.windowInsets,
-                        containerColor = MaterialTheme.colorScheme.background,
-                        contentColor = MaterialTheme.colorScheme.primary,
-                        modifier = Modifier
-                            .clip(RoundedCornerShape(12))
-                    ) {
-                        bottomNavigationItems.forEachIndexed { _, items ->
-                            NavigationBarItem(
-                                selected = currentRoute == items.title,
-                                onClick = {
-                                    if (currentRoute != items.title) {
-                                        navController.navigate(items.title) {
-                                            // Avoid multiple copies of the same destination
-                                            popUpTo(navController.graph.startDestinationId) {
-                                                saveState = true
-                                            }
-                                            launchSingleTop = true
-                                            restoreState = true
-                                        }
-                                    }
-                                },
-                                icon = {
-                                    Icon(
-                                        imageVector = if (currentRoute == items.title) items.selectedIcon else items.unselectedIcon,
-                                        contentDescription = items.title
-                                    )
-                                },
-                                label = {
-                                    Text(text = items.title)
-                                }
-                            )
-                        }
-
-                    }
-                }
+                BottomNavItems(currentRoute, navController)
             },
         ) { paddingValues ->
 
-//                val isUserLoggedIn by remember { mutableStateOf(FirebaseAuth.getInstance().currentUser != null) }
-            val startDestination = Home.route //if (isUserLoggedIn) Home.route else WelcomePage.route
+            showNotificationDialog?.let {
+                Box(
+                    Modifier
+                        .padding(6.dp)
+                        .fillMaxWidth()
+                        .zIndex(1f),
+                    contentAlignment = Alignment.TopCenter
+                ) {
+                    TopPopupNotification(
+                        it,
+                        onDismiss = {
+                            showNotificationDialog = null
+                        }
+                    )
+                }
+            }
+
             NavHost(
                 navController = navController,
                 startDestination = startDestination,
@@ -248,9 +201,9 @@ class MainActivity : ComponentActivity() {
 
                 composable(VideoViewer.route) {
                     val bundle = bundles.getBundle(NEW_INTENT_FOR_VIEWER)
-                    VideoPlayerScreen(
-                        navController,
-                        bundle
+                    OnlineVideoPlayer(
+                        navController = navController,
+                        data = bundle
                     )
                 }
                 composable(ResultViewerPage.route) {
@@ -300,26 +253,37 @@ class MainActivity : ComponentActivity() {
                 }
 
                 composable(WelcomePage.route) {
-                    WelcomePage(navController)
+                    WelcomePage(navController) {
+                        if (auth.currentUser == null) {
+                            auth.signInAnonymously()
+                                .addOnCompleteListener { task ->
+                                    if (task.isSuccessful) {
+                                        Log.d("Auth", "Signed in anonymously as ${auth.currentUser?.uid}")
+                                    } else {
+                                        Log.e("Auth", "Anonymous sign-in failed", task.exception)
+                                    }
+                                }
+                        }
+                        navController.run {
+                            popBackStack()
+                            navigate(Home.route)
+                        }
+                    }
                 }
-                composable(SignUpPage.route) {
+                composable(route = SignUpPage.route) {
                     SignUpPage(navController)
                 }
-                composable(FeedbackScreen.route) {
+                composable(route = FeedbackScreen.route) {
                     FeedbackComposable()
                 }
             }
         }
 
-        showNotificationDialog?.let {
-            TopPopupNotification(
-                it,
-                onDismiss = {
-                    showNotificationDialog = null
-                }
-            )
-        }
     }
+
+
+
+
 
     override fun onUserLeaveHint() {
         super.onUserLeaveHint()
@@ -327,9 +291,13 @@ class MainActivity : ComponentActivity() {
 
             if (VERSION.SDK_INT >= VERSION_CODES.O) {
                 val params = PictureInPictureParams.Builder()
-                    .setAspectRatio(Rational(16, 9))
-                    .build()
-                enterPictureInPictureMode(params)
+                params.apply {
+                    setAspectRatio(Rational(16, 9))
+                    if (VERSION.SDK_INT >= VERSION_CODES.S) {
+                        setSeamlessResizeEnabled(true)
+                    }
+                }
+                enterPictureInPictureMode(params.build())
             }
         }
     }
@@ -338,34 +306,33 @@ class MainActivity : ComponentActivity() {
     private fun listenNewIntent(
         navController: NavController,
         newIntent: Intent
-    ){
+    ) {
         if (newIntent.action == Intent.ACTION_SEND) {
             val intentType = newIntent.type.toString()
 
-            if (intentType.startsWith("text/")){
+            if (intentType.startsWith("text/")) {
                 newTextIntent(
-                    navController,
-                    newIntent.getStringExtra(EXTRA_TEXT).toString()
+                    navController = navController,
+                    sharedText = newIntent.getStringExtra(EXTRA_TEXT).toString()
                 )
-            }
-            else if (intentType.startsWith("video/"))
-            {
+            } else if (intentType.startsWith("video/")) {
                 newReceivedMediaTypeVideo(navController, newIntent)
-            }
-            else if (intentType.startsWith("audio/"))
-            {
+            } else if (intentType.startsWith("audio/")) {
                 newReceivedMediaTypeAudio(newIntent)
             }
         } else if (newIntent.action == Intent.ACTION_VIEW) {
             newMediaIntent(navController, newIntent.data)
         } else if (newIntent.action == DOWNLOAD_FINISHED) {
-            requestToInstall(newIntent)
+            val apkPath = newIntent.getStringExtra("apk_path") ?: return
+            val apkFile = File(apkPath)
+            requestToInstall(apkFile)
+        } else if (newIntent.action == Intent.ACTION_APPLICATION_PREFERENCES) {
+            navController.navigate(Setting.route)
         }
     }
 
-    private fun requestToInstall(intent: Intent) {
-        val apkPath = intent.getStringExtra("apk_path") ?: return
-        val apkFile = File(apkPath)
+
+    private fun requestToInstall(apkFile: File) {
 
         val apkUri = FileProvider.getUriForFile(
             this,
@@ -383,9 +350,11 @@ class MainActivity : ComponentActivity() {
 
     override fun onStart() {
         super.onStart()
-        createNotificationChannel()
-        createGroupNotificationChannel()
-        createMediaGroupNotificationChannel()
+        if (VERSION.SDK_INT >= VERSION_CODES.O) {
+            NotificationChannels(this).createAllNotificationChannels()
+        }
+
+
         if (VERSION.SDK_INT >= TIRAMISU) {
             if (ContextCompat.checkSelfPermission(this,
                     arrayOf(
@@ -420,7 +389,7 @@ class MainActivity : ComponentActivity() {
         } else myIntent.getParcelableExtra(EXTRA_STREAM)
 
         bundles.putString(PLAY_HERE_VIDEO, videoUri.toString())
-        navController.navigate("ExoPlayerUI")
+        navController.navigate(ExoPlayerUI.route)
 
     }
 
@@ -503,91 +472,66 @@ class MainActivity : ComponentActivity() {
     }
 
     fun startDownloadingVideo(videoId: String, title: String){
+        val downloaderClass = DownloaderClass(this)
 
-        getVideoStreamUrl(videoId,
-            onSuccess = {
-                downloaderClass.downloadVideo(it, title)
-            },
-            onFailure = {
-                showDialogs(it)
-            }
-        )
+        lifecycleScope.launch {
+            getVideoStreamUrl(videoId,
+                onSuccess = {
+                    downloaderClass.downloadVideo(it, title)
+                },
+                onFailure = {
+                    alertUserError(this@MainActivity, it)
+                    showDialogs(it)
+                }
+            )
+        }
     }
 
     fun startPlayListDownload(
         playListUrl: String
     ){
-        getPlayListStreamUrl(
-            playListUrl,
-            onSuccess = { playListName, videoList ->
-                for (i in videoList){
-                    downloaderClass.downloadVideosPlayList(
-                            i.url,
-                            playListName,
-                            i.title
-                        )
-                }
-            },
-            onFailure = {
-                Log.e("There is an error ", it)
+        val downloaderClass = DownloaderClass(this)
+
+        lifecycleScope.launch {
+            try {
+                getPlayListStreamUrl(
+                    playListUrl,
+                    onSuccess = { playListName, videoList ->
+                        for (i in videoList) {
+                            downloaderClass.downloadVideosPlayList(
+                                i.url,
+                                playListName,
+                                i.title
+                            )
+                        }
+                    },
+                    onFailure = {
+                        alertUserError(this@MainActivity, it)
+                        Log.e("There is an error ", it)
+                    }
+                )
+            } catch (e: Exception) {
+                Log.e("Playlist", "Error getting playlist", e)
             }
-        )
+        }
     }
 
 
     fun startDownloadingAudio(videoId: String, title: String){
+        val downloaderClass = DownloaderClass(this)
 
-        getAudioStreamUrl(videoId,
-            onSuccess = {
-                downloaderClass.downloadMusic(it, title)
-            },
-            onFailure = {
-                showDialogs(it)
-            }
-        )
-    }
-
-
-    private fun createMediaGroupNotificationChannel() {
-        if (VERSION.SDK_INT >= VERSION_CODES.O) {
-            val serviceChannel = NotificationChannelGroup(
-                "MNGC",
-                "MediaPlayer notifications"
+        lifecycleScope.launch {
+            getAudioStreamUrl(videoId,
+                onSuccess = {
+                    downloaderClass.downloadMusic(it, title)
+                },
+                onFailure = {
+                    showDialogs(it)
+                }
             )
-
-            val manager = getSystemService(NotificationManager::class.java)
-            manager?.createNotificationChannelGroup(serviceChannel)
         }
     }
-    
-    private fun createGroupNotificationChannel(){
-        if (VERSION.SDK_INT >= VERSION_CODES.O) {
-            val serviceChannel = NotificationChannelGroup(
-                "NGC",
-                "Download notification"
-            )
 
-
-            val downloadChannelId = "download_channel"
-            val downloadChannelName = "Downloads"
-            val downloadChannel = NotificationChannel(
-                downloadChannelId,
-                downloadChannelName,
-                NotificationManager.IMPORTANCE_LOW // Set the importance level based on your needs
-            )
-            downloadChannel.apply {
-                group = "NGC"
-                description = "This channel is for download notifications"
-            }
-
-
-            val manager = getSystemService(NotificationManager::class.java)
-            manager?.createNotificationChannelGroup(serviceChannel)
-            manager?.createNotificationChannel(downloadChannel)
-        }
-
-
-    }
 
 
     fun alertUserError(context: Context, message: String?) {
@@ -603,7 +547,7 @@ class MainActivity : ComponentActivity() {
             .setStyle(
                 NotificationCompat.BigTextStyle()
                     .setBigContentTitle("Found an error")
-                    .setSummaryText("Please contact the developer")
+                    .setSummaryText(message)
             )
             .setCategory(NotificationCompat.CATEGORY_SERVICE) // Heads-up notification
             .build()
@@ -622,21 +566,7 @@ class MainActivity : ComponentActivity() {
         notificationManager.notify(1001, notification)  // Unique ID for your notification
     }
 
-    private fun createNotificationChannel() {
-        // Only create the channel for Android 8.0 (API level 26) or higher
-        if (VERSION.SDK_INT >= VERSION_CODES.O) {
-            val channelId = "error_searching"
-            val channelName = "Error Notifications"
-            val importance = NotificationManager.IMPORTANCE_HIGH
-            val channel = NotificationChannel(channelId, channelName, importance).apply {
-                description = "Channel for error notifications"
-                enableVibration(true)
-            }
 
-            val notificationManager = applicationContext.getSystemService(NOTIFICATION_SERVICE) as NotificationManager
-            notificationManager.createNotificationChannel(channel)
-        }
-    }
 
 
 
@@ -647,45 +577,6 @@ class MainActivity : ComponentActivity() {
     }
 
 
-
-    fun requestAudioFocusFromMain(context: Context, exoPlayer: ExoPlayer?) {
-
-        val audioManager = context.getSystemService(AUDIO_SERVICE) as AudioManager
-
-        val audioFocusRequest = AudioManager.OnAudioFocusChangeListener { focusChange ->
-            when (focusChange) {
-                AudioManager.AUDIOFOCUS_LOSS -> {
-                    // Pause playback when losing focus
-                    exoPlayer?.playWhenReady = false
-                }
-                AudioManager.AUDIOFOCUS_GAIN -> {
-                    // Resume playback when gaining focus
-                    exoPlayer?.playWhenReady = true
-                    exoPlayer?.volume = 1.0f
-                }
-                AudioManager.AUDIOFOCUS_LOSS_TRANSIENT -> {
-                    // Pause temporarily (e.g., during a phone call)
-                    exoPlayer?.playWhenReady = false
-                }
-                AudioManager.AUDIOFOCUS_LOSS_TRANSIENT_CAN_DUCK -> {
-                    // Can continue playing but with lower volume
-                    exoPlayer?.volume = 0.1f  // Reduce volume
-                }
-            }
-        }
-
-
-        @Suppress("DEPRECATION")
-        val result = audioManager.requestAudioFocus(
-            audioFocusRequest,
-            AudioManager.STREAM_MUSIC,
-            AudioManager.AUDIOFOCUS_GAIN
-        )
-
-        if (result != AudioManager.AUDIOFOCUS_REQUEST_GRANTED) {
-
-        }
-    }
 
     override fun onPause() {
         super.onPause()

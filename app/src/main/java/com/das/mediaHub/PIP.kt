@@ -16,6 +16,7 @@ import androidx.core.util.Consumer
 
 internal object PIP {
 
+    internal var isMediaPlaying: Boolean = false
     internal var shouldEnterPipMode: Boolean = false
 
     internal fun Context.findActivity(): ComponentActivity {
