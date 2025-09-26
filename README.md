@@ -48,7 +48,7 @@ An extensible, multi-module Android media framework supporting background media 
 
 ### 📦 Prerequisites
 
-- Android Studio Electric Eel or later
+- Android Studio
 - Kotlin 1.9+
 - Gradle 8.0+
 - Python 3.9+
