@@ -3,7 +3,6 @@ package com.das.mediaHub.ui.result
 import android.content.Context
 import android.content.Intent
 import android.os.Bundle
-import android.widget.Toast
 import androidx.compose.foundation.background
 import androidx.compose.foundation.combinedClickable
 import androidx.compose.foundation.layout.Arrangement
@@ -18,16 +17,19 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.safeDrawing
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.MoreVert
 import androidx.compose.material.icons.outlined.Search
 import androidx.compose.material3.Button
 import androidx.compose.material3.Card
+import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.Scaffold
+import androidx.compose.material3.SnackbarHost
+import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.material3.TopAppBar
@@ -37,7 +39,7 @@ import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
-import androidx.compose.runtime.saveable.rememberSaveable
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -54,7 +56,6 @@ import androidx.compose.ui.window.Dialog
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavController
 import coil.compose.AsyncImage
-import coil.request.CachePolicy
 import coil.request.ImageRequest
 import com.das.mediaHub.MainActivity
 import com.das.mediaHub.data.constants.Action.ACTION_START
@@ -63,19 +64,26 @@ import com.das.mediaHub.services.AudioServiceFromUrl
 import com.das.mediaHub.data.model.VideosListData
 import com.das.mediaHub.data.constants.GlobalVideoList.bundles
 import com.das.mediaHub.NavScreens.VideoViewer
-import com.das.mediaHub.data.YouTuber.loadStreamUrl
+import com.das.mediaHub.python.YouTuber.loadStreamUrl
 import com.das.mediaHub.data.model.searcher.Video
 import com.das.mediaHub.ui.players.videoPlayer.CustomMethods.SkeletonSuggestionLoadingLayout
+import kotlinx.coroutines.launch
 
 @Composable
 fun ResultViewerPage(navController: NavController, data: String) {
 
     val viewModel = viewModel<ResultViewModel>()
-    val isLoading by rememberSaveable { viewModel.isLoading }
-    val searchResults by rememberSaveable { viewModel.searchResults }
-    val foundError by rememberSaveable { viewModel.error }
+    val isLoading by viewModel.isLoading
+    val searchResults by viewModel.searchResults
+    val foundError by viewModel.error
+
+    val isLoadingMore by viewModel.isLoadingMore
 
     val mContext = LocalContext.current
+
+    val snackbar = remember { SnackbarHostState() }
+
+    val scope = rememberCoroutineScope()
 
 
     LaunchedEffect(data) {
@@ -88,6 +96,9 @@ fun ResultViewerPage(navController: NavController, data: String) {
     val scrollBehavior = TopAppBarDefaults.enterAlwaysScrollBehavior()
 
     Scaffold(
+        snackbarHost = {
+            SnackbarHost(snackbar)
+        },
         modifier = Modifier
             .nestedScroll(scrollBehavior.nestedScrollConnection),
         topBar = {
@@ -135,7 +146,7 @@ fun ResultViewerPage(navController: NavController, data: String) {
                 when {
                     searchResults.isEmpty() -> item {
                         Text(
-                            text = "No results found for \n$data",
+                            text = foundError?: "No results found for \n$data",
                             fontSize = 18.sp,
                             textAlign = TextAlign.Center
                         )
@@ -143,24 +154,43 @@ fun ResultViewerPage(navController: NavController, data: String) {
 
                     !foundError.isNullOrEmpty() -> item {
                         Text(
-                            text = "Something went wrong, please check your internet and try again!",
+                            text = foundError?: "Something went wrong, please check your internet and try again!",
                             fontSize = 18.sp,
                             textAlign = TextAlign.Center
                         )
                     }
 
                     else -> {
-                        items(
-                            searchResults, key = { it.id }
-                        ) { searchItem ->
-
+                        itemsIndexed(items = searchResults) { index, item ->
+                            if (index >= searchResults.size - 3 && !isLoadingMore) {
+                                viewModel.loadMore()
+                            }
                             VideoItems(
                                 mContext,
                                 navController,
-                                searchItem
-                            )
+                                item
+                            ) {
+                                scope.launch {
+                                    snackbar.showSnackbar(it)
+                                }
+                            }
+                        }
+
+                        if (isLoadingMore) {
+                            item {
+                                Box(
+                                    modifier = Modifier
+                                        .fillMaxWidth()
+                                        .padding(16.dp),
+                                    contentAlignment = Alignment.Center
+                                ) {
+                                    CircularProgressIndicator()
+                                }
+                            }
                         }
                     }
+
+
                 }
             }
 
@@ -172,7 +202,8 @@ fun ResultViewerPage(navController: NavController, data: String) {
 fun VideoItems(
     context: Context,
     navController: NavController,
-    searchItem: Video
+    searchItem: Video,
+    snackBar: (String) -> Unit
 ) {
     val videoId = searchItem.id
     val title = searchItem.title
@@ -185,14 +216,7 @@ fun VideoItems(
 
     var showDialog by remember { mutableStateOf(false) }
 
-    val imageRequest = remember {
-        ImageRequest.Builder(context)
-            .data("https://img.youtube.com/vi/$videoThumbnailURL/0.jpg")
-            .crossfade(true)
-            .memoryCachePolicy(CachePolicy.ENABLED)
-            .diskCachePolicy(CachePolicy.ENABLED)
-            .build()
-    }
+
     Box(
         modifier = Modifier
             .clip(RoundedCornerShape(1))
@@ -227,7 +251,7 @@ fun VideoItems(
         ) {
             Box {
                 AsyncImage(
-                    model = imageRequest,
+                    model = "https://img.youtube.com/vi/${videoThumbnailURL}/0.jpg",
                     contentDescription = "Category Image",
                     modifier = Modifier
                         .fillMaxWidth()
@@ -255,14 +279,11 @@ fun VideoItems(
 
                 IconButton(
                     onClick = {
-                        Toast.makeText(context, channelName, Toast.LENGTH_SHORT).show()
+                        snackBar(channelName)
                     }
                 ) {
                     AsyncImage(
-                        model = ImageRequest.Builder(context)
-                            .data(channelThumbnails)
-                            .crossfade(true)
-                            .build(),
+                        model = channelThumbnails,
                         contentDescription = "Category Image",
                         modifier = Modifier
                             .fillMaxSize(),
@@ -355,8 +376,7 @@ private fun ShowAlertDialog(
 
     LaunchedEffect(shouldLoad) {
         if (shouldLoad) {
-            loadStreamUrl(
-                selectedItem,
+            selectedItem.loadStreamUrl(
                 onSuccess = {
                     val playIntent = Intent(mContext, AudioServiceFromUrl::class.java).apply {
                         action = ACTION_START

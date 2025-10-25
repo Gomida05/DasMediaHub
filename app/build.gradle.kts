@@ -94,6 +94,7 @@ chaquopy {
             install("pytubefix==8.12.1")
             install("youtube-search-python")
             install("httpx<0.28")
+            install("requests")
         }
     }
     sourceSets {
@@ -105,6 +106,7 @@ chaquopy {
 
 
 dependencies {
+
 
     //Firebase dependencies
     implementation(platform(libs.firebase.bom))

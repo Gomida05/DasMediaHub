@@ -9,8 +9,9 @@ import com.das.mediaHub.data.constants.Action.ACTION_KILL
 import com.das.mediaHub.data.model.VideosListData
 
 
-class MediaSessionPlaybackState(private val context: Context) {
+class MediaSessionPlaybackState(context: Context) {
 
+    private val db = DatabaseFavorite(context)
 
     fun setStateToPlaying(currentPosition: Long, videoId: String): PlaybackStateCompat {
         val playbackState = PlaybackStateCompat.Builder()
@@ -80,7 +81,6 @@ class MediaSessionPlaybackState(private val context: Context) {
     }
 
     fun addItOrRemoveFromDB(currentPosition: Long, videosListData: VideosListData): PlaybackStateCompat{
-        val db = DatabaseFavorite(context)
         val playbackSate = PlaybackStateCompat.Builder()
             .setState(PlaybackStateCompat.STATE_PLAYING, currentPosition,
                 1F
@@ -115,7 +115,7 @@ class MediaSessionPlaybackState(private val context: Context) {
 
 
     private fun isAddedToTheDataBased(videoId: String): Boolean{
-        return DatabaseFavorite(context).isWatchUrlExist(videoId)
+        return db.isWatchUrlExist(videoId)
     }
 
 }

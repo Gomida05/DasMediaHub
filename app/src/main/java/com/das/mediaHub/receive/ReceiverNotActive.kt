@@ -1,4 +1,4 @@
-package com.das.mediaHub
+package com.das.mediaHub.receive
 
 import android.app.DownloadManager
 import android.app.NotificationManager
@@ -7,10 +7,12 @@ import android.content.BroadcastReceiver
 import android.content.Context
 import android.content.Intent
 import androidx.core.app.NotificationCompat
+import androidx.core.content.getSystemService
 import androidx.core.net.toUri
-import com.das.mediaHub.data.constants.DownloadConstants.DOWNLOAD_FINISHED
-import com.das.mediaHub.data.constants.DownloadConstants.EXCEPTED_DOWNLOAD_ID
-import com.das.mediaHub.data.constants.Notifications.DOWNLOADER_NOTIFICATION_CHANNEL
+import com.das.mediaHub.MainActivity
+import com.das.mediaHub.R
+import com.das.mediaHub.data.constants.DownloadConstants
+import com.das.mediaHub.data.constants.Notifications
 import java.io.File
 
 class ReceiverNotActive: BroadcastReceiver() {
@@ -21,14 +23,14 @@ class ReceiverNotActive: BroadcastReceiver() {
             val downloadId = intent.getLongExtra(DownloadManager.EXTRA_DOWNLOAD_ID, -1L)
 
             val prefs = context.getSharedPreferences("app_prefs", Context.MODE_PRIVATE)
-            val expectedId = prefs.getLong(EXCEPTED_DOWNLOAD_ID, -1L)
+            val expectedId = prefs.getLong(DownloadConstants.EXCEPTED_DOWNLOAD_ID, -1L)
 
             if (downloadId == expectedId) {
 
-                val downloadManager = context.getSystemService(Context.DOWNLOAD_SERVICE) as DownloadManager
-                val notificationManager = context.getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
+                val downloadManager = context.getSystemService<DownloadManager>()
+                val notificationManager = context.getSystemService<NotificationManager>()
                 val query = DownloadManager.Query().setFilterById(downloadId)
-                val cursor = downloadManager.query(query)
+                val cursor = downloadManager?.query(query)
 
                 if (cursor != null && cursor.moveToFirst()) {
                     val uriString = cursor.getString(cursor.getColumnIndexOrThrow(DownloadManager.COLUMN_LOCAL_URI))
@@ -36,7 +38,7 @@ class ReceiverNotActive: BroadcastReceiver() {
                     val apkFile = File(fileUri.path.toString())
 
                     val customIntent = Intent(context, MainActivity::class.java).apply {
-                        action = DOWNLOAD_FINISHED
+                        action = DownloadConstants.DOWNLOAD_FINISHED
                         putExtra("apk_path", apkFile.absolutePath)
                     }
 
@@ -47,7 +49,9 @@ class ReceiverNotActive: BroadcastReceiver() {
                         PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
                     )
 
-                    val notification = NotificationCompat.Builder(context, DOWNLOADER_NOTIFICATION_CHANNEL)
+                    val notification = NotificationCompat.Builder(context,
+                        Notifications.DOWNLOADER_NOTIFICATION_CHANNEL
+                    )
                         .setSmallIcon(R.mipmap.launcher_foreground)
                         .setContentTitle("Download complete")
                         .setContentText("Click here to install new version")
@@ -56,7 +60,7 @@ class ReceiverNotActive: BroadcastReceiver() {
                         .setAutoCancel(true)
                         .build()
 
-                    notificationManager.notify(System.currentTimeMillis().toInt(), notification)
+                    notificationManager?.notify(System.currentTimeMillis().toInt(), notification)
                 }
 
                 cursor?.close()

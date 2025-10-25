@@ -5,33 +5,38 @@ import androidx.compose.runtime.State
 import androidx.compose.runtime.mutableStateOf
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import com.das.mediaHub.data.YouTuber.formatDate
-import com.das.mediaHub.data.YouTuber.formatViews
-import com.das.mediaHub.data.YouTuber.pythonInstant
+import com.das.mediaHub.python.YouTuber.formatDate
+import com.das.mediaHub.python.YouTuber.formatViews
+import com.das.mediaHub.python.YouTuber.pythonInstant
 import com.das.mediaHub.data.model.VideoDetails
-import com.das.mediaHub.data.model.searcher.SearchResponse
+import com.das.mediaHub.data.model.responds.RespondVideoDetails
+import com.das.mediaHub.data.model.responds.ResponseVideo
 import com.das.mediaHub.data.model.searcher.Video
-import kotlinx.coroutines.Dispatchers
+import com.das.mediaHub.python.Main.callMethod
+import com.das.mediaHub.python.Main.getStreamUrl
+import com.das.mediaHub.python.data.Names.GET_VIDEO_STREAM_URL
+import com.das.mediaHub.python.data.Names.SEARCHER
+import com.das.mediaHub.python.data.Names.SEARCH_WITH_URL
 import kotlinx.coroutines.launch
-import kotlinx.coroutines.withContext
 import kotlinx.serialization.SerializationException
-import kotlinx.serialization.json.Json
 
 
 class ViewerViewModel : ViewModel() {
 
-    private val jsonParser = Json { ignoreUnknownKeys = true }
     private val _videoUrl = mutableStateOf("")
     val videoUrl: State<String> = _videoUrl
 
     private val _error = mutableStateOf<String?>(null)
     val error: State<String?> = _error
 
-    private val _isLoading = mutableStateOf(true)
+    private val _isLoading = mutableStateOf(false)
     val isLoading: State<Boolean> = _isLoading
 
-    private var _isLoadings = mutableStateOf(true)
+    private val _isLoadings = mutableStateOf(false)
     val isLoadings: State<Boolean> = _isLoadings
+
+    private val _errorVideoDetails = mutableStateOf<String?>(null)
+    val errorVideoDetails: State<String?> = _errorVideoDetails
 
     private val _videoDetails = mutableStateOf<VideoDetails?>(null)
     val videoDetails: State<VideoDetails?> = _videoDetails
@@ -42,24 +47,25 @@ class ViewerViewModel : ViewModel() {
     private val _isSuggestionError = mutableStateOf<String?>(null)
     val isSuggestionError: State<String?> = _isSuggestionError
 
-    private val _isLoadingVideos = mutableStateOf(true)
+    private val _isLoadingVideos = mutableStateOf(false)
     val isLoadingVideos: State<Boolean> = _isLoadingVideos
 
+    fun loadDetails(videoId: String) {
+        loadVideoUrl(videoId)
+        fetchVideoDetails(videoId)
+    }
 
     fun loadVideoUrl(videoId: String) {
         _isLoading.value = true
         _error.value = null
         viewModelScope.launch {
             try {
-                val python = pythonInstant.getModule("main")
-                val result = withContext(Dispatchers.IO) {
-                    python["get_video_url"]?.call("https://www.youtube.com/watch?v=$videoId").toString()
-                }
+                val result = getStreamUrl(type = GET_VIDEO_STREAM_URL, id = videoId)
 
-                if (result != "False") {
-                    _videoUrl.value = result
+                if (result.success && !result.result.isNullOrEmpty()) {
+                    _videoUrl.value = result.result
                 } else {
-                    _error.value = "Something went wrong Please check your internet connection"
+                    _error.value = result.error
                 }
             } catch (e: Exception) {
                 _error.value = "Error: ${e.message}"
@@ -72,24 +78,27 @@ class ViewerViewModel : ViewModel() {
 
     fun fetchVideoDetails(videoId: String) {
         _isLoadings.value = true
-        _error.value = null
+        _errorVideoDetails.value = null
         viewModelScope.launch {
             try {
-                val videoDetails = callPythonSearchWithLink(videoId)
-
-                _videoDetails.value = videoDetails.copy(
-                    viewNumber = formatViews(videoDetails.viewNumber.toLong()),
-                    date = formatDate(videoDetails.date)
-                )
+                val result = callPythonSearchWithLink(videoId)
+                if (result.success && result.result != null) {
+                    val videoDetails = result.result
+                    _videoDetails.value = videoDetails.copy(
+                        viewNumber = videoDetails.viewNumber.formatViews(),
+                        date = videoDetails.date.formatDate()
+                    )
+                } else {
+                    _errorVideoDetails.value = result.error ?: "Something went wrong!"
+                }
             } catch (js: SerializationException) {
-                _error.value = "Error while fetching data: ${js.message}"
+                _errorVideoDetails.value = "Error while fetching data: ${js.message}"
                 Log.e("VideoPlayer", "Error fetching json video details: ${js.message}")
             } catch (e: Exception) {
-                _error.value = "Error loading video details: ${e.message}"
+                _errorVideoDetails.value = "Error loading video details: ${e.message}"
                 Log.e("VideoPlayer", "Error loading video details: ${e.message}")
             } finally {
                 _isLoadings.value = false
-
             }
         }
     }
@@ -101,7 +110,11 @@ class ViewerViewModel : ViewModel() {
         viewModelScope.launch {
             try {
                 val result = callPythonSearchSuggestion(title)
-                _searchResults.value = result
+                if (result.success && result.result != null) {
+                    _searchResults.value = result.result.result
+                } else {
+                    _isSuggestionError.value = result.error ?: "Something went wrong!"
+                }
             } catch (j: SerializationException) {
                 _isSuggestionError.value = "Error parsing data: ${j.localizedMessage}"
                 Log.e("VideoPlayer", "Error parsing data: ${j.localizedMessage}")
@@ -115,42 +128,18 @@ class ViewerViewModel : ViewModel() {
         }
     }
 
-    private suspend fun callPythonSearchWithLink(inputText: String): VideoDetails {
-        return try {
-            val python = pythonInstant.getModule("main")
+    private suspend fun callPythonSearchWithLink(inputText: String): RespondVideoDetails {
+        val result = pythonInstant.callMethod<RespondVideoDetails>(
+                name = SEARCH_WITH_URL,
+                args = "https://www.youtube.com/watch?v=$inputText"
+        )
 
-            val result = withContext(Dispatchers.IO) {
-                python["SearchWithLink"]?.call("https://www.youtube.com/watch?v=$inputText").toString()
-            }
-
-            // Use Json to parse the JSON string into a Map
-            jsonParser.decodeFromString<VideoDetails>(result)
-
-        } catch (e: SerializationException) {
-            Log.e("Serialization Error", "Error parsing JSON ${e.message}")
-            throw e
-        } catch (e: Exception) {
-            e.printStackTrace()
-            throw e
-        }
+        return result
     }
 
 
-    private suspend fun callPythonSearchSuggestion(inputText: String): List<Video> {
-
-        return try {
-            val python = pythonInstant.getModule("main")
-            val getResultFromPython = withContext(Dispatchers.IO) {
-                python["Searcher"]?.call(inputText).toString()
-            }
-            val result = jsonParser.decodeFromString<SearchResponse>(getResultFromPython)
-            result.result
-        } catch (e: SerializationException) {
-            Log.e("Serialization Error", "Error parsing JSON ${e.message}")
-            throw e
-        } catch (e: Exception) {
-            e.printStackTrace()
-            throw e
-        }
+    private suspend fun callPythonSearchSuggestion(inputText: String): ResponseVideo {
+        return pythonInstant.callMethod<ResponseVideo>(SEARCHER, inputText)
     }
+
 }

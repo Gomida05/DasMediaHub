@@ -68,7 +68,7 @@ import com.das.mediaHub.services.AudioServiceFromUrl
 import com.das.mediaHub.data.constants.GlobalVideoList.bundles
 import com.das.mediaHub.NavScreens.VideoViewer
 import com.das.mediaHub.NavScreens.Saved
-import com.das.mediaHub.data.YouTuber.loadStreamUrl
+import com.das.mediaHub.python.YouTuber.loadStreamUrl
 
 
 @Composable
@@ -457,13 +457,12 @@ private fun ShowAlertDialog(
 
     var shouldLoad by remember { mutableStateOf(false) }
 
-    LaunchedEffect(shouldLoad) {
-        if (shouldLoad) {
-            loadStreamUrl(
-                VideosListData(
-                    selectedData.watchUrl, selectedData.title, selectedData.viewer,
-                    selectedData.dateTime, selectedData.duration, selectedData.channelName, ""
-                ),
+    if (shouldLoad) {
+        LaunchedEffect(Unit) {
+            VideosListData(
+                selectedData.watchUrl, selectedData.title, selectedData.viewer,
+                selectedData.dateTime, selectedData.duration, selectedData.channelName, ""
+            ).loadStreamUrl(
                 onSuccess = {
                     val playIntent = Intent(context, AudioServiceFromUrl::class.java).apply {
                         action = ACTION_START

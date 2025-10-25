@@ -65,8 +65,7 @@ import com.google.firebase.auth.auth
 
 
 @Composable
-fun SettingsComposable(
-    navController: NavController,
+fun NavController.SettingsComposable(
     showPopMessage: (TopPopUp)-> Unit
 ) {
 
@@ -135,7 +134,7 @@ fun SettingsComposable(
                     UserHeader(
                         user
                     ) {
-                        navController.navigate(NavScreens.AccountSetting.route)
+                        navigate(NavScreens.AccountSetting.route)
                     }
                 }
 
@@ -147,7 +146,7 @@ fun SettingsComposable(
                 SettingsItem(
                     icon = Icons.Default.Save,
                     text = "Saved Videos",
-                    onClick = { navController.navigate("saved") }
+                    onClick = { navigate("saved") }
                 )
             }
 
@@ -155,7 +154,7 @@ fun SettingsComposable(
                 SettingsItem(
                     icon = Icons.Default.ColorLens,
                     text = "Appearance",
-                    onClick = { navController.navigate("user Setting") }
+                    onClick = { navigate("user Setting") }
                 )
             }
 
@@ -173,7 +172,7 @@ fun SettingsComposable(
                 SettingsItem(
                     icon = Icons.Default.Feedback,
                     text = "Send Feedback",
-                    onClick = { navController.navigate(NavScreens.FeedbackScreen.route) }
+                    onClick = { navigate(NavScreens.FeedbackScreen.route) }
                 )
             }
 
@@ -182,7 +181,7 @@ fun SettingsComposable(
                     icon = Icons.Default.Info,
                     text = "About Us",
                     onClick = {
-                        openCustomTab(context, url)
+                        context.openCustomTab(url)
                     }
                 )
             }

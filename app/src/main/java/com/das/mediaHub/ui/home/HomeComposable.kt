@@ -9,41 +9,60 @@ import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.safeDrawing
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.AccountCircle
 import androidx.compose.material.icons.filled.Download
-import androidx.compose.material.icons.filled.Search
-import androidx.compose.material3.Button
-import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
+import androidx.compose.material3.SnackbarHost
+import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.navigation.NavController
+import androidx.navigation.compose.rememberNavController
 import com.das.mediaHub.NavScreens
 import com.das.mediaHub.NavScreens.Searcher
 import com.das.mediaHub.NavScreens.Downloads
+import com.das.mediaHub.data.icons.Instagram
+import com.das.mediaHub.data.icons.TikTok
+import com.das.mediaHub.data.icons.YouTube
+import com.das.mediaHub.ui.theme.CustomTheme
+import kotlinx.coroutines.launch
 
+@Preview
+@Composable
+fun OPreview() {
+    CustomTheme {
+        rememberNavController().HomePageComposable()
+    }
+}
 
 @Composable
-fun HomePageComposable(navController: NavController) {
+fun NavController.HomePageComposable() {
+
+    val scope = rememberCoroutineScope()
+    val snackBar = remember { SnackbarHostState() }
 
     Scaffold(
+        snackbarHost = {
+            SnackbarHost(snackBar)
+        },
         topBar = {
             TopAppBar(
                 title = {
@@ -57,30 +76,30 @@ fun HomePageComposable(navController: NavController) {
                 navigationIcon = {
                     IconButton(
                         onClick = {
-                            navController.navigate(NavScreens.AccountSetting.route)
+                            navigate(NavScreens.AccountSetting.route)
                         }
                     ) {
                         Icon(
                             imageVector = Icons.Default.AccountCircle,
-                            contentDescription = "Profile"
+                            contentDescription = "User account"
                         )
                     }
                 },
                 actions = {
                     IconButton(
                         onClick = {
-                            navController.navigate(Downloads.route)
+                            navigate(Downloads.route)
                         }
                     ) {
                         Icon(
                             imageVector = Icons.Default.Download,
-                            contentDescription = "Downloads"
+                            contentDescription = "Downloaded medias"
                         )
                     }
                 }
             )
         },
-        contentWindowInsets = WindowInsets.safeDrawing,
+        contentWindowInsets = WindowInsets(0, 0,0,0),
         modifier = Modifier.fillMaxSize()
     ) { padding ->
         Box(
@@ -91,9 +110,9 @@ fun HomePageComposable(navController: NavController) {
         ){
             Column(
                 modifier = Modifier
-                    .fillMaxSize()
                     .padding(horizontal = 24.dp)
                     .padding(bottom = 20.dp)
+                    .fillMaxSize()
                     .align(Alignment.TopCenter),
                 horizontalAlignment = Alignment.CenterHorizontally,
                 verticalArrangement = Arrangement.Center
@@ -119,15 +138,29 @@ fun HomePageComposable(navController: NavController) {
                     verticalAlignment = Alignment.CenterVertically,
                     modifier = Modifier.padding(bottom = 32.dp)
                 ) {
-//                    PlatformIcon(Icons.Default.VideoLibrary, "YouTube")
-//                    PlatformIcon(Icons.Default.Movie, "TikTok")
-//                    PlatformIcon(Icons.Default.SmartDisplay, "Instagram")
+                    PlatformIcon(icon = TikTok, "TikTok") {
+                        scope.launch {
+                            snackBar.showSnackbar(
+                                message = "Coming soon"
+                            )
+                        }
+                    }
+                    PlatformIcon(icon = YouTube, "YouTube") {
+                        navigate(Searcher.route)
+                    }
+                    PlatformIcon(icon = Instagram, "Instagram") {
+                        scope.launch {
+                            snackBar.showSnackbar(
+                                message = "Coming soon"
+                            )
+                        }
+                    }
                 }
 
-                // Search / Paste URL button
-                Button (
+/*                // Search / Paste URL button
+                FilledTonalButton (
                     onClick = {
-                        navController.navigate(Searcher.route)
+                        navigate(Searcher.route)
                     },
                     shape = RoundedCornerShape(30.dp),
                     modifier = Modifier
@@ -146,13 +179,14 @@ fun HomePageComposable(navController: NavController) {
                         "Search or Paste URL"
                     )
                 }
+*/
             }
         }
     }
 }
 
 @Composable
-fun PlatformIcon(icon: ImageVector, label: String) {
+fun PlatformIcon(icon: ImageVector, label: String, onClick: ()-> Unit) {
     Column(
         horizontalAlignment = Alignment.CenterHorizontally,
         verticalArrangement = Arrangement.Center,
@@ -160,7 +194,7 @@ fun PlatformIcon(icon: ImageVector, label: String) {
             .size(72.dp)
             .clip(RoundedCornerShape(12.dp))
             .background(MaterialTheme.colorScheme.surfaceVariant)
-            .clickable { /* Handle platform shortcut */ }
+            .clickable { onClick() }
             .padding(8.dp)
     ) {
         Icon(

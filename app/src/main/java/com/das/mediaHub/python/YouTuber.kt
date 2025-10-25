@@ -1,17 +1,19 @@
-package com.das.mediaHub.data
+package com.das.mediaHub.python
 
 import android.os.Build
 import android.util.Log
 import androidx.media3.common.MediaItem
 import com.chaquo.python.Python
-import com.das.mediaHub.data.constants.Youtube
+import com.das.mediaHub.data.constants.YouTubeRegexes
 import com.das.mediaHub.data.model.ItemsStreamUrlsForMediaItemData
 import com.das.mediaHub.data.model.PlayListDataClass
 import com.das.mediaHub.data.model.VideosListData
+import com.das.mediaHub.python.Main.decodeStringToJson
+import com.das.mediaHub.python.data.Names.GET_AUDIO_STREAM_URL
+import com.das.mediaHub.python.data.Names.GET_VIDEO_STREAM_URL
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import kotlinx.serialization.SerializationException
-import kotlinx.serialization.json.Json
 import java.net.URL
 import java.text.SimpleDateFormat
 import java.time.ZonedDateTime
@@ -24,32 +26,27 @@ internal object YouTuber {
     val pythonInstant = Python.getInstance()
     var mediaItems = mutableListOf<MediaItem>()
 
-    private val jsonParser = Json {
-        ignoreUnknownKeys = true
-        coerceInputValues = true
-    }
-
     /**
      * Extracts the YouTube video ID from a given URL using a predefined regex.
      *
      * @param url Full YouTube URL (e.g., "https://www.youtube.com/watch?v=dQw4w9WgXcQ")
      * @return Video ID if found, or null if extraction fails.
      */
-    fun youtubeExtractor(url: String): String? {
+    fun String.youtubeExtractor(): String? {
 
-        val pattern = Regex(Youtube.YOUTUBE_REGEX)
-        val match = pattern.find((url))
+        val pattern = Regex(YouTubeRegexes.YOUTUBE_REGEX)
+        val match = pattern.find((this))
         return match?.groups?.get(1)?.value
     }
 
     /**
      * Returns data format like this dd/MMM/yyyy ENGLISH
      */
-    fun formatDate(dateStr: String): String {
+    fun String.formatDate(): String {
         return try {
             if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
                 val inputFormatter = DateTimeFormatter.ISO_OFFSET_DATE_TIME
-                val zonedDateTime = ZonedDateTime.parse(dateStr, inputFormatter)
+                val zonedDateTime = ZonedDateTime.parse(this, inputFormatter)
                 val outputFormatter = DateTimeFormatter.ofPattern("dd MMM yyyy", Locale.ENGLISH)
 
                 zonedDateTime.format(outputFormatter)
@@ -58,11 +55,11 @@ internal object YouTuber {
                     SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ssX", Locale.ENGLISH)
                 val outputFormat = SimpleDateFormat("dd MMM yyyy", Locale.ENGLISH)
 
-                outputFormat.format(inputFormat.parse(dateStr) ?: return dateStr)
+                outputFormat.format(inputFormat.parse(this) ?: return this)
             }
         } catch (e: Exception) {
             println("Found an error right here: ${e.message}")
-            dateStr
+            this
         }
     }
 
@@ -73,22 +70,20 @@ internal object YouTuber {
      * - Standard YouTube URLs (youtube.com/watch?v=...)
      * - Shortened URLs (youtu.be/VIDEO_ID)
      *
-     * @param youTubeUrl URL to validate
      * @return true if the URL is a valid YouTube video link, false otherwise.
      */
-    fun isValidYoutubeURL(youTubeUrl: String): Boolean {
+    fun String.isValidYoutubeURL(): Boolean {
         try {
-            val trimmedUrl = youTubeUrl.trim()
-                .removeSuffix("&feature=shared")
+            val trimmedUrl = trim().removeSuffix("&feature=shared")
 
             val url = URL(trimmedUrl)
 
             val host = url.host
-            if (host == Youtube.YOUTUBE_HOST_1 || host == Youtube.YOUTUBE_HOST_2) {
+            if (host == YouTubeRegexes.YOUTUBE_HOST_1 || host == YouTubeRegexes.YOUTUBE_HOST_2) {
                 val videoPattern = Pattern.compile("^/watch\\?v=([A-Za-z0-9_-]{11})$")
                 val matcher = videoPattern.matcher("${url.path}?${url.query}")
                 return matcher.matches()
-            } else if (host == Youtube.YOUTUBE_HOST_3) {
+            } else if (host == YouTubeRegexes.YOUTUBE_HOST_3) {
                 // Shortened YouTube URL (youtu.be/VIDEO_ID)
                 val videoPattern = Pattern.compile("^/([A-Za-z0-9_-]{11})$")
                 val matcher = videoPattern.matcher(url.path)  // Check the path only
@@ -102,9 +97,9 @@ internal object YouTuber {
         }
     }
 
-    fun isValidYouTubePlaylistUrl(url: String): Boolean {
+    fun String.isValidYouTubePlaylistUrl(): Boolean {
         val regex = Regex(""".*?(youtube\.com|youtu\.be).*[?&]list=([a-zA-Z0-9_-]+)""")
-        return regex.containsMatchIn(url)
+        return regex.containsMatchIn(this)
     }
 
     fun extractPlaylistId(url: String): String? {
@@ -112,39 +107,34 @@ internal object YouTuber {
         return regex.find(url)?.groupValues?.get(1)
     }
 
-    suspend fun loadStreamUrl(
-        data: VideosListData,
+    suspend fun VideosListData.loadStreamUrl(
         onSuccess: (ItemsStreamUrlsForMediaItemData) -> Unit,
         onFailure: (Exception) -> Unit
     ) {
         try {
-            val result = getListItemStreamUrl(data)
-            onSuccess(result)
+            val result = Main.getStreamUrl(
+                type = GET_AUDIO_STREAM_URL,
+                id = videoId
+            )
+
+            if (result.success && result.result != null) {
+                onSuccess(
+                    ItemsStreamUrlsForMediaItemData(
+                    result.result,
+                    videoId,
+                    title,
+                    views,
+                    dateOfVideo,
+                    duration,
+                    channelName,
+                    channelThumbnailsUrl
+                )
+                )
+            } else {
+                onFailure(Exception("Something went wrong: $result"))
+            }
         } catch (e: Exception) {
             onFailure(e)
-        }
-    }
-
-    private suspend fun getListItemStreamUrl(data: VideosListData): ItemsStreamUrlsForMediaItemData {
-        val python = pythonInstant.getModule("main")
-        val variable = python["get_audio_url"]
-        val result = withContext(Dispatchers.IO) {
-            variable?.call("https://www.youtube.com/watch?v=${data.videoId}").toString()
-        }
-
-        if (result != "False") {
-            return ItemsStreamUrlsForMediaItemData(
-                result,
-                data.videoId,
-                data.title,
-                data.views,
-                data.dateOfVideo,
-                data.duration,
-                data.channelName,
-                data.channelThumbnailsUrl
-            )
-        } else {
-            throw Exception("Something went wrong: $result")
         }
     }
 
@@ -161,15 +151,15 @@ internal object YouTuber {
      * - 1,200,000 → 1.2M
      * - 1,200,000,000 → 1.2B
      *
-     * @param views Number of views
      * @return Formatted string with K, M, or B suffix
      */
-    fun formatViews(views: Long): String {
+    fun String.formatViews(): String {
+        val viewsLong = toLong()
         return when {
-            views >= 1_000_000_000 -> "%.1fB".format(views / 1_000_000_000.0)
-            views >= 1_000_000 -> "%.1fM".format(views / 1_000_000.0)
-            views >= 1_000 -> "%.1fK".format(views / 1_000.0)
-            else -> views.toString()
+            viewsLong >= 1_000_000_000 -> "%.1fB".format(viewsLong / 1_000_000_000.0)
+            viewsLong >= 1_000_000 -> "%.1fM".format(viewsLong / 1_000_000.0)
+            viewsLong >= 1_000 -> "%.1fK".format(viewsLong / 1_000.0)
+            else -> this
         }
     }
 
@@ -223,17 +213,15 @@ internal object YouTuber {
         onFailure: (String) -> Unit
     ) {
         try {
-            val python = pythonInstant.getModule("main")
-            val result = withContext(Dispatchers.IO) {
-                python["get_video_url"]?.call("https://www.youtube.com/watch?v=${videoId}").toString()
-            }
+            val result = Main.getStreamUrl(
+                type = GET_VIDEO_STREAM_URL,
+                id = videoId
+            )
 
-            if (result != "False") {
-
-                onSuccess(result)
+            if (result.success && !result.result.isNullOrEmpty()) {
+                onSuccess(result.result)
             } else {
-                onFailure("Something went wrong with result: $result")
-
+                onFailure(result.error.toString())
             }
         } catch (e: Exception) {
             onFailure("Something went wrong with result: ${e.message}")
@@ -246,15 +234,15 @@ internal object YouTuber {
         onFailure: (String) -> Unit
     ) {
         try {
-            val python = pythonInstant.getModule("main")
-            val result = withContext(Dispatchers.IO) {
-                python["get_audio_url"]
-                    ?.call("https://www.youtube.com/watch?v=${videoId}").toString()
-            }
-            if (result != "False") {
-                onSuccess(result)
+            val result = Main.getStreamUrl(
+                type = GET_AUDIO_STREAM_URL,
+                id = videoId
+            )
+
+            if (result.success && !result.result.isNullOrEmpty()) {
+                onSuccess(result.result)
             } else {
-                onFailure("Something went wrong with result: $result")
+                onFailure(result.error.toString())
             }
 
         } catch (e: Exception) {
@@ -270,7 +258,7 @@ internal object YouTuber {
         try {
             val result = callPythonSearchSuggestion(playListUrl)
 
-            if (!result.isNullOrEmpty()) {
+            if (result.isNotEmpty()) {
                 // Switch to the main thread for UI updates
                 onSuccess(
                     "Testing PLayList Downloader",
@@ -286,19 +274,18 @@ internal object YouTuber {
     }
 
 
-    private suspend fun callPythonSearchSuggestion(inputText: String): List<PlayListDataClass>? {
+    private suspend fun callPythonSearchSuggestion(inputText: String): List<PlayListDataClass> {
         return try {
 
             val python = pythonInstant.getModule("main")
 
-            val getResultFromPython = withContext(Dispatchers.IO){
+            val getResultFromPython = withContext(Dispatchers.IO) {
                 python["getPlayListUrls"]?.call(inputText)
             }
 
             if (!getResultFromPython.isNullOrEmpty()) {
 
-                val result = jsonParser.decodeFromString<List<PlayListDataClass>?>(getResultFromPython.toString())
-                result
+                getResultFromPython.toString().decodeStringToJson()
             }
             else{
                 throw Exception("Couldn't get any result back")

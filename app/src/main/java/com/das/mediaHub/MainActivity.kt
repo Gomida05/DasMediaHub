@@ -10,7 +10,7 @@ import android.content.Intent.EXTRA_STREAM
 import android.content.Intent.EXTRA_TEXT
 import android.content.pm.PackageManager
 import android.net.Uri
-import android.os.Build.VERSION
+import android.os.Build.VERSION.SDK_INT
 import android.os.Build.VERSION_CODES
 import android.os.Build.VERSION_CODES.TIRAMISU
 import android.os.Bundle
@@ -25,19 +25,17 @@ import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
-import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.core.app.ActivityCompat
 import androidx.core.app.NotificationCompat
 import androidx.core.app.NotificationManagerCompat
-import androidx.core.content.ContextCompat
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
-import com.das.mediaHub.data.YouTuber.youtubeExtractor
-import com.das.mediaHub.data.YouTuber.isValidYoutubeURL
+import com.das.mediaHub.python.YouTuber.youtubeExtractor
+import com.das.mediaHub.python.YouTuber.isValidYoutubeURL
 import com.das.mediaHub.data.constants.Playback.PLAY_HERE_VIDEO
 import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
@@ -49,16 +47,16 @@ import androidx.core.content.FileProvider
 import androidx.lifecycle.lifecycleScope
 import androidx.navigation.NavController
 import androidx.navigation.compose.currentBackStackEntryAsState
-import com.das.mediaHub.data.YouTuber.getAudioStreamUrl
-import com.das.mediaHub.data.YouTuber.getVideoStreamUrl
+import com.das.mediaHub.python.YouTuber.getAudioStreamUrl
+import com.das.mediaHub.python.YouTuber.getVideoStreamUrl
 import com.das.mediaHub.downloader.DownloaderClass
 import com.das.mediaHub.data.constants.Action.ACTION_START
 import com.das.mediaHub.data.constants.Intents.NEW_INTENT_FOR_SEARCHER
 import com.das.mediaHub.data.constants.Intents.NEW_INTENT_FOR_VIEWER
 import com.das.mediaHub.data.constants.Intents.NEW_TEXT_FOR_RESULT
-import com.das.mediaHub.data.YouTuber.extractPlaylistId
-import com.das.mediaHub.data.YouTuber.getPlayListStreamUrl
-import com.das.mediaHub.data.YouTuber.isValidYouTubePlaylistUrl
+import com.das.mediaHub.python.YouTuber.extractPlaylistId
+import com.das.mediaHub.python.YouTuber.getPlayListStreamUrl
+import com.das.mediaHub.python.YouTuber.isValidYouTubePlaylistUrl
 import com.das.mediaHub.services.BackGroundPlayer
 import com.das.mediaHub.ui.downloads.DownloadsComposable
 import com.das.mediaHub.ui.home.HomePageComposable
@@ -76,6 +74,7 @@ import com.das.mediaHub.ui.watchedVideos.WatchedVideosComposable
 import com.das.mediaHub.NavScreens.*
 import com.das.mediaHub.OnLaunchComponents.BottomNavItems
 import com.das.mediaHub.PIP.shouldEnterPipMode
+import com.das.mediaHub.WakeLockHelper.releaseWakeLock
 import com.das.mediaHub.data.constants.DownloadConstants.DOWNLOAD_FINISHED
 import com.das.mediaHub.ui.theme.CustomTheme
 import com.das.mediaHub.ui.TopPopupNotification.TopPopupNotification
@@ -95,7 +94,6 @@ class MainActivity : ComponentActivity() {
     private val intentListeners = mutableSetOf<(Intent) -> Unit>()
 
     private var intentListener: ((Intent) -> Unit)? = null
-    private var auth = Firebase.auth
 
 
 
@@ -127,7 +125,7 @@ class MainActivity : ComponentActivity() {
 
 
     @Composable
-    fun MainLauncherPageComposable() {
+    private fun MainLauncherPageComposable() {
 
         val navController = rememberNavController()
 
@@ -135,13 +133,13 @@ class MainActivity : ComponentActivity() {
 
         LaunchedEffect(Unit) {
             intent?.let {
-                listenNewIntent(navController, it)
+                navController.listenNewIntent(it)
             }
         }
 
         DisposableEffect(Unit) {
             val listener: (Intent) -> Unit = {
-                listenNewIntent(navController, it)
+                navController.listenNewIntent(it)
             }
             registerIntentListener(listener)
             onDispose {
@@ -153,9 +151,10 @@ class MainActivity : ComponentActivity() {
 
         val startDestination = remember { Home.route }
 
+        val auth = remember { Firebase.auth }
+
         Scaffold(
             contentWindowInsets = WindowInsets(0, 0, 0, 0),
-            containerColor = MaterialTheme.colorScheme.background,
             modifier = Modifier
                 .fillMaxSize(),
             bottomBar = {
@@ -171,12 +170,9 @@ class MainActivity : ComponentActivity() {
                         .zIndex(1f),
                     contentAlignment = Alignment.TopCenter
                 ) {
-                    TopPopupNotification(
-                        it,
-                        onDismiss = {
-                            showNotificationDialog = null
-                        }
-                    )
+                    it.TopPopupNotification {
+                        showNotificationDialog = null
+                    }
                 }
             }
 
@@ -188,13 +184,13 @@ class MainActivity : ComponentActivity() {
                     .fillMaxSize()
             ) {
                 composable(Home.route) {
-                    HomePageComposable(navController)
+                    navController.HomePageComposable()
                 }
                 composable(RecentlyWatched.route) {
                     WatchedVideosComposable(navController)
                 }
                 composable(Setting.route) {
-                    SettingsComposable(navController) {
+                    navController.SettingsComposable {
                         showNotificationDialog = it
                     }
                 }
@@ -230,6 +226,7 @@ class MainActivity : ComponentActivity() {
                 }
                 composable(ExoPlayerUI.route) {
                     LocalVideoPlayer(
+                        this@MainActivity,
                         bundles.getString(PLAY_HERE_VIDEO).toString()
                     )
                 }
@@ -289,22 +286,22 @@ class MainActivity : ComponentActivity() {
         super.onUserLeaveHint()
         if (shouldEnterPipMode) {
 
-            if (VERSION.SDK_INT >= VERSION_CODES.O) {
+            if (SDK_INT >= VERSION_CODES.O) {
                 val params = PictureInPictureParams.Builder()
-                params.apply {
-                    setAspectRatio(Rational(16, 9))
-                    if (VERSION.SDK_INT >= VERSION_CODES.S) {
-                        setSeamlessResizeEnabled(true)
+                    .apply {
+                        setAspectRatio(Rational(16, 9))
+                        if (SDK_INT >= VERSION_CODES.S) {
+                            setSeamlessResizeEnabled(true)
+                        }
                     }
-                }
-                enterPictureInPictureMode(params.build())
+                    .build()
+                enterPictureInPictureMode(params)
             }
         }
     }
 
 
-    private fun listenNewIntent(
-        navController: NavController,
+    private fun NavController.listenNewIntent(
         newIntent: Intent
     ) {
         if (newIntent.action == Intent.ACTION_SEND) {
@@ -312,32 +309,32 @@ class MainActivity : ComponentActivity() {
 
             if (intentType.startsWith("text/")) {
                 newTextIntent(
-                    navController = navController,
                     sharedText = newIntent.getStringExtra(EXTRA_TEXT).toString()
                 )
             } else if (intentType.startsWith("video/")) {
-                newReceivedMediaTypeVideo(navController, newIntent)
+                newIntent.newReceivedMediaTypeVideo(this)
             } else if (intentType.startsWith("audio/")) {
-                newReceivedMediaTypeAudio(newIntent)
+                newIntent.newReceivedMediaTypeAudio()
             }
         } else if (newIntent.action == Intent.ACTION_VIEW) {
-            newMediaIntent(navController, newIntent.data)
+            newIntent.data?.newMediaIntent(navController = this)
+
         } else if (newIntent.action == DOWNLOAD_FINISHED) {
             val apkPath = newIntent.getStringExtra("apk_path") ?: return
-            val apkFile = File(apkPath)
-            requestToInstall(apkFile)
+            File(apkPath)
+                .requestToInstall()
         } else if (newIntent.action == Intent.ACTION_APPLICATION_PREFERENCES) {
-            navController.navigate(Setting.route)
+            navigate(Setting.route)
         }
     }
 
 
-    private fun requestToInstall(apkFile: File) {
+    private fun File.requestToInstall() {
 
         val apkUri = FileProvider.getUriForFile(
-            this,
-            "${this.packageName}.file-provider",
-            apkFile
+            this@MainActivity,
+            "${this@MainActivity.packageName}.file-provider",
+            this
         )
 
         val installIntent = Intent(Intent.ACTION_VIEW).apply {
@@ -350,13 +347,9 @@ class MainActivity : ComponentActivity() {
 
     override fun onStart() {
         super.onStart()
-        if (VERSION.SDK_INT >= VERSION_CODES.O) {
-            NotificationChannels(this).createAllNotificationChannels()
-        }
 
-
-        if (VERSION.SDK_INT >= TIRAMISU) {
-            if (ContextCompat.checkSelfPermission(this,
+        if (SDK_INT >= TIRAMISU) {
+            if (this.checkSelfPermission(
                     arrayOf(
                         POST_NOTIFICATIONS,
                         READ_MEDIA_VIDEO,
@@ -364,7 +357,7 @@ class MainActivity : ComponentActivity() {
                     ).toString())
                 != PackageManager.PERMISSION_GRANTED
             ) {
-                ActivityCompat.requestPermissions(this,
+                this.requestPermissions(
                     arrayOf(
                         POST_NOTIFICATIONS,
                         READ_MEDIA_VIDEO,
@@ -376,31 +369,23 @@ class MainActivity : ComponentActivity() {
 
 
 
-
-
-
-
-    private fun newReceivedMediaTypeVideo(navController: NavController, myIntent: Intent){
+    private fun Intent.newReceivedMediaTypeVideo(navController: NavController){
 
         @Suppress("DEPRECATION")
-        val videoUri = if (VERSION.SDK_INT >= TIRAMISU) {
-            myIntent.getParcelableExtra(
-                EXTRA_STREAM, Uri::class.java)
-        } else myIntent.getParcelableExtra(EXTRA_STREAM)
+        val videoUri = if (SDK_INT >= TIRAMISU) getParcelableExtra(EXTRA_STREAM, Uri::class.java)
+        else getParcelableExtra(EXTRA_STREAM)
 
         bundles.putString(PLAY_HERE_VIDEO, videoUri.toString())
         navController.navigate(ExoPlayerUI.route)
 
     }
 
-    private fun newReceivedMediaTypeAudio(
-        myIntent: Intent
-    ){
+    private fun Intent.newReceivedMediaTypeAudio(){
         @Suppress("DEPRECATION")
-        val audioUri = if (VERSION.SDK_INT >= TIRAMISU) myIntent.getParcelableExtra(EXTRA_STREAM, Uri::class.java)
-        else myIntent.getParcelableExtra(EXTRA_STREAM)
+        val audioUri = if (SDK_INT >= TIRAMISU) getParcelableExtra(EXTRA_STREAM, Uri::class.java)
+        else getParcelableExtra(EXTRA_STREAM)
 
-        val playIntent = Intent(this, BackGroundPlayer::class.java).apply {
+        val playIntent = Intent(this@MainActivity, BackGroundPlayer::class.java).apply {
             action = ACTION_START
             putExtra("media_id", audioUri?.path)
             putExtra("media_url", audioUri?.path)
@@ -409,67 +394,62 @@ class MainActivity : ComponentActivity() {
         startService(playIntent)
     }
 
-    private fun newMediaIntent(
-        navController: NavController,
-        mediaUri: Uri?
-    ){
-        mediaUri?.let {
-            val mimeType = contentResolver.getType(it) ?: ""
-            if (mimeType.startsWith("video/")) {
-                bundles.putString(PLAY_HERE_VIDEO, intent.dataString)
-                navController.navigate(ExoPlayerUI.route)
-            } else if (mimeType.startsWith("audio/")) {
+    private fun Uri.newMediaIntent(
+        navController: NavController
+    ) {
+        val mimeType = contentResolver.getType(this) ?: ""
+        if (mimeType.startsWith("video/")) {
+            bundles.putString(PLAY_HERE_VIDEO, intent.dataString)
+            navController.navigate(ExoPlayerUI.route)
+        } else if (mimeType.startsWith("audio/")) {
 
 
-                val playIntent = Intent(this, BackGroundPlayer::class.java).apply {
-                    action = ACTION_START
-                    putExtra("media_id", it.path)
-                    putExtra("media_url", it.path)
-                    putExtra("title", title)
-                }
-                startService(playIntent)
-
-            } else {
-                showDialogs("Unsupported media type")
+            val playIntent = Intent(this@MainActivity, BackGroundPlayer::class.java).apply {
+                action = ACTION_START
+                putExtra("media_id", path)
+                putExtra("media_url", path)
+                putExtra("title", title)
             }
+            startService(playIntent)
+
+        } else {
+            showDialogs("Unsupported media type")
         }
     }
-    private fun newTextIntent(
-        navController: NavController,
+    private fun NavController.newTextIntent(
         sharedText: String
     ) {
-        sharedText.let {
-            if (isValidYoutubeURL(it)) {
-                val videoId = youtubeExtractor(it)
-                val bundle= Bundle().apply {
-                    putString("View_ID", videoId)
-                    putString("View_URL", "https://www.youtube.com/watch?v=$videoId")
-                }
-                bundles.apply {
-                    putBundle(NEW_INTENT_FOR_VIEWER, bundle)
-                }
-                navController.navigate(VideoViewer.route)
-
-            } else if (isValidYouTubePlaylistUrl(it)){
-                val bundle= Bundle().apply {
-                    putString("View_ID", extractPlaylistId(it))
-                    putString("View_URL", it)
-                }
-                bundles.apply {
-                    putBundle(NEW_INTENT_FOR_VIEWER, bundle)
-                }
-                navController.navigate(VideoViewer.route)
-
-            }else if (it.startsWith("DownloadsPageFr")) {
-                navController.navigate(Downloads.route)
-            } else {
-                bundles.apply {
-                    putString(NEW_INTENT_FOR_SEARCHER, it)
-                }
-                navController.navigate(Searcher.route)
+        if (sharedText.isValidYoutubeURL()) {
+            val videoId = sharedText.youtubeExtractor()
+            val bundle = Bundle().apply {
+                putString("View_ID", videoId)
+                putString("View_URL", "https://www.youtube.com/watch?v=$videoId")
             }
+            bundles.apply {
+                putBundle(NEW_INTENT_FOR_VIEWER, bundle)
+            }
+            navigate(VideoViewer.route)
+
+        } else if (sharedText.isValidYouTubePlaylistUrl()) {
+            val bundle = Bundle().apply {
+                putString("View_ID", extractPlaylistId(sharedText))
+                putString("View_URL", sharedText)
+            }
+            bundles.apply {
+                putBundle(NEW_INTENT_FOR_VIEWER, bundle)
+            }
+            navigate(VideoViewer.route)
+
+        } else if (sharedText.startsWith("DownloadsPageFr")) {
+            navigate(Downloads.route)
+        } else {
+            bundles.apply {
+                putString(NEW_INTENT_FOR_SEARCHER, sharedText)
+            }
+            navigate(Searcher.route)
         }
     }
+
 
     fun startDownloadingVideo(videoId: String, title: String){
         val downloaderClass = DownloaderClass(this)
@@ -558,7 +538,7 @@ class MainActivity : ComponentActivity() {
                 POST_NOTIFICATIONS
             ) != PackageManager.PERMISSION_GRANTED
         ) {
-            if (VERSION.SDK_INT >= TIRAMISU) {
+            if (SDK_INT >= TIRAMISU) {
                 ActivityCompat.requestPermissions(this, arrayOf(POST_NOTIFICATIONS), 0)
             }
             return
@@ -580,7 +560,7 @@ class MainActivity : ComponentActivity() {
 
     override fun onPause() {
         super.onPause()
-        WakeLockHelper.releaseWakeLock(this)
+        releaseWakeLock()
     }
 
 
@@ -591,7 +571,7 @@ class MainActivity : ComponentActivity() {
             unregisterIntentListener(it)
         }
         intentListeners.clear()
-        WakeLockHelper.releaseWakeLock(this)
+        releaseWakeLock()
     }
 
 }

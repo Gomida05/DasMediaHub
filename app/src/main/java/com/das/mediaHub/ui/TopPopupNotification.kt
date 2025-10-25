@@ -44,10 +44,9 @@ internal object TopPopupNotification {
     var showNotificationDialog by mutableStateOf<TopPopUp?>(null)
 
     @Composable
-    fun TopPopupNotification(
-        value: TopPopUp,
-        onDismiss: () -> Unit,
-        durationMillis: Long = 4000
+    fun TopPopUp.TopPopupNotification(
+        durationMillis: Long = 4000,
+        onDismiss: () -> Unit
     ) {
         val offsetY = remember { Animatable(-100f) } // start above screen
         val coroutineScope = rememberCoroutineScope()
@@ -118,14 +117,14 @@ internal object TopPopupNotification {
                             .padding(horizontal = 16.dp, vertical = 12.dp)
                     ) {
                         Icon(
-                            imageVector = value.icon,
+                            imageVector = icon,
                             contentDescription = "Notification Icon",
                             tint = MaterialTheme.colorScheme.primary,
                             modifier = Modifier.size(24.dp)
                         )
                         Spacer(modifier = Modifier.width(12.dp))
                         Text(
-                            text = value.message,
+                            text = message,
                             style = MaterialTheme.typography.bodyMedium,
                             modifier = Modifier.weight(1f)
                         )

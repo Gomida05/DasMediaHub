@@ -32,6 +32,7 @@ class SearchPageViewMode(application: Application): AndroidViewModel(application
                 db.insert(searchData)
             } catch (e: Exception) {
                 println("Something went wrong: ${e.message}")
+                _error.value = "Something went wrong: ${e.message}"
             }
         }
     }

@@ -83,7 +83,7 @@ import com.das.mediaHub.NavScreens
 import com.das.mediaHub.data.constants.Action.ACTION_START
 import com.das.mediaHub.data.constants.Playback.PLAY_HERE_VIDEO
 import com.das.mediaHub.services.BackGroundPlayer
-import com.das.mediaHub.data.YouTuber.mediaItems
+import com.das.mediaHub.python.YouTuber.mediaItems
 import com.das.mediaHub.data.constants.GlobalVideoList.bundles
 import com.das.mediaHub.data.local.PathSaver
 import java.io.File
@@ -105,13 +105,19 @@ fun DownloadsComposable(navController: NavController, tabIndex: Int = 0) {
 
     val mContext = LocalContext.current
 
-    val pathSaver = PathSaver(mContext)
+    val pathSaver = remember {
+        PathSaver(mContext)
+    }
 
 
 
 
-    val videoPath = pathSaver.getVideosDownloadPath()
-    val audioPath = pathSaver.getAudioDownloadPath()
+    val videoPath = remember {
+        pathSaver.getVideosDownloadPath()
+    }
+    val audioPath = remember {
+        pathSaver.getAudioDownloadPath()
+    }
     val tabs = PageEnum.entries
 
 
@@ -199,7 +205,8 @@ fun DownloadsComposable(navController: NavController, tabIndex: Int = 0) {
                     itemsIndexed(musicsListData) { index, searchItem ->
 
                         ListItems(
-                            searchItem, false,
+                            searchItem,
+                            false,
                             mContext
                         ) {
                             itemClicked(

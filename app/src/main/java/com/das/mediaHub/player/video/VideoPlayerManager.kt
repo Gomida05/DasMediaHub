@@ -13,12 +13,12 @@ import android.support.v4.media.session.MediaSessionCompat
 import android.support.v4.media.session.PlaybackStateCompat
 import android.util.Rational
 import android.view.KeyEvent
+import androidx.compose.runtime.mutableStateOf
 import androidx.media3.common.AudioAttributes
 import androidx.media3.common.C
 import androidx.media3.common.C.AUDIO_CONTENT_TYPE_MOVIE
 import androidx.media3.common.MediaItem
 import androidx.media3.exoplayer.ExoPlayer
-import com.das.mediaHub.MainActivity
 import com.das.mediaHub.data.constants.Action.ACTION_KILL
 import com.das.mediaHub.data.constants.Playback.PAUSE
 import com.das.mediaHub.data.constants.Playback.PLAY
@@ -56,9 +56,8 @@ class VideoPlayerManager(
     }
 
 
-
-    val isEmptyMediaItem = player.currentMediaItem  == null
-    val isPlaying = player.isPlaying
+    val isEmptyMediaItem = player.currentMediaItem == null
+    val isPlaying = mutableStateOf(player.isPlaying)
 
     override fun addListener() {
         player.addListener(
@@ -69,7 +68,7 @@ class VideoPlayerManager(
             setPlaybackState(
                 PlaybackStateCompat.Builder()
                     .setState(
-                        if (isPlaying) PlaybackStateCompat.STATE_PLAYING else
+                        if (isPlaying.value) PlaybackStateCompat.STATE_PLAYING else
                             PlaybackStateCompat.STATE_PAUSED, player.currentPosition,
                         1F
                     )
@@ -80,8 +79,8 @@ class VideoPlayerManager(
                                 PlaybackStateCompat.ACTION_SEEK_TO
                     )
                     .addCustomAction(
-                        if (isPlaying) PAUSE else PLAY, "play OR pause",
-                        if (isPlaying) androidx.media3.session.R.drawable.media3_icon_pause else androidx.media3.session.R.drawable.media3_icon_play
+                        if (isPlaying.value) PAUSE else PLAY, "play OR pause",
+                        if (isPlaying.value) androidx.media3.session.R.drawable.media3_icon_pause else androidx.media3.session.R.drawable.media3_icon_play
                     )
                     .setBufferedPosition(player.currentPosition)
                     .build()
@@ -111,12 +110,12 @@ class VideoPlayerManager(
         if (player.currentMediaItem != null) {
             player.prepare()
             addListener()
-            player.play()
+            resume()
         } else {
             addMediaItem(url)
             player.prepare()
             addListener()
-            player.play()
+            resume()
         }
     }
 
@@ -141,13 +140,12 @@ class VideoPlayerManager(
             val params = PictureInPictureParams.Builder()
                 .setAspectRatio(Rational(16, 9))
                 .build()
-            (playerListener.activity as MainActivity).setPictureInPictureParams(params)
+            playerListener.activity.setPictureInPictureParams(params)
         }
     }
 
 
-
-    inner class MyMediaSessionCallBack: MediaSessionCompat.Callback() {
+    private inner class MyMediaSessionCallBack : MediaSessionCompat.Callback() {
 
 
         override fun onSeekTo(pos: Long) {
@@ -183,10 +181,9 @@ class VideoPlayerManager(
         }
 
 
-
         override fun onCustomAction(action: String?, extras: Bundle?) {
             super.onCustomAction(action, extras)
-            if (action.toString() == ACTION_KILL){
+            if (action.toString() == ACTION_KILL) {
                 release()
                 updatePipActions()
             }
@@ -204,11 +201,11 @@ class VideoPlayerManager(
                     keyEvent?.let { event ->
                         when (event.keyCode) {
 
-                            KeyEvent.KEYCODE_MEDIA_PAUSE ->{
+                            KeyEvent.KEYCODE_MEDIA_PAUSE -> {
                                 player.pause()
                             }
 
-                            KeyEvent.KEYCODE_MEDIA_PLAY ->{
+                            KeyEvent.KEYCODE_MEDIA_PLAY -> {
                                 player.play()
                             }
 
@@ -221,6 +218,7 @@ class VideoPlayerManager(
                                 player.seekToPrevious()
                                 return true
                             }
+
                             else -> {
                                 return true
                             }
@@ -234,7 +232,5 @@ class VideoPlayerManager(
 
 
         }
-
-
     }
 }

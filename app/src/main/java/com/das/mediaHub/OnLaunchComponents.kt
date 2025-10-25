@@ -47,23 +47,23 @@ import com.google.firebase.auth.FirebaseAuth
 
 internal object OnLaunchComponents {
 
-    fun openCustomTab(context: Context, url: Uri) {
+    internal fun Context.openCustomTab(url: Uri) {
         val intent = CustomTabsIntent.Builder()
             .build()
-        intent.launchUrl(context, url)
+        intent.launchUrl(this, url)
     }
 
     @Composable
-    fun rememberAuthState(auth: FirebaseAuth): Boolean? {
+    fun FirebaseAuth.rememberAuthState(): Boolean? {
         var isLoggedIn by remember { mutableStateOf<Boolean?>(null) }
 
-        DisposableEffect(auth) {
+        DisposableEffect(Unit) {
             val listener = FirebaseAuth.AuthStateListener { firebaseAuth ->
                 val user = firebaseAuth.currentUser
                 isLoggedIn = user != null
             }
-            auth.addAuthStateListener(listener)
-            onDispose { auth.removeAuthStateListener(listener) }
+            addAuthStateListener(listener)
+            onDispose { removeAuthStateListener(listener) }
         }
 
         return isLoggedIn
@@ -104,7 +104,10 @@ internal object OnLaunchComponents {
                             )
                         },
                         label = {
-                            Text(text = items.title)
+                            Text(
+                                text = items.title,
+                                color = MaterialTheme.colorScheme.primary
+                            )
                         }
                     )
                 }
@@ -138,41 +141,5 @@ internal object OnLaunchComponents {
             )
         }
     }
-    @Composable
-    fun SplashScreen() {
-        Box(
-            modifier = Modifier
-                .fillMaxSize()
-                .background(MaterialTheme.colorScheme.primary),
-            contentAlignment = Alignment.Center
-        ) {
-            Column(
-                horizontalAlignment = Alignment.CenterHorizontally
-            ) {
-                // App logo or icon
-                Icon(
-                    imageVector = Icons.Default.PlayArrow,
-                    contentDescription = "App Logo",
-                    tint = MaterialTheme.colorScheme.onPrimary,
-                    modifier = Modifier.size(96.dp)
-                )
 
-                Spacer(modifier = Modifier.height(16.dp))
-
-                // App name
-                Text(
-                    text = "My App",
-                    color = MaterialTheme.colorScheme.onPrimary,
-                    style = MaterialTheme.typography.headlineMedium
-                )
-
-                Spacer(modifier = Modifier.height(32.dp))
-
-                // Loading indicator
-                CircularProgressIndicator(
-                    color = MaterialTheme.colorScheme.onPrimary
-                )
-            }
-        }
-    }
 }

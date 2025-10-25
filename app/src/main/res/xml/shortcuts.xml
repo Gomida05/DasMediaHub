@@ -12,7 +12,7 @@
     </shortcut>
     <shortcut
         android:enabled="true"
-        android:icon="@drawable/download_icon_for_shortcut">
+        android:icon="@drawable/download">
         <intent
             android:action="android.intent.action.SEND"
             android:targetPackage="com.das.mediaHub"

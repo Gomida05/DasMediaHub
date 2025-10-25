@@ -1,18 +1,19 @@
 package com.das.mediaHub.mediacontroller
 
-import android.app.Activity
 import androidx.compose.material3.SnackbarHostState
 import androidx.media3.common.PlaybackException
 import androidx.media3.common.Player
 import androidx.navigation.NavController
+import com.das.mediaHub.MainActivity
 import com.das.mediaHub.PIP.shouldEnterPipMode
-import com.das.mediaHub.WakeLockHelper
+import com.das.mediaHub.WakeLockHelper.acquireWakeLock
+import com.das.mediaHub.WakeLockHelper.releaseWakeLock
 import com.das.mediaHub.ui.players.videoPlayer.playThisOne
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.launch
 
 class VideoPlayerListener(
-    val activity: Activity?,
+    val activity: MainActivity,
     private val navController: NavController,
     private val scope: CoroutineScope,
     private val snackBar: SnackbarHostState
@@ -37,9 +38,9 @@ class VideoPlayerListener(
     override fun onIsPlayingChanged(isPlaying: Boolean) {
         shouldEnterPipMode = isPlaying
         if (isPlaying) {
-            WakeLockHelper.acquireWakeLock(activity)
+            activity.acquireWakeLock()
         } else {
-            WakeLockHelper.releaseWakeLock(activity)
+            activity.releaseWakeLock()
         }
     }
 }

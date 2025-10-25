@@ -1,28 +1,45 @@
 from pytubefix import YouTube, Playlist
+from pytubefix.exceptions import (
+    PytubeFixError,
+    VideoUnavailable,
+    RegexMatchError,
+    ExtractError
+)
 from youtubesearchpython import Video, VideosSearch
-import json, traceback
+from requests import RequestException
+from typing import Any, Optional
+import json, traceback, socket
+
+def make_response(success: bool, error: Optional[str] = None, result: Any = None):
+    return json.dumps(
+        {
+            "success": success,
+            "error": error,
+            "result": result
+        }
+    )
 
 
 def get_video_url(video_url: str):
     try:
         yt = YouTube(video_url)
         stream = yt.streams.get_highest_resolution()
-        return str(stream.url)
+        return make_response(success = True, result = str(stream.url))
     except Exception as e:
         print(f"error in url {e}")
-        return False
+        return make_response(success = False, result = str(e))
 
 
 def get_audio_url(media_url):
     try:
         yt = YouTube(media_url)
         stream = yt.streams.get_audio_only()
-
-        return str(stream.url)
+        
+        return make_response(success = True, result = str(stream.url))
     except Exception as e:
         print(f"error in url {e}")
-        return False
-
+        return make_response(success = False, result = str(e))
+    
 
 def getPlayListUrls(youtube_url):
 
@@ -49,13 +66,24 @@ def getPlayListUrls(youtube_url):
 def Searcher(inputer: str):
 
     try:
-        search = VideosSearch(inputer, limit=30)
+        search = VideosSearch(inputer, limit=80)
         results = search.result()
+        return make_response(success=True, error=None, result= results)
 
-        return json.dumps(results)
+    except RequestException as e:
+        err_msg = f"Network error while searching videos: {str(e)}"
+    except socket.gaierror:
+        err_msg = "DNS lookup failed — check your internet connection."
+    except TimeoutError:
+        err_msg = "Search request timed out."
+    except PytubeFixError as e:
+        err_msg = f"YouTube library error: {str(e)}"
     except Exception as e:
-        print(e)
-        return False
+        err_msg = f"Unexpected error during search: {str(e)}"
+
+    print(err_msg)
+    traceback.print_exc()
+    return make_response(success=False, error=err_msg)
 
 
 def SearchWithLink(inputer: str):
@@ -73,8 +101,23 @@ def SearchWithLink(inputer: str):
             }
 
         val = json.dumps(data)
-        return val
+        return make_response(True, None, data)
+
+    except VideoUnavailable:
+        err_msg = "The requested video is unavailable or private."
+    except RegexMatchError:
+        err_msg = "Invalid YouTube URL or unable to extract video data."
+    except ExtractError:
+        err_msg = "Error extracting video information."
+    except PytubeFixError as e:
+        err_msg = f"YouTube processing error: {str(e)}"
+    except RequestException as e:
+        err_msg = f"Network request error: {str(e)}"
+    except TimeoutError:
+        err_msg = "Request to YouTube timed out."
     except Exception as e:
-        print(f"fff{e}")
-        print(f"traceback error {traceback.print_exc()}")
-        return e
+        err_msg = f"Unexpected error fetching video info: {str(e)}"
+
+    print(err_msg)
+    traceback.print_exc()
+    return make_response(success=False, error=err_msg)

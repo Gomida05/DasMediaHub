@@ -34,13 +34,13 @@ import androidx.media3.common.MediaItem
 import androidx.media3.common.MediaMetadata
 import androidx.media3.common.PlaybackException
 import androidx.media3.common.Player
-import com.das.mediaHub.Receiver
-import com.das.mediaHub.data.YouTuber.formatDateFromLong
+import com.das.mediaHub.receive.Receiver
+import com.das.mediaHub.python.YouTuber.formatDateFromLong
 import com.das.mediaHub.mediacontroller.BackgroundPlayerStates.setStateToPaused
 import com.das.mediaHub.mediacontroller.BackgroundPlayerStates.setStateToLoading
 import com.das.mediaHub.mediacontroller.BackgroundPlayerStates.setStateToPlaying
 import com.das.mediaHub.data.constants.Notifications.BACKGROUND_GROUND_PLAYER_NOTIFICATION
-import com.das.mediaHub.data.YouTuber.mediaItems
+import com.das.mediaHub.python.YouTuber.mediaItems
 import java.io.File
 
 

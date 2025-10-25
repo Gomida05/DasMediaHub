@@ -5,7 +5,7 @@ import androidx.media3.exoplayer.ExoPlayer
 
 interface PlayerController {
 
-    val player: ExoPlayer?
+    val player: ExoPlayer
     fun playVideo(url: Uri)
 
     fun addListener()

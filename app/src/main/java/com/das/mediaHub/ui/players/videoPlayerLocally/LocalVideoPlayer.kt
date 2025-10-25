@@ -1,7 +1,7 @@
 package com.das.mediaHub.ui.players.videoPlayerLocally
 
 import android.annotation.SuppressLint
-import androidx.activity.compose.LocalActivity
+import android.app.Activity
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
@@ -26,7 +26,7 @@ import androidx.media3.common.MediaMetadata
 import androidx.media3.ui.AspectRatioFrameLayout
 import androidx.media3.ui.PlayerView
 import com.das.mediaHub.PIP.shouldEnterPipMode
-import com.das.mediaHub.WakeLockHelper
+import com.das.mediaHub.WakeLockHelper.releaseWakeLock
 import com.das.mediaHub.mediacontroller.LocalVideoListener
 import com.das.mediaHub.player.video.LocalVideoManger
 import com.das.mediaHub.ui.players.videoPlayer.CustomMethods.setFullscreen
@@ -34,7 +34,7 @@ import com.das.mediaHub.ui.players.videoPlayer.CustomMethods.setFullscreen
 
 @SuppressLint("UnsafeOptInUsageError")
 @Composable
-fun LocalVideoPlayer(videoUri: String) {
+fun LocalVideoPlayer(activity: Activity, videoUri: String) {
 
     val viewModel = viewModel<LocalPlayerViewModel>()
 
@@ -42,7 +42,6 @@ fun LocalVideoPlayer(videoUri: String) {
     val mediaItems by viewModel.mediaItems
 
     val mContext = LocalContext.current
-    val activity = LocalActivity.current
 
     val exoMetadata = remember {
         MediaMetadata.Builder()
@@ -76,9 +75,9 @@ fun LocalVideoPlayer(videoUri: String) {
     }
 
     LaunchedEffect(Unit) {
-        activity?.setFullscreen(true)
+        activity.setFullscreen(true)
         shouldEnterPipMode = true
-        WakeLockHelper.releaseWakeLock(activity)
+        activity.releaseWakeLock()
         viewModel.loadItems(mediaItem.mediaMetadata.title.toString())
     }
 
@@ -125,9 +124,11 @@ fun LocalVideoPlayer(videoUri: String) {
     DisposableEffect(Unit) {
         onDispose {
             manager.release()
-            WakeLockHelper.releaseWakeLock(activity)
             shouldEnterPipMode = false
-            activity?.setFullscreen(false)
+            activity.let {
+                it.releaseWakeLock()
+                it.setFullscreen(false)
+            }
         }
     }
 

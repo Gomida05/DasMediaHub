@@ -1,8 +1,6 @@
 package com.das.mediaHub.ui.search
 
-import android.content.Context
 import android.os.Bundle
-import android.widget.Toast
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
@@ -34,6 +32,8 @@ import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Scaffold
+import androidx.compose.material3.SnackbarHost
+import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.material3.TopAppBarDefaults
@@ -42,6 +42,7 @@ import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
@@ -60,22 +61,22 @@ import androidx.navigation.NavController
 import coil.compose.AsyncImage
 import coil.request.ImageRequest
 import com.das.mediaHub.MainActivity
-import com.das.mediaHub.data.YouTuber.youtubeExtractor
-import com.das.mediaHub.data.YouTuber.isValidYoutubeURL
+import com.das.mediaHub.python.YouTuber.youtubeExtractor
+import com.das.mediaHub.python.YouTuber.isValidYoutubeURL
 import com.das.mediaHub.data.constants.Intents.NEW_INTENT_FOR_VIEWER
 import com.das.mediaHub.data.constants.Intents.NEW_TEXT_FOR_RESULT
-import com.das.mediaHub.data.YouTuber.extractPlaylistId
-import com.das.mediaHub.data.YouTuber.isValidYouTubePlaylistUrl
+import com.das.mediaHub.python.YouTuber.extractPlaylistId
+import com.das.mediaHub.python.YouTuber.isValidYouTubePlaylistUrl
 import com.das.mediaHub.data.constants.GlobalVideoList.bundles
 import com.das.mediaHub.NavScreens.ResultViewerPage
 import com.das.mediaHub.data.model.SearchData
+import kotlinx.coroutines.launch
 
 @Composable
 fun SearchPageCompose(
     navController: NavController,
     newText: String
 ) {
-    val context = LocalContext.current.applicationContext
     val viewMode = viewModel<SearchPageViewMode>()
 
     val searchHistory by viewMode.searchHistory
@@ -83,6 +84,9 @@ fun SearchPageCompose(
     val isLoading by viewMode.isLoading
 
     val topAppBarScroll = TopAppBarDefaults.exitUntilCollapsedScrollBehavior()
+
+    val scope = rememberCoroutineScope()
+    val snackBar = remember { SnackbarHostState() }
 
     val textState = rememberSaveable { mutableStateOf(newText) }
 
@@ -95,6 +99,9 @@ fun SearchPageCompose(
 
 
     Scaffold(
+        snackbarHost = {
+            SnackbarHost(snackBar)
+        },
         contentWindowInsets = WindowInsets.safeDrawing,
         modifier = Modifier
             .nestedScroll(topAppBarScroll.nestedScrollConnection)
@@ -156,17 +163,21 @@ fun SearchPageCompose(
                     onSearch = {
                         if (textState.value.isNotBlank()) {
                             keyEvent(
-                                context = context,
                                 navController = navController,
                                 editTextText = textState.value,
                                 addIt = {
                                     viewMode.addNew(
                                         it
                                     )
+                                },
+                                isPlayList = { url ->
+                                    askToDownloadPlayList = true
+                                    playListUrl = url
                                 }
-                            ) { url ->
-                                askToDownloadPlayList = true
-                                playListUrl = url
+                            ) {
+                                scope.launch {
+                                    snackBar.showSnackbar(it)
+                                }
                             }
                         }
                     }
@@ -203,7 +214,8 @@ fun SearchPageCompose(
                             },
                             onButtonClicked = { text ->
                                 textState.value = text
-                                goSearch(context, navController, text)
+                                bundles.putString(NEW_TEXT_FOR_RESULT, text)
+                                navController.navigate(ResultViewerPage.route)
                             }
                         )
                     }
@@ -220,7 +232,6 @@ fun SearchPageCompose(
             onDismissRequest = {
                 askToDownloadPlayList = false
             },
-            context,
             playListUrl
         )
 
@@ -300,7 +311,9 @@ private fun RecentlySearchList(
 
 
 @Composable
-fun PlayListDownloadRequest(onDismissRequest: ()->Unit, mContext: Context, url: String){
+fun PlayListDownloadRequest(onDismissRequest: ()->Unit, url: String){
+
+    val mContext = LocalContext.current
     AlertDialog(
         onDismissRequest = onDismissRequest,
 
@@ -370,16 +383,16 @@ fun PlayListDownloadRequest(onDismissRequest: ()->Unit, mContext: Context, url: 
 
 
 private fun keyEvent(
-    context: Context,
     navController: NavController,
     editTextText: String,
     addIt: (String) -> Unit,
-    isPlayList: (url: String) -> Unit
+    isPlayList: (url: String) -> Unit,
+    error: (String) -> Unit
 ) {
     try {
         when {
-            isValidYoutubeURL(editTextText) -> {
-                val videoId = youtubeExtractor(editTextText)
+            editTextText.isValidYoutubeURL() -> {
+                val videoId = editTextText.youtubeExtractor()
                 val bundled = Bundle().apply {
                     putString("View_ID", videoId)
                     putString("View_URL", "https://www.youtube.com/watch?v=$videoId")
@@ -389,42 +402,22 @@ private fun keyEvent(
                 bundles.putBundle(NEW_INTENT_FOR_VIEWER, bundled)
 
             }
-            isValidYouTubePlaylistUrl(editTextText) -> {
+            editTextText.isValidYouTubePlaylistUrl() -> {
                 isPlayList(editTextText)
             }
             else -> {
                 addIt(editTextText)
-                goSearch(
-                    context,
-                    navController,
-                    editTextText
-                )
+                bundles.putString(NEW_TEXT_FOR_RESULT, editTextText)
+
+                navController.navigate(ResultViewerPage.route)
+
             }
         }
     } catch (e: Exception) {
-        showDialogs(context, e.message ?: "Unknown error")
+        error(e.message ?: "Unknown error")
     }
 }
 
-private fun goSearch(
-    context: Context,
-    navController: NavController,
-    text: String
-) {
-    try {
-        bundles.putString(NEW_TEXT_FOR_RESULT, text)
-
-        navController.navigate(ResultViewerPage.route)
-
-    } catch (e: Exception) {
-        showDialogs(context, e.message.toString())
-    }
-}
-
-
-private fun showDialogs(context: Context, message: String){
-    Toast.makeText(context, message, Toast.LENGTH_SHORT).show()
-}
 
 
 

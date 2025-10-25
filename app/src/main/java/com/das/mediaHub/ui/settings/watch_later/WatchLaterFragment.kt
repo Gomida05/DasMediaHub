@@ -59,7 +59,7 @@ import coil.request.CachePolicy
 import coil.request.ImageRequest
 import com.das.mediaHub.MainActivity
 import com.das.mediaHub.R
-import com.das.mediaHub.data.YouTuber.loadStreamUrl
+import com.das.mediaHub.python.YouTuber.loadStreamUrl
 import com.das.mediaHub.data.local.DatabaseFavorite
 import com.das.mediaHub.data.constants.Action.ACTION_START
 import com.das.mediaHub.data.constants.Intents.NEW_INTENT_FOR_VIEWER
@@ -429,11 +429,10 @@ private fun ShowAlertDialog(
 
     if (shouldLoad) {
         LaunchedEffect(Unit) {
-            loadStreamUrl(
-                VideosListData(
-                    selectedData.watchUrl, selectedData.title, selectedData.viewer,
-                    selectedData.dateTime, selectedData.duration, selectedData.channelName, ""
-                ),
+            VideosListData(
+                selectedData.watchUrl, selectedData.title, selectedData.viewer,
+                selectedData.dateTime, selectedData.duration, selectedData.channelName, ""
+            ).loadStreamUrl(
                 onSuccess = {
                     val playIntent = Intent(context, AudioServiceFromUrl::class.java).apply {
                         action = ACTION_START

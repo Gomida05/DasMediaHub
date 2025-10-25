@@ -4,10 +4,11 @@ import android.app.Activity
 import androidx.media3.common.PlaybackException
 import androidx.media3.common.Player
 import com.das.mediaHub.PIP.shouldEnterPipMode
-import com.das.mediaHub.WakeLockHelper
+import com.das.mediaHub.WakeLockHelper.acquireWakeLock
+import com.das.mediaHub.WakeLockHelper.releaseWakeLock
 
 class LocalVideoListener(
-    private val activity: Activity?
+    private val activity: Activity
 ) : Player.Listener {
 
     override fun onPlayerError(error: PlaybackException) {
@@ -18,9 +19,9 @@ class LocalVideoListener(
     override fun onIsPlayingChanged(isPlaying: Boolean) {
         shouldEnterPipMode = isPlaying
         if (isPlaying) {
-            WakeLockHelper.acquireWakeLock(activity)
+            activity.acquireWakeLock()
         } else {
-            WakeLockHelper.releaseWakeLock(activity)
+            activity.releaseWakeLock()
         }
     }
 }

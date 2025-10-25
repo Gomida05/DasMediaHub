@@ -26,7 +26,7 @@ class PathSaver(private val context: Context) {
     }
 
     private fun getMusicDefaultDownloadPath(): String {
-        return "/storage/emulated/0/Music/ForUI"
+        return "/storage/emulated/0/Music/DasMediaHub"
     }
 
     fun setAudioDownloadPath(path: String) {
@@ -60,7 +60,7 @@ class PathSaver(private val context: Context) {
     }
 
     private fun getMoviesDefaultDownloadPath(): String {
-        return "/storage/emulated/0/Movies/ForUI"
+        return "/storage/emulated/0/Movies/DasMediaHub"
     }
 
 
