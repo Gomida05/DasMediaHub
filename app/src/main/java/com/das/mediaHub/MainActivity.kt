@@ -39,6 +39,7 @@ import com.das.mediaHub.python.YouTuber.isValidYoutubeURL
 import com.das.mediaHub.data.constants.Playback.PLAY_HERE_VIDEO
 import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.unit.dp
@@ -284,7 +285,7 @@ class MainActivity : ComponentActivity() {
 
     override fun onUserLeaveHint() {
         super.onUserLeaveHint()
-        if (shouldEnterPipMode) {
+        if (shouldEnterPipMode.value) {
 
             if (SDK_INT >= VERSION_CODES.O) {
                 val params = PictureInPictureParams.Builder()
@@ -495,6 +496,7 @@ class MainActivity : ComponentActivity() {
             }
         }
     }
+
 
 
     fun startDownloadingAudio(videoId: String, title: String){

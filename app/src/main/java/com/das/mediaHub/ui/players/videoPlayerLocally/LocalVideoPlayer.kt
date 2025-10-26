@@ -76,7 +76,7 @@ fun LocalVideoPlayer(activity: Activity, videoUri: String) {
 
     LaunchedEffect(Unit) {
         activity.setFullscreen(true)
-        shouldEnterPipMode = true
+        shouldEnterPipMode.value = true
         activity.releaseWakeLock()
         viewModel.loadItems(mediaItem.mediaMetadata.title.toString())
     }
@@ -124,7 +124,7 @@ fun LocalVideoPlayer(activity: Activity, videoUri: String) {
     DisposableEffect(Unit) {
         onDispose {
             manager.release()
-            shouldEnterPipMode = false
+            shouldEnterPipMode.value = false
             activity.let {
                 it.releaseWakeLock()
                 it.setFullscreen(false)

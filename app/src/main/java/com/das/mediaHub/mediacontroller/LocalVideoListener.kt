@@ -13,11 +13,11 @@ class LocalVideoListener(
 
     override fun onPlayerError(error: PlaybackException) {
         super.onPlayerError(error)
-        shouldEnterPipMode = false
+        shouldEnterPipMode.value = false
     }
 
     override fun onIsPlayingChanged(isPlaying: Boolean) {
-        shouldEnterPipMode = isPlaying
+        shouldEnterPipMode.value = isPlaying
         if (isPlaying) {
             activity.acquireWakeLock()
         } else {

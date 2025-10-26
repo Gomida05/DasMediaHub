@@ -4,6 +4,7 @@ import android.app.Application
 import com.chaquo.python.Python
 import com.chaquo.python.android.AndroidPlatform
 import com.das.mediaHub.python.YouTuber.pythonInstant
+import com.das.mediaHub.python.data.Names
 import com.das.mediaHub.python.data.StreamUrlRespond
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
@@ -39,8 +40,8 @@ internal object Main {
      * @param args Arguments to pass to the Python function.
      * @return The result of the Python call as a string.
      */
-    suspend inline fun <reified T> Python.callMethod(name: String, args: String): T = withContext(Dispatchers.IO) {
-        getModule("main")[name]?.call(args).toString().decodeStringToJson()
+    suspend inline fun <reified T> Python.callMethod(name: Names, args: String): T = withContext(Dispatchers.IO) {
+        getModule("main")[name.value]?.call(args).toString().decodeStringToJson()
     }
 
     /**
@@ -51,7 +52,7 @@ internal object Main {
      * @param id The YouTube video ID.
      * @return A [StreamUrlRespond] object parsed from the JSON result.
      */
-    suspend fun getStreamUrl(type: String, id: String): StreamUrlRespond {
+    suspend fun getStreamUrl(type: Names, id: String): StreamUrlRespond {
 
         return pythonInstant.callMethod(
             name = type,

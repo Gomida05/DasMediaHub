@@ -56,7 +56,6 @@ fun WelcomePage(
 
         Box(
             modifier = Modifier
-//                .padding(paddingValues)
                 .fillMaxSize()
                 .background(
                     Brush.verticalGradient(

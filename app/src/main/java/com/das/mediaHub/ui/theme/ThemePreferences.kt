@@ -10,7 +10,7 @@ import androidx.compose.runtime.remember
 import androidx.compose.ui.platform.LocalContext
 import androidx.core.content.edit
 
-object ThemePreferences {
+internal object ThemePreferences {
 
     private const val PREFS_NAME = "app_prefs"
     private const val THEME_KEY = "app_theme"

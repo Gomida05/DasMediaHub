@@ -13,11 +13,11 @@ import androidx.core.app.PictureInPictureModeChangedInfo
 import androidx.core.util.Consumer
 
 internal object PIP {
-    internal var shouldEnterPipMode = false
+    internal val shouldEnterPipMode = mutableStateOf(value =false)
 
     @Composable
     internal fun MainActivity.rememberIsInPipMode(): Boolean {
-        if (VERSION.SDK_INT <VERSION_CODES.O) return false
+        if (VERSION.SDK_INT <= VERSION_CODES.O) return false
 
         var pipMode by remember { mutableStateOf(isInPictureInPictureMode) }
         val activity = rememberUpdatedState(this)

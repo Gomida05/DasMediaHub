@@ -22,21 +22,21 @@ class VideoPlayerListener(
     override fun onPlaybackStateChanged(state: Int) {
         super.onPlaybackStateChanged(state)
         if (state == Player.STATE_ENDED) {
-            shouldEnterPipMode = false
+            shouldEnterPipMode.value = false
             playThisOne(navController,1)
         }
     }
 
     override fun onPlayerError(error: PlaybackException) {
         super.onPlayerError(error)
-        shouldEnterPipMode = false
+        shouldEnterPipMode.value = false
         scope.launch {
             snackBar.showSnackbar("Something went wrong: ${error.message}")
         }
     }
 
     override fun onIsPlayingChanged(isPlaying: Boolean) {
-        shouldEnterPipMode = isPlaying
+        shouldEnterPipMode.value = isPlaying
         if (isPlaying) {
             activity.acquireWakeLock()
         } else {

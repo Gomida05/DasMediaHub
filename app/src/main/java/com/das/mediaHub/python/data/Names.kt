@@ -1,26 +1,24 @@
 package com.das.mediaHub.python.data
 
-object Names {
+enum class Names(val value: String) {
 
     /**
-     ** SearchWithLink is function in python that allows to search for video details using YouTube url.
+     * SearchWithLink is a function in Python that allows searching for video details using a YouTube URL.
      */
-    const val SEARCH_WITH_URL = "SearchWithLink"
-
+    SEARCH_WITH_URL("SearchWithLink"),
 
     /**
-     ** Searcher is function in python that allows to search for videos using keywords.
+     * Searcher is a function in Python that allows searching for videos using keywords.
      */
-    const val SEARCHER = "Searcher"
-
-
-    /**
-     ** GET_VIDEO_STREAM_URL is function in python that allows to search for video's stream url.
-     */
-    const val GET_VIDEO_STREAM_URL = "get_video_url"
+    SEARCHER("Searcher"),
 
     /**
-     ** GET_AUDIO_STREAM_URL is function in python that allows to search for video's stream url.
+     * GET_VIDEO_STREAM_URL is a function in Python that allows fetching a video's stream URL.
      */
-    const val GET_AUDIO_STREAM_URL = "get_audio_url"
+    GET_VIDEO_STREAM_URL("get_video_url"),
+
+    /**
+     * GET_AUDIO_STREAM_URL is a function in Python that allows fetching a video's audio stream URL.
+     */
+    GET_AUDIO_STREAM_URL("get_audio_url");
 }

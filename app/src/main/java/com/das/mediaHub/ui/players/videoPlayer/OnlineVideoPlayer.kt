@@ -39,6 +39,7 @@ import androidx.compose.material.icons.filled.MoreVert
 import androidx.compose.material.icons.filled.MusicNote
 import androidx.compose.material.icons.filled.Share
 import androidx.compose.material.icons.filled.SmartDisplay
+import androidx.compose.material.icons.filled.Videocam
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Card
 import androidx.compose.material3.CircularProgressIndicator
@@ -46,6 +47,7 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
+import androidx.compose.material3.OutlinedIconButton
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.SnackbarHost
 import androidx.compose.material3.SnackbarHostState
@@ -94,6 +96,8 @@ import com.das.mediaHub.R
 import com.das.mediaHub.data.constants.GlobalVideoList.listOfVideosListData
 import com.das.mediaHub.data.constants.GlobalVideoList.previousVideosListData
 import com.das.mediaHub.NavScreens
+import com.das.mediaHub.OnLaunchComponents.openCustomTab
+import com.das.mediaHub.OnLaunchComponents.playAudioFromUrl
 import com.das.mediaHub.PIP.rememberIsInPipMode
 import com.das.mediaHub.PIP.shouldEnterPipMode
 import com.das.mediaHub.WakeLockHelper.acquireWakeLock
@@ -106,6 +110,7 @@ import com.das.mediaHub.data.constants.Intents.NEW_INTENT_FOR_VIEWER
 import com.das.mediaHub.data.model.VideoDetails
 import com.das.mediaHub.data.model.VideosListData
 import com.das.mediaHub.data.constants.GlobalVideoList.bundles
+import com.das.mediaHub.data.icons.YouTube
 import com.das.mediaHub.data.model.searcher.Video
 import com.das.mediaHub.mediacontroller.VideoPlayerListener
 import com.das.mediaHub.player.video.VideoPlayerManager
@@ -227,7 +232,7 @@ fun MainActivity.OnlineVideoPlayer(
         onDispose {
             releaseWakeLock()
             setFullscreen(false)
-            shouldEnterPipMode = false
+            shouldEnterPipMode.value = false
             videoPlayerManager.release()
         }
     }
@@ -371,7 +376,20 @@ fun MainActivity.OnlineVideoPlayer(
                                 videoDate = it.date
                                 videoChannelName = it.channelName
                             }
-                        )
+                        ) {
+                            videoPlayerManager.pause()
+                            val currentTimeSec = (mExoPlayer.currentPosition) / 1000
+                            val youtubeUrl = "https://www.youtube.com/watch?v=${videoID}&t=${currentTimeSec}s".toUri()
+
+                            try {
+                                val intent = Intent(Intent.ACTION_VIEW, youtubeUrl).apply {
+                                    setPackage("com.google.android.youtube")
+                                }
+                                context.startActivity(intent)
+                            } catch (_: Exception) {
+                                context.openCustomTab(youtubeUrl)
+                            }
+                        }
 
                     }
 
@@ -449,7 +467,8 @@ private fun VideoDetailsComposable(
     clickForMore: () -> Unit,
     downloadAsVideo: (videoTitle: String) -> Unit,
     downloadAsMusic: (title: String) -> Unit,
-    finished: (title: VideoDetails) ->Unit
+    finished: (title: VideoDetails) ->Unit,
+    playItInYouTube: () -> Unit
 ) {
     val mContext = LocalContext.current
 
@@ -578,11 +597,13 @@ private fun VideoDetailsComposable(
                 }
                 Spacer(modifier = Modifier.height(8.dp))
                 Row(
-                    horizontalArrangement = Arrangement.SpaceAround,
+                    horizontalArrangement = Arrangement.SpaceEvenly,
+                    verticalAlignment = Alignment.CenterVertically,
                     modifier = Modifier
+                        .padding(horizontal = 2.dp)
                         .fillMaxWidth()
                 ) {
-                    OutlinedButton(
+                    OutlinedIconButton (
                         onClick = {
                             val shareIntent = Intent(Intent.ACTION_SEND).apply {
                                 type = "text/plain"
@@ -590,7 +611,6 @@ private fun VideoDetailsComposable(
                                     Intent.EXTRA_TEXT,
                                     "https://youtu.be/${videoId}?feature=shared"
                                 )
-//                                "https://www.youtube.com/watch?v=${videoId}&feature=shared"
                             }
 
                             val chooser = Intent.createChooser(shareIntent, "Share via")
@@ -600,10 +620,10 @@ private fun VideoDetailsComposable(
                     ) {
                         Icon(
                             painter = rememberVectorPainter(Icons.Default.Share),
-                            ""
+                            "Share the video"
                         )
                     }
-                    OutlinedButton(
+                    OutlinedIconButton(
                         onClick = {
                             if (isSaved) {
                                 dbForFav.deleteWatchUrl(videoId)
@@ -635,7 +655,7 @@ private fun VideoDetailsComposable(
                             tint = if (isSaved) Color.Red else MaterialTheme.colorScheme.primary
                         )
                     }
-                    OutlinedButton(
+                    OutlinedIconButton(
                         onClick = {
                             downloadAsMusic(title)
                         },
@@ -643,11 +663,11 @@ private fun VideoDetailsComposable(
                     ) {
                         Icon(
                             painter = rememberVectorPainter(Icons.Default.MusicNote),
-                            ""
+                            "Download the video as music"
                         )
                     }
 
-                    OutlinedButton(
+                    OutlinedIconButton(
                         onClick = {
                             downloadAsVideo(
                                 title
@@ -656,12 +676,25 @@ private fun VideoDetailsComposable(
                         shape = RoundedCornerShape(25)
                     ) {
                         Icon(
-                            painter = rememberVectorPainter(Icons.Default.SmartDisplay),
-                            ""
+                            painter = rememberVectorPainter(Icons.Default.Videocam),
+                            "Download video as video"
                         )
                     }
 
-                    OutlinedButton(
+                    OutlinedIconButton(
+                        onClick = {
+                            playItInYouTube()
+                        },
+                        shape = RoundedCornerShape(25)
+                    ) {
+                        Icon(
+                            painter = rememberVectorPainter(YouTube),
+                            tint = Color.Red,
+                            contentDescription = "Play in YouTube"
+                        )
+                    }
+
+                    OutlinedIconButton(
                         onClick = {
                             clickForMore()
                         },
@@ -669,7 +702,7 @@ private fun VideoDetailsComposable(
                     ) {
                         Icon(
                             painter = rememberVectorPainter(Icons.AutoMirrored.Default.More),
-                            ""
+                            "Click here for more options"
                         )
                     }
                 }
@@ -693,6 +726,7 @@ private fun VideoDetailsComposable(
     }
 
 }
+
 
 
 
@@ -1031,6 +1065,150 @@ private fun ShowAlertDialog(
 ) {
     val thumbnailUrl = "https://img.youtube.com/vi/${selectedItem.videoId}/0.jpg"
 
+    var isLoading by remember { mutableStateOf(false) }
+    var errorMessage by remember { mutableStateOf<String?>(null) }
+
+    val scope = rememberCoroutineScope()
+
+    if (isLoading) {
+        Dialog(
+            onDismissRequest = { /* block user from dismissing while loading */ },
+        ) {
+            Card(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .height(200.dp)
+                    .padding(16.dp),
+                shape = RoundedCornerShape(16.dp),
+            ) {
+                Column(
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .padding(16.dp),
+                    verticalArrangement = Arrangement.Center,
+                    horizontalAlignment = Alignment.CenterHorizontally
+                ) {
+                    CircularProgressIndicator()
+                    Spacer(modifier = Modifier.height(12.dp))
+                    Text("Fetching stream URL...", style = MaterialTheme.typography.bodyLarge)
+                }
+            }
+        }
+    }
+
+    if (errorMessage != null) {
+        AlertDialog(
+            onDismissRequest = {
+                errorMessage = null
+                onDismissRequest()
+            },
+            confirmButton = {
+                TextButton(onClick = {
+                    errorMessage = null
+                    onDismissRequest()
+                }) { Text("OK") }
+            },
+            title = { Text("Error") },
+            text = { Text(errorMessage ?: "Unknown error") }
+        )
+    }
+
+    if (!isLoading && errorMessage == null) {
+        Dialog(onDismissRequest = { onDismissRequest() }) {
+            Card(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .height(350.dp)
+                    .padding(13.dp)
+                    .dropShadow(
+                        RoundedCornerShape(16),
+                        shadow = Shadow(25.dp)
+                    ),
+                shape = RoundedCornerShape(16.dp),
+            ) {
+                Column(
+                    modifier = Modifier.fillMaxSize(),
+                    verticalArrangement = Arrangement.Center,
+                    horizontalAlignment = Alignment.CenterHorizontally
+                ) {
+                    Text(
+                        text = "Do you want to download it as video or audio, or play it in background?",
+                        modifier = Modifier.padding(8.dp),
+                        textAlign = TextAlign.Center
+                    )
+                    AsyncImage(
+                        model = ImageRequest.Builder(mContext)
+                            .data(thumbnailUrl)
+                            .crossfade(true)
+                            .build(),
+                        contentDescription = "Thumbnail",
+                        modifier = Modifier
+                            .height(190.dp)
+                            .clip(RoundedCornerShape(4)),
+                        contentScale = ContentScale.Fit
+                    )
+
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.Center,
+                    ) {
+                        TextButton(
+                            onClick = {
+                                isLoading = true
+                                scope.launch {
+                                    selectedItem.loadStreamUrl(
+                                        onSuccess = {
+                                            mContext.playAudioFromUrl(audioUrl = it.audioUrl, selectedItem = it)
+                                            isLoading = false
+                                            onDismissRequest()
+                                        },
+                                        onFailure = { err ->
+                                            errorMessage = err.message
+                                            isLoading = false
+                                        }
+                                    )
+                                }
+                            },
+                            modifier = Modifier.padding(4.dp),
+                        ) {
+                            Text("Background")
+                        }
+
+                        TextButton(
+                            onClick = {
+                                MainActivity().startDownloadingAudio(selectedItem.videoId, selectedItem.title)
+                                onDismissRequest()
+                            },
+                            modifier = Modifier.padding(4.dp),
+                        ) {
+                            Text("Music")
+                        }
+
+                        TextButton(
+                            onClick = {
+                                MainActivity().startDownloadingVideo(selectedItem.videoId, selectedItem.title)
+                                onDismissRequest()
+                            },
+                            modifier = Modifier.padding(4.dp),
+                        ) {
+                            Text("Video")
+                        }
+                    }
+                }
+            }
+        }
+    }
+}
+
+/** Hello**
+@Composable
+private fun ShowAlertDialog(
+    mContext: Context,
+    selectedItem: VideosListData,
+    onDismissRequest: () -> Unit
+) {
+    val thumbnailUrl = "https://img.youtube.com/vi/${selectedItem.videoId}/0.jpg"
+
 
     var shouldLoad by remember { mutableStateOf(false) }
 
@@ -1140,7 +1318,7 @@ private fun ShowAlertDialog(
 
 
 
-
+*/
 
 
 
