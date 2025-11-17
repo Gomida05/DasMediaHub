@@ -1,7 +1,6 @@
 package com.das.mediaHub.ui.players.videoPlayerLocally
 
 import android.app.Application
-import android.net.Uri
 import androidx.compose.runtime.State
 import androidx.compose.runtime.mutableStateOf
 import androidx.core.net.toUri
@@ -12,12 +11,14 @@ import androidx.media3.common.MediaMetadata
 import com.das.mediaHub.data.local.PathSaver
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
-import kotlinx.coroutines.withContext
 import java.io.File
 
 class LocalPlayerViewModel(application: Application): AndroidViewModel(application) {
 
-    private val pathLocation = PathSaver(getApplication()).getVideosDownloadPath()
+    private val pathSaver by lazy {
+        PathSaver(application)
+    }
+    private val pathLocation = pathSaver.getVideosDownloadPath()
     private val _isLoading = mutableStateOf(false)
     val isLoading: State<Boolean> = _isLoading
 
@@ -31,11 +32,9 @@ class LocalPlayerViewModel(application: Application): AndroidViewModel(applicati
         _isLoading.value = true
         _isError.value = null
 
-        viewModelScope.launch {
+        viewModelScope.launch(Dispatchers.IO) {
             try {
-               val items = withContext(Dispatchers.IO){
-                   fetchDataFromDatabase(currentMediaTitle)
-               }
+               val items = fetchDataFromDB(currentMediaTitle)
                 _result.value = items
             } catch (e: Exception) {
                 _isError.value = "Found some error: ${e.message}"
@@ -46,42 +45,30 @@ class LocalPlayerViewModel(application: Application): AndroidViewModel(applicati
 
     }
 
-    private fun fetchDataFromDatabase(
+    private fun fetchDataFromDB(
         currentMediaTitle: String
-    ): MutableList<MediaItem> {
+    ): List<MediaItem> {
 
-        val fileLists = mutableListOf<MediaItem>().apply {
-            clear()
-        }
         val pathOfVideos = File(pathLocation)
-        if (pathOfVideos.exists()) {
-            val fileNames = arrayOfNulls<String>(pathOfVideos.listFiles()?.size ?: 0)
-            val pathOfVideosUris = arrayOfNulls<Uri?>(pathOfVideos.listFiles()?.size ?: 0)
-            pathOfVideos.listFiles()?.let {
-                it.mapIndexed { index, item ->
-                    fileNames[index] = item?.name
-                    pathOfVideosUris[index] = item?.toUri()
 
-                }
-            }
-            fileNames.zip(pathOfVideosUris).forEach { (fileName, videoUri) ->
-                if (videoUri != null && fileName != null && currentMediaTitle != fileName) {
-                    val exoMetadata = MediaMetadata.Builder()
-                        .setTitle(fileName)
-                        .setMediaType(MediaMetadata.MEDIA_TYPE_VIDEO)
-                        .build()
+        if (!pathOfVideos.exists() || !pathOfVideos.isDirectory) return emptyList()
 
-                    fileLists.add(
-                        MediaItem.Builder()
-                            .setMediaId(videoUri.toString())
-                            .setUri(videoUri)
-                            .setMediaMetadata(exoMetadata)
-                            .build()
-                    )
-                }
+        return pathOfVideos.listFiles()
+            ?.asSequence()
+            ?.filter { it.isFile && it.name != currentMediaTitle }
+            ?.map { file ->
+                val metadata = MediaMetadata.Builder()
+                    .setTitle(file.name)
+                    .setMediaType(MediaMetadata.MEDIA_TYPE_VIDEO)
+                    .build()
+
+                MediaItem.Builder()
+                    .setMediaId(file.toUri().toString())
+                    .setUri(file.toUri())
+                    .setMediaMetadata(metadata)
+                    .build()
             }
-        }
-        return fileLists
+            ?.toList() ?: emptyList()
 
     }
 }

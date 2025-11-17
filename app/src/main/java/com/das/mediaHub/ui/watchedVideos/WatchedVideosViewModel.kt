@@ -12,6 +12,9 @@ import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 
 class WatchedVideosViewModel(application: Application): AndroidViewModel(application) {
+
+    private val dbHelper = WatchHistory(application)
+
     private val _savedLists = mutableStateOf<List<SavedVideosListData>>(emptyList())
     val savedLists: State<List<SavedVideosListData>> = _savedLists
 
@@ -42,8 +45,6 @@ class WatchedVideosViewModel(application: Application): AndroidViewModel(applica
 
 
     private fun fetchDataFromDatabase(): MutableList<SavedVideosListData>? {
-        val globalContext = getApplication<Application>().applicationContext
-        val dbHelper = WatchHistory(globalContext)
         val cursor = dbHelper.getResults()
 
         val savedVideosListData = mutableListOf<SavedVideosListData>()

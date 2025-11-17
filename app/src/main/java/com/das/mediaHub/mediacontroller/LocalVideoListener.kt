@@ -8,7 +8,7 @@ import com.das.mediaHub.WakeLockHelper.acquireWakeLock
 import com.das.mediaHub.WakeLockHelper.releaseWakeLock
 
 class LocalVideoListener(
-    private val activity: Activity
+    val activity: Activity
 ) : Player.Listener {
 
     override fun onPlayerError(error: PlaybackException) {

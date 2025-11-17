@@ -3,7 +3,7 @@ package com.das.mediaHub.python
 import android.app.Application
 import com.chaquo.python.Python
 import com.chaquo.python.android.AndroidPlatform
-import com.das.mediaHub.python.YouTuber.pythonInstant
+import com.das.mediaHub.data.model.PlayListDataClass
 import com.das.mediaHub.python.data.Names
 import com.das.mediaHub.python.data.StreamUrlRespond
 import kotlinx.coroutines.Dispatchers
@@ -15,7 +15,10 @@ import kotlinx.serialization.json.Json
  * using Chaquopy. This object helps start Python, call Python functions, and parse
  * their responses into Kotlin data classes.
  */
-internal object Main {
+internal object PythonMain {
+    val pythonInstant by lazy {
+        Python.getInstance()
+    }
     private val jsonParser = Json {
         ignoreUnknownKeys = true
         coerceInputValues = true
@@ -58,6 +61,18 @@ internal object Main {
             name = type,
             args = "https://www.youtube.com/watch?v=$id"
         )
+    }
+
+    suspend fun getPlayListUrl(url: String) : List<PlayListDataClass> {
+
+
+        val python = pythonInstant.getModule("main")
+
+        val getResultFromPython = withContext(Dispatchers.IO) {
+            python["getPlayListUrls"]?.call(url)
+        }.toString()
+
+        return getResultFromPython.decodeStringToJson()
     }
 
     /**

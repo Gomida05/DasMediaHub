@@ -39,7 +39,6 @@ import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
-import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -196,9 +195,9 @@ private fun CategoryItems(
     viewModel: WatchedVideosViewModel
 ) {
 
-    var showDialog by remember { mutableStateOf(false) }
+    val showDialog = remember { mutableStateOf(false) }
 
-    var showInfoDialog by remember { mutableStateOf(false) }
+    val showInfoDialog = remember { mutableStateOf(false) }
 
     val videoId = selectedItem.watchUrl
     val title = selectedItem.title
@@ -235,7 +234,7 @@ private fun CategoryItems(
                     )
                 },
                 onLongClick = {
-                    showDialog = true
+                    showDialog.value = true
                 }
             )
     ) {
@@ -276,7 +275,7 @@ private fun CategoryItems(
 
                 IconButton(
                     onClick = {
-                        showInfoDialog = true
+                        showInfoDialog.value = true
                     }
                 ) {
                     AsyncImage(
@@ -343,7 +342,7 @@ private fun CategoryItems(
                 }
                 IconButton(
                     onClick = {
-                        showDialog = true
+                        showDialog.value = true
                     }
 
                 ) {
@@ -355,7 +354,7 @@ private fun CategoryItems(
             }
         }
     }
-    if (showDialog){
+    if (showDialog.value){
         ShowAlertDialog(
             context,
             selectedItem,
@@ -363,12 +362,12 @@ private fun CategoryItems(
                 WatchHistory(context).deleteWatchUrl(selectedId)
                 viewModel.removeSearchItem(selectedItem)
             },
-            onDismissRequest = {showDialog = false}
+            onDismissRequest = {showDialog.value = false}
         )
     }
-    if (showInfoDialog){
+    if (showInfoDialog.value){
         InfoDialog{
-            showInfoDialog = false
+            showInfoDialog.value = false
         }
     }
 }
@@ -455,9 +454,9 @@ private fun ShowAlertDialog(
 ) {
 
 
-    var shouldLoad by remember { mutableStateOf(false) }
+    val shouldLoad = remember { mutableStateOf(false) }
 
-    if (shouldLoad) {
+    if (shouldLoad.value) {
         LaunchedEffect(Unit) {
             VideosListData(
                 selectedData.watchUrl, selectedData.title, selectedData.viewer,
@@ -480,7 +479,7 @@ private fun ShowAlertDialog(
                     println("Error: $it")
                 }
             )
-            shouldLoad = false
+            shouldLoad.value = false
         }
     }
     AlertDialog(
@@ -502,7 +501,7 @@ private fun ShowAlertDialog(
         dismissButton = {
             TextButton(
                 onClick = {
-                   shouldLoad = true
+                   shouldLoad.value = true
                     onDismissRequest()
                 },
 

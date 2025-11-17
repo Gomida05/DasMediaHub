@@ -8,6 +8,7 @@ import androidx.lifecycle.viewModelScope
 import androidx.media3.common.MediaItem
 import androidx.media3.common.MediaMetadata
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.Job
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import java.io.File
@@ -19,43 +20,56 @@ import java.util.Locale
 class DownloadsPageViewModel : ViewModel() {
 
     private val dateFormat = SimpleDateFormat("dd/MM/yyyy", Locale.getDefault())
+
     private val _videosListData = mutableStateOf<List<MediaItem>>(emptyList())
     val videosListData: State<List<MediaItem>> = _videosListData
 
-    private var _listMusic = mutableStateOf<List<MediaItem>>(emptyList())
-    val listMusic: State<List<MediaItem>> = _listMusic
+    private val _musicListData = mutableStateOf<List<MediaItem>>(emptyList())
+    val musicListData: State<List<MediaItem>> = _musicListData
+
     private val _loading = mutableStateOf(false)
     val isLoading: State<Boolean> = _loading
+
     private val _error = mutableStateOf<String?>(null)
     val errorFound: State<String?> = _error
 
-    fun fetchVideoFiles(pathLocation: String) {
-        _loading.value = true
-        _error.value = null
-        viewModelScope.launch {
+    var currentJob: Job? = null
 
-            try{
-                val result = withContext(Dispatchers.IO){
-                    loadVideos(pathLocation)
-                }
-                _videosListData.value = result
-            } catch (e: Exception) {
-                _error.value = "Something went wrong: ${e.message}"
-            } finally {
-                _loading.value = false
-            }
+    private var cachedVideos: List<MediaItem>? = null
+    private var cachedMusic: List<MediaItem>? = null
+
+    fun fetchVideoFiles(pathLocation: String) {
+        if (cachedVideos != null) {
+            _videosListData.value = cachedVideos!!
+            return
+        }
+
+        startLoading {
+            val result = loadMediaFiles(pathLocation, ".mp4", MediaMetadata.MEDIA_TYPE_VIDEO)
+            cachedVideos = result
+            _videosListData.value = result
         }
     }
 
     fun fetchMusicFiles(pathLocation: String) {
-        _loading.value = true
-        _error.value = null
-        viewModelScope.launch {
+        if (cachedMusic != null) {
+            _musicListData.value = cachedMusic!!
+            return
+        }
+
+        startLoading {
+            val result = loadMediaFiles(pathLocation, ".mp3", MediaMetadata.MEDIA_TYPE_MUSIC)
+            cachedMusic = result
+            _musicListData.value = result
+        }
+    }
+
+    private fun startLoading(block: suspend () -> Unit) {
+        currentJob?.cancel()
+        currentJob = viewModelScope.launch(Dispatchers.IO) {
             try {
-                val result = withContext(Dispatchers.IO) {
-                    loadMusics(pathLocation)
-                }
-                _listMusic.value = result
+                _loading.value = true
+                block()
             } catch (e: Exception) {
                 _error.value = "Something went wrong: ${e.message}"
             } finally {
@@ -64,60 +78,33 @@ class DownloadsPageViewModel : ViewModel() {
         }
     }
 
-    private fun loadVideos(pathLocation: String): List<MediaItem> {
-        val downloadedList = mutableListOf<MediaItem>()
-        val pathOfFiles = File(pathLocation)
-        if (pathOfFiles.exists()) {
-            val files = pathOfFiles.listFiles() ?: emptyArray()
-            for (file in files ) {
-                val lastModified = file.lastModified()
-                val formattedDate = formatDate(lastModified)
-                val fileSizeFormatted = formatFileSize(file.length())
-                val mediaMetaData = MediaMetadata.Builder()
-                    .setTitle(file.name.removeSuffix(".mp4"))
-                    .setDescription(formattedDate)
-                    .setArtist(fileSizeFormatted)
-                    .setMediaType(MediaMetadata.MEDIA_TYPE_FOLDER_VIDEOS)
-                    .build()
-                downloadedList.add(
-                    MediaItem.Builder()
-                        .setMediaId(file.toUri().toString())
-                        .setUri(file.toUri())
-                        .setMediaMetadata(mediaMetaData)
-                        .setTag(fileSizeFormatted)
-                        .build()
-                )
-            }
-        }
-        return downloadedList
-    }
+    private fun loadMediaFiles(pathLocation: String, extension: String, mediaType: Int): List<MediaItem> {
+        val dir = File(pathLocation)
+        if (!dir.exists() || !dir.isDirectory) return emptyList()
 
-    private fun loadMusics(pathLocation: String): List<MediaItem> {
-        val musicMutableList = mutableListOf<MediaItem>()
-        val pathOfFiles = File(pathLocation)
-        if (pathOfFiles.exists()) {
-            val files = pathOfFiles.listFiles() ?: emptyArray()
-            for (file in files ){
+        return dir.listFiles()
+            ?.asSequence()
+            ?.filter { it.isFile && it.name.endsWith(extension, ignoreCase = true) }
+            ?.map { file ->
                 val lastModified = file.lastModified()
                 val formattedDate = formatDate(lastModified)
-                val fileSizeFormatted = formatFileSize(file.length())
-                val mediaMetaData = MediaMetadata.Builder()
-                    .setTitle(file.name.removeSuffix(".mp3"))
+                val fileSize = formatFileSize(file.length())
+
+                val metadata = MediaMetadata.Builder()
+                    .setTitle(file.name.removeSuffix(extension))
                     .setDescription(formattedDate)
-                    .setMediaType(MediaMetadata.MEDIA_TYPE_MUSIC)
-                    .setArtist(fileSizeFormatted)
+                    .setArtist(fileSize)
+                    .setMediaType(mediaType)
                     .build()
-                musicMutableList.add(
-                    MediaItem.Builder()
-                        .setMediaId(file.toUri().toString())
-                        .setUri(file.toUri())
-                        .setMediaMetadata(mediaMetaData)
-                        .setTag(fileSizeFormatted)
-                        .build()
-                )
+
+                MediaItem.Builder()
+                    .setMediaId(file.toUri().toString())
+                    .setUri(file.toUri())
+                    .setMediaMetadata(metadata)
+                    .setTag(fileSize)
+                    .build()
             }
-        }
-        return musicMutableList
+            ?.toList() ?: emptyList()
     }
 
 

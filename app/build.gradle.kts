@@ -41,7 +41,6 @@ android {
         ndk {
             abiFilters.addAll(listOf("arm64-v8a", "x86_64"))
         }
-        buildConfigField("String", "MY_WEB_CLIENT_ID", "\"${loadLocalProperties["MY_WEB_CLIENT_ID"]}\"")
     }
 
 
@@ -79,7 +78,6 @@ android {
 
     buildFeatures {
         compose = true
-        buildConfig = true
     }
 
 
@@ -111,7 +109,6 @@ dependencies {
     //Firebase dependencies
     implementation(platform(libs.firebase.bom))
     implementation(libs.firebase.analytics)
-    implementation(libs.firebase.storage)
     implementation(libs.firebase.auth.ktx)
     implementation(libs.firebase.firestore.ktx)
 

@@ -40,7 +40,6 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
-import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -214,7 +213,7 @@ fun VideoItems(
     val videoThumbnailURL = searchItem.id
     val channelThumbnails = searchItem.channel?.thumbnails?.get(0)?.url ?: ""
 
-    var showDialog by remember { mutableStateOf(false) }
+    val showDialog = remember { mutableStateOf(false) }
 
 
     Box(
@@ -239,7 +238,7 @@ fun VideoItems(
 
                 },
                 onLongClick = {
-                    showDialog = true
+                    showDialog.value = true
                 }
             )
     ) {
@@ -340,7 +339,7 @@ fun VideoItems(
                 }
                 IconButton(
                     onClick = {
-                        showDialog = true
+                        showDialog.value = true
                     }
                 ) {
                     Icon(
@@ -352,14 +351,16 @@ fun VideoItems(
         }
     }
 
-    if (showDialog) {
+    if (showDialog.value) {
         ShowAlertDialog(
             mContext = context,
             selectedItem = VideosListData(
                 videoId, title, viewsNumber, dateOfVideo,
                 duration, channelName, channelThumbnails
             ),
-            onDismissRequest = { showDialog = false }
+            onDismissRequest = {
+                showDialog.value = false
+            }
         )
     }
 }
@@ -372,10 +373,10 @@ private fun ShowAlertDialog(
 ){
     val thumbnailUrl = "https://img.youtube.com/vi/${selectedItem.videoId}/0.jpg"
 
-    var shouldLoad by remember { mutableStateOf(false) }
+    val shouldLoad = remember { mutableStateOf(false) }
 
-    LaunchedEffect(shouldLoad) {
-        if (shouldLoad) {
+    if (shouldLoad.value) {
+        LaunchedEffect(shouldLoad.value) {
             selectedItem.loadStreamUrl(
                 onSuccess = {
                     val playIntent = Intent(mContext, AudioServiceFromUrl::class.java).apply {
@@ -394,7 +395,7 @@ private fun ShowAlertDialog(
                     println("Error: $it")
                 }
             )
-            shouldLoad = false
+            shouldLoad.value = false
         }
     }
 
@@ -437,7 +438,7 @@ private fun ShowAlertDialog(
                 ) {
                     TextButton(
                         onClick = {
-                            shouldLoad = true
+                            shouldLoad.value = true
                         },
                         modifier = Modifier.padding(4.dp),
                     ) {

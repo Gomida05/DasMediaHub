@@ -38,7 +38,6 @@ import androidx.compose.material.icons.filled.Info
 import androidx.compose.material.icons.filled.MoreVert
 import androidx.compose.material.icons.filled.MusicNote
 import androidx.compose.material.icons.filled.Share
-import androidx.compose.material.icons.filled.SmartDisplay
 import androidx.compose.material.icons.filled.Videocam
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Card
@@ -46,7 +45,6 @@ import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.OutlinedIconButton
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.SnackbarHost
@@ -64,6 +62,7 @@ import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.UiComposable
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.dropShadow
 import androidx.compose.ui.graphics.Color
@@ -130,8 +129,8 @@ fun MainActivity.OnlineVideoPlayer(
 ) {
     val snackBarHostState = remember { SnackbarHostState() }
     val scope = rememberCoroutineScope()
-    var isInFullScreen by rememberSaveable { mutableStateOf(false) }
-    var showAlertDialog by rememberSaveable { mutableStateOf(false) }
+    val isInFullScreen = remember { mutableStateOf(false) }
+    val showAlertDialog = remember { mutableStateOf(false) }
 
 
     val viewModel = viewModel<ViewerViewModel>()
@@ -161,9 +160,9 @@ fun MainActivity.OnlineVideoPlayer(
         PlayerView(context).apply {
             player = mExoPlayer
             keepScreenOn = true
-            setFullscreenButtonState(isInFullScreen)
+            setFullscreenButtonState(isInFullScreen.value)
             setFullscreenButtonClickListener {
-                isInFullScreen = it
+                isInFullScreen.value = it
             }
         }
     }
@@ -267,7 +266,7 @@ fun MainActivity.OnlineVideoPlayer(
             if (videoUrl.isNotEmpty() && !isLoading) {
 
 
-                val playerModifier = if (isInFullScreen) {
+                val playerModifier = if (isInFullScreen.value) {
                     Modifier
                         .fillMaxSize()
                 } else {
@@ -284,13 +283,12 @@ fun MainActivity.OnlineVideoPlayer(
                         .then(
                             if (isInPipMode) Modifier.fillMaxSize() else Modifier
                         ),
-                    factory = { context ->
-
+                    factory = @UiComposable {
                         view
                     },
-                    update = { playerView ->
+                    update = @UiComposable { playerView ->
                         playerView.player = mExoPlayer
-                        playerView.resizeMode = if (isInFullScreen) {
+                        playerView.resizeMode = if (isInFullScreen.value) {
                             AspectRatioFrameLayout.RESIZE_MODE_ZOOM
                         } else {
                             AspectRatioFrameLayout.RESIZE_MODE_FIT
@@ -306,7 +304,7 @@ fun MainActivity.OnlineVideoPlayer(
                 ) {
                     CircularProgressIndicator(modifier = Modifier.align(Alignment.Center))
                 }
-            } else  {
+            } else {
                 Box(
                     modifier = Modifier
                         .height(220.dp)
@@ -338,7 +336,7 @@ fun MainActivity.OnlineVideoPlayer(
                 }
 
             }
-            if (!isInFullScreen) {
+            if (!isInFullScreen.value) {
                 LazyColumn(
                     modifier = Modifier.weight(1f)
                 ) {
@@ -350,7 +348,7 @@ fun MainActivity.OnlineVideoPlayer(
                             duration = videoDuration ?: "0:00",
                             viewModel = viewModel,
                             clickForMore = {
-                                showAlertDialog = true
+                                showAlertDialog.value = true
                             },
                             downloadAsVideo = {
                                 scope.launch {
@@ -433,11 +431,11 @@ fun MainActivity.OnlineVideoPlayer(
 
 
     LaunchedEffect(isInFullScreen) {
-        setFullscreen(isInFullScreen)
+        setFullscreen(isInFullScreen.value)
     }
 
 
-    if (showAlertDialog){
+    if (showAlertDialog.value){
         AskToPlay(
             context,
             videoUrl,
@@ -451,7 +449,7 @@ fun MainActivity.OnlineVideoPlayer(
                 videoChannelThumbnails.toString()
             ),
             onDismissRequest = {
-                showAlertDialog = false
+                showAlertDialog.value = false
             }
         )
     }
@@ -472,8 +470,8 @@ private fun VideoDetailsComposable(
 ) {
     val mContext = LocalContext.current
 
-    var showDescriptionDialog by rememberSaveable { mutableStateOf(false) }
-    var comingSoonDialog by rememberSaveable { mutableStateOf(false) }
+    val showDescriptionDialog = rememberSaveable { mutableStateOf(false) }
+    val comingSoonDialog = rememberSaveable { mutableStateOf(false) }
     val isLoading by viewModel.isLoadings
     val error by viewModel.errorVideoDetails
 
@@ -535,7 +533,7 @@ private fun VideoDetailsComposable(
                     modifier = Modifier
                         .fillMaxWidth()
                         .combinedClickable(onClick = {
-                            showDescriptionDialog = true
+                            showDescriptionDialog.value = true
                         })
                 )
 //                Spacer(modifier = Modifier.height(5.dp))
@@ -557,7 +555,7 @@ private fun VideoDetailsComposable(
                             .clip(RoundedCornerShape(50))
                             .combinedClickable(
                                 onClick = {
-                                    comingSoonDialog = true
+                                    comingSoonDialog.value = true
                                 }
                             ),
                         alignment = Alignment.CenterStart,
@@ -706,11 +704,11 @@ private fun VideoDetailsComposable(
                         )
                     }
                 }
-                if (showDescriptionDialog) {
+                if (showDescriptionDialog.value) {
                     ShowDescriptionDialog(
                         it.description
                     ) {
-                        showDescriptionDialog = false
+                        showDescriptionDialog.value = false
                     }
                 }
             }
@@ -718,10 +716,10 @@ private fun VideoDetailsComposable(
     }
 
 
-    if (comingSoonDialog){
+    if (comingSoonDialog.value){
 
         ComingSoonAlertDialog {
-            comingSoonDialog = false
+            comingSoonDialog.value = false
         }
     }
 
@@ -745,8 +743,8 @@ private fun VideoLists(
     val videoThumbnailURL = searchItem.id
     val channelThumbnails = searchItem.channel?.thumbnails?.get(0)?.url ?: ""
 
-    var showDialog by remember { mutableStateOf(false) }
-    var showInfoDialog by remember { mutableStateOf(false) }
+    val showDialog = remember { mutableStateOf(false) }
+    val showInfoDialog = remember { mutableStateOf(false) }
 
     Box(
         modifier = Modifier
@@ -761,7 +759,7 @@ private fun VideoLists(
                     )
                 },
                 onLongClick = {
-                    showDialog = true
+                    showDialog.value = true
                 }
             )
     ) {
@@ -804,7 +802,7 @@ private fun VideoLists(
 
                 IconButton(
                     onClick = {
-                        showInfoDialog = true
+                        showInfoDialog.value = true
                     }
                 ) {
                     AsyncImage(
@@ -868,7 +866,7 @@ private fun VideoLists(
                 }
                 IconButton(
                     onClick = {
-                        showDialog = true
+                        showDialog.value = true
                     }
 
                 ) {
@@ -881,7 +879,7 @@ private fun VideoLists(
         }
     }
 
-    if (showDialog || showInfoDialog) {
+    if (showDialog.value || showInfoDialog.value) {
         Box(
             modifier = Modifier
                 .fillMaxSize()
@@ -889,21 +887,21 @@ private fun VideoLists(
         )
     }
 
-    if (showInfoDialog){
+    if (showInfoDialog.value){
         AlertDialogForUser{
-            showInfoDialog = false
+            showInfoDialog.value = false
         }
 
     }
 
-    if (showDialog) {
+    if (showDialog.value) {
         ShowAlertDialog(
             mContext = context,
             selectedItem = VideosListData(
                 videoId, title, viewsNumber, dateOfVideo,
                 duration, channelName, channelThumbnails
             ),
-            onDismissRequest = { showDialog = false }
+            onDismissRequest = { showDialog.value = false }
         )
     }
 }
@@ -1065,12 +1063,12 @@ private fun ShowAlertDialog(
 ) {
     val thumbnailUrl = "https://img.youtube.com/vi/${selectedItem.videoId}/0.jpg"
 
-    var isLoading by remember { mutableStateOf(false) }
-    var errorMessage by remember { mutableStateOf<String?>(null) }
+    val isLoading = remember { mutableStateOf(false) }
+    val errorMessage = remember { mutableStateOf<String?>(null) }
 
     val scope = rememberCoroutineScope()
 
-    if (isLoading) {
+    if (isLoading.value) {
         Dialog(
             onDismissRequest = { /* block user from dismissing while loading */ },
         ) {
@@ -1096,24 +1094,24 @@ private fun ShowAlertDialog(
         }
     }
 
-    if (errorMessage != null) {
+    if (errorMessage.value != null) {
         AlertDialog(
             onDismissRequest = {
-                errorMessage = null
+                errorMessage.value = null
                 onDismissRequest()
             },
             confirmButton = {
                 TextButton(onClick = {
-                    errorMessage = null
+                    errorMessage.value = null
                     onDismissRequest()
                 }) { Text("OK") }
             },
             title = { Text("Error") },
-            text = { Text(errorMessage ?: "Unknown error") }
+            text = { Text(errorMessage.value ?: "Unknown error") }
         )
     }
 
-    if (!isLoading && errorMessage == null) {
+    if (!isLoading.value && errorMessage.value == null) {
         Dialog(onDismissRequest = { onDismissRequest() }) {
             Card(
                 modifier = Modifier
@@ -1154,17 +1152,17 @@ private fun ShowAlertDialog(
                     ) {
                         TextButton(
                             onClick = {
-                                isLoading = true
+                                isLoading.value = true
                                 scope.launch {
                                     selectedItem.loadStreamUrl(
                                         onSuccess = {
                                             mContext.playAudioFromUrl(audioUrl = it.audioUrl, selectedItem = it)
-                                            isLoading = false
+                                            isLoading.value = false
                                             onDismissRequest()
                                         },
                                         onFailure = { err ->
-                                            errorMessage = err.message
-                                            isLoading = false
+                                            errorMessage.value = err.message
+                                            isLoading.value = false
                                         }
                                     )
                                 }

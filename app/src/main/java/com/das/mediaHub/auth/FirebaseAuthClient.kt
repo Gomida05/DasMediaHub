@@ -5,7 +5,7 @@ import androidx.credentials.CredentialManager
 import androidx.credentials.CustomCredential
 import androidx.credentials.GetCredentialRequest
 import androidx.credentials.PasswordCredential
-import com.das.mediaHub.BuildConfig.MY_WEB_CLIENT_ID
+import com.das.mediaHub.R
 import com.google.android.libraries.identity.googleid.GetGoogleIdOption
 import com.google.android.libraries.identity.googleid.GoogleIdTokenCredential
 import com.google.android.libraries.identity.googleid.GoogleIdTokenParsingException
@@ -61,12 +61,12 @@ class FirebaseAuthClient(private val context: Context): AuthClient {
 
     override fun useGoogle(): Flow<AuthResponse> = callbackFlow{
 
-
+        val webClientId = context.getString(R.string.default_web_client_id)
         launch {
             try {
                 val googleIdOption = GetGoogleIdOption.Builder()
                     .setFilterByAuthorizedAccounts(false)
-                    .setServerClientId(MY_WEB_CLIENT_ID)
+                    .setServerClientId(webClientId)
                     .setNonce(customNonce())
                     .build()
 
@@ -81,9 +81,7 @@ class FirebaseAuthClient(private val context: Context): AuthClient {
                     request = request
                 )
 
-                val credential = result.credential
-
-                when (credential) {
+                when (val credential = result.credential) {
 
                     is GoogleIdTokenCredential -> {
                         val respond = googleIdTokenCredential(credential).first()

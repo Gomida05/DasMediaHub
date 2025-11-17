@@ -2,6 +2,7 @@ package com.das.mediaHub.ui.downloads
 
 import android.content.Context
 import android.content.Intent
+import androidx.compose.animation.Crossfade
 import androidx.compose.animation.animateColorAsState
 import androidx.compose.animation.core.animateDpAsState
 import androidx.compose.animation.core.spring
@@ -23,7 +24,6 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.safeDrawing
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
-import androidx.compose.foundation.layout.wrapContentSize
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -95,13 +95,10 @@ fun DownloadsComposable(navController: NavController, tabIndex: Int = 0) {
     var selectedTabIndex by rememberSaveable { mutableIntStateOf(tabIndex) }
 
     val viewModel = viewModel<DownloadsPageViewModel>()
-
-    val videosListData by viewModel.videosListData
-
-    val musicsListData by viewModel.listMusic
-
+    val videos by viewModel.videosListData
+    val musics by viewModel.musicListData
     val isLoading by viewModel.isLoading
-    val errorFound by viewModel.errorFound
+    val error by viewModel.errorFound
 
     val mContext = LocalContext.current
 
@@ -146,82 +143,100 @@ fun DownloadsComposable(navController: NavController, tabIndex: Int = 0) {
         modifier = Modifier
             .nestedScroll(topAppBarState.nestedScrollConnection)
     ) { paddingValues ->
-        LazyColumn(
-            contentPadding = paddingValues,
+        Box(
             modifier = Modifier
-                .wrapContentSize(Alignment.Center)
+                .padding(paddingValues)
                 .fillMaxSize()
         ) {
 
-            if (selectedTabIndex == 0 && videosListData.isEmpty() || selectedTabIndex != 0 && musicsListData.isEmpty()) {
-
-                item {
-                    Text(
-                        text = "You haven't saved any ${if (selectedTabIndex == 0) "videos" else "music"} yet. Save some to create your collection!",
-                        fontSize = 25.sp,
-                        textAlign = TextAlign.Center
+            when {
+                isLoading -> {
+                    CircularProgressIndicator(
+                        modifier = Modifier.align(Alignment.Center)
                     )
                 }
-            } else if (isLoading){
-                item {
-                    Box(
-                        modifier = Modifier.fillMaxSize()
-                    ) {
-                        CircularProgressIndicator(modifier = Modifier.align(Alignment.Center))
-                    }
-                }
-            } else if (!errorFound.isNullOrEmpty()){
-                item {
-                    Box(
-                        modifier = Modifier.fillMaxSize()
-                    ) {
-                        Text(
-                            text = errorFound.toString(),
-                            style = MaterialTheme.typography.bodyMedium
-                                .copy(color = MaterialTheme.colorScheme.error),
-                            modifier = Modifier.align(Alignment.Center)
-                        )
-                    }
-                }
-            } else {
-                if (selectedTabIndex == 0) {
-                    itemsIndexed(videosListData) { index, searchItem ->
-                        ListItems(
-                            itemDetails = searchItem,
-                            isVideo = true,
-                            mContext
-                        ) {
-                            itemClicked(
-                                index,
-                                searchItem.mediaId,
-                                true,
-                                mContext,
-                                navController
-                            )
-                        }
-                    }
-                } else {
-                    mediaItems = musicsListData.toMutableList()
-                    itemsIndexed(musicsListData) { index, searchItem ->
 
-                        ListItems(
-                            searchItem,
-                            false,
-                            mContext
-                        ) {
-                            itemClicked(
-                                index,
-                                searchItem.mediaId,
-                                false,
-                                mContext,
-                                navController
-                            )
+                !error.isNullOrEmpty() -> {
+                    Text(
+                        text = error ?: "",
+                        color = MaterialTheme.colorScheme.error,
+                        textAlign = TextAlign.Center,
+                        modifier = Modifier.align(Alignment.Center)
+                    )
+                }
+
+                else -> {
+                    Box(Modifier.fillMaxSize()) {
+                        // Videos list
+                        if (selectedTabIndex == 0) {
+                            if (videos.isEmpty()) {
+                                Text(
+                                    text = "No videos found.",
+                                    fontSize = 18.sp,
+                                    textAlign = TextAlign.Center,
+                                    modifier = Modifier.align(Alignment.Center)
+                                )
+                            } else {
+                                LazyColumn(
+                                    modifier = Modifier.fillMaxSize(),
+                                    verticalArrangement = Arrangement.Top
+                                ) {
+                                    mediaItems = videos.toMutableList()
+                                    itemsIndexed(videos) { index, item ->
+                                        ListItems(
+                                            itemDetails = item,
+                                            isVideo = true,
+                                            mContext = mContext
+                                        ) {
+                                            itemClicked(
+                                                index,
+                                                item.mediaId,
+                                                true,
+                                                mContext,
+                                                navController
+                                            )
+                                        }
+                                    }
+                                }
+                            }
                         }
 
+                        // Music list
+                        if (selectedTabIndex == 1) {
+                            if (musics.isEmpty()) {
+                                Text(
+                                    text = "No music found.",
+                                    fontSize = 18.sp,
+                                    textAlign = TextAlign.Center,
+                                    modifier = Modifier.align(Alignment.Center)
+                                )
+                            } else {
+                                LazyColumn(
+                                    modifier = Modifier.fillMaxSize(),
+                                    verticalArrangement = Arrangement.Top
+                                ) {
+                                    mediaItems = musics.toMutableList()
+                                    itemsIndexed(musics) { index, item ->
+                                        ListItems(
+                                            itemDetails = item,
+                                            isVideo = false,
+                                            mContext = mContext
+                                        ) {
+                                            itemClicked(
+                                                index,
+                                                item.mediaId,
+                                                false,
+                                                mContext,
+                                                navController
+                                            )
+                                        }
+                                    }
+                                }
+                            }
+                        }
                     }
                 }
             }
-
         }
     }
 }

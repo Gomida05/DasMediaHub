@@ -4,10 +4,10 @@ import androidx.compose.runtime.State
 import androidx.compose.runtime.mutableStateOf
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import com.das.mediaHub.python.YouTuber.pythonInstant
 import com.das.mediaHub.data.model.responds.ResponseVideo
 import com.das.mediaHub.data.model.searcher.Video
-import com.das.mediaHub.python.Main.callMethod
+import com.das.mediaHub.python.PythonMain.callMethod
+import com.das.mediaHub.python.PythonMain.pythonInstant
 import com.das.mediaHub.python.data.Names.SEARCHER
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
@@ -69,7 +69,7 @@ class ResultViewModel: ViewModel() {
             val moreItems = _allResults.drop(nextBatch).take(batchSize)
 
             if (moreItems.isNotEmpty()) {
-                _searchResults.value = _searchResults.value + moreItems
+                _searchResults.value += moreItems
                 currentBatch++
             }
             _isLoadingMore.value = false

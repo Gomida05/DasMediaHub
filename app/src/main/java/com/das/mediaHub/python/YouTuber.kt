@@ -1,19 +1,14 @@
 package com.das.mediaHub.python
 
 import android.os.Build
-import android.util.Log
 import androidx.media3.common.MediaItem
-import com.chaquo.python.Python
 import com.das.mediaHub.data.constants.YouTubeRegexes
 import com.das.mediaHub.data.model.ItemsStreamUrlsForMediaItemData
 import com.das.mediaHub.data.model.PlayListDataClass
 import com.das.mediaHub.data.model.VideosListData
-import com.das.mediaHub.python.Main.decodeStringToJson
+import com.das.mediaHub.python.PythonMain.getPlayListUrl
 import com.das.mediaHub.python.data.Names.GET_AUDIO_STREAM_URL
 import com.das.mediaHub.python.data.Names.GET_VIDEO_STREAM_URL
-import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.withContext
-import kotlinx.serialization.SerializationException
 import java.net.URL
 import java.text.SimpleDateFormat
 import java.time.ZonedDateTime
@@ -23,7 +18,6 @@ import java.util.Locale
 import java.util.regex.Pattern
 
 internal object YouTuber {
-    val pythonInstant = Python.getInstance()
     var mediaItems = mutableListOf<MediaItem>()
 
     /**
@@ -51,8 +45,8 @@ internal object YouTuber {
 
                 zonedDateTime.format(outputFormatter)
             } else {
-                val inputFormat =
-                    SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ssX", Locale.ENGLISH)
+                val inputFormat = SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ssX", Locale.ENGLISH)
+
                 val outputFormat = SimpleDateFormat("dd MMM yyyy", Locale.ENGLISH)
 
                 outputFormat.format(inputFormat.parse(this) ?: return this)
@@ -112,7 +106,7 @@ internal object YouTuber {
         onFailure: (Exception) -> Unit
     ) {
         try {
-            val result = Main.getStreamUrl(
+            val result = PythonMain.getStreamUrl(
                 type = GET_AUDIO_STREAM_URL,
                 id = videoId
             )
@@ -164,56 +158,13 @@ internal object YouTuber {
     }
 
 
-    /**
-     * Extension function to convert a duration in milliseconds (Long) to a formatted time string.
-     *
-     * Formats adaptively based on the length of the duration:
-     * - If duration is 0 or negative, returns "00:00"
-     * - If duration includes days, format is "dd:hh:mm:ss"
-     * - If duration includes hours, format is "hh:mm:ss"
-     * - If duration includes minutes, format is "mm:ss"
-     * - If duration is less than a minute, format is "ss.ms"
-     */
-    fun Long.formatTimeFromMs(): String {
-        if (this <= 0L) {
-            return "00:00"
-        }
-        val totalSeconds = this / 1000
-        val seconds = totalSeconds % 60
-        val minutes = (totalSeconds / 60) % 60
-        val hours = (totalSeconds / 3600) % 24
-        val days = totalSeconds / (3600 * 24)
-
-        return when {
-            days > 0 -> String.Companion.format(
-                Locale.ENGLISH,
-                "%02d:%02d:%02d:%02d",
-                days,
-                hours,
-                minutes,
-                seconds
-            )
-
-            hours > 0 -> String.Companion.format(
-                Locale.ENGLISH,
-                "%02d:%02d:%02d",
-                hours,
-                minutes,
-                seconds
-            )
-
-            else -> String.Companion.format(Locale.ENGLISH, "%02d:%02d", minutes, seconds)
-        }
-    }
-
-
     suspend fun getVideoStreamUrl(
         videoId: String,
         onSuccess: (streamUrl: String) -> Unit,
         onFailure: (String) -> Unit
     ) {
         try {
-            val result = Main.getStreamUrl(
+            val result = PythonMain.getStreamUrl(
                 type = GET_VIDEO_STREAM_URL,
                 id = videoId
             )
@@ -234,7 +185,7 @@ internal object YouTuber {
         onFailure: (String) -> Unit
     ) {
         try {
-            val result = Main.getStreamUrl(
+            val result = PythonMain.getStreamUrl(
                 type = GET_AUDIO_STREAM_URL,
                 id = videoId
             )
@@ -256,7 +207,7 @@ internal object YouTuber {
         onFailure: (String) -> Unit
     ) {
         try {
-            val result = callPythonSearchSuggestion(playListUrl)
+            val result = getPlayListUrl(playListUrl)
 
             if (result.isNotEmpty()) {
                 // Switch to the main thread for UI updates
@@ -271,32 +222,6 @@ internal object YouTuber {
             onFailure("Something went wrong with result: ${e.message}")
         }
 
-    }
-
-
-    private suspend fun callPythonSearchSuggestion(inputText: String): List<PlayListDataClass> {
-        return try {
-
-            val python = pythonInstant.getModule("main")
-
-            val getResultFromPython = withContext(Dispatchers.IO) {
-                python["getPlayListUrls"]?.call(inputText)
-            }
-
-            if (!getResultFromPython.isNullOrEmpty()) {
-
-                getResultFromPython.toString().decodeStringToJson()
-            }
-            else{
-                throw Exception("Couldn't get any result back")
-            }
-        } catch (e: SerializationException) {
-            Log.e("JSON Error", "Error parsing JSON: ${e.message}")
-            throw e
-        } catch (e: Exception) {
-            e.printStackTrace()
-            throw e
-        }
     }
 
 }

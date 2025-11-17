@@ -7,13 +7,13 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.das.mediaHub.python.YouTuber.formatDate
 import com.das.mediaHub.python.YouTuber.formatViews
-import com.das.mediaHub.python.YouTuber.pythonInstant
 import com.das.mediaHub.data.model.VideoDetails
 import com.das.mediaHub.data.model.responds.RespondVideoDetails
 import com.das.mediaHub.data.model.responds.ResponseVideo
 import com.das.mediaHub.data.model.searcher.Video
-import com.das.mediaHub.python.Main.callMethod
-import com.das.mediaHub.python.Main.getStreamUrl
+import com.das.mediaHub.python.PythonMain.callMethod
+import com.das.mediaHub.python.PythonMain.getStreamUrl
+import com.das.mediaHub.python.PythonMain.pythonInstant
 import com.das.mediaHub.python.data.Names.GET_VIDEO_STREAM_URL
 import com.das.mediaHub.python.data.Names.SEARCHER
 import com.das.mediaHub.python.data.Names.SEARCH_WITH_URL

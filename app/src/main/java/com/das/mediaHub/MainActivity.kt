@@ -39,7 +39,6 @@ import com.das.mediaHub.python.YouTuber.isValidYoutubeURL
 import com.das.mediaHub.data.constants.Playback.PLAY_HERE_VIDEO
 import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
-import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.unit.dp
@@ -48,6 +47,7 @@ import androidx.core.content.FileProvider
 import androidx.lifecycle.lifecycleScope
 import androidx.navigation.NavController
 import androidx.navigation.compose.currentBackStackEntryAsState
+import androidx.navigation.navArgument
 import com.das.mediaHub.python.YouTuber.getAudioStreamUrl
 import com.das.mediaHub.python.YouTuber.getVideoStreamUrl
 import com.das.mediaHub.downloader.DownloaderClass
@@ -227,8 +227,7 @@ class MainActivity : ComponentActivity() {
                 }
                 composable(ExoPlayerUI.route) {
                     LocalVideoPlayer(
-                        this@MainActivity,
-                        bundles.getString(PLAY_HERE_VIDEO).toString()
+                        videoUri = bundles.getString(PLAY_HERE_VIDEO).toString()
                     )
                 }
 

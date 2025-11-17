@@ -1,7 +1,6 @@
 package com.das.mediaHub.ui.players.videoPlayerLocally
 
 import android.annotation.SuppressLint
-import android.app.Activity
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
@@ -25,6 +24,7 @@ import androidx.media3.common.MediaItem
 import androidx.media3.common.MediaMetadata
 import androidx.media3.ui.AspectRatioFrameLayout
 import androidx.media3.ui.PlayerView
+import com.das.mediaHub.MainActivity
 import com.das.mediaHub.PIP.shouldEnterPipMode
 import com.das.mediaHub.WakeLockHelper.releaseWakeLock
 import com.das.mediaHub.mediacontroller.LocalVideoListener
@@ -34,7 +34,7 @@ import com.das.mediaHub.ui.players.videoPlayer.CustomMethods.setFullscreen
 
 @SuppressLint("UnsafeOptInUsageError")
 @Composable
-fun LocalVideoPlayer(activity: Activity, videoUri: String) {
+fun MainActivity.LocalVideoPlayer(videoUri: String) {
 
     val viewModel = viewModel<LocalPlayerViewModel>()
 
@@ -62,8 +62,8 @@ fun LocalVideoPlayer(activity: Activity, videoUri: String) {
 
     val manager = remember {
         LocalVideoManger(
-            mContext,
-            LocalVideoListener(activity)
+            context = mContext,
+            playerListener = LocalVideoListener(this)
         ).apply {
             addListener()
             playVideo(mediaItem)
@@ -75,25 +75,19 @@ fun LocalVideoPlayer(activity: Activity, videoUri: String) {
     }
 
     LaunchedEffect(Unit) {
-        activity.setFullscreen(true)
+        setFullscreen(true)
         shouldEnterPipMode.value = true
-        activity.releaseWakeLock()
+        releaseWakeLock()
         viewModel.loadItems(mediaItem.mediaMetadata.title.toString())
     }
 
-    if (mediaItems.isNotEmpty()){
-        LaunchedEffect(Unit) {
+    LaunchedEffect(mediaItems) {
+        if (mediaItems.isNotEmpty()) {
             manager.addMediaItems(mediaItems)
         }
     }
 
-    val playerView = remember {
-        PlayerView(mContext).apply {
-            player = mExoPlayer
-            useController = true
-            resizeMode = AspectRatioFrameLayout.RESIZE_MODE_ZOOM
-        }
-    }
+
 
     Scaffold { innerPadding ->
         if (!isError.isNullOrEmpty()){
@@ -115,8 +109,20 @@ fun LocalVideoPlayer(activity: Activity, videoUri: String) {
                 .fillMaxSize()
                 .background(Color.Black)
                 .zIndex(0f),
-            factory = { playerView },
-            update = { it.player = mExoPlayer }
+            factory = {
+                PlayerView(mContext).apply {
+                    keepScreenOn = true
+                    player = mExoPlayer
+                    useController = true
+                    resizeMode = AspectRatioFrameLayout.RESIZE_MODE_ZOOM
+                }
+            },
+            onRelease = {
+                manager.release()
+            },
+            update = {
+                it.player = mExoPlayer
+            }
         )
     }
 
@@ -125,10 +131,8 @@ fun LocalVideoPlayer(activity: Activity, videoUri: String) {
         onDispose {
             manager.release()
             shouldEnterPipMode.value = false
-            activity.let {
-                it.releaseWakeLock()
-                it.setFullscreen(false)
-            }
+            releaseWakeLock()
+            setFullscreen(false)
         }
     }
 

@@ -1,7 +1,7 @@
 package com.das.mediaHub
 
 import android.app.Application
-import com.das.mediaHub.python.Main.startPython
+import com.das.mediaHub.python.PythonMain.startPython
 
 class MainApplication: Application() {
 

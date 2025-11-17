@@ -91,22 +91,6 @@ internal object OnLaunchComponents {
 
     }
 
-    @Composable
-    fun FirebaseAuth.rememberAuthState(): Boolean? {
-        var isLoggedIn by remember { mutableStateOf<Boolean?>(null) }
-
-        DisposableEffect(Unit) {
-            val listener = FirebaseAuth.AuthStateListener { firebaseAuth ->
-                val user = firebaseAuth.currentUser
-                isLoggedIn = user != null
-            }
-            addAuthStateListener(listener)
-            onDispose { removeAuthStateListener(listener) }
-        }
-
-        return isLoggedIn
-    }
-
 
     @Composable
     fun BottomNavItems(currentRoute: String?, navController: NavController) {

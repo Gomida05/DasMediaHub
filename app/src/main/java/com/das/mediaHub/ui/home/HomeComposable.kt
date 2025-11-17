@@ -53,7 +53,9 @@ fun OPreview() {
         rememberNavController().HomePageComposable()
     }
 }
-@Composable fun NavController.HomePageComposable() {
+@Composable
+
+fun NavController.HomePageComposable() {
     val scope = rememberCoroutineScope()
     val snackBar = remember { SnackbarHostState() }
     Scaffold(
@@ -124,18 +126,22 @@ fun OPreview() {
                     PlatformIcon(icon = TikTok, "TikTok") {
                         scope.launch {
                             snackBar.showSnackbar(
-                                message = "Coming soon"
+                                message = "Coming soon",
+                                withDismissAction = true
                             )
                         }
                     }
                     PlatformIcon(icon = YouTube, "YouTube") { navigate(Searcher.route) }
                     PlatformIcon(icon = Instagram, "Instagram") {
                         scope.launch {
-                            snackBar.showSnackbar(message = "Coming soon")
+                            snackBar.showSnackbar(
+                                message = "Coming soon",
+                                withDismissAction = true
+                            )
                         }
                     }
                 }
-                /**   FilledTonalButton(
+                /*  FilledTonalButton(
                 onClick = { navigate(Searcher.route) },
                 shape = RoundedCornerShape(30.dp),
                 modifier = Modifier.fillMaxWidth().height(56.dp),
