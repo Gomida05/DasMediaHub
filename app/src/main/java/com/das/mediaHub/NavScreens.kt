@@ -1,23 +1,46 @@
 package com.das.mediaHub
 
-sealed class NavScreens(val route: String) {
-    data object WelcomePage : NavScreens("Welcome Page")
-    data object Home: NavScreens("Home")
-    data object Searcher : NavScreens("searcher")
-    data object VideoViewer : NavScreens("video viewer")
-    data object ResultViewerPage : NavScreens("ResultViewerPage")
-    data object RecentlyWatched : NavScreens("Recently Watched")
-    data object Saved : NavScreens("saved")
-    data object Downloads : NavScreens("Downloads")
-    data object UserSettings : NavScreens("user Setting")
-    data object ExoPlayerUI : NavScreens("ExoPlayerUI")
+import androidx.navigation3.runtime.NavKey
+import com.das.mediaHub.data.model.searcher.Video
+import kotlinx.serialization.Serializable
 
-    data object Setting : NavScreens("Setting")
-    data object FeedbackScreen: NavScreens("Feedback")
+@Serializable
+sealed class NavScreens: NavKey {
+    @Serializable
+    data object WelcomePage : NavScreens()
+    @Serializable
+    data object Home: NavScreens()
+    @Serializable
+    data class Searcher(val text: String) : NavScreens()
 
-    data object SignInPage : NavScreens("sign in page")
-    data object SignUpPage : NavScreens("sign up page")
 
-    data object AccountSetting : NavScreens("User account settings page")
-    data object ChangePassword : NavScreens("change_password")
+    @Serializable
+    data class VideoViewer(val data: Video) : NavScreens()
+    @Serializable
+    data class ResultViewerPage(val value: String) : NavScreens()
+    @Serializable
+    data object RecentlyWatched : NavScreens()
+    @Serializable
+    data object Saved : NavScreens()
+    @Serializable
+    data object Downloads : NavScreens()
+    @Serializable
+    data object UserSettings : NavScreens()
+    @Serializable
+    data class ExoPlayerUI(val uri: String) : NavScreens()
+
+    @Serializable
+    data object Setting : NavScreens()
+    @Serializable
+    data object FeedbackScreen: NavScreens()
+
+    @Serializable
+    data object SignInPage : NavScreens()
+    @Serializable
+    data object SignUpPage : NavScreens()
+
+    @Serializable
+    data object AccountSetting : NavScreens()
+    @Serializable
+    data object ChangePassword : NavScreens()
 }

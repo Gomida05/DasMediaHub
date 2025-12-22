@@ -3,6 +3,10 @@ pluginManagement {
         google()
         mavenCentral()
         gradlePluginPortal()
+        mavenLocal()
+        flatDir {
+            dirs("libs")
+        }
     }
 }
 plugins {

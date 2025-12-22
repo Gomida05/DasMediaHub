@@ -1,7 +1,5 @@
 package com.das.mediaHub.ui.result
 
-import androidx.compose.runtime.State
-import androidx.compose.runtime.mutableStateOf
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.das.mediaHub.data.model.responds.ResponseVideo
@@ -10,23 +8,25 @@ import com.das.mediaHub.python.PythonMain.callMethod
 import com.das.mediaHub.python.PythonMain.pythonInstant
 import com.das.mediaHub.python.data.Names.SEARCHER
 import kotlinx.coroutines.delay
+import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
 
 class ResultViewModel: ViewModel() {
 
 
-    private val _searchResults = mutableStateOf<List<Video>>(emptyList())
-    val searchResults: State<List<Video>> = _searchResults
-    private val _isLoading = mutableStateOf(false)
-    val isLoading: State<Boolean> = _isLoading
+    private val _searchResults = MutableStateFlow<List<Video>>(emptyList())
+    val searchResults = _searchResults.asStateFlow()
+    private val _isLoading = MutableStateFlow(false)
+    val isLoading = _isLoading.asStateFlow()
 
     private val _allResults = mutableListOf<Video>()
-    private val _isLoadingMore = mutableStateOf(false)
-    val isLoadingMore: State<Boolean> = _isLoadingMore
+    private val _isLoadingMore = MutableStateFlow(false)
+    val isLoadingMore = _isLoadingMore.asStateFlow()
 
-    private val _error = mutableStateOf<String?>(null)
+    private val _error = MutableStateFlow<String?>(null)
 
-    val error: State<String?> = _error
+    val error = _error.asStateFlow()
 
 
     private var currentBatch = 0
@@ -78,12 +78,7 @@ class ResultViewModel: ViewModel() {
     }
 
     private suspend fun callPythonForSearchVideos(inputText: String): ResponseVideo {
-        return try {
-            pythonInstant.callMethod(name = SEARCHER, args = inputText)
-        } catch (e: Exception) {
-            e.printStackTrace()
-            throw e
-        }
+        return pythonInstant.callMethod<ResponseVideo>(name = SEARCHER, args = inputText)
     }
 
 

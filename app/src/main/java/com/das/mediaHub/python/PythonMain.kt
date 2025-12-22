@@ -5,6 +5,7 @@ import com.chaquo.python.Python
 import com.chaquo.python.android.AndroidPlatform
 import com.das.mediaHub.data.model.PlayListDataClass
 import com.das.mediaHub.python.data.Names
+import com.das.mediaHub.python.data.Names.GET_VIDEO_STREAM_URL
 import com.das.mediaHub.python.data.StreamUrlRespond
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
@@ -30,7 +31,7 @@ internal object PythonMain {
      * Must be called once before running any Python code.
      */
     fun Application.startPython() {
-        if (!Python.isStarted()){
+        if (!Python.isStarted()) {
             Python.start(AndroidPlatform(this))
         }
     }
@@ -43,15 +44,16 @@ internal object PythonMain {
      * @param args Arguments to pass to the Python function.
      * @return The result of the Python call as a string.
      */
-    suspend inline fun <reified T> Python.callMethod(name: Names, args: String): T = withContext(Dispatchers.IO) {
-        getModule("main")[name.value]?.call(args).toString().decodeStringToJson()
-    }
+    suspend inline fun <reified T> Python.callMethod(name: Names, args: String): T =
+        withContext(Dispatchers.IO) {
+            getModule("main")[name.value]?.call(args).toString().decodeStringToJson()
+        }
 
     /**
      * Fetches a YouTube stream URL by calling a Python function that
      * processes the video link and returns stream info as JSON.
      *
-     * @param type The type of Python function to call (e.g., "get_stream").
+     * @param type The type of Python function to call (e.g., [GET_VIDEO_STREAM_URL]).
      * @param id The YouTube video ID.
      * @return A [StreamUrlRespond] object parsed from the JSON result.
      */
@@ -63,7 +65,7 @@ internal object PythonMain {
         )
     }
 
-    suspend fun getPlayListUrl(url: String) : List<PlayListDataClass> {
+    suspend fun getPlayListUrl(url: String): List<PlayListDataClass> {
 
 
         val python = pythonInstant.getModule("main")

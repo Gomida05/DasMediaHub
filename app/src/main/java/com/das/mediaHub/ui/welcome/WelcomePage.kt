@@ -36,13 +36,14 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import androidx.navigation.NavController
+import androidx.navigation3.runtime.NavBackStack
+import androidx.navigation3.runtime.NavKey
 import com.das.mediaHub.NavScreens
 import com.das.mediaHub.R
 
 @Composable
 fun WelcomePage(
-    navController: NavController,
+    backStack: NavBackStack<NavKey>,
     onSignInAnonymously: () -> Unit
 ) {
     val visible = remember { mutableStateOf(false) }
@@ -107,7 +108,7 @@ fun WelcomePage(
                         enter = fadeIn(tween(1000)) + slideInHorizontally(initialOffsetX = { -it })
                     ) {
                         Button(
-                            onClick = { navController.navigate(NavScreens.SignInPage.route) },
+                            onClick = { backStack.add(NavScreens.SignInPage) },
                             colors = buttonColors,
                             shape = RoundedCornerShape(20),
                             modifier = Modifier
@@ -125,7 +126,7 @@ fun WelcomePage(
                         enter = fadeIn(tween(1200)) + slideInHorizontally(initialOffsetX = { it })
                     ) {
                         Button(
-                            onClick = { navController.navigate(NavScreens.SignUpPage.route) },
+                            onClick = { backStack.add(NavScreens.SignUpPage) },
                             colors = buttonColors,
                             shape = RoundedCornerShape(20),
                             modifier = Modifier

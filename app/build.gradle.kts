@@ -27,14 +27,16 @@ android {
         }
     }
     namespace = "com.das.mediaHub"
-    compileSdk = 36
+    compileSdk {
+        version = release(36)
+    }
 
     defaultConfig {
         applicationId = "com.das.mediaHub"
-        minSdk = 24
+        minSdk = 26
         targetSdk = 36
-        versionCode = 6
-        versionName = "1.26"
+        versionCode = 7
+        versionName = "1.27"
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
         flavorDimensions.add("pyVersion")
@@ -44,7 +46,11 @@ android {
     }
 
 
-
+    dependenciesInfo {
+        includeInBundle = false
+        includeInApk = false
+    }
+    buildToolsVersion = "36.1.0"
 
     buildTypes {
         release {
@@ -78,14 +84,13 @@ android {
 
     buildFeatures {
         compose = true
+
     }
-
-
 }
 
 chaquopy {
     defaultConfig {
-        version = "3.13"
+        version = "3.14"
         buildPython(loadLocalProperties["PYTHON_PATH"] as String)
 
         pip {
@@ -118,7 +123,6 @@ dependencies {
     implementation(libs.coil.video)
 
     implementation(libs.runtime.livedata)
-    implementation(libs.navigation.compose)
     implementation(libs.ui.viewbinding)
 
     //Material 3
@@ -139,7 +143,6 @@ dependencies {
     //browser
     implementation(libs.browser)
 
-    implementation(libs.lifecycle.viewmodel.compose)
 
     implementation(libs.core.ktx)
     implementation(libs.media)
@@ -152,7 +155,10 @@ dependencies {
     implementation(libs.constraintlayout)
     implementation(libs.lifecycle.livedata.ktx)
     implementation(libs.lifecycle.viewmodel.ktx)
-    implementation(libs.navigation.ui.ktx)
+    implementation(libs.lifecycle.viewmodel.compose)
+    implementation(libs.androidx.lifecycle.viewmodel.navigation3)
+    implementation(libs.androidx.navigation3.ui)
+    implementation(libs.androidx.navigation3.runtime)
 
     //Media 3
     implementation(libs.media3.session)
@@ -170,4 +176,7 @@ dependencies {
 
     testImplementation(libs.junit)
     implementation(libs.kotlin.stdlib)
+
+    //Python
+    implementation(libs.chaquopy)
 }

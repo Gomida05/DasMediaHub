@@ -47,20 +47,20 @@ import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.text.input.VisualTransformation
 import androidx.compose.ui.unit.dp
-import androidx.navigation.NavController
+import androidx.navigation3.runtime.NavBackStack
+import androidx.navigation3.runtime.NavKey
 import com.das.mediaHub.NavScreens
 import com.das.mediaHub.data.model.TopPopUp
 import com.das.mediaHub.ui.TopPopupNotification.showNotificationDialog
 import com.google.firebase.auth.EmailAuthProvider
-import com.google.firebase.auth.FirebaseAuth
+import com.google.firebase.auth.FirebaseUser
 
 @Composable
-fun AccountSettingsPage(navController: NavController, auth: FirebaseAuth) {
+fun AccountSettingsPage(backStack: NavBackStack<NavKey>, currentUser: FirebaseUser?, signOut: () -> Unit) {
 
-    val currentUser = auth.currentUser
     val name = currentUser?.displayName ?: "Unnamed User"
     val email = currentUser?.email
-    var showDeleteDialog by remember { mutableStateOf(false) }
+    val showDeleteDialog = remember { mutableStateOf(false) }
 
 
 
@@ -70,7 +70,7 @@ fun AccountSettingsPage(navController: NavController, auth: FirebaseAuth) {
             TopAppBar(
                 title = { Text("Account Settings") },
                 navigationIcon = {
-                    IconButton(onClick = { navController.popBackStack() }) {
+                    IconButton(onClick = { backStack.removeLastOrNull() }) {
                         Icon(Icons.AutoMirrored.Default.ArrowBack, contentDescription = "Back")
                     }
                 }
@@ -112,7 +112,7 @@ fun AccountSettingsPage(navController: NavController, auth: FirebaseAuth) {
 
                     OutlinedButton(
                         onClick = {
-                            navController.navigate(route = NavScreens.ChangePassword.route)
+                            backStack.add(NavScreens.ChangePassword)
                         },
                         modifier = Modifier.fillMaxWidth()
                     ) {
@@ -123,12 +123,12 @@ fun AccountSettingsPage(navController: NavController, auth: FirebaseAuth) {
 
                     OutlinedButton(
                         onClick = {
-                            auth.signOut()
+                            signOut()
                             showNotificationDialog = TopPopUp(
                                     message = "You have successfully sign out",
                                     icon = Icons.AutoMirrored.Default.Logout
                                 )
-                            navController.popBackStack()
+                            backStack.removeLastOrNull()
 
                         },
                         modifier = Modifier.fillMaxWidth()
@@ -139,7 +139,7 @@ fun AccountSettingsPage(navController: NavController, auth: FirebaseAuth) {
                     }
 
                     OutlinedButton(
-                        onClick = { showDeleteDialog = true },
+                        onClick = { showDeleteDialog.value = true },
                         modifier = Modifier.fillMaxWidth(),
                         colors = ButtonDefaults.outlinedButtonColors(contentColor = MaterialTheme.colorScheme.error)
                     ) {
@@ -152,7 +152,7 @@ fun AccountSettingsPage(navController: NavController, auth: FirebaseAuth) {
         }
 
     }
-    if (showDeleteDialog) {
+    if (showDeleteDialog.value) {
         var password by remember { mutableStateOf("") }
         var showPassword by remember { mutableStateOf(false) }
         var errorMessage by remember { mutableStateOf<String?>(null) }
@@ -168,12 +168,12 @@ fun AccountSettingsPage(navController: NavController, auth: FirebaseAuth) {
                     if (task.isSuccessful) {
                         currentUser.delete()
                         isLoading = false
-                        showDeleteDialog = false
+                        showDeleteDialog.value = false
                         showNotificationDialog = TopPopUp(
                             message = "You have successfully delete your account",
                             icon = Icons.Default.Security
                         )
-                        navController.popBackStack()
+                        backStack.removeLastOrNull()
                     } else {
                         isLoading = false
                         errorMessage = "Incorrect password. Please try again."
@@ -249,7 +249,7 @@ fun AccountSettingsPage(navController: NavController, auth: FirebaseAuth) {
             },
             dismissButton = {
                 TextButton(
-                    onClick = { showDeleteDialog = false },
+                    onClick = { showDeleteDialog.value = false },
                     enabled = !isLoading
                 ) {
                     Text("Cancel")

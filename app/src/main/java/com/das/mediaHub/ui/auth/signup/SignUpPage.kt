@@ -38,7 +38,8 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.viewmodel.compose.viewModel
-import androidx.navigation.NavController
+import androidx.navigation3.runtime.NavBackStack
+import androidx.navigation3.runtime.NavKey
 import com.das.mediaHub.NavScreens
 import com.das.mediaHub.R
 import com.das.mediaHub.data.model.TopPopUp
@@ -47,7 +48,7 @@ import com.das.mediaHub.ui.TopPopupNotification.showNotificationDialog
 
 
 @Composable
-fun SignUpPage(navController: NavController) {
+fun SignUpPage(backStack: NavBackStack<NavKey>) {
 
     val viewModel = viewModel<SignUpViewModel>()
     val signUpResult by viewModel.signUpResult
@@ -72,10 +73,8 @@ fun SignUpPage(navController: NavController) {
             message = "You have successfully Login",
             icon = Icons.AutoMirrored.Default.Logout
         )
-        navController.run {
-            popBackStack()
-            navigate(route = NavScreens.Home.route)
-        }
+        backStack.add(NavScreens.Home)
+        backStack.remove(NavScreens.SignUpPage)
     }
 
     Scaffold(
@@ -193,7 +192,7 @@ fun SignUpPage(navController: NavController) {
 
                 TextButton(
                     onClick = {
-                        navController.navigateUp()
+                        backStack.removeLastOrNull()
                     }
                 ) {
                     Text(text = "Already have an account? Login")

@@ -1,6 +1,5 @@
 package com.das.mediaHub.python
 
-import android.os.Build
 import androidx.media3.common.MediaItem
 import com.das.mediaHub.data.constants.YouTubeRegexes
 import com.das.mediaHub.data.model.ItemsStreamUrlsForMediaItemData
@@ -11,6 +10,8 @@ import com.das.mediaHub.python.data.Names.GET_AUDIO_STREAM_URL
 import com.das.mediaHub.python.data.Names.GET_VIDEO_STREAM_URL
 import java.net.URL
 import java.text.SimpleDateFormat
+import java.time.Instant
+import java.time.ZoneId
 import java.time.ZonedDateTime
 import java.time.format.DateTimeFormatter
 import java.util.Date
@@ -37,22 +38,37 @@ internal object YouTuber {
      * Returns data format like this dd/MMM/yyyy ENGLISH
      */
     fun String.formatDate(): String {
+        if (isBlank() || equals("None", ignoreCase = true)) return ""
+
+        if (contains("ago", ignoreCase = true)) return this
         return try {
-            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
-                val inputFormatter = DateTimeFormatter.ISO_OFFSET_DATE_TIME
-                val zonedDateTime = ZonedDateTime.parse(this, inputFormatter)
-                val outputFormatter = DateTimeFormatter.ofPattern("dd MMM yyyy", Locale.ENGLISH)
 
-                zonedDateTime.format(outputFormatter)
-            } else {
-                val inputFormat = SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ssX", Locale.ENGLISH)
+            val formatter = when {
+                contains("T") && contains("Z") ->
+                    DateTimeFormatter.ISO_INSTANT
 
-                val outputFormat = SimpleDateFormat("dd MMM yyyy", Locale.ENGLISH)
+                contains("T") && contains("+") ->
+                    DateTimeFormatter.ISO_OFFSET_DATE_TIME
 
-                outputFormat.format(inputFormat.parse(this) ?: return this)
+                length == 10 && this[4] == '-' ->
+                    DateTimeFormatter.ISO_LOCAL_DATE
+
+                length == 4 && all { it.isDigit() } ->
+                    return this
+
+                else -> return this
             }
-        } catch (e: Exception) {
-            println("Found an error right here: ${e.message}")
+
+            val date = when (val temporal = formatter.parse(this)) {
+                is Instant -> temporal.atZone(ZoneId.systemDefault())
+                else -> ZonedDateTime.from(temporal)
+            }
+
+            date.format(
+                DateTimeFormatter.ofPattern("dd MMM yyyy", Locale.ENGLISH)
+            )
+
+        } catch (_: Exception) {
             this
         }
     }
@@ -148,12 +164,19 @@ internal object YouTuber {
      * @return Formatted string with K, M, or B suffix
      */
     fun String.formatViews(): String {
-        val viewsLong = toLong()
+        val digitsOnly = this
+            .lowercase()
+            .replace("views", "")
+            .replace(",", "")
+            .trim()
+
+        val viewsLong = digitsOnly.toLongOrNull() ?: return this
+
         return when {
             viewsLong >= 1_000_000_000 -> "%.1fB".format(viewsLong / 1_000_000_000.0)
             viewsLong >= 1_000_000 -> "%.1fM".format(viewsLong / 1_000_000.0)
             viewsLong >= 1_000 -> "%.1fK".format(viewsLong / 1_000.0)
-            else -> this
+            else -> "$viewsLong"
         }
     }
 

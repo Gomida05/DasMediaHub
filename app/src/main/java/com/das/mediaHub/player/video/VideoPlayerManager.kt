@@ -2,7 +2,6 @@ package com.das.mediaHub.player.video
 
 import android.app.PendingIntent
 import android.app.PictureInPictureParams
-import android.content.Context
 import android.content.Intent
 import android.net.Uri
 import android.os.Build.VERSION
@@ -24,11 +23,10 @@ import com.das.mediaHub.data.constants.Playback.PAUSE
 import com.das.mediaHub.data.constants.Playback.PLAY
 import com.das.mediaHub.mediacontroller.VideoPlayerListener
 
-class VideoPlayerManager(
-    private val context: Context,
+internal class VideoPlayerManager(
     private val playerListener: VideoPlayerListener
 ): PlayerController {
-
+    val context = playerListener.mainActivity
     private val myMediaSession = MediaSessionCompat(context, "VideoPlayer").apply {
         isActive = true
         @Suppress("DEPRECATION")
@@ -140,7 +138,7 @@ class VideoPlayerManager(
             val params = PictureInPictureParams.Builder()
                 .setAspectRatio(Rational(16, 9))
                 .build()
-            playerListener.activity.setPictureInPictureParams(params)
+            playerListener.mainActivity.setPictureInPictureParams(params)
         }
     }
 

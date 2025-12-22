@@ -39,7 +39,6 @@ import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.setValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.saveable.rememberSaveable
@@ -53,7 +52,8 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.core.net.toUri
 import androidx.lifecycle.viewmodel.compose.viewModel
-import androidx.navigation.NavController
+import androidx.navigation3.runtime.NavBackStack
+import androidx.navigation3.runtime.NavKey
 import com.das.mediaHub.NavScreens
 import com.das.mediaHub.OnLaunchComponents.openCustomTab
 import com.das.mediaHub.downloader.DownloaderClass
@@ -65,7 +65,7 @@ import com.google.firebase.auth.auth
 
 
 @Composable
-fun NavController.SettingsComposable(
+fun NavBackStack<NavKey>.SettingsComposable(
     showPopMessage: (TopPopUp)-> Unit
 ) {
 
@@ -75,7 +75,7 @@ fun NavController.SettingsComposable(
 
     val auth = Firebase.auth
 
-    var showDialog by rememberSaveable { mutableStateOf(false) }
+    val showDialog = remember { mutableStateOf(false) }
 
     val isLoading by viewModel.isLoading
     val error by viewModel.foundError
@@ -134,7 +134,7 @@ fun NavController.SettingsComposable(
                     UserHeader(
                         user
                     ) {
-                        navigate(NavScreens.AccountSetting.route)
+                        add(NavScreens.AccountSetting)
                     }
                 }
 
@@ -146,7 +146,7 @@ fun NavController.SettingsComposable(
                 SettingsItem(
                     icon = Icons.Default.Save,
                     text = "Saved Videos",
-                    onClick = { navigate("saved") }
+                    onClick = { add(NavScreens.Saved) }
                 )
             }
 
@@ -154,7 +154,7 @@ fun NavController.SettingsComposable(
                 SettingsItem(
                     icon = Icons.Default.ColorLens,
                     text = "Appearance",
-                    onClick = { navigate("user Setting") }
+                    onClick = { add(NavScreens.UserSettings) }
                 )
             }
 
@@ -164,7 +164,7 @@ fun NavController.SettingsComposable(
                     text = "Check for Update",
                     onClick = {
                         viewModel.loadJson()
-                        showDialog = true
+                        showDialog.value = true
                     }
                 )
             }
@@ -172,7 +172,7 @@ fun NavController.SettingsComposable(
                 SettingsItem(
                     icon = Icons.Default.Feedback,
                     text = "Send Feedback",
-                    onClick = { navigate(NavScreens.FeedbackScreen.route) }
+                    onClick = { add(NavScreens.FeedbackScreen) }
                 )
             }
 
@@ -193,7 +193,7 @@ fun NavController.SettingsComposable(
         }
     }
 
-    if(showDialog && !appInfo.isEmpty()){
+    if(showDialog.value && !appInfo.isEmpty()){
         ShowAlertDialog(
             context = context,
             appInfo = appInfo,
@@ -207,7 +207,7 @@ fun NavController.SettingsComposable(
                 )
             },
             onDismissRequest = {
-                showDialog = false
+                showDialog.value = false
             },
         )
     }

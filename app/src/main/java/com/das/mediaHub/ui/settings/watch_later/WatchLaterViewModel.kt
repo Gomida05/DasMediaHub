@@ -1,54 +1,64 @@
 package com.das.mediaHub.ui.settings.watch_later
 
 import android.app.Application
-import android.database.Cursor
-import android.widget.Toast
-import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.State
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
 import com.das.mediaHub.data.local.DatabaseFavorite
 import com.das.mediaHub.data.model.SavedVideosListData
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 
 class WatchLaterViewModel(application: Application) : AndroidViewModel(application) {
 
-    private val _searchResults = mutableStateOf<List<SavedVideosListData>>(emptyList())
-    val searchResults: State<List<SavedVideosListData>> = _searchResults
+    val dbHelper = DatabaseFavorite(getApplication())
 
-    private val _isLoading = mutableStateOf(true)
-    val isLoading: State<Boolean> = _isLoading
+    private val _searchResults = MutableStateFlow<List<SavedVideosListData>>(emptyList())
+    val searchResults = _searchResults.asStateFlow()
 
+    private val _isLoading = MutableStateFlow(true)
+    val isLoading = _isLoading.asStateFlow()
+
+    private val _error = MutableStateFlow<String?>(null)
+    val error = _error.asStateFlow()
     fun fetchData() {
+        _isLoading.value = true
+        _error.value = null
         viewModelScope.launch {
-            val result = withContext(Dispatchers.IO) {
-                fetchDataFromDatabase()
-            }
-            withContext(Dispatchers.Main) {
-                _searchResults.value = result ?: emptyList()
+            try {
+
+                _searchResults.value = fetchDataFromDatabase()
+
+            } catch (e: Exception) {
+                _error.value = e.message
+            } finally {
                 _isLoading.value = false
             }
         }
     }
 
-    private fun fetchDataFromDatabase(): MutableList<SavedVideosListData>? {
-        val globalContext = getApplication<Application>().applicationContext
-        val dbHelper = DatabaseFavorite(globalContext)
-        val cursor: Cursor? = dbHelper.getResults()
 
-        val savedVideosListData = mutableListOf<SavedVideosListData>()
-        try {
-            cursor?.let {
-                while (it.moveToNext()) {
-                    val watchUrl = it.getString(it.getColumnIndexOrThrow("video_id"))
+
+    private suspend fun fetchDataFromDatabase(): List<SavedVideosListData> =
+        withContext(Dispatchers.IO) {
+
+            val cursor = dbHelper.getResults()
+            val savedVideosListData = mutableListOf<SavedVideosListData>()
+
+            try {
+                while (cursor.moveToNext()) {
+                    val watchUrl = cursor.getString(cursor.getColumnIndexOrThrow("video_id"))
                     val title = dbHelper.getVideoTitle(watchUrl).toString()
-                    val viewerNumber = it.getString(it.getColumnIndexOrThrow("viewNumber"))
-                    val dateTime = it.getString(it.getColumnIndexOrThrow("videoDate"))
-                    val channelName = it.getString(it.getColumnIndexOrThrow("videoChannelName"))
-                    val myDuration = it.getString(it.getColumnIndexOrThrow("duration"))
-                    val channelThumbnail = it.getString(it.getColumnIndexOrThrow("channelThumbnail"))
+                    val viewerNumber = cursor.getString(cursor.getColumnIndexOrThrow("viewNumber"))
+                    val dateTime = cursor.getString(cursor.getColumnIndexOrThrow("videoDate"))
+                    val channelName =
+                        cursor.getString(cursor.getColumnIndexOrThrow("videoChannelName"))
+                    val myDuration = cursor.getString(cursor.getColumnIndexOrThrow("duration"))
+                    val channelThumbnail =
+                        cursor.getString(cursor.getColumnIndexOrThrow("channelThumbnail"))
+
                     savedVideosListData.add(
                         SavedVideosListData(
                             title,
@@ -62,16 +72,12 @@ class WatchLaterViewModel(application: Application) : AndroidViewModel(applicati
                         )
                     )
                 }
-                it.close()
+            } finally {
+                cursor.close()
             }
 
-            return savedVideosListData
-        } catch (e: Exception) {
-            Toast.makeText(globalContext, "${e.message}", Toast.LENGTH_SHORT).show()
-            return null
+            savedVideosListData
         }
-    }
-
 
     fun removeSearchItem(searchItem: SavedVideosListData) {
         _searchResults.value = _searchResults.value.filter { it != searchItem }

@@ -2,7 +2,6 @@ package com.das.mediaHub.ui.settings.watch_later
 
 import android.content.Context
 import android.content.Intent
-import android.os.Bundle
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.combinedClickable
@@ -36,10 +35,10 @@ import androidx.compose.material3.TopAppBar
 import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
-import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -53,31 +52,31 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.viewmodel.compose.viewModel
-import androidx.navigation.NavController
+import androidx.navigation3.runtime.NavBackStack
+import androidx.navigation3.runtime.NavKey
 import coil.compose.AsyncImage
-import coil.request.CachePolicy
 import coil.request.ImageRequest
 import com.das.mediaHub.MainActivity
+import com.das.mediaHub.NavScreens
 import com.das.mediaHub.R
 import com.das.mediaHub.python.YouTuber.loadStreamUrl
 import com.das.mediaHub.data.local.DatabaseFavorite
 import com.das.mediaHub.data.constants.Action.ACTION_START
-import com.das.mediaHub.data.constants.Intents.NEW_INTENT_FOR_VIEWER
 import com.das.mediaHub.data.model.SavedVideosListData
 import com.das.mediaHub.data.model.VideosListData
 import com.das.mediaHub.services.AudioServiceFromUrl
-import com.das.mediaHub.data.constants.GlobalVideoList.bundles
-
+import com.das.mediaHub.data.model.searcher.Video
 
 
 @Composable
-fun WatchLaterComposable(navController: NavController) {
+fun WatchLaterComposable(backStack: NavBackStack<NavKey>) {
 
 
     val viewModel = viewModel<WatchLaterViewModel>()
     val scrollBehavior = TopAppBarDefaults.enterAlwaysScrollBehavior()
-    val searchResults by viewModel.searchResults
-    val isLoading by viewModel.isLoading
+    val videos by viewModel.searchResults.collectAsState()
+    val isLoading by viewModel.isLoading.collectAsState()
+    val errorMessage by viewModel.error.collectAsState()
 
     LaunchedEffect(Unit) {
         viewModel.fetchData()
@@ -108,89 +107,92 @@ fun WatchLaterComposable(navController: NavController) {
             modifier = Modifier
                 .fillMaxSize()
         ) {
-            if (isLoading) {
-                item {
-                    Box(
-                        modifier = Modifier
-                            .fillMaxSize()
-                    ) {
-                        CircularProgressIndicator(modifier = Modifier.align(Alignment.Center))
+
+            when {
+                isLoading -> {
+                    item {
+                        Box(
+                            modifier = Modifier.fillParentMaxSize(),
+                            contentAlignment = Alignment.Center
+                        ) {
+                            CircularProgressIndicator()
+                        }
                     }
                 }
-            } else {
-                if (searchResults.isEmpty()) {
 
+                errorMessage != null -> {
                     item {
                         Text(
-                            text = "You don't have any saved videos int your collection!." +
-                                    "\nSave some videos to add to your collection! ",
-                            style = MaterialTheme.typography.headlineMedium
-                                .copy(textAlign = TextAlign.Center),
-                            fontSize = 20.sp,
+                            text = errorMessage!!,
+                            color = MaterialTheme.colorScheme.error,
+                            style = MaterialTheme.typography.headlineSmall,
+                            textAlign = TextAlign.Center,
                             modifier = Modifier
                                 .fillMaxWidth()
+                                .padding(16.dp)
+                        )
+                    }
+                }
+
+                videos.isEmpty() -> {
+                    item {
+                        Text(
+                            text = "You don't have any saved videos yet.\nSave some videos to see them here!",
+                            textAlign = TextAlign.Center,
+                            style = MaterialTheme.typography.headlineMedium,
+                            modifier = Modifier.fillMaxWidth()
                         )
                     }
                     item {
                         Box(
-                            contentAlignment = Alignment.Center,
-                            modifier = Modifier.fillMaxWidth()
+                            modifier = Modifier.fillMaxWidth(),
+                            contentAlignment = Alignment.Center
                         ) {
                             Icon(
                                 imageVector = Icons.Default.VideoLibrary,
-                                contentDescription = "",
-                                modifier = Modifier
-                                    .size(60.dp)
-                                    .align(Alignment.Center)
+                                contentDescription = null,
+                                modifier = Modifier.size(60.dp)
                             )
                         }
                     }
-                } else {
-                    items(searchResults, key = { it.watchUrl }) { searchItem ->
-                        CategoryItems(
-                            navController,
-                            searchItem,
-                            viewModel
-                        )
+                }
 
+                else -> {
+                    items(videos, key = { it.watchUrl }) { video ->
+                        WatchLaterItem(
+                            backStack = backStack,
+                            item = video,
+                            viewModel = viewModel
+                        )
                     }
                 }
+
             }
         }
     }
 }
 
 @Composable
-private fun CategoryItems(
-    navController: NavController,
-    selectedItem: SavedVideosListData,
+private fun WatchLaterItem(
+    backStack: NavBackStack<NavKey>,
+    item: SavedVideosListData,
     viewModel: WatchLaterViewModel
 ) {
 
-    var showDialog by remember { mutableStateOf(false) }
+    val showDialog = remember { mutableStateOf(false) }
 
-    var showInfoDialog by remember { mutableStateOf(false) }
+    val showInfoDialog = remember { mutableStateOf(false) }
 
-    val videoId = selectedItem.watchUrl
-    val title = selectedItem.title
-    val viewsNumber = selectedItem.viewer
-    val dateOfVideo = selectedItem.dateTime
-    val channelName = selectedItem.channelName
-    val duration = selectedItem.duration
-    val videoThumbnailURL = selectedItem.thumbnailUrl
-    val channelThumbnails = selectedItem.channelThumbnail
+    val videoId = item.watchUrl
+    val title = item.title
+    val viewsNumber = item.viewer
+    val dateOfVideo = item.dateTime
+    val channelName = item.channelName
+    val duration = item.duration
+    val videoThumbnailURL = item.thumbnailUrl
+    val channelThumbnails = item.channelThumbnail
 
     val context = LocalContext.current
-
-
-    val imageRequest = remember {
-        ImageRequest.Builder(context)
-            .data(videoThumbnailURL)
-            .crossfade(true)
-            .memoryCachePolicy(CachePolicy.ENABLED)
-            .diskCachePolicy(CachePolicy.ENABLED)
-            .build()
-    }
 
     Box(
         modifier = Modifier
@@ -202,11 +204,11 @@ private fun CategoryItems(
                     onClickListListener(
                         context,
                         videoId,
-                        navController
+                        backStack
                     )
                 },
                 onLongClick = {
-                    showDialog = true
+                    showDialog.value = true
                 }
             )
     ) {
@@ -218,7 +220,7 @@ private fun CategoryItems(
         ) {
             Box {
                 AsyncImage(
-                    model = imageRequest,
+                    model = videoThumbnailURL,
                     contentDescription = "Category Image",
                     modifier = Modifier
                         .fillMaxWidth()
@@ -247,7 +249,7 @@ private fun CategoryItems(
 
                 IconButton(
                     onClick = {
-                        showInfoDialog = true
+                        showInfoDialog.value = true
                     }
                 ) {
                     AsyncImage(
@@ -314,7 +316,7 @@ private fun CategoryItems(
                 }
                 IconButton(
                     onClick = {
-                        showDialog = true
+                        showDialog.value = true
                     }
 
                 ) {
@@ -326,20 +328,20 @@ private fun CategoryItems(
             }
         }
     }
-    if (showDialog){
+    if (showDialog.value){
         ShowAlertDialog(
             context,
-            selectedItem,
+            item,
             deleteTheItem = { selectedId->
                 DatabaseFavorite(context).deleteWatchUrl(selectedId)
-                viewModel.removeSearchItem(selectedItem)
+                viewModel.removeSearchItem(item)
             },
-            onDismissRequest = {showDialog = false}
+            onDismissRequest = {showDialog.value = false}
         )
     }
-    if (showInfoDialog){
+    if (showInfoDialog.value){
         InfoDialog{
-            showInfoDialog = false
+            showInfoDialog.value = false
         }
     }
 }
@@ -389,7 +391,7 @@ private fun InfoDialog(onDismissRequest: () -> Unit){
 private fun onClickListListener(
         context: Context,
         selectedId: String,
-        controller: NavController
+        backStack: NavBackStack<NavKey>
     ) {
     try {
         val dbHelper = DatabaseFavorite(context)
@@ -399,18 +401,12 @@ private fun onClickListListener(
         val ourDuration = dbHelper.getDuration(selectedId).toString()
         val title = dbHelper.getVideoTitle(selectedId)
         val channelThumbnail = dbHelper.getChannelNameThumbnail(selectedId)
-        val bundle = Bundle().apply {
-            putString("View_ID", selectedId)
-            putString("View_URL", "https://www.youtube.com/watch?v=$selectedId")
-            putString("View_Title", title)
-            putString("View_Number", viewNumber)
-            putString("dateOfVideo", datVideo)
-            putString("channelName", videoChannel)
-            putString("duration", ourDuration)
-            putString("channel_Thumbnails", channelThumbnail)
-        }
-        bundles.putBundle(NEW_INTENT_FOR_VIEWER, bundle)
-        controller.navigate("video viewer")
+        val bundle = Video(
+            id = selectedId,
+            title = title
+        )
+
+        backStack.add(NavScreens.VideoViewer(bundle))
 
     } catch (e: Exception) {
         MainActivity().alertUserError(context, e.message.toString())
@@ -425,9 +421,9 @@ private fun ShowAlertDialog(
     onDismissRequest: () ->Unit
 ){
 
-    var shouldLoad by remember { mutableStateOf(false) }
+    val shouldLoad = remember { mutableStateOf(false) }
 
-    if (shouldLoad) {
+    if (shouldLoad.value) {
         LaunchedEffect(Unit) {
             VideosListData(
                 selectedData.watchUrl, selectedData.title, selectedData.viewer,
@@ -450,7 +446,7 @@ private fun ShowAlertDialog(
                     println("Error: $it")
                 }
             )
-            shouldLoad = false
+            shouldLoad.value = false
         }
     }
 
@@ -473,7 +469,7 @@ private fun ShowAlertDialog(
          dismissButton = {
              TextButton(
             onClick = {
-                shouldLoad = true
+                shouldLoad.value = true
                 onDismissRequest()
             },
 

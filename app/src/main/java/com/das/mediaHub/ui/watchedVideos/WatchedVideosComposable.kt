@@ -2,7 +2,6 @@ package com.das.mediaHub.ui.watchedVideos
 
 import android.content.Context
 import android.content.Intent
-import android.os.Bundle
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.combinedClickable
@@ -36,6 +35,7 @@ import androidx.compose.material3.TopAppBar
 import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -52,7 +52,8 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.viewmodel.compose.viewModel
-import androidx.navigation.NavController
+import androidx.navigation3.runtime.NavBackStack
+import androidx.navigation3.runtime.NavKey
 import coil.compose.AsyncImage
 import coil.request.CachePolicy
 import coil.request.ImageRequest
@@ -62,23 +63,23 @@ import com.das.mediaHub.data.local.WatchHistory
 import com.das.mediaHub.data.model.SavedVideosListData
 import com.das.mediaHub.data.model.VideosListData
 import com.das.mediaHub.data.constants.Action.ACTION_START
-import com.das.mediaHub.data.constants.Intents.NEW_INTENT_FOR_VIEWER
 import com.das.mediaHub.services.AudioServiceFromUrl
-import com.das.mediaHub.data.constants.GlobalVideoList.bundles
 import com.das.mediaHub.NavScreens.VideoViewer
 import com.das.mediaHub.NavScreens.Saved
+import com.das.mediaHub.data.model.searcher.Video
 import com.das.mediaHub.python.YouTuber.loadStreamUrl
 
 
 @Composable
-fun WatchedVideosComposable(navController: NavController) {
+fun WatchedVideosComposable(backStack: NavBackStack<NavKey>) {
 
 
     val viewModel = viewModel<WatchedVideosViewModel>()
     val scrollBehavior = TopAppBarDefaults.enterAlwaysScrollBehavior()
-    val searchResults by viewModel.savedLists
-    val isLoading by viewModel.isLoading
-    val isError by viewModel.isError
+    val searchResults by viewModel.savedLists.collectAsState()
+    val isLoading by viewModel.isLoading.collectAsState()
+    val isError by viewModel.isError.collectAsState()
+    val dbHelper = viewModel.dbHelper
 
     LaunchedEffect(Unit) {
         viewModel.fetchData()
@@ -90,10 +91,14 @@ fun WatchedVideosComposable(navController: NavController) {
         topBar = {
             TopAppBar(
                 scrollBehavior = scrollBehavior,
+                colors = TopAppBarDefaults.topAppBarColors(
+                    containerColor = Color.Transparent,
+                    scrolledContainerColor = Color.Transparent
+                ),
                 actions = {
                     IconButton(
                         onClick = {
-                            navController.navigate(Saved.route)
+                            backStack.add(Saved)
                         }
                     ) {
                         Icon(
@@ -175,8 +180,9 @@ fun WatchedVideosComposable(navController: NavController) {
                     }
                 } else {
                     items(searchResults, key = { it.watchUrl }) { searchItem ->
-                        CategoryItems(
-                            navController,
+                        WatchedMedia(
+                            backStack,
+                            dbHelper = dbHelper,
                             searchItem,
                             viewModel
                         )
@@ -189,8 +195,9 @@ fun WatchedVideosComposable(navController: NavController) {
 }
 
 @Composable
-private fun CategoryItems(
-    navController: NavController,
+private fun WatchedMedia(
+    backStack: NavBackStack<NavKey>,
+    dbHelper: WatchHistory,
     selectedItem: SavedVideosListData,
     viewModel: WatchedVideosViewModel
 ) {
@@ -229,8 +236,9 @@ private fun CategoryItems(
                 onClick = {
                     onClickListListener(
                         context,
+                        dbHelper = dbHelper,
                         videoId,
-                        navController
+                        backStack
                     )
                 },
                 onLongClick = {
@@ -416,16 +424,17 @@ private fun InfoDialog(onDismissRequest: () -> Unit){
 
 private fun onClickListListener(
     context: Context,
+    dbHelper: WatchHistory,
     selectedId: String,
-    controller: NavController
+    controller: NavBackStack<NavKey>
 ) {
     try {
-        val dbHelper = WatchHistory(context)
+        val title = dbHelper.getVideoTitle(selectedId)
+        /*
         val viewNumber = dbHelper.getViewNumber(selectedId)
         val datVideo = dbHelper.getVideoDate(selectedId)
         val videoChannel = dbHelper.getVideoChannelName(selectedId)
         val ourDuration = dbHelper.getDuration(selectedId).toString()
-        val title = dbHelper.getVideoTitle(selectedId)
         val channelThumbnail = dbHelper.getChannelNameThumbnail(selectedId)
         val bundle = Bundle().apply {
             putString("View_ID", selectedId)
@@ -436,9 +445,13 @@ private fun onClickListListener(
             putString("channelName", videoChannel)
             putString("duration", ourDuration)
             putString("channel_Thumbnails", channelThumbnail)
-        }
-        bundles.putBundle(NEW_INTENT_FOR_VIEWER, bundle)
-        controller.navigate(VideoViewer.route)
+        }*/
+        controller.add(VideoViewer(
+            Video(
+                id =selectedId,
+                title = title
+            )
+        ))
 
     } catch (e: Exception) {
         MainActivity().alertUserError(context, e.message.toString())

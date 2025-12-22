@@ -39,7 +39,7 @@ import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.semantics.contentDataType
 import androidx.compose.ui.semantics.contentType
-import androidx.compose.ui.semantics.onAutofillText
+import androidx.compose.ui.semantics.onFillData
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.ImeAction
@@ -48,18 +48,21 @@ import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.text.input.VisualTransformation
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import androidx.navigation.NavController
+import androidx.navigation3.runtime.NavBackStack
+import androidx.navigation3.runtime.NavKey
 import com.das.mediaHub.NavScreens
 import com.das.mediaHub.data.model.TopPopUp
 import com.das.mediaHub.data.model.user.LoginUserData
 import com.das.mediaHub.ui.TopPopupNotification.showNotificationDialog
+import com.google.firebase.Firebase
 import com.google.firebase.auth.FirebaseAuth
+import com.google.firebase.auth.auth
 
 @Composable
 fun LoginPage(
-    navController: NavController,
-    auth: FirebaseAuth
+    backStack: NavBackStack<NavKey>
 ) {
+    val auth = Firebase.auth
     val email = rememberSaveable { mutableStateOf("") }
     val password = rememberSaveable { mutableStateOf("") }
     var isPasswordVisible by rememberSaveable { mutableStateOf(false) }
@@ -112,8 +115,8 @@ fun LoginPage(
                         .semantics {
                             contentType = ContentType.EmailAddress
                             contentDataType = ContentDataType.Text
-                            onAutofillText {
-                                email.value = it.text
+                            onFillData {
+                                email.value = it.textValue.toString()
                                 true
                             }
                         }
@@ -155,7 +158,7 @@ fun LoginPage(
                                         message = "You have successfully Login",
                                         icon = Icons.AutoMirrored.Default.Logout
                                     )
-                                    navController.popBackStack()
+                                    backStack.removeLastOrNull()
                                 } else {
                                     message = error
                                 }
@@ -178,7 +181,7 @@ fun LoginPage(
                                     message = "You have successfully Login",
                                     icon = Icons.AutoMirrored.Default.Logout
                                 )
-                                navController.popBackStack()
+                                backStack.removeLastOrNull()
                             } else {
                                 message = error
                             }
@@ -199,7 +202,7 @@ fun LoginPage(
                 // Sign up text
                 TextButton(
                     onClick = {
-                        navController.navigate(NavScreens.SignUpPage.route)
+                        backStack.add(NavScreens.SignUpPage)
                     }
                 ) {
                     Text("Don't have an account? Sign up", color = Color.White)

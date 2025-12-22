@@ -4,5 +4,6 @@ import androidx.compose.ui.graphics.vector.ImageVector
 
 data class TopPopUp(
     val message: String,
-    val icon: ImageVector
+    val icon: ImageVector,
+    val loading: Boolean= false
 )

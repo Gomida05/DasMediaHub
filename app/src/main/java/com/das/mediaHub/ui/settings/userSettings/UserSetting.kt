@@ -52,7 +52,8 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
 import androidx.documentfile.provider.DocumentFile
-import androidx.navigation.NavController
+import androidx.navigation3.runtime.NavBackStack
+import androidx.navigation3.runtime.NavKey
 import com.das.mediaHub.data.local.PathSaver
 import com.das.mediaHub.ui.theme.ThemePreferences.loadDarkModeState
 import com.das.mediaHub.ui.theme.ThemePreferences.saveDarkMode
@@ -61,7 +62,7 @@ import kotlinx.coroutines.launch
 
 
 @Composable
-fun UserSettingComposable(navController: NavController) {
+fun UserSettingComposable(backStack: NavBackStack<NavKey>) {
     val context = LocalContext.current
 
     val snackBarHostState = remember { SnackbarHostState() }
@@ -77,7 +78,7 @@ fun UserSettingComposable(navController: NavController) {
             TopAppBar(
                 title = { Text("Settings") },
                 navigationIcon = {
-                    IconButton(onClick = { navController.navigateUp() }) {
+                    IconButton(onClick = { backStack.removeLastOrNull() }) {
                         Icon(
                             imageVector = Icons.AutoMirrored.Filled.ArrowBack,
                             contentDescription = "Back"

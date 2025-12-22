@@ -12,11 +12,11 @@ object MyFirebase {
     @Composable
     fun FirebaseAuth.rememberFirebaseUser(): FirebaseUser? {
 
-        val currentUser = remember { mutableStateOf(currentUser) }
+        val userState = remember { mutableStateOf(this.currentUser) }
 
-        DisposableEffect(Unit) {
+        DisposableEffect(this) {
             val listener = FirebaseAuth.AuthStateListener { firebaseAuth ->
-                currentUser.value = firebaseAuth.currentUser
+                userState.value = firebaseAuth.currentUser
             }
             addAuthStateListener(listener)
             onDispose {
@@ -24,6 +24,6 @@ object MyFirebase {
             }
         }
 
-        return currentUser.value
+        return userState.value
     }
 }

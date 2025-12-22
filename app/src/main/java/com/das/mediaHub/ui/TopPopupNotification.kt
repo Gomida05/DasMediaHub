@@ -8,8 +8,10 @@ import androidx.compose.animation.slideInVertically
 import androidx.compose.animation.slideOutVertically
 import androidx.compose.foundation.gestures.detectVerticalDragGestures
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.offset
@@ -20,6 +22,7 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.Icon
+import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -40,15 +43,44 @@ import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import kotlin.math.roundToInt
 
+/**
+ * Centralized helper for displaying a transient top popup notification
+ * across the application.
+ *
+ * This object holds the shared state for the currently visible notification
+ * and exposes a composable extension function on [TopPopUp] to render it.
+ *
+ * The popup appears from the top of the screen, auto-dismisses after a
+ * configurable duration, and can be dismissed manually via an upward swipe.
+ */
 internal object TopPopupNotification {
+
+    /**
+     * Holds the currently displayed [TopPopUp] notification.
+     *
+     * When this value is non-null, the popup will be rendered.
+     * Setting it back to null dismisses the notification.
+     */
     var showNotificationDialog by mutableStateOf<TopPopUp?>(null)
 
+    /**
+     * Displays a top popup notification for this [TopPopUp] instance.
+     *
+     * The notification animates in from the top, remains visible for the
+     * specified duration, and then dismisses automatically.
+     *
+     * Users can also dismiss the popup early by dragging it upward.
+     *
+     * @param durationMillis Duration (in milliseconds) the popup stays visible
+     * before being dismissed automatically.
+     * @param onDismiss Callback invoked when the popup should be dismissed.
+     */
     @Composable
     fun TopPopUp.TopPopupNotification(
         durationMillis: Long = 4000,
         onDismiss: () -> Unit
     ) {
-        val offsetY = remember { Animatable(-100f) } // start above screen
+        val offsetY = remember { Animatable(-100f) } // Starts above the screen
         val coroutineScope = rememberCoroutineScope()
 
         LaunchedEffect(Unit) {
@@ -58,26 +90,26 @@ internal object TopPopupNotification {
             onDismiss()
         }
 
-
         val dragModifier = Modifier.pointerInput(Unit) {
             detectVerticalDragGestures(
                 onVerticalDrag = { change, dragAmount ->
                     change.consume()
 
+                    // Allow only upward dragging
                     if (dragAmount < 0f) {
                         coroutineScope.launch {
                             val newOffset = offsetY.value + dragAmount
-                            offsetY.snapTo(newOffset.coerceAtMost(0f)) // Prevent dragging down
+                            offsetY.snapTo(newOffset.coerceAtMost(0f))
                         }
                     }
                 },
                 onDragEnd = {
                     coroutineScope.launch {
-                        // If dragged up far enough, dismiss
+                        // Dismiss if dragged far enough upward
                         if (offsetY.value <= -80f) {
                             onDismiss()
                         } else {
-                            // Otherwise, snap back to position
+                            // Otherwise snap back into place
                             offsetY.animateTo(0f)
                         }
                     }
@@ -91,7 +123,7 @@ internal object TopPopupNotification {
             exit = slideOutVertically(targetOffsetY = { -100 }) + fadeOut()
         ) {
             Box(
-                Modifier
+                modifier = Modifier
                     .padding(6.dp)
                     .fillMaxWidth()
                     .padding(horizontal = 16.dp, vertical = 16.dp)
@@ -99,35 +131,45 @@ internal object TopPopupNotification {
                 contentAlignment = Alignment.TopCenter
             ) {
                 Card(
-                    onClick = {
-
-                    },
                     elevation = CardDefaults.cardElevation(8.dp),
                     shape = RoundedCornerShape(12.dp),
-                    colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.background),
+                    colors = CardDefaults.cardColors(
+                        containerColor = MaterialTheme.colorScheme.background
+                    ),
                     modifier = Modifier
                         .fillMaxWidth()
                         .height(70.dp)
                         .offset { IntOffset(0, offsetY.value.roundToInt()) }
                         .then(dragModifier)
                 ) {
-                    Row(
-                        verticalAlignment = Alignment.CenterVertically,
-                        modifier = Modifier
-                            .padding(horizontal = 16.dp, vertical = 12.dp)
-                    ) {
-                        Icon(
-                            imageVector = icon,
-                            contentDescription = "Notification Icon",
-                            tint = MaterialTheme.colorScheme.primary,
-                            modifier = Modifier.size(24.dp)
-                        )
-                        Spacer(modifier = Modifier.width(12.dp))
-                        Text(
-                            text = message,
-                            style = MaterialTheme.typography.bodyMedium,
-                            modifier = Modifier.weight(1f)
-                        )
+                    Column(modifier = Modifier.fillMaxSize()) {
+                        Row(
+                            verticalAlignment = Alignment.CenterVertically,
+                            modifier = Modifier
+                                .weight(1f)
+                                .padding(horizontal = 16.dp, vertical = 12.dp)
+                        ) {
+                            Icon(
+                                imageVector = icon,
+                                contentDescription = "Notification Icon",
+                                tint = MaterialTheme.colorScheme.primary,
+                                modifier = Modifier.size(24.dp)
+                            )
+                            Spacer(modifier = Modifier.width(12.dp))
+                            Text(
+                                text = message,
+                                style = MaterialTheme.typography.bodyMedium,
+                                modifier = Modifier.weight(1f)
+                            )
+                        }
+
+                        if (loading) {
+                            LinearProgressIndicator(
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .height(2.dp)
+                            )
+                        }
                     }
                 }
             }

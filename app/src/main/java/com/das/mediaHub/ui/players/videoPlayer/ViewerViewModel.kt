@@ -1,8 +1,6 @@
 package com.das.mediaHub.ui.players.videoPlayer
 
 import android.util.Log
-import androidx.compose.runtime.State
-import androidx.compose.runtime.mutableStateOf
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.das.mediaHub.python.YouTuber.formatDate
@@ -17,38 +15,26 @@ import com.das.mediaHub.python.PythonMain.pythonInstant
 import com.das.mediaHub.python.data.Names.GET_VIDEO_STREAM_URL
 import com.das.mediaHub.python.data.Names.SEARCHER
 import com.das.mediaHub.python.data.Names.SEARCH_WITH_URL
+import com.das.mediaHub.ui.players.videoPlayer.state.UiState
+import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
 import kotlinx.serialization.SerializationException
 
 
 class ViewerViewModel : ViewModel() {
 
-    private val _videoUrl = mutableStateOf("")
-    val videoUrl: State<String> = _videoUrl
 
-    private val _error = mutableStateOf<String?>(null)
-    val error: State<String?> = _error
+    private val _videoState = MutableStateFlow(UiState<String>())
+    val videoState = _videoState.asStateFlow()
 
-    private val _isLoading = mutableStateOf(false)
-    val isLoading: State<Boolean> = _isLoading
 
-    private val _isLoadings = mutableStateOf(false)
-    val isLoadings: State<Boolean> = _isLoadings
+    private val _detailsState = MutableStateFlow(UiState<VideoDetails>())
+    val detailsState = _detailsState.asStateFlow()
 
-    private val _errorVideoDetails = mutableStateOf<String?>(null)
-    val errorVideoDetails: State<String?> = _errorVideoDetails
+    private val _suggestionsState = MutableStateFlow(UiState<List<Video>>())
+    val suggestionsState = _suggestionsState.asStateFlow()
 
-    private val _videoDetails = mutableStateOf<VideoDetails?>(null)
-    val videoDetails: State<VideoDetails?> = _videoDetails
-
-    private val _searchResults = mutableStateOf<List<Video>>(emptyList())
-    val searchResults: State<List<Video>> = _searchResults
-
-    private val _isSuggestionError = mutableStateOf<String?>(null)
-    val isSuggestionError: State<String?> = _isSuggestionError
-
-    private val _isLoadingVideos = mutableStateOf(false)
-    val isLoadingVideos: State<Boolean> = _isLoadingVideos
 
     fun loadDetails(videoId: String) {
         loadVideoUrl(videoId)
@@ -56,73 +42,104 @@ class ViewerViewModel : ViewModel() {
     }
 
     fun loadVideoUrl(videoId: String) {
-        _isLoading.value = true
-        _error.value = null
+        _videoState.value.copy(
+            isLoading = true,
+            error = null
+        )
         viewModelScope.launch {
             try {
                 val result = getStreamUrl(type = GET_VIDEO_STREAM_URL, id = videoId)
 
                 if (result.success && !result.result.isNullOrEmpty()) {
-                    _videoUrl.value = result.result
+                    _videoState.value.copy(
+                        data = result.result
+                    )
                 } else {
-                    _error.value = result.error
+                    _videoState.value.copy(
+                        error = result.error
+                    )
                 }
             } catch (e: Exception) {
-                _error.value = "Error: ${e.message}"
+                _videoState.value.copy(
+                    error = "Error: ${e.message}"
+                )
             } finally {
-                _isLoading.value = false
+                _videoState.value.copy(
+                    isLoading = false
+                )
             }
         }
     }
 
 
     fun fetchVideoDetails(videoId: String) {
-        _isLoadings.value = true
-        _errorVideoDetails.value = null
+        _detailsState.value.copy(
+            isLoading = true,
+            error = null
+        )
         viewModelScope.launch {
             try {
                 val result = callPythonSearchWithLink(videoId)
                 if (result.success && result.result != null) {
                     val videoDetails = result.result
-                    _videoDetails.value = videoDetails.copy(
-                        viewNumber = videoDetails.viewNumber.formatViews(),
-                        date = videoDetails.date.formatDate()
+                    _detailsState.value.copy(
+                        data = videoDetails.copy(
+                            viewNumber = videoDetails.viewNumber.formatViews(),
+                            date = videoDetails.date.formatDate()
+                        )
                     )
                 } else {
-                    _errorVideoDetails.value = result.error ?: "Something went wrong!"
+                    _detailsState.value.copy(
+                        error = result.error ?: "Something went wrong!"
+                    )
                 }
             } catch (js: SerializationException) {
-                _errorVideoDetails.value = "Error while fetching data: ${js.message}"
+                _detailsState.value.copy(
+                    error = "Error while fetching data: ${js.message}"
+                )
                 Log.e("VideoPlayer", "Error fetching json video details: ${js.message}")
             } catch (e: Exception) {
-                _errorVideoDetails.value = "Error loading video details: ${e.message}"
-                Log.e("VideoPlayer", "Error loading video details: ${e.message}")
+                _detailsState.value.copy(
+                    error = "Error loading video details: ${e.message}"
+                )
+                Log.e("VideoPlayer", "Error loading video details: $e")
             } finally {
-                _isLoadings.value = false
+                _detailsState.value.copy(
+                    isLoading = false
+                )
             }
         }
     }
 
 
     fun fetchSuggestions(title: String) {
-        _isLoadingVideos.value = true
-        _isSuggestionError.value = null
+        _suggestionsState.value.copy(
+            isLoading = true,
+            error = null
+        )
         viewModelScope.launch {
             try {
                 val result = callPythonSearchSuggestion(title)
                 if (result.success && result.result != null) {
-                    _searchResults.value = result.result.result
+                    _suggestionsState.value.copy(
+                        data = result.result.result
+                    )
                 } else {
-                    _isSuggestionError.value = result.error ?: "Something went wrong!"
+                    _suggestionsState.value.copy(
+                        error = result.error ?: "Something went wrong!"
+                    )
                 }
             } catch (j: SerializationException) {
-                _isSuggestionError.value = "Error parsing data: ${j.localizedMessage}"
                 Log.e("VideoPlayer", "Error parsing data: ${j.localizedMessage}")
             } catch (e: Exception) {
-                _isSuggestionError.value = "Something went wrong: ${e.message}"
+                _suggestionsState.value.copy(
+                    error = "Something went wrong: ${e.message}"
+                )
                 Log.e("VideoPlayer", "Something went wrong: ${e.message}")
             } finally {
-                _isLoadingVideos.value = false
+                _suggestionsState.value.copy(
+                    isLoading = false
+                )
             }
 
         }

@@ -103,6 +103,7 @@ fun MainActivity.LocalVideoPlayer(videoUri: String) {
                 )
             }
         }
+        @Suppress("COMPOSE_APPLIER_CALL_MISMATCH")
         AndroidView(
             modifier = Modifier
                 .padding(innerPadding)

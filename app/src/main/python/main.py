@@ -8,8 +8,9 @@ from pytubefix.exceptions import (
 from youtubesearchpython import Video, VideosSearch
 from requests import RequestException
 from typing import Any, Optional
-import json, traceback, socket
+import json, traceback, socket, ssl, time
 
+ssl._create_default_https_context = ssl._create_unverified_context
 def make_response(success: bool, error: Optional[str] = None, result: Any = None):
     return json.dumps(
         {
@@ -20,25 +21,95 @@ def make_response(success: bool, error: Optional[str] = None, result: Any = None
     )
 
 
-def get_video_url(video_url: str):
-    try:
-        yt = YouTube(video_url)
-        stream = yt.streams.get_highest_resolution()
-        return make_response(success = True, result = str(stream.url))
-    except Exception as e:
-        print(f"error in url {e}")
-        return make_response(success = False, result = str(e))
+def get_video_url(video_url: str, retries: int = 3, delay: float = 1.0):
+    last_error = None
+
+    for attempt in range(1, retries + 1):
+        try:
+            yt = YouTube(video_url)
+
+            stream = yt.streams.get_highest_resolution()
+
+            # if stream is None:
+                # stream = yt.streams.get_audio_only()
+
+            if stream is None or not stream.url:
+                raise ExtractError("No valid stream found")
+
+            return make_response(
+                success=True,
+                result=str(stream.url)
+            )
+
+        except (VideoUnavailable, RegexMatchError) as e:
+            return make_response(
+                success=False,
+                error=str(e) or "Video unavailable or invalid URL"
+            )
+
+        except (ExtractError, PytubeFixError) as e:
+            last_error = e
+
+        except (ssl.SSLError, socket.error, RequestException) as e:
+            last_error = f"Network/TLS error: {e}"
+
+        except Exception as e:
+            last_error = f"Unexpected error: {e}"
+
+        print(f"[get_video_url] attempt {attempt}/{retries} failed: {last_error}")
+        time.sleep(delay)
+
+    # --- Final failure ---
+    return make_response(
+        success=False,
+        error=str(last_error) or "Failed to fetch video stream due to network issues"
+    )
 
 
-def get_audio_url(media_url):
-    try:
-        yt = YouTube(media_url)
-        stream = yt.streams.get_audio_only()
-        
-        return make_response(success = True, result = str(stream.url))
-    except Exception as e:
-        print(f"error in url {e}")
-        return make_response(success = False, result = str(e))
+def get_audio_url(media_url: str, retries: int = 3):
+    last_error = None
+
+    for attempt in range(retries):
+        try:
+            yt = YouTube(media_url)
+
+            # Prefer audio-only (smallest, most reliable)
+            stream = yt.streams.get_audio_only()
+
+            # Fallback if audio-only fails
+            if stream is None:
+                stream = yt.streams.filter(only_audio=True).first()
+
+            if stream is None:
+                raise ExtractError("No audio stream available")
+
+            return make_response(
+                success=True,
+                result=str(stream.url)
+            )
+
+        except (VideoUnavailable, RegexMatchError) as e:
+            # These won't succeed on retry
+            return make_response(
+                success=False,
+                error=str(e)
+            )
+
+        except (PytubeFixError, ExtractError, RequestException, ssl.SSLError, socket.error) as e:
+            last_error = e
+            print(f"[Audio attempt {attempt + 1}] transient error: {e}")
+            time.sleep(1.2)
+
+        except Exception as e:
+            # Catch-all to protect Chaquopy
+            last_error = e
+            print(f"[Audio attempt {attempt + 1}] unexpected error: {e}")
+            time.sleep(1.2)
+
+    return make_response(
+        success=False,
+        error=f"Failed to fetch audio stream after {retries} attempts: {last_error}"
+    )
     
 
 def getPlayListUrls(youtube_url):
@@ -64,10 +135,14 @@ def getPlayListUrls(youtube_url):
         return False
 
 def Searcher(inputer: str):
-
+    print(f"hello {inputer}")
+    if not inputer:
+        print("not looking good")
     try:
-        search = VideosSearch(inputer, limit=80)
+        print(f"here is the type {type(inputer)}")
+        search = VideosSearch(query=inputer)
         results = search.result()
+        print("it is working actually")
         return make_response(success=True, error=None, result= results)
 
     except RequestException as e:
@@ -79,7 +154,7 @@ def Searcher(inputer: str):
     except PytubeFixError as e:
         err_msg = f"YouTube library error: {str(e)}"
     except Exception as e:
-        err_msg = f"Unexpected error during search: {str(e)}"
+        err_msg = f"Unexpected error during search: {e}"
 
     print(err_msg)
     traceback.print_exc()

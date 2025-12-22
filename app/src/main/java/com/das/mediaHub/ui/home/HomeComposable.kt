@@ -15,7 +15,6 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.AccountCircle
 import androidx.compose.material.icons.filled.Download
-import androidx.compose.material3.FilledTonalButton
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
@@ -24,44 +23,40 @@ import androidx.compose.material3.SnackbarHost
 import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBar
+import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
-import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
-import androidx.navigation.NavController
-import androidx.navigation.compose.rememberNavController
+import androidx.navigation3.runtime.NavBackStack
+import androidx.navigation3.runtime.NavKey
 import com.das.mediaHub.NavScreens
 import com.das.mediaHub.NavScreens.Searcher
 import com.das.mediaHub.NavScreens.Downloads
 import com.das.mediaHub.data.icons.Instagram
 import com.das.mediaHub.data.icons.TikTok
 import com.das.mediaHub.data.icons.YouTube
-import com.das.mediaHub.ui.theme.CustomTheme
 import kotlinx.coroutines.launch
 
-@Preview
 @Composable
-fun OPreview() {
-    CustomTheme {
-        rememberNavController().HomePageComposable()
-    }
-}
-@Composable
-
-fun NavController.HomePageComposable() {
+fun NavBackStack<NavKey>.HomePageComposable() {
     val scope = rememberCoroutineScope()
     val snackBar = remember { SnackbarHostState() }
     Scaffold(
         snackbarHost = { SnackbarHost(snackBar) },
         topBar = {
             TopAppBar(
+                colors = TopAppBarDefaults.topAppBarColors(
+                    containerColor = Color.Transparent,
+                    scrolledContainerColor = Color.Transparent
+                ),
                 title = {
                     Text(
                         text = "DasMediaHub",
@@ -72,7 +67,7 @@ fun NavController.HomePageComposable() {
                 navigationIcon = {
                     IconButton(
                         onClick = {
-                            navigate(NavScreens.AccountSetting.route)
+                            add(NavScreens.AccountSetting)
                         }) {
                         Icon(
                             imageVector = Icons.Default.AccountCircle,
@@ -81,7 +76,7 @@ fun NavController.HomePageComposable() {
                     }
                 },
                 actions = {
-                    IconButton(onClick = { navigate(Downloads.route) }) {
+                    IconButton(onClick = { add(Downloads) }) {
                         Icon(
                             imageVector = Icons.Default.Download,
                             contentDescription = "Downloaded medias"
@@ -131,7 +126,7 @@ fun NavController.HomePageComposable() {
                             )
                         }
                     }
-                    PlatformIcon(icon = YouTube, "YouTube") { navigate(Searcher.route) }
+                    PlatformIcon(icon = YouTube, "YouTube") { add(Searcher("")) }
                     PlatformIcon(icon = Instagram, "Instagram") {
                         scope.launch {
                             snackBar.showSnackbar(
@@ -188,7 +183,7 @@ fun PlatformIcon(icon: ImageVector, label: String, onClick: ()-> Unit) {
 
 
 @Composable
-fun NavController.HomePageComposable(setTopBar: (@Composable () -> Unit) -> Unit) {
+fun NavBackStack<NavKey>.HomePageComposable(setTopBar: (@Composable () -> Unit) -> Unit) {
 
     setTopBar {
         TopAppBar(
@@ -203,7 +198,7 @@ fun NavController.HomePageComposable(setTopBar: (@Composable () -> Unit) -> Unit
             navigationIcon = {
                 IconButton(
                     onClick = {
-                        navigate(NavScreens.AccountSetting.route)
+                        add(NavScreens.AccountSetting)
                     }
                 ) {
                     Icon(
@@ -215,7 +210,7 @@ fun NavController.HomePageComposable(setTopBar: (@Composable () -> Unit) -> Unit
             actions = {
                 IconButton(
                     onClick = {
-                        navigate(Downloads.route)
+                        add(Downloads)
                     }
                 ) {
                     Icon(
@@ -255,7 +250,7 @@ fun NavController.HomePageComposable(setTopBar: (@Composable () -> Unit) -> Unit
                 scope.launch { snackBar.showSnackbar("Coming soon") }
             }
             PlatformIcon(icon = YouTube, "YouTube") {
-                navigate(Searcher.route)
+                add(Searcher(""))
             }
             PlatformIcon(icon = Instagram, "Instagram") {
                 scope.launch { snackBar.showSnackbar("Coming soon") }

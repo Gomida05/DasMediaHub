@@ -2,7 +2,6 @@ package com.das.mediaHub.ui.downloads
 
 import android.content.Context
 import android.content.Intent
-import androidx.compose.animation.Crossfade
 import androidx.compose.animation.animateColorAsState
 import androidx.compose.animation.core.animateDpAsState
 import androidx.compose.animation.core.spring
@@ -73,7 +72,8 @@ import androidx.compose.ui.zIndex
 import androidx.core.net.toUri
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.media3.common.MediaItem
-import androidx.navigation.NavController
+import androidx.navigation3.runtime.NavBackStack
+import androidx.navigation3.runtime.NavKey
 import coil.compose.AsyncImage
 import coil.decode.VideoFrameDecoder
 import coil.request.ImageRequest
@@ -81,16 +81,14 @@ import coil.request.videoFrameMillis
 import com.das.mediaHub.R
 import com.das.mediaHub.NavScreens
 import com.das.mediaHub.data.constants.Action.ACTION_START
-import com.das.mediaHub.data.constants.Playback.PLAY_HERE_VIDEO
 import com.das.mediaHub.services.BackGroundPlayer
 import com.das.mediaHub.python.YouTuber.mediaItems
-import com.das.mediaHub.data.constants.GlobalVideoList.bundles
 import com.das.mediaHub.data.local.PathSaver
 import java.io.File
 import kotlin.collections.set
 
 @Composable
-fun DownloadsComposable(navController: NavController, tabIndex: Int = 0) {
+fun DownloadsComposable(backStack: NavBackStack<NavKey>, tabIndex: Int = 0) {
 
     var selectedTabIndex by rememberSaveable { mutableIntStateOf(tabIndex) }
 
@@ -193,7 +191,7 @@ fun DownloadsComposable(navController: NavController, tabIndex: Int = 0) {
                                                 item.mediaId,
                                                 true,
                                                 mContext,
-                                                navController
+                                                backStack
                                             )
                                         }
                                     }
@@ -227,7 +225,7 @@ fun DownloadsComposable(navController: NavController, tabIndex: Int = 0) {
                                                 item.mediaId,
                                                 false,
                                                 mContext,
-                                                navController
+                                                backStack
                                             )
                                         }
                                     }
@@ -386,13 +384,12 @@ private fun itemClicked(
     selectedFilePath: String,
     isVideo: Boolean,
     context: Context,
-    navController: NavController
+    backStack: NavBackStack<NavKey>
 ) {
 
 
     if (isVideo) {
-        bundles.putString(PLAY_HERE_VIDEO, selectedFilePath)
-        navController.navigate(NavScreens.ExoPlayerUI.route)
+        backStack.add(NavScreens.ExoPlayerUI(selectedFilePath))
     } else {
 
         val playIntent = Intent(context, BackGroundPlayer::class.java).apply {

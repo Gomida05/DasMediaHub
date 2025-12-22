@@ -2,7 +2,6 @@ package com.das.mediaHub.ui.players.videoPlayer
 
 import android.content.Context
 import android.content.Intent
-import android.os.Bundle
 import androidx.annotation.OptIn
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
@@ -47,22 +46,19 @@ import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedIconButton
 import androidx.compose.material3.Scaffold
-import androidx.compose.material3.SnackbarHost
-import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
-import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.UiComposable
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.dropShadow
 import androidx.compose.ui.graphics.Color
@@ -86,14 +82,14 @@ import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.media3.common.util.UnstableApi
 import androidx.media3.ui.AspectRatioFrameLayout
 import androidx.media3.ui.PlayerView
-import androidx.navigation.NavController
+import androidx.navigation3.runtime.NavBackStack
+import androidx.navigation3.runtime.NavKey
 import coil.compose.AsyncImage
 import coil.request.ImageRequest
 import com.das.mediaHub.services.AudioServiceFromUrl
 import com.das.mediaHub.MainActivity
 import com.das.mediaHub.R
 import com.das.mediaHub.data.constants.GlobalVideoList.listOfVideosListData
-import com.das.mediaHub.data.constants.GlobalVideoList.previousVideosListData
 import com.das.mediaHub.NavScreens
 import com.das.mediaHub.OnLaunchComponents.openCustomTab
 import com.das.mediaHub.OnLaunchComponents.playAudioFromUrl
@@ -105,10 +101,8 @@ import com.das.mediaHub.python.YouTuber.loadStreamUrl
 import com.das.mediaHub.data.local.DatabaseFavorite
 import com.das.mediaHub.data.local.WatchHistory
 import com.das.mediaHub.data.constants.Action.ACTION_START
-import com.das.mediaHub.data.constants.Intents.NEW_INTENT_FOR_VIEWER
 import com.das.mediaHub.data.model.VideoDetails
 import com.das.mediaHub.data.model.VideosListData
-import com.das.mediaHub.data.constants.GlobalVideoList.bundles
 import com.das.mediaHub.data.icons.YouTube
 import com.das.mediaHub.data.model.searcher.Video
 import com.das.mediaHub.mediacontroller.VideoPlayerListener
@@ -116,6 +110,7 @@ import com.das.mediaHub.player.video.VideoPlayerManager
 import com.das.mediaHub.ui.players.videoPlayer.CustomMethods.SkeletonSuggestionLoadingLayout
 import com.das.mediaHub.ui.players.videoPlayer.CustomMethods.SkeletonLoadingLayout
 import com.das.mediaHub.ui.players.videoPlayer.CustomMethods.setFullscreen
+import com.das.mediaHub.ui.players.videoPlayer.state.VideoUiState
 import com.das.mediaHub.ui.theme.AppTheme
 import com.das.mediaHub.ui.theme.ThemePreferences.loadDarkModeState
 import kotlinx.coroutines.launch
@@ -124,11 +119,10 @@ import kotlinx.coroutines.launch
 @OptIn(UnstableApi::class)
 @Composable
 fun MainActivity.OnlineVideoPlayer(
-    navController: NavController,
-    data: Bundle?
+    backStack: NavBackStack<NavKey>,
+    data: Video
 ) {
-    val snackBarHostState = remember { SnackbarHostState() }
-    val scope = rememberCoroutineScope()
+
     val isInFullScreen = remember { mutableStateOf(false) }
     val showAlertDialog = remember { mutableStateOf(false) }
 
@@ -136,91 +130,41 @@ fun MainActivity.OnlineVideoPlayer(
     val viewModel = viewModel<ViewerViewModel>()
 
 
-    val videoID by rememberSaveable {
-        mutableStateOf(data?.getString("View_ID")?: "")
-    }
-
-    val context = LocalContext.current
+    val videoID = data.id
 
     val videoPlayerManager = remember {
-        VideoPlayerManager(context,
+        VideoPlayerManager(
             VideoPlayerListener(
-                this, navController,
-                scope, snackBarHostState
+                this, backStack
             )
         )
     }
 
 
-    val mExoPlayer = remember {
-        videoPlayerManager.player
+    val mExoPlayer = videoPlayerManager.player
+    var videoUiState by remember {
+        mutableStateOf(VideoUiState.from(data))
     }
 
-    val view = remember {
-        PlayerView(context).apply {
-            player = mExoPlayer
-            keepScreenOn = true
-            setFullscreenButtonState(isInFullScreen.value)
-            setFullscreenButtonClickListener {
-                isInFullScreen.value = it
-            }
-        }
-    }
+    val suggestionsState by viewModel.suggestionsState.collectAsState()
+    val isLoadingVideos = suggestionsState.isLoading
+    val videosListResult = suggestionsState.data.orEmpty()
+    val suggestionError = suggestionsState.error
 
-    var videoTitle by rememberSaveable {
-        mutableStateOf(
-            data?.getString("View_Title")
-        )
-    }
+    val videoState by viewModel.videoState.collectAsState()
 
-    var videoDuration by rememberSaveable {
-        mutableStateOf(
-            data?.getString("duration")
-        )
-    }
-
-    var videoViews by rememberSaveable {
-        mutableStateOf(
-            data?.getString("View_Number")
-        )
-    }
-
-    var videoDate by rememberSaveable {
-        mutableStateOf(
-            data?.getString("dateOfVideo")
-        )
-    }
-    var videoChannelName by rememberSaveable {
-        mutableStateOf(
-            data?.getString("channelName")
-        )
-    }
-
-    var videoChannelThumbnails by rememberSaveable {
-        mutableStateOf(
-            data?.getString("channel_Thumbnails")
-        )
-    }
-
-
-    val isLoadingVideos by viewModel.isLoadingVideos
-    val videosListResult by viewModel.searchResults
-    val suggestionError by viewModel.isSuggestionError
-
-    val videoUrl by viewModel.videoUrl
-
-    val isLoading by viewModel.isLoading
-
-    val isThereError by viewModel.error
+    val videoUrl = videoState.data.orEmpty()
+    val isLoading = videoState.isLoading
+    val isThereError = videoState.error
 
     LaunchedEffect(videoID) {
         viewModel.loadDetails(videoID)
     }
 
 
-    LaunchedEffect(videoTitle) {
-        if (!videoTitle.isNullOrEmpty()) {
-            viewModel.fetchSuggestions(videoTitle!!)
+    LaunchedEffect(videoUiState.title) {
+        if (!videoUiState.title.isNullOrEmpty()) {
+            viewModel.fetchSuggestions(videoUiState.title!!)
 
         }
     }
@@ -249,13 +193,8 @@ fun MainActivity.OnlineVideoPlayer(
     val isInPipMode = rememberIsInPipMode()
 
 
-    LaunchedEffect(isInPipMode) {
-        view.useController = !isInPipMode
-    }
-
     Scaffold(
-        contentWindowInsets = WindowInsets.safeDrawing,
-        snackbarHost = { SnackbarHost(snackBarHostState) }
+        contentWindowInsets = WindowInsets.safeDrawing
     ) { paddings ->
 
         Column(
@@ -276,23 +215,30 @@ fun MainActivity.OnlineVideoPlayer(
                 }
 
 
-
+                @Suppress("COMPOSE_APPLIER_CALL_MISMATCH")
                 AndroidView(
                     modifier = playerModifier
                         .background(Color.Black)
                         .then(
                             if (isInPipMode) Modifier.fillMaxSize() else Modifier
                         ),
-                    factory = @UiComposable {
-                        view
-                    },
-                    update = @UiComposable { playerView ->
-                        playerView.player = mExoPlayer
-                        playerView.resizeMode = if (isInFullScreen.value) {
-                            AspectRatioFrameLayout.RESIZE_MODE_ZOOM
-                        } else {
-                            AspectRatioFrameLayout.RESIZE_MODE_FIT
+                    factory = {
+                        PlayerView(it).apply {
+                            player = mExoPlayer
+                            keepScreenOn = true
                         }
+                    },
+                    update = { playerView ->
+                        playerView.player = mExoPlayer
+                        playerView.setFullscreenButtonState(isInFullScreen.value)
+                        playerView.setFullscreenButtonClickListener {
+                            isInFullScreen.value = it
+                        }
+                        playerView.resizeMode = if (isInFullScreen.value)
+                            AspectRatioFrameLayout.RESIZE_MODE_ZOOM
+                        else
+                            AspectRatioFrameLayout.RESIZE_MODE_FIT
+                        playerView.useController = !isInPipMode
                     }
                 )
             } else if (isLoading) {
@@ -344,48 +290,42 @@ fun MainActivity.OnlineVideoPlayer(
                     item(videoID) {
                         VideoDetailsComposable(
                             videoId = videoID,
-                            channelThumbnailURL = videoChannelThumbnails ?: "none is here",
-                            duration = videoDuration ?: "0:00",
+                            channelThumbnailURL = videoUiState.channelThumbnail ?: "none is here",
+                            duration = videoUiState.duration ?: "0:00",
                             viewModel = viewModel,
                             clickForMore = {
                                 showAlertDialog.value = true
                             },
                             downloadAsVideo = {
-                                scope.launch {
-                                    snackBarHostState.showSnackbar(
-                                        message = "Downloading has started"
-                                    )
-                                }
-                                MainActivity().startDownloadingVideo(videoID, it)
+                                startDownloadingVideo(videoID, it)
 
                             },
                             downloadAsMusic = {
-                                scope.launch {
-                                    snackBarHostState.showSnackbar(
-                                        message = "Downloading has started"
-                                    )
-                                }
-                                MainActivity().startDownloadingAudio(videoID, it)
+                                startDownloadingAudio(videoID, it)
 
                             },
                             finished = {
-                                videoTitle = it.title
-                                videoViews = it.viewNumber
-                                videoDate = it.date
-                                videoChannelName = it.channelName
+                                videoUiState = videoUiState.copy(
+                                    title = it.title,
+                                    views = it.viewNumber,
+                                    date = it.date,
+                                    channelName = it.channelName
+                                )
                             }
+
                         ) {
                             videoPlayerManager.pause()
                             val currentTimeSec = (mExoPlayer.currentPosition) / 1000
-                            val youtubeUrl = "https://www.youtube.com/watch?v=${videoID}&t=${currentTimeSec}s".toUri()
+                            val youtubeUrl =
+                                "https://www.youtube.com/watch?v=${videoID}&t=${currentTimeSec}s".toUri()
 
                             try {
                                 val intent = Intent(Intent.ACTION_VIEW, youtubeUrl).apply {
                                     setPackage("com.google.android.youtube")
                                 }
-                                context.startActivity(intent)
+                                startActivity(intent)
                             } catch (_: Exception) {
-                                context.openCustomTab(youtubeUrl)
+                                openCustomTab(youtubeUrl)
                             }
                         }
 
@@ -403,7 +343,7 @@ fun MainActivity.OnlineVideoPlayer(
                                 contentAlignment = Alignment.Center
                             ) {
                                 Text(
-                                    text = suggestionError?: "can't find any videos",
+                                    text = suggestionError ?: "can't find any videos",
                                     fontSize = 18.sp,
                                     textAlign = TextAlign.Center
                                 )
@@ -412,14 +352,24 @@ fun MainActivity.OnlineVideoPlayer(
                     } else {
                         items(videosListResult) { searchItem ->
                             if (searchItem.id == videoID) {
-                                videoChannelThumbnails = searchItem.channel?.thumbnails?.get(0)?.url ?: ""
-                                videoDuration = searchItem.duration
+                                videoUiState = videoUiState.copy(
+                                    channelThumbnail = searchItem.channel?.thumbnails?.firstOrNull()?.url,
+                                    duration = searchItem.duration
+                                )
                             }
                             VideoLists(
-                                navController,
-                                searchItem,
-                            )
-                            listOfVideosListData.add(searchItem)
+                                backStack,
+                                searchItem
+                            ) {
+                                if (it) {
+                                    startDownloadingVideo(searchItem.id, searchItem.title ?: "")
+                                } else {
+                                    startDownloadingAudio(searchItem.id, searchItem.title ?: "")
+                                }
+                            }
+                            LaunchedEffect(searchItem.id) {
+                                listOfVideosListData.add(searchItem)
+                            }
 
                         }
 
@@ -430,29 +380,21 @@ fun MainActivity.OnlineVideoPlayer(
     }
 
 
-    LaunchedEffect(isInFullScreen) {
+    LaunchedEffect(isInFullScreen.value) {
         setFullscreen(isInFullScreen.value)
     }
 
 
-    if (showAlertDialog.value){
-        AskToPlay(
-            context,
-            videoUrl,
-            VideosListData(
-                videoID,
-                videoTitle.toString(),
-                videoViews.toString(),
-                videoDate.toString(),
-                videoDuration.toString(),
-                videoChannelName.toString(),
-                videoChannelThumbnails.toString()
-            ),
-            onDismissRequest = {
-                showAlertDialog.value = false
-            }
-        )
-    }
+    AskToPlay(
+        showAlertDialog = showAlertDialog.value,
+        mContext = this,
+        videoUrl,
+        videoID,
+        videoUiState,
+        onDismissRequest = {
+            showAlertDialog.value = false
+        }
+    )
 }
 
 
@@ -470,10 +412,11 @@ private fun VideoDetailsComposable(
 ) {
     val mContext = LocalContext.current
 
-    val showDescriptionDialog = rememberSaveable { mutableStateOf(false) }
-    val comingSoonDialog = rememberSaveable { mutableStateOf(false) }
-    val isLoading by viewModel.isLoadings
-    val error by viewModel.errorVideoDetails
+    val showDescriptionDialog = remember { mutableStateOf(false) }
+    val comingSoonDialog = remember { mutableStateOf(false) }
+    val detailsState by viewModel.detailsState.collectAsState()
+    val isLoading = detailsState.isLoading
+    val error = detailsState.error
 
     val dbForFav = remember {
         DatabaseFavorite(mContext)
@@ -482,8 +425,8 @@ private fun VideoDetailsComposable(
         WatchHistory(mContext)
     }
 
-    val videoDetails by viewModel.videoDetails
-    var isSaved by rememberSaveable {
+    val videoDetails = detailsState.data
+    var isSaved by remember {
         mutableStateOf(
             dbForFav.isWatchUrlExist(videoId)
         )
@@ -504,28 +447,30 @@ private fun VideoDetailsComposable(
                 contentAlignment = Alignment.Center
             ) {
                 Text(
-                    text = error.toString(),
+                    text = error,
                     color = MaterialTheme.colorScheme.error
                 )
             }
         } else {
-            videoDetails?.let {
+            videoDetails.let {
 
                 val title = it.title
-                finished(it)
-
-
-                if (channelThumbnailURL != "none is here") {
-                    watchHistory.insertNewVideo(
-                        videoId,
-                        title,
-                        it.date,
-                        it.viewNumber,
-                        it.channelName,
-                        duration,
-                        channelThumbnailURL
-                    )
+                LaunchedEffect(title) {
+                    finished(it)
+                    if (channelThumbnailURL != "none is here") {
+                        watchHistory.insertNewVideo(
+                            videoId,
+                            title,
+                            it.date,
+                            it.viewNumber,
+                            it.channelName,
+                            duration,
+                            channelThumbnailURL
+                        )
+                    }
                 }
+
+
 
                 Text(
                     text = title,
@@ -730,8 +675,9 @@ private fun VideoDetailsComposable(
 
 @Composable
 private fun VideoLists(
-    navController: NavController,
+    backStack: NavBackStack<NavKey>,
     searchItem: Video,
+    downloadNow: (Boolean) -> Unit
 ) {
     val context = LocalContext.current
     val videoId = searchItem.id
@@ -754,7 +700,7 @@ private fun VideoLists(
             .combinedClickable(
                 onClick = {
                     playThisOne(
-                        navController= navController,
+                        backStack = backStack,
                         videosListDataDetails = searchItem
                     )
                 },
@@ -825,7 +771,7 @@ private fun VideoLists(
 
 
                     Text(
-                        text = title,
+                        text = title ?: "",
                         maxLines = 1,
                         fontSize = 15.sp,
                         textAlign = TextAlign.Start,
@@ -879,13 +825,6 @@ private fun VideoLists(
         }
     }
 
-    if (showDialog.value || showInfoDialog.value) {
-        Box(
-            modifier = Modifier
-                .fillMaxSize()
-                .background(Color.Black)
-        )
-    }
 
     if (showInfoDialog.value){
         AlertDialogForUser{
@@ -898,10 +837,15 @@ private fun VideoLists(
         ShowAlertDialog(
             mContext = context,
             selectedItem = VideosListData(
-                videoId, title, viewsNumber, dateOfVideo,
+                videoId, title ?: "", viewsNumber, dateOfVideo,
                 duration, channelName, channelThumbnails
             ),
-            onDismissRequest = { showDialog.value = false }
+            onDismissRequest = {
+                showDialog.value = false
+                if (it != null) {
+                    downloadNow(it)
+                }
+            }
         )
     }
 }
@@ -910,30 +854,12 @@ private fun VideoLists(
 
 
 fun playThisOne(
-    navController: NavController,
+    backStack: NavBackStack<NavKey>,
     gotIndex: Int = 1,
     videosListDataDetails: Video = listOfVideosListData[gotIndex]
 ) {
-    val bundle = Bundle().apply {
-        putString("View_ID", videosListDataDetails.id)
-        putString(
-            "View_URL",
-            "https://www.youtube.com/watch?v=${videosListDataDetails.id}"
-        )
-        putString("View_Title", videosListDataDetails.title)
-        putString("View_Number", videosListDataDetails.viewCount?.short ?: "")
-        putString("dateOfVideo", videosListDataDetails.publishedTime ?: "0")
-        putString("channelName", videosListDataDetails.channel?.name ?: "")
-        putString("duration", videosListDataDetails.duration ?: "0")
-        putString("channel_Thumbnails", videosListDataDetails.channel?.thumbnails?.get(0)?.url ?: "")
-    }
-    previousVideosListData.add(videosListDataDetails)
-
-    bundles.putBundle(NEW_INTENT_FOR_VIEWER, bundle)
-    navController.run {
-        popBackStack()
-        navigate(NavScreens.VideoViewer.route)
-    }
+    backStack.removeLastOrNull()
+    backStack.add(NavScreens.VideoViewer(videosListDataDetails))
 
 
 }
@@ -1059,7 +985,7 @@ private fun ShowDescriptionDialog(text: String, onDismissRequest: () -> Unit) {
 private fun ShowAlertDialog(
     mContext: Context,
     selectedItem: VideosListData,
-    onDismissRequest: () -> Unit
+    onDismissRequest: (Boolean?) -> Unit
 ) {
     val thumbnailUrl = "https://img.youtube.com/vi/${selectedItem.videoId}/0.jpg"
 
@@ -1098,12 +1024,12 @@ private fun ShowAlertDialog(
         AlertDialog(
             onDismissRequest = {
                 errorMessage.value = null
-                onDismissRequest()
+                onDismissRequest(null)
             },
             confirmButton = {
                 TextButton(onClick = {
                     errorMessage.value = null
-                    onDismissRequest()
+                    onDismissRequest(null)
                 }) { Text("OK") }
             },
             title = { Text("Error") },
@@ -1112,7 +1038,7 @@ private fun ShowAlertDialog(
     }
 
     if (!isLoading.value && errorMessage.value == null) {
-        Dialog(onDismissRequest = { onDismissRequest() }) {
+        Dialog(onDismissRequest = { onDismissRequest(null) }) {
             Card(
                 modifier = Modifier
                     .fillMaxWidth()
@@ -1158,7 +1084,7 @@ private fun ShowAlertDialog(
                                         onSuccess = {
                                             mContext.playAudioFromUrl(audioUrl = it.audioUrl, selectedItem = it)
                                             isLoading.value = false
-                                            onDismissRequest()
+                                            onDismissRequest(null)
                                         },
                                         onFailure = { err ->
                                             errorMessage.value = err.message
@@ -1174,8 +1100,7 @@ private fun ShowAlertDialog(
 
                         TextButton(
                             onClick = {
-                                MainActivity().startDownloadingAudio(selectedItem.videoId, selectedItem.title)
-                                onDismissRequest()
+                                onDismissRequest(false)
                             },
                             modifier = Modifier.padding(4.dp),
                         ) {
@@ -1184,8 +1109,7 @@ private fun ShowAlertDialog(
 
                         TextButton(
                             onClick = {
-                                MainActivity().startDownloadingVideo(selectedItem.videoId, selectedItem.title)
-                                onDismissRequest()
+                                onDismissRequest(true)
                             },
                             modifier = Modifier.padding(4.dp),
                         ) {
@@ -1367,44 +1291,47 @@ private fun AlertDialogForUser(
 
 @Composable
 private fun AskToPlay(
+    showAlertDialog: Boolean,
     mContext: Context,
     url: String,
-    video: VideosListData,
+    id: String,
+    video: VideoUiState,
     onDismissRequest: () -> Unit
 ) {
     val playIntent = Intent(mContext, AudioServiceFromUrl::class.java).apply {
         action = ACTION_START
-        putExtra("videoId", video.videoId)
+        putExtra("videoId", id)
         putExtra("media_url", url)
         putExtra("title", video.title)
         putExtra("channelName", video.channelName)
         putExtra("viewNumber", video.views)
-        putExtra("videoDate", video.dateOfVideo)
+        putExtra("videoDate", video.date)
         putExtra("duration", video.duration)
     }
-
-    AlertDialog(
-        onDismissRequest = onDismissRequest,
-        title = {
-            Text("Do you want to play it in the background?")
-        },
-        confirmButton = {
-            TextButton(
-                onClick = {
-                    mContext.startService(playIntent)
-                    onDismissRequest()
+    if (showAlertDialog) {
+        AlertDialog(
+            onDismissRequest = onDismissRequest,
+            title = {
+                Text("Do you want to play it in the background?")
+            },
+            confirmButton = {
+                TextButton(
+                    onClick = {
+                        mContext.startService(playIntent)
+                        onDismissRequest()
+                    }
+                ) {
+                    Text("yes")
                 }
-            ) {
-                Text("yes")
+            },
+            dismissButton = {
+                TextButton(
+                    onClick = onDismissRequest
+                ) {
+                    Text("no")
+                }
             }
-        },
-        dismissButton = {
-            TextButton(
-                onClick = onDismissRequest
-            ) {
-                Text("no")
-            }
-        }
-    )
+        )
+    }
 
 }

@@ -25,36 +25,32 @@ import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Downloading
 import androidx.compose.material3.Scaffold
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.core.app.ActivityCompat
 import androidx.core.app.NotificationCompat
 import androidx.core.app.NotificationManagerCompat
-import androidx.navigation.compose.NavHost
-import androidx.navigation.compose.composable
-import androidx.navigation.compose.rememberNavController
 import com.das.mediaHub.python.YouTuber.youtubeExtractor
 import com.das.mediaHub.python.YouTuber.isValidYoutubeURL
-import com.das.mediaHub.data.constants.Playback.PLAY_HERE_VIDEO
 import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
-import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.zIndex
 import androidx.core.content.FileProvider
 import androidx.lifecycle.lifecycleScope
-import androidx.navigation.NavController
-import androidx.navigation.compose.currentBackStackEntryAsState
-import androidx.navigation.navArgument
+import androidx.navigation3.runtime.NavBackStack
+import androidx.navigation3.runtime.NavEntry
+import androidx.navigation3.runtime.NavKey
+import androidx.navigation3.runtime.rememberNavBackStack
+import androidx.navigation3.ui.NavDisplay
 import com.das.mediaHub.python.YouTuber.getAudioStreamUrl
 import com.das.mediaHub.python.YouTuber.getVideoStreamUrl
 import com.das.mediaHub.downloader.DownloaderClass
 import com.das.mediaHub.data.constants.Action.ACTION_START
-import com.das.mediaHub.data.constants.Intents.NEW_INTENT_FOR_SEARCHER
-import com.das.mediaHub.data.constants.Intents.NEW_INTENT_FOR_VIEWER
-import com.das.mediaHub.data.constants.Intents.NEW_TEXT_FOR_RESULT
 import com.das.mediaHub.python.YouTuber.extractPlaylistId
 import com.das.mediaHub.python.YouTuber.getPlayListStreamUrl
 import com.das.mediaHub.python.YouTuber.isValidYouTubePlaylistUrl
@@ -69,14 +65,16 @@ import com.das.mediaHub.ui.settings.userSettings.UserSettingComposable
 import com.das.mediaHub.ui.players.videoPlayerLocally.LocalVideoPlayer
 import com.das.mediaHub.ui.auth.LoginPage
 import com.das.mediaHub.ui.auth.signup.SignUpPage
-import com.das.mediaHub.data.constants.GlobalVideoList.bundles
 import com.das.mediaHub.ui.players.videoPlayer.OnlineVideoPlayer
 import com.das.mediaHub.ui.watchedVideos.WatchedVideosComposable
 import com.das.mediaHub.NavScreens.*
 import com.das.mediaHub.OnLaunchComponents.BottomNavItems
 import com.das.mediaHub.PIP.shouldEnterPipMode
 import com.das.mediaHub.WakeLockHelper.releaseWakeLock
+import com.das.mediaHub.auth.MyFirebase.rememberFirebaseUser
 import com.das.mediaHub.data.constants.DownloadConstants.DOWNLOAD_FINISHED
+import com.das.mediaHub.data.model.TopPopUp
+import com.das.mediaHub.data.model.searcher.Video
 import com.das.mediaHub.ui.theme.CustomTheme
 import com.das.mediaHub.ui.TopPopupNotification.TopPopupNotification
 import com.das.mediaHub.ui.TopPopupNotification.showNotificationDialog
@@ -128,19 +126,19 @@ class MainActivity : ComponentActivity() {
     @Composable
     private fun MainLauncherPageComposable() {
 
-        val navController = rememberNavController()
+        val backStack = rememberNavBackStack(Home)
 
-        val currentRoute = navController.currentBackStackEntryAsState().value?.destination?.route
+        val currentRoute = backStack.lastOrNull()
 
         LaunchedEffect(Unit) {
             intent?.let {
-                navController.listenNewIntent(it)
+                backStack.listenNewIntent(it)
             }
         }
 
         DisposableEffect(Unit) {
             val listener: (Intent) -> Unit = {
-                navController.listenNewIntent(it)
+                backStack.listenNewIntent(it)
             }
             registerIntentListener(listener)
             onDispose {
@@ -149,17 +147,15 @@ class MainActivity : ComponentActivity() {
         }
 
 
-
-        val startDestination = remember { Home.route }
-
-        val auth = remember { Firebase.auth }
+        val auth = Firebase.auth
+        val currentUser = auth.rememberFirebaseUser()
 
         Scaffold(
             contentWindowInsets = WindowInsets(0, 0, 0, 0),
             modifier = Modifier
                 .fillMaxSize(),
             bottomBar = {
-                BottomNavItems(currentRoute, navController)
+                BottomNavItems(currentRoute, backStack)
             },
         ) { paddingValues ->
 
@@ -177,105 +173,151 @@ class MainActivity : ComponentActivity() {
                 }
             }
 
-            NavHost(
-                navController = navController,
-                startDestination = startDestination,
+            NavDisplay(
+                backStack = backStack,
                 modifier = Modifier
                     .padding(paddingValues)
                     .fillMaxSize()
-            ) {
-                composable(Home.route) {
-                    navController.HomePageComposable()
-                }
-                composable(RecentlyWatched.route) {
-                    WatchedVideosComposable(navController)
-                }
-                composable(Setting.route) {
-                    navController.SettingsComposable {
-                        showNotificationDialog = it
+            ) { key ->
+
+                when (key) {
+
+                    is Home -> {
+                        NavEntry(key = key) {
+                            backStack.HomePageComposable()
+                        }
                     }
-                }
 
-                composable(VideoViewer.route) {
-                    val bundle = bundles.getBundle(NEW_INTENT_FOR_VIEWER)
-                    OnlineVideoPlayer(
-                        navController = navController,
-                        data = bundle
-                    )
-                }
-                composable(ResultViewerPage.route) {
-
-                    val argument = bundles.getString(NEW_TEXT_FOR_RESULT).toString()
-                    ResultViewerPage(
-                        navController,
-                        argument
-                    )
-                }
-                composable(Downloads.route) {
-                    DownloadsComposable(navController)
-                }
-                composable(Searcher.route) {
-
-                    SearchPageCompose(
-                        navController,
-                        bundles.getString(NEW_INTENT_FOR_SEARCHER, "")
-                    )
-                }
-                composable(UserSettings.route) {
-                    UserSettingComposable(navController)
-
-                }
-                composable(ExoPlayerUI.route) {
-                    LocalVideoPlayer(
-                        videoUri = bundles.getString(PLAY_HERE_VIDEO).toString()
-                    )
-                }
-
-                composable(Saved.route) {
-                    WatchLaterComposable(navController)
-                }
-
-                composable(SignInPage.route) {
-                    LoginPage(navController, auth)
-                }
-                composable(AccountSetting.route) {
-                    if (auth.currentUser != null) {
-                        AccountSettingsPage(navController, auth)
-                    } else {
-                        LoginPage(navController, auth)
+                    is RecentlyWatched -> {
+                        NavEntry(key = key) {
+                            WatchedVideosComposable(backStack)
+                        }
                     }
-                }
-                composable(ChangePassword.route) {
-                    ChangePasswordPage(navController, auth)
-                }
 
-                composable(WelcomePage.route) {
-                    WelcomePage(navController) {
-                        if (auth.currentUser == null) {
-                            auth.signInAnonymously()
-                                .addOnCompleteListener { task ->
-                                    if (task.isSuccessful) {
-                                        Log.d("Auth", "Signed in anonymously as ${auth.currentUser?.uid}")
-                                    } else {
-                                        Log.e("Auth", "Anonymous sign-in failed", task.exception)
-                                    }
+                    is Setting -> {
+                        NavEntry(key = key) {
+                            backStack.SettingsComposable {
+                                showNotificationDialog = it
+                            }
+
+                        }
+                    }
+
+                    is VideoViewer -> {
+                        NavEntry(key = key) {
+                            OnlineVideoPlayer(backStack, key.data)
+                        }
+                    }
+
+                    is NavScreens.ResultViewerPage -> {
+                        NavEntry(key = key) {
+                            ResultViewerPage(
+                                backStack,
+                                key.value
+                            )
+                        }
+                    }
+
+                    is Downloads -> {
+                        NavEntry(key = key) {
+                            DownloadsComposable(backStack)
+                        }
+                    }
+
+                    is Searcher -> {
+                        NavEntry(key = key) {
+                            SearchPageCompose(backStack, key.text)
+                        }
+                    }
+
+                    is UserSettings -> {
+                        NavEntry(key = key) {
+                            UserSettingComposable(backStack)
+                        }
+                    }
+
+                    is ExoPlayerUI -> {
+                        NavEntry(key = key) {
+                            LocalVideoPlayer(videoUri = key.uri)
+                        }
+                    }
+
+                    is Saved -> {
+                        NavEntry(key = key) {
+                            WatchLaterComposable(backStack)
+                        }
+                    }
+
+                    is SignInPage -> {
+                        NavEntry(key = key) {
+                            LoginPage(backStack)
+                        }
+                    }
+
+                    is AccountSetting -> {
+                        NavEntry(key = key) {
+                            if (currentUser != null) {
+                                AccountSettingsPage(backStack, currentUser) {
+                                    auth.signOut()
                                 }
-                        }
-                        navController.run {
-                            popBackStack()
-                            navigate(Home.route)
+                            } else {
+                                LoginPage(backStack)
+                            }
                         }
                     }
-                }
-                composable(route = SignUpPage.route) {
-                    SignUpPage(navController)
-                }
-                composable(route = FeedbackScreen.route) {
-                    FeedbackComposable()
+
+                    is ChangePassword -> {
+                        NavEntry(key = key) {
+                            ChangePasswordPage(backStack, auth)
+                        }
+                    }
+
+                    is WelcomePage -> {
+                        NavEntry(key = key) {
+                            WelcomePage(backStack) {
+                                if (auth.currentUser == null) {
+                                    auth.signInAnonymously()
+                                        .addOnCompleteListener { task ->
+                                            if (task.isSuccessful) {
+                                                Log.d(
+                                                    "Auth",
+                                                    "Signed in anonymously as ${auth.currentUser?.uid}"
+                                                )
+                                            } else {
+                                                Log.e(
+                                                    "Auth",
+                                                    "Anonymous sign-in failed",
+                                                    task.exception
+                                                )
+                                            }
+                                        }
+                                }
+                                backStack.add(Home)
+                                backStack.removeLastOrNull()
+                            }
+                        }
+                    }
+
+                    is SignUpPage -> {
+                        NavEntry(key = key) {
+                            SignUpPage(backStack)
+                        }
+                    }
+
+                    is FeedbackScreen -> {
+                        NavEntry(key = key) {
+                            FeedbackComposable()
+                        }
+                    }
+
+                    else -> {
+                        NavEntry(key = key) {
+
+                        }
+                    }
                 }
             }
         }
-
     }
 
 
@@ -286,22 +328,20 @@ class MainActivity : ComponentActivity() {
         super.onUserLeaveHint()
         if (shouldEnterPipMode.value) {
 
-            if (SDK_INT >= VERSION_CODES.O) {
-                val params = PictureInPictureParams.Builder()
-                    .apply {
-                        setAspectRatio(Rational(16, 9))
-                        if (SDK_INT >= VERSION_CODES.S) {
-                            setSeamlessResizeEnabled(true)
-                        }
+            val params = PictureInPictureParams.Builder()
+                .apply {
+                    setAspectRatio(Rational(16, 9))
+                    if (SDK_INT >= VERSION_CODES.S) {
+                        setSeamlessResizeEnabled(true)
                     }
-                    .build()
-                enterPictureInPictureMode(params)
-            }
+                }
+                .build()
+            enterPictureInPictureMode(params)
         }
     }
 
 
-    private fun NavController.listenNewIntent(
+    private fun NavBackStack<NavKey>.listenNewIntent(
         newIntent: Intent
     ) {
         if (newIntent.action == Intent.ACTION_SEND) {
@@ -317,14 +357,14 @@ class MainActivity : ComponentActivity() {
                 newIntent.newReceivedMediaTypeAudio()
             }
         } else if (newIntent.action == Intent.ACTION_VIEW) {
-            newIntent.data?.newMediaIntent(navController = this)
+            newIntent.data?.newMediaIntent(backStack = this)
 
         } else if (newIntent.action == DOWNLOAD_FINISHED) {
             val apkPath = newIntent.getStringExtra("apk_path") ?: return
             File(apkPath)
                 .requestToInstall()
         } else if (newIntent.action == Intent.ACTION_APPLICATION_PREFERENCES) {
-            navigate(Setting.route)
+            add(Setting)
         }
     }
 
@@ -369,15 +409,13 @@ class MainActivity : ComponentActivity() {
 
 
 
-    private fun Intent.newReceivedMediaTypeVideo(navController: NavController){
+    private fun Intent.newReceivedMediaTypeVideo(backStack: NavBackStack<NavKey>){
 
         @Suppress("DEPRECATION")
         val videoUri = if (SDK_INT >= TIRAMISU) getParcelableExtra(EXTRA_STREAM, Uri::class.java)
         else getParcelableExtra(EXTRA_STREAM)
 
-        bundles.putString(PLAY_HERE_VIDEO, videoUri.toString())
-        navController.navigate(ExoPlayerUI.route)
-
+        backStack.add(ExoPlayerUI(videoUri.toString()))
     }
 
     private fun Intent.newReceivedMediaTypeAudio(){
@@ -395,12 +433,12 @@ class MainActivity : ComponentActivity() {
     }
 
     private fun Uri.newMediaIntent(
-        navController: NavController
+        backStack: NavBackStack<NavKey>
     ) {
         val mimeType = contentResolver.getType(this) ?: ""
+
         if (mimeType.startsWith("video/")) {
-            bundles.putString(PLAY_HERE_VIDEO, intent.dataString)
-            navController.navigate(ExoPlayerUI.route)
+            backStack.add(ExoPlayerUI(toString()))
         } else if (mimeType.startsWith("audio/")) {
 
 
@@ -416,44 +454,40 @@ class MainActivity : ComponentActivity() {
             showDialogs("Unsupported media type")
         }
     }
-    private fun NavController.newTextIntent(
+    private fun NavBackStack<NavKey>.newTextIntent(
         sharedText: String
     ) {
         if (sharedText.isValidYoutubeURL()) {
             val videoId = sharedText.youtubeExtractor()
-            val bundle = Bundle().apply {
-                putString("View_ID", videoId)
-                putString("View_URL", "https://www.youtube.com/watch?v=$videoId")
-            }
-            bundles.apply {
-                putBundle(NEW_INTENT_FOR_VIEWER, bundle)
-            }
-            navigate(VideoViewer.route)
+            add(
+                VideoViewer(
+                    Video(id = videoId.toString())
+                )
+            )
 
         } else if (sharedText.isValidYouTubePlaylistUrl()) {
-            val bundle = Bundle().apply {
-                putString("View_ID", extractPlaylistId(sharedText))
-                putString("View_URL", sharedText)
-            }
-            bundles.apply {
-                putBundle(NEW_INTENT_FOR_VIEWER, bundle)
-            }
-            navigate(VideoViewer.route)
+
+            add(
+                VideoViewer(
+                    Video(id = extractPlaylistId(sharedText).toString())
+                )
+            )
 
         } else if (sharedText.startsWith("DownloadsPageFr")) {
-            navigate(Downloads.route)
+            add(Downloads)
         } else {
-            bundles.apply {
-                putString(NEW_INTENT_FOR_SEARCHER, sharedText)
-            }
-            navigate(Searcher.route)
+            add(Searcher(sharedText))
         }
     }
 
 
     fun startDownloadingVideo(videoId: String, title: String){
         val downloaderClass = DownloaderClass(this)
-
+        showNotificationDialog = TopPopUp(
+            message = "Start downloading $title now",
+            icon = Icons.Default.Downloading,
+            loading = true
+        )
         lifecycleScope.launch {
             getVideoStreamUrl(videoId,
                 onSuccess = {
@@ -500,7 +534,11 @@ class MainActivity : ComponentActivity() {
 
     fun startDownloadingAudio(videoId: String, title: String){
         val downloaderClass = DownloaderClass(this)
-
+        showNotificationDialog = TopPopUp(
+            message = "Start downloading $title now",
+            icon = Icons.Default.Downloading,
+            loading = true
+        )
         lifecycleScope.launch {
             getAudioStreamUrl(videoId,
                 onSuccess = {
@@ -512,7 +550,6 @@ class MainActivity : ComponentActivity() {
             )
         }
     }
-
 
 
     fun alertUserError(context: Context, message: String?) {
@@ -535,7 +572,7 @@ class MainActivity : ComponentActivity() {
 
         val notificationManager = NotificationManagerCompat.from(context)
         if (ActivityCompat.checkSelfPermission(
-                this,
+                context,
                 POST_NOTIFICATIONS
             ) != PackageManager.PERMISSION_GRANTED
         ) {
@@ -546,6 +583,7 @@ class MainActivity : ComponentActivity() {
         }
         notificationManager.notify(1001, notification)  // Unique ID for your notification
     }
+
 
 
 

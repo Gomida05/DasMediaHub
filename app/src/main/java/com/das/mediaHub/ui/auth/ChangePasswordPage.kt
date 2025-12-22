@@ -42,14 +42,15 @@ import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.text.input.VisualTransformation
 import androidx.compose.ui.unit.dp
-import androidx.navigation.NavController
+import androidx.navigation3.runtime.NavBackStack
+import androidx.navigation3.runtime.NavKey
 import com.das.mediaHub.data.model.TopPopUp
 import com.das.mediaHub.ui.TopPopupNotification.showNotificationDialog
 import com.google.firebase.auth.EmailAuthProvider
 import com.google.firebase.auth.FirebaseAuth
 
 @Composable
-fun ChangePasswordPage(navController: NavController, auth: FirebaseAuth) {
+fun ChangePasswordPage(backStack: NavBackStack<NavKey>, auth: FirebaseAuth) {
     val currentUser = remember { auth.currentUser }
     val email = remember { auth.currentUser?.email }
     var currentPassword by remember { mutableStateOf("") }
@@ -92,7 +93,7 @@ fun ChangePasswordPage(navController: NavController, auth: FirebaseAuth) {
                                 message = "You have successfully change your password",
                                 icon = Icons.Default.Security
                             )
-                            navController.navigateUp()
+                            backStack.removeLastOrNull()
                         } else {
                             errorMessage = "Failed to update password: ${updateTask.exception?.localizedMessage}"
                             newPassword = ""

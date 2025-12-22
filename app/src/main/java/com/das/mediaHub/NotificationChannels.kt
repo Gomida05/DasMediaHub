@@ -4,9 +4,6 @@ import android.app.NotificationChannel
 import android.app.NotificationChannelGroup
 import android.app.NotificationManager
 import android.content.Context
-import android.os.Build
-import android.os.Build.VERSION_CODES.O
-import androidx.annotation.RequiresApi
 import androidx.core.content.getSystemService
 
 
@@ -17,9 +14,7 @@ internal class NotificationChannels(context: Context) {
     fun createAllNotificationChannels() {
         manager?.let {
             it.createChannelGroups()
-            if (Build.VERSION.SDK_INT >= O) {
-                it.createChannels()
-            }
+            it.createChannels()
         }
     }
 
@@ -31,7 +26,6 @@ internal class NotificationChannels(context: Context) {
         createNotificationChannelGroups(groups)
     }
 
-    @RequiresApi(O)
     private fun NotificationManager.createChannels() {
         val channels = listOf(
             NotificationChannel(

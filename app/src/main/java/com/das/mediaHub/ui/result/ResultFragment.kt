@@ -2,7 +2,6 @@ package com.das.mediaHub.ui.result
 
 import android.content.Context
 import android.content.Intent
-import android.os.Bundle
 import androidx.compose.foundation.background
 import androidx.compose.foundation.combinedClickable
 import androidx.compose.foundation.layout.Arrangement
@@ -22,9 +21,10 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.MoreVert
 import androidx.compose.material.icons.outlined.Search
-import androidx.compose.material3.Button
 import androidx.compose.material3.Card
+import androidx.compose.material3.CenterAlignedTopAppBar
 import androidx.compose.material3.CircularProgressIndicator
+import androidx.compose.material3.ElevatedButton
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.Scaffold
@@ -32,10 +32,10 @@ import androidx.compose.material3.SnackbarHost
 import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
-import androidx.compose.material3.TopAppBar
 import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -53,15 +53,14 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.window.Dialog
 import androidx.lifecycle.viewmodel.compose.viewModel
-import androidx.navigation.NavController
+import androidx.navigation3.runtime.NavBackStack
+import androidx.navigation3.runtime.NavKey
 import coil.compose.AsyncImage
 import coil.request.ImageRequest
 import com.das.mediaHub.MainActivity
 import com.das.mediaHub.data.constants.Action.ACTION_START
-import com.das.mediaHub.data.constants.Intents.NEW_INTENT_FOR_VIEWER
 import com.das.mediaHub.services.AudioServiceFromUrl
 import com.das.mediaHub.data.model.VideosListData
-import com.das.mediaHub.data.constants.GlobalVideoList.bundles
 import com.das.mediaHub.NavScreens.VideoViewer
 import com.das.mediaHub.python.YouTuber.loadStreamUrl
 import com.das.mediaHub.data.model.searcher.Video
@@ -69,18 +68,18 @@ import com.das.mediaHub.ui.players.videoPlayer.CustomMethods.SkeletonSuggestionL
 import kotlinx.coroutines.launch
 
 @Composable
-fun ResultViewerPage(navController: NavController, data: String) {
+fun ResultViewerPage(backStack: NavBackStack<NavKey>, data: String) {
 
     val viewModel = viewModel<ResultViewModel>()
-    val isLoading by viewModel.isLoading
-    val searchResults by viewModel.searchResults
-    val foundError by viewModel.error
+    val isLoading by viewModel.isLoading.collectAsState()
+    val searchResults by viewModel.searchResults.collectAsState()
+    val foundError by viewModel.error.collectAsState()
 
-    val isLoadingMore by viewModel.isLoadingMore
+    val isLoadingMore by viewModel.isLoadingMore.collectAsState()
 
     val mContext = LocalContext.current
 
-    val snackbar = remember { SnackbarHostState() }
+    val snackBar = remember { SnackbarHostState() }
 
     val scope = rememberCoroutineScope()
 
@@ -96,29 +95,41 @@ fun ResultViewerPage(navController: NavController, data: String) {
 
     Scaffold(
         snackbarHost = {
-            SnackbarHost(snackbar)
+            SnackbarHost(snackBar)
         },
         modifier = Modifier
             .nestedScroll(scrollBehavior.nestedScrollConnection),
         topBar = {
-            TopAppBar(
+            CenterAlignedTopAppBar(
                 scrollBehavior = scrollBehavior,
+                colors = TopAppBarDefaults.topAppBarColors(
+                    containerColor = Color.Transparent,
+                    scrolledContainerColor = Color.Transparent
+                ),
                 title = {
+
                 },
                 actions = {
-                    Button(
-                        onClick = {
-                            navController.navigateUp()
-                        },
+                    Box(
+                        contentAlignment = Alignment.Center,
                         modifier = Modifier
-                            .fillMaxWidth()
-                            .padding(start = 12.dp, end = 12.dp, bottom = 1.dp, top = 1.dp)
+                                .fillMaxWidth()
                     ) {
-                        Icon(
-                            painter = rememberVectorPainter(Icons.Outlined.Search),
-                            contentDescription = "Back"
-                        )
-                        Text(data)
+                        ElevatedButton (
+                            onClick = {
+                                backStack.removeLastOrNull()
+                            },
+                            modifier = Modifier
+                                .align(Alignment.Center)
+                                .fillMaxWidth()
+                                .padding(start = 12.dp, end = 12.dp)
+                        ) {
+                            Icon(
+                                painter = rememberVectorPainter(Icons.Outlined.Search),
+                                contentDescription = "Back"
+                            )
+                            Text(data)
+                        }
                     }
 
                 }
@@ -166,11 +177,11 @@ fun ResultViewerPage(navController: NavController, data: String) {
                             }
                             VideoItems(
                                 mContext,
-                                navController,
+                                backStack,
                                 item
                             ) {
                                 scope.launch {
-                                    snackbar.showSnackbar(it)
+                                    snackBar.showSnackbar(it)
                                 }
                             }
                         }
@@ -200,7 +211,7 @@ fun ResultViewerPage(navController: NavController, data: String) {
 @Composable
 fun VideoItems(
     context: Context,
-    navController: NavController,
+    backStack: NavBackStack<NavKey>,
     searchItem: Video,
     snackBar: (String) -> Unit
 ) {
@@ -223,18 +234,7 @@ fun VideoItems(
             .padding(bottom = 3.dp, top = 3.dp)
             .combinedClickable(
                 onClick = {
-                    val bundle = Bundle().apply {
-                        putString("View_ID", videoId)
-                        putString("View_URL", "https://www.youtube.com/watch?v=$videoId")
-                        putString("View_Title", title)
-                        putString("View_Number", viewsNumber)
-                        putString("dateOfVideo", dateOfVideo)
-                        putString("channelName", channelName)
-                        putString("duration", duration)
-                        putString("channel_Thumbnails", channelThumbnails)
-                    }
-                    bundles.putBundle(NEW_INTENT_FOR_VIEWER, bundle)
-                    navController.navigate(VideoViewer.route)
+                    backStack.add(VideoViewer(searchItem))
 
                 },
                 onLongClick = {
@@ -298,7 +298,7 @@ fun VideoItems(
 
 
                     Text(
-                        text = title,
+                        text = title ?:"",
                         maxLines = 1,
                         fontSize = 15.sp,
                         textAlign = TextAlign.Start,
@@ -355,7 +355,7 @@ fun VideoItems(
         ShowAlertDialog(
             mContext = context,
             selectedItem = VideosListData(
-                videoId, title, viewsNumber, dateOfVideo,
+                videoId, title ?: "", viewsNumber, dateOfVideo,
                 duration, channelName, channelThumbnails
             ),
             onDismissRequest = {

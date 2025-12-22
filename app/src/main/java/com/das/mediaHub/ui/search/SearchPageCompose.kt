@@ -43,8 +43,6 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
-import androidx.compose.runtime.saveable.rememberSaveable
-import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -57,24 +55,24 @@ import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
-import androidx.navigation.NavController
+import androidx.navigation3.runtime.NavBackStack
+import androidx.navigation3.runtime.NavKey
 import coil.compose.AsyncImage
 import coil.request.ImageRequest
 import com.das.mediaHub.MainActivity
+import com.das.mediaHub.NavScreens
 import com.das.mediaHub.python.YouTuber.youtubeExtractor
 import com.das.mediaHub.python.YouTuber.isValidYoutubeURL
-import com.das.mediaHub.data.constants.Intents.NEW_INTENT_FOR_VIEWER
-import com.das.mediaHub.data.constants.Intents.NEW_TEXT_FOR_RESULT
 import com.das.mediaHub.python.YouTuber.extractPlaylistId
 import com.das.mediaHub.python.YouTuber.isValidYouTubePlaylistUrl
-import com.das.mediaHub.data.constants.GlobalVideoList.bundles
 import com.das.mediaHub.NavScreens.ResultViewerPage
 import com.das.mediaHub.data.model.SearchData
+import com.das.mediaHub.data.model.searcher.Video
 import kotlinx.coroutines.launch
 
 @Composable
 fun SearchPageCompose(
-    navController: NavController,
+    backStack: NavBackStack<NavKey>,
     newText: String
 ) {
     val viewMode = viewModel<SearchPageViewMode>()
@@ -88,10 +86,10 @@ fun SearchPageCompose(
     val scope = rememberCoroutineScope()
     val snackBar = remember { SnackbarHostState() }
 
-    val textState = rememberSaveable { mutableStateOf(newText) }
+    val textState = remember { mutableStateOf(newText) }
 
-    var playListUrl by rememberSaveable { mutableStateOf("") }
-    var askToDownloadPlayList by rememberSaveable { mutableStateOf(false) }
+    val playListUrl = remember { mutableStateOf("") }
+    val askToDownloadPlayList = remember { mutableStateOf(false) }
 
     LaunchedEffect(Unit) {
         viewMode.fetchDatabase()
@@ -134,7 +132,7 @@ fun SearchPageCompose(
                 leadingIcon = {
                     IconButton(
                         onClick = {
-                            navController.navigateUp()
+                            backStack.removeLastOrNull()
                         }
                     ) {
                         Icon(
@@ -163,7 +161,7 @@ fun SearchPageCompose(
                     onSearch = {
                         if (textState.value.isNotBlank()) {
                             keyEvent(
-                                navController = navController,
+                                backStack = backStack,
                                 editTextText = textState.value,
                                 addIt = {
                                     viewMode.addNew(
@@ -171,8 +169,8 @@ fun SearchPageCompose(
                                     )
                                 },
                                 isPlayList = { url ->
-                                    askToDownloadPlayList = true
-                                    playListUrl = url
+                                    askToDownloadPlayList.value = true
+                                    playListUrl.value = url
                                 }
                             ) {
                                 scope.launch {
@@ -214,8 +212,7 @@ fun SearchPageCompose(
                             },
                             onButtonClicked = { text ->
                                 textState.value = text
-                                bundles.putString(NEW_TEXT_FOR_RESULT, text)
-                                navController.navigate(ResultViewerPage.route)
+                                backStack.add(ResultViewerPage(text))
                             }
                         )
                     }
@@ -226,13 +223,13 @@ fun SearchPageCompose(
         }
 
     }
-    if (askToDownloadPlayList && playListUrl.isNotEmpty()){
+    if (askToDownloadPlayList.value && playListUrl.value.isNotEmpty()){
 
         PlayListDownloadRequest(
             onDismissRequest = {
-                askToDownloadPlayList = false
+                askToDownloadPlayList.value = false
             },
-            playListUrl
+            playListUrl.value
         )
 
     }
@@ -249,7 +246,7 @@ private fun RecentlySearchList(
     deleteThis: (String) -> Unit,
     onButtonClicked: (text: String) -> Unit
 ) {
-    var showDeleteConfirm by remember { mutableStateOf(false) }
+    val showDeleteConfirm = remember { mutableStateOf(false) }
 
     Row(
         modifier = Modifier
@@ -275,7 +272,7 @@ private fun RecentlySearchList(
 
 
         IconButton(
-            onClick = { showDeleteConfirm = true }
+            onClick = { showDeleteConfirm.value = true }
         ) {
             Icon(
                 imageVector = Icons.Default.Delete,
@@ -285,23 +282,23 @@ private fun RecentlySearchList(
         }
     }
 
-    if (showDeleteConfirm) {
+    if (showDeleteConfirm.value) {
         AlertDialog(
-            onDismissRequest = { showDeleteConfirm = false },
+            onDismissRequest = { showDeleteConfirm.value = false },
             title = { Text("Remove Search") },
             text = { Text("Are you sure you want to remove \"$title\" from your search history?") },
             confirmButton = {
                 TextButton(
                     onClick = {
                         deleteThis(settingsResults.id)
-                        showDeleteConfirm = false
+                        showDeleteConfirm.value = false
                     }
                 ) {
                     Text("Delete", color = MaterialTheme.colorScheme.error)
                 }
             },
             dismissButton = {
-                TextButton(onClick = { showDeleteConfirm = false }) {
+                TextButton(onClick = { showDeleteConfirm.value = false }) {
                     Text("Cancel")
                 }
             }
@@ -383,7 +380,7 @@ fun PlayListDownloadRequest(onDismissRequest: ()->Unit, url: String){
 
 
 private fun keyEvent(
-    navController: NavController,
+    backStack: NavBackStack<NavKey>,
     editTextText: String,
     addIt: (String) -> Unit,
     isPlayList: (url: String) -> Unit,
@@ -398,8 +395,11 @@ private fun keyEvent(
                     putString("View_URL", "https://www.youtube.com/watch?v=$videoId")
                 }
 
-                // Safely use a globally declared Bundle
-                bundles.putBundle(NEW_INTENT_FOR_VIEWER, bundled)
+                backStack.add(NavScreens.VideoViewer(
+                    Video(
+                        id = videoId.toString()
+                    ))
+                )
 
             }
             editTextText.isValidYouTubePlaylistUrl() -> {
@@ -407,9 +407,7 @@ private fun keyEvent(
             }
             else -> {
                 addIt(editTextText)
-                bundles.putString(NEW_TEXT_FOR_RESULT, editTextText)
-
-                navController.navigate(ResultViewerPage.route)
+                backStack.add(ResultViewerPage(editTextText))
 
             }
         }

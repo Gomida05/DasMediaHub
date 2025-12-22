@@ -1,32 +1,32 @@
 [versions]
-activityComposeVersion = "1.11.0"
-agp = "8.13.0"
+activityComposeVersion = "1.12.1"
+agp = "8.13.2"
 appcompatVersion = "1.7.1"
 browserVersion = "1.9.0"
 coilComposeVersion = "2.7.0"
 coilVideoVersion = "2.7.0"
-composeBomVersion = "2025.10.01"
+composeBomVersion = "2025.12.00"
 constraintlayoutVersion = "2.2.1"
 coreKtxVersion = "1.17.0"
-chaquo = "16.1.0"
+chaquo = "17.0.0"
 firebaseAuthKtxVersion = "23.2.1"
-firebaseBomVersion = "34.4.0"
+firebaseBomVersion = "34.7.0"
 glideVersion = "5.0.5"
 gms = "4.4.4"
 junitJunit = "4.13.2"
 kotlin = "2.2.21"
 kotlinStdlibVersion = "2.2.21"
 kotlinxSerializationJsonVersion = "1.9.0"
-lifecycleLivedataKtxVersion = "2.9.4"
-lifecycleViewmodelComposeVersion = "2.9.4"
-lifecycleViewmodelKtxVersion = "2.9.4"
+lifecycleLivedataKtxVersion = "2.10.0"
+lifecycleViewmodelComposeVersion = "2.10.0"
+lifecycleViewmodelKtxVersion = "2.10.0"
 media3Version = "1.8.0"
 mediaVersion = "1.7.1"
-navigationVersion = "2.9.5"
+nav3Core = "1.0.0"
 playServicesAuthVersion = "21.4.0"
-runtimeAndroidVersion = "1.9.4"
-runtimeLivedataVersion = "1.9.4"
-uiViewbindingVersion = "1.9.4"
+runtimeAndroidVersion = "1.10.0"
+runtimeLivedataVersion = "1.10.0"
+uiViewbindingVersion = "1.10.0"
 firebaseFirestoreKtxVersion = "25.1.4"
 googleidVersion = "1.1.1"
 
@@ -34,6 +34,7 @@ googleidVersion = "1.1.1"
 activity-compose = { module = "androidx.activity:activity-compose", version.ref = "activityComposeVersion" }
 appcompat = { module = "androidx.appcompat:appcompat", version.ref = "appcompatVersion" }
 browser = { module = "androidx.browser:browser", version.ref = "browserVersion" }
+chaquopy = { module = "com.chaquo.python.runtime:chaquopy", version.ref = "chaquo" }
 coil-video = { module = "io.coil-kt:coil-video", version.ref = "coilVideoVersion" }
 coil-compose = { module = "io.coil-kt:coil-compose", version.ref = "coilComposeVersion" }
 compose-bom = { module = "androidx.compose:compose-bom", version.ref = "composeBomVersion" }
@@ -48,6 +49,9 @@ junit = { module = "junit:junit", version.ref = "junitJunit" }
 lifecycle-livedata-ktx = { module = "androidx.lifecycle:lifecycle-livedata-ktx", version.ref = "lifecycleLivedataKtxVersion" }
 lifecycle-viewmodel-compose = { module = "androidx.lifecycle:lifecycle-viewmodel-compose", version.ref = "lifecycleViewmodelComposeVersion" }
 lifecycle-viewmodel-ktx = { module = "androidx.lifecycle:lifecycle-viewmodel-ktx", version.ref = "lifecycleViewmodelKtxVersion" }
+androidx-lifecycle-viewmodel-navigation3 = { module = "androidx.lifecycle:lifecycle-viewmodel-navigation3", version.ref = "lifecycleViewmodelComposeVersion" }
+androidx-navigation3-runtime = { module = "androidx.navigation3:navigation3-runtime", version.ref = "nav3Core" }
+androidx-navigation3-ui = { module = "androidx.navigation3:navigation3-ui", version.ref = "nav3Core" }
 material-icons-extended = { module = "androidx.compose.material:material-icons-extended" }
 material3 = { module = "androidx.compose.material3:material3" }
 media = { module = "androidx.media:media", version.ref = "mediaVersion" }
@@ -59,8 +63,6 @@ media3-exoplayer-hls = { module = "androidx.media3:media3-exoplayer-hls", versio
 media3-session = { module = "androidx.media3:media3-session", version.ref = "media3Version" }
 media3-ui = { module = "androidx.media3:media3-ui", version.ref = "media3Version" }
 media3-ui-compose = { module = "androidx.media3:media3-ui-compose", version.ref = "media3Version" }
-navigation-compose = { module = "androidx.navigation:navigation-compose", version.ref = "navigationVersion" }
-navigation-ui-ktx = { module = "androidx.navigation:navigation-ui-ktx", version.ref = "navigationVersion" }
 play-services-auth = { module = "com.google.android.gms:play-services-auth", version.ref = "playServicesAuthVersion" }
 runtime-android = { module = "androidx.compose.runtime:runtime-android", version.ref = "runtimeAndroidVersion" }
 runtime-livedata = { module = "androidx.compose.runtime:runtime-livedata", version.ref = "runtimeLivedataVersion" }

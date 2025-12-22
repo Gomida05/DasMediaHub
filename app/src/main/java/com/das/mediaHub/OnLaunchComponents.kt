@@ -5,14 +5,6 @@ import android.content.Intent
 import android.net.Uri
 import androidx.browser.customtabs.CustomTabsIntent
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.material.icons.Icons.Filled
-import androidx.compose.material.icons.Icons.Outlined
-import androidx.compose.material.icons.filled.Home
-import androidx.compose.material.icons.filled.Settings
-import androidx.compose.material.icons.filled.WatchLater
-import androidx.compose.material.icons.outlined.Home
-import androidx.compose.material.icons.outlined.Settings
-import androidx.compose.material.icons.outlined.WatchLater
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.NavigationBar
@@ -20,26 +12,21 @@ import androidx.compose.material3.NavigationBarDefaults
 import androidx.compose.material3.NavigationBarItem
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.DisposableEffect
-import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.remember
-import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
-import androidx.navigation.NavController
+import androidx.navigation3.runtime.NavBackStack
+import androidx.navigation3.runtime.NavKey
 import com.das.mediaHub.NavScreens.Home
 import com.das.mediaHub.NavScreens.RecentlyWatched
 import com.das.mediaHub.NavScreens.Setting
 import com.das.mediaHub.data.constants.Action.ACTION_START
-import com.das.mediaHub.data.model.BottomNavItem
+import com.das.mediaHub.data.model.BottomNavItem.Companion.rememberBottomNavigationItems
 import com.das.mediaHub.data.model.ItemsStreamUrlsForMediaItemData
 import com.das.mediaHub.data.model.MediaData
 import com.das.mediaHub.downloader.DownloaderClass
 import com.das.mediaHub.python.YouTuber.getAudioStreamUrl
 import com.das.mediaHub.python.YouTuber.getVideoStreamUrl
 import com.das.mediaHub.services.AudioServiceFromUrl
-import com.google.firebase.auth.FirebaseAuth
 
 internal object OnLaunchComponents {
 
@@ -93,10 +80,10 @@ internal object OnLaunchComponents {
 
 
     @Composable
-    fun BottomNavItems(currentRoute: String?, navController: NavController) {
+    fun BottomNavItems(currentRoute: NavKey?, backStack: NavBackStack<NavKey>) {
         val bottomNavigationItems = rememberBottomNavigationItems()
 
-        if (currentRoute in listOf(Home.route, RecentlyWatched.route, Setting.route)) {
+        if (currentRoute in listOf(Home, RecentlyWatched, Setting)) {
             NavigationBar(
                 windowInsets = NavigationBarDefaults.windowInsets,
                 containerColor = MaterialTheme.colorScheme.background,
@@ -106,22 +93,15 @@ internal object OnLaunchComponents {
             ) {
                 bottomNavigationItems.forEachIndexed { _, items ->
                     NavigationBarItem(
-                        selected = currentRoute == items.title,
+                        selected = currentRoute == items.key,
                         onClick = {
-                            if (currentRoute != items.title) {
-                                navController.navigate(items.title) {
-                                    // Avoid multiple copies of the same destination
-                                    popUpTo(navController.graph.startDestinationId) {
-                                        saveState = true
-                                    }
-                                    launchSingleTop = true
-                                    restoreState = true
-                                }
+                            if (currentRoute != items.key) {
+                                backStack.add(items.key)
                             }
                         },
                         icon = {
                             Icon(
-                                imageVector = if (currentRoute == items.title) items.selectedIcon else items.unselectedIcon,
+                                imageVector = if (currentRoute == items.key) items.selectedIcon else items.unselectedIcon,
                                 contentDescription = items.title
                             )
                         },
@@ -141,27 +121,6 @@ internal object OnLaunchComponents {
 
 
 
-    @Composable
-    private fun rememberBottomNavigationItems(): List<BottomNavItem> {
-        return remember {
-            listOf(
-                BottomNavItem(
-                    title = Home.route,
-                    selectedIcon = Filled.Home,
-                    unselectedIcon = Outlined.Home
-                ),
-                BottomNavItem(
-                    title = RecentlyWatched.route,
-                    selectedIcon = Filled.WatchLater,
-                    unselectedIcon = Outlined.WatchLater
-                ),
-                BottomNavItem(
-                    title = Setting.route,
-                    selectedIcon = Filled.Settings,
-                    unselectedIcon = Outlined.Settings
-                )
-            )
-        }
-    }
+
 
 }
