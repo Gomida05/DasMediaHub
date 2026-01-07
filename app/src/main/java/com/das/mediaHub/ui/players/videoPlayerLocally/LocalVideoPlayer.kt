@@ -27,7 +27,7 @@ import androidx.media3.ui.PlayerView
 import com.das.mediaHub.MainActivity
 import com.das.mediaHub.PIP.shouldEnterPipMode
 import com.das.mediaHub.WakeLockHelper.releaseWakeLock
-import com.das.mediaHub.mediacontroller.LocalVideoListener
+import com.das.mediaHub.data.local.PathPreferences.videoPathState
 import com.das.mediaHub.player.video.LocalVideoManger
 import com.das.mediaHub.ui.players.videoPlayer.CustomMethods.setFullscreen
 
@@ -37,6 +37,8 @@ import com.das.mediaHub.ui.players.videoPlayer.CustomMethods.setFullscreen
 fun MainActivity.LocalVideoPlayer(videoUri: String) {
 
     val viewModel = viewModel<LocalPlayerViewModel>()
+
+    val videoPath by videoPathState()
 
     val isError by viewModel.errorFound
     val mediaItems by viewModel.mediaItems
@@ -50,7 +52,7 @@ fun MainActivity.LocalVideoPlayer(videoUri: String) {
             .build()
     }
 
-    val mediaItem = remember {
+    val mediaItem = remember(videoUri) {
         MediaItem.Builder()
             .setMediaId(videoUri)
             .setUri(videoUri)
@@ -61,29 +63,31 @@ fun MainActivity.LocalVideoPlayer(videoUri: String) {
 
 
     val manager = remember {
-        LocalVideoManger(
-            context = mContext,
-            playerListener = LocalVideoListener(this)
-        ).apply {
+        LocalVideoManger(mainActivity = this).apply {
             addListener()
             playVideo(mediaItem)
         }
     }
 
-    val mExoPlayer = remember {
-        manager.player
-    }
+    val mExoPlayer = manager.player
 
-    LaunchedEffect(Unit) {
+
+
+    LaunchedEffect(videoPath) {
         setFullscreen(true)
         shouldEnterPipMode.value = true
         releaseWakeLock()
-        viewModel.loadItems(mediaItem.mediaMetadata.title.toString())
+
+        viewModel.loadItemsDebounced(
+            currentMediaTitle = mediaItem.mediaMetadata.title.toString(),
+            pathLocation = videoPath
+        )
     }
+
 
     LaunchedEffect(mediaItems) {
         if (mediaItems.isNotEmpty()) {
-            manager.addMediaItems(mediaItems)
+            manager.setPlaylist(mediaItems)
         }
     }
 
@@ -130,7 +134,10 @@ fun MainActivity.LocalVideoPlayer(videoUri: String) {
 
     DisposableEffect(Unit) {
         onDispose {
-            manager.release()
+            if (!this@LocalVideoPlayer.isInPictureInPictureMode) {
+                manager.release()
+            }
+
             shouldEnterPipMode.value = false
             releaseWakeLock()
             setFullscreen(false)

@@ -56,16 +56,17 @@ import androidx.navigation3.runtime.NavBackStack
 import androidx.navigation3.runtime.NavKey
 import coil.compose.AsyncImage
 import coil.request.ImageRequest
-import com.das.mediaHub.MainActivity
 import com.das.mediaHub.NavScreens
 import com.das.mediaHub.R
 import com.das.mediaHub.python.YouTuber.loadStreamUrl
 import com.das.mediaHub.data.local.DatabaseFavorite
 import com.das.mediaHub.data.constants.Action.ACTION_START
 import com.das.mediaHub.data.model.SavedVideosListData
+import com.das.mediaHub.data.model.TopPopUp
 import com.das.mediaHub.data.model.VideosListData
 import com.das.mediaHub.services.AudioServiceFromUrl
 import com.das.mediaHub.data.model.searcher.Video
+import com.das.mediaHub.ui.TopPopupNotification.showNotificationDialog
 
 
 @Composable
@@ -257,7 +258,7 @@ private fun WatchLaterItem(
                             .data(channelThumbnails)
                             .crossfade(true)
                             .error(
-                                R.mipmap.under_development
+                                R.mipmap.ic_launcher_ofme
                             )
                             .build(),
                         contentDescription = "Category Image",
@@ -358,7 +359,7 @@ private fun InfoDialog(onDismissRequest: () -> Unit){
                 verticalAlignment = Alignment.CenterVertically
             ) {
                 Image(
-                    painter = painterResource(R.mipmap.under_development),
+                    painter = painterResource(R.mipmap.ic_launcher_ofme),
                     contentDescription = null,
                     modifier = Modifier
                         .size(14.dp)
@@ -395,12 +396,7 @@ private fun onClickListListener(
     ) {
     try {
         val dbHelper = DatabaseFavorite(context)
-        val viewNumber = dbHelper.getViewNumber(selectedId)
-        val datVideo = dbHelper.getVideoDate(selectedId)
-        val videoChannel = dbHelper.getVideoChannelName(selectedId)
-        val ourDuration = dbHelper.getDuration(selectedId).toString()
         val title = dbHelper.getVideoTitle(selectedId)
-        val channelThumbnail = dbHelper.getChannelNameThumbnail(selectedId)
         val bundle = Video(
             id = selectedId,
             title = title
@@ -409,7 +405,11 @@ private fun onClickListListener(
         backStack.add(NavScreens.VideoViewer(bundle))
 
     } catch (e: Exception) {
-        MainActivity().alertUserError(context, e.message.toString())
+        showNotificationDialog = TopPopUp(
+            message = "Error: ${e.message}",
+            icon = Icons.Default.VideoLibrary,
+            loading = false
+        )
     }
 }
 

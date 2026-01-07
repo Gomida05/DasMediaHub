@@ -1,5 +1,6 @@
 package com.das.mediaHub.python
 
+import androidx.compose.runtime.mutableStateListOf
 import androidx.media3.common.MediaItem
 import com.das.mediaHub.data.constants.YouTubeRegexes
 import com.das.mediaHub.data.model.ItemsStreamUrlsForMediaItemData
@@ -19,7 +20,12 @@ import java.util.Locale
 import java.util.regex.Pattern
 
 internal object YouTuber {
-    var mediaItems = mutableListOf<MediaItem>()
+    val mediaItems = mutableStateListOf<MediaItem>()
+
+    fun List<MediaItem>.updateGlobalMediaItems() {
+        mediaItems.clear()
+        mediaItems.addAll(this)
+    }
 
     /**
      * Extracts the YouTube video ID from a given URL using a predefined regex.

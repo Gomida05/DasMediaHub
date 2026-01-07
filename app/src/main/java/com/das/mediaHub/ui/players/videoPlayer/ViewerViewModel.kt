@@ -51,20 +51,22 @@ class ViewerViewModel : ViewModel() {
                 val result = getStreamUrl(type = GET_VIDEO_STREAM_URL, id = videoId)
 
                 if (result.success && !result.result.isNullOrEmpty()) {
-                    _videoState.value.copy(
+                    _videoState.value = _videoState.value.copy(
                         data = result.result
                     )
+                    println("New value from 2: ${result.result}")
+                    println("New value from 3: ${_videoState.value.data}")
                 } else {
-                    _videoState.value.copy(
+                    _videoState.value = _videoState.value.copy(
                         error = result.error
                     )
                 }
             } catch (e: Exception) {
-                _videoState.value.copy(
+                _videoState.value = _videoState.value.copy(
                     error = "Error: ${e.message}"
                 )
             } finally {
-                _videoState.value.copy(
+                _videoState.value = _videoState.value.copy(
                     isLoading = false
                 )
             }
@@ -73,7 +75,7 @@ class ViewerViewModel : ViewModel() {
 
 
     fun fetchVideoDetails(videoId: String) {
-        _detailsState.value.copy(
+        _detailsState.value = _detailsState.value.copy(
             isLoading = true,
             error = null
         )
@@ -82,29 +84,29 @@ class ViewerViewModel : ViewModel() {
                 val result = callPythonSearchWithLink(videoId)
                 if (result.success && result.result != null) {
                     val videoDetails = result.result
-                    _detailsState.value.copy(
+                    _detailsState.value = _detailsState.value.copy(
                         data = videoDetails.copy(
                             viewNumber = videoDetails.viewNumber.formatViews(),
                             date = videoDetails.date.formatDate()
                         )
                     )
                 } else {
-                    _detailsState.value.copy(
+                    _detailsState.value = _detailsState.value.copy(
                         error = result.error ?: "Something went wrong!"
                     )
                 }
             } catch (js: SerializationException) {
-                _detailsState.value.copy(
+                _detailsState.value = _detailsState.value.copy(
                     error = "Error while fetching data: ${js.message}"
                 )
                 Log.e("VideoPlayer", "Error fetching json video details: ${js.message}")
             } catch (e: Exception) {
-                _detailsState.value.copy(
+                _detailsState.value = _detailsState.value.copy(
                     error = "Error loading video details: ${e.message}"
                 )
                 Log.e("VideoPlayer", "Error loading video details: $e")
             } finally {
-                _detailsState.value.copy(
+                _detailsState.value = _detailsState.value.copy(
                     isLoading = false
                 )
             }
@@ -113,7 +115,7 @@ class ViewerViewModel : ViewModel() {
 
 
     fun fetchSuggestions(title: String) {
-        _suggestionsState.value.copy(
+        _suggestionsState.value = _suggestionsState.value.copy(
             isLoading = true,
             error = null
         )
@@ -121,23 +123,23 @@ class ViewerViewModel : ViewModel() {
             try {
                 val result = callPythonSearchSuggestion(title)
                 if (result.success && result.result != null) {
-                    _suggestionsState.value.copy(
+                    _suggestionsState.value = _suggestionsState.value.copy(
                         data = result.result.result
                     )
                 } else {
-                    _suggestionsState.value.copy(
+                    _suggestionsState.value = _suggestionsState.value.copy(
                         error = result.error ?: "Something went wrong!"
                     )
                 }
             } catch (j: SerializationException) {
                 Log.e("VideoPlayer", "Error parsing data: ${j.localizedMessage}")
             } catch (e: Exception) {
-                _suggestionsState.value.copy(
+                _suggestionsState.value = _suggestionsState.value.copy(
                     error = "Something went wrong: ${e.message}"
                 )
                 Log.e("VideoPlayer", "Something went wrong: ${e.message}")
             } finally {
-                _suggestionsState.value.copy(
+                _suggestionsState.value = _suggestionsState.value.copy(
                     isLoading = false
                 )
             }

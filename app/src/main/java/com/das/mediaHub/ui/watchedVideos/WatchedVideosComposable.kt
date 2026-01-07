@@ -66,15 +66,17 @@ import com.das.mediaHub.data.constants.Action.ACTION_START
 import com.das.mediaHub.services.AudioServiceFromUrl
 import com.das.mediaHub.NavScreens.VideoViewer
 import com.das.mediaHub.NavScreens.Saved
+import com.das.mediaHub.data.model.TopPopUp
 import com.das.mediaHub.data.model.searcher.Video
 import com.das.mediaHub.python.YouTuber.loadStreamUrl
+import com.das.mediaHub.ui.TopPopupNotification.showNotificationDialog
 
 
 @Composable
 fun WatchedVideosComposable(backStack: NavBackStack<NavKey>) {
 
 
-    val viewModel = viewModel<WatchedVideosViewModel>()
+    val viewModel = viewModel(WatchedVideosViewModel::class.java.kotlin)
     val scrollBehavior = TopAppBarDefaults.enterAlwaysScrollBehavior()
     val searchResults by viewModel.savedLists.collectAsState()
     val isLoading by viewModel.isLoading.collectAsState()
@@ -218,14 +220,6 @@ private fun WatchedMedia(
     val context = LocalContext.current
 
 
-    val imageRequest = remember {
-        ImageRequest.Builder(context)
-            .data(videoThumbnailURL)
-            .crossfade(true)
-            .memoryCachePolicy(CachePolicy.ENABLED)
-            .diskCachePolicy(CachePolicy.ENABLED)
-            .build()
-    }
 
     Box(
         modifier = Modifier
@@ -254,7 +248,7 @@ private fun WatchedMedia(
         ) {
             Box {
                 AsyncImage(
-                    model = imageRequest,
+                    model = videoThumbnailURL,
                     contentDescription = "Category Image",
                     modifier = Modifier
                         .fillMaxWidth()
@@ -287,13 +281,8 @@ private fun WatchedMedia(
                     }
                 ) {
                     AsyncImage(
-                        model = ImageRequest.Builder(context)
-                            .data(channelThumbnails)
-                            .crossfade(true)
-                            .error(
-                                R.mipmap.under_development
-                            )
-                            .build(),
+                        model = channelThumbnails,
+                        error = painterResource(R.mipmap.ic_launcher_ofme),
                         contentDescription = "Category Image",
                         modifier = Modifier
                             .fillMaxSize(),
@@ -392,7 +381,7 @@ private fun InfoDialog(onDismissRequest: () -> Unit){
                 verticalAlignment = Alignment.CenterVertically
             ) {
                 Image(
-                    painter = painterResource(R.mipmap.under_development),
+                    painter = painterResource(R.mipmap.ic_launcher_ofme),
                     contentDescription = null,
                     modifier = Modifier
                         .size(14.dp)
@@ -454,7 +443,11 @@ private fun onClickListListener(
         ))
 
     } catch (e: Exception) {
-        MainActivity().alertUserError(context, e.message.toString())
+        showNotificationDialog = TopPopUp(
+            message = "Error: ${e.message}",
+            icon = Icons.Default.VideoLibrary,
+            loading = false
+        )
     }
 }
 

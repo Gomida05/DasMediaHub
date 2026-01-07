@@ -1,7 +1,7 @@
 package com.das.mediaHub.ui.settings
 
 import android.content.Context
-import android.os.Build
+import android.content.pm.PackageInfo
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -31,8 +31,6 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.LargeTopAppBar
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
-import androidx.compose.material3.SnackbarHost
-import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.material3.TopAppBarDefaults
@@ -50,38 +48,34 @@ import androidx.compose.ui.input.nestedscroll.nestedScroll
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
+import androidx.core.content.pm.PackageInfoCompat
 import androidx.core.net.toUri
 import androidx.lifecycle.viewmodel.compose.viewModel
-import androidx.navigation3.runtime.NavBackStack
-import androidx.navigation3.runtime.NavKey
 import com.das.mediaHub.NavScreens
 import com.das.mediaHub.OnLaunchComponents.openCustomTab
 import com.das.mediaHub.downloader.DownloaderClass
 import com.das.mediaHub.data.model.AppUpdateInfo
 import com.das.mediaHub.data.model.TopPopUp
-import com.google.firebase.Firebase
+import com.das.mediaHub.ui.TopPopupNotification.showNotificationDialog
 import com.google.firebase.auth.FirebaseUser
-import com.google.firebase.auth.auth
 
 
 @Composable
-fun NavBackStack<NavKey>.SettingsComposable(
-    showPopMessage: (TopPopUp)-> Unit
-) {
+fun SettingsComposable(user: FirebaseUser?, add: (NavScreens) -> Unit) {
 
     val context = LocalContext.current
     val scrollBehavior = TopAppBarDefaults.exitUntilCollapsedScrollBehavior()
     val viewModel = viewModel<SettingsViewModel>()
 
-    val auth = Firebase.auth
+    val packageInfo = remember {
+        context.packageManager.getPackageInfo(context.packageName, 0)
+    }
 
     val showDialog = remember { mutableStateOf(false) }
 
     val isLoading by viewModel.isLoading
     val error by viewModel.foundError
     val appInfo by viewModel.apkInfo
-
-    val snackBarHostState = remember { SnackbarHostState() }
 
     val url = remember { "https://gomida05.github.io/".toUri() }
 
@@ -102,7 +96,6 @@ fun NavBackStack<NavKey>.SettingsComposable(
     Scaffold(
         modifier = Modifier
             .nestedScroll(scrollBehavior.nestedScrollConnection),
-        snackbarHost = { SnackbarHost(snackBarHostState) },
         topBar = {
             LargeTopAppBar(
                 scrollBehavior = scrollBehavior,
@@ -129,7 +122,7 @@ fun NavBackStack<NavKey>.SettingsComposable(
             modifier = Modifier
                 .fillMaxSize()
         ) {
-            auth.currentUser?.let { user ->
+            user?.let { user ->
                 item {
                     UserHeader(
                         user
@@ -188,7 +181,7 @@ fun NavBackStack<NavKey>.SettingsComposable(
 
             item { HorizontalDivider() }
             item {
-                AppVersionInfo()
+                packageInfo.AppVersionInfo()
             }
         }
     }
@@ -197,15 +190,7 @@ fun NavBackStack<NavKey>.SettingsComposable(
         ShowAlertDialog(
             context = context,
             appInfo = appInfo,
-            snackBar = snackBarHostState,
-            showPopMessage = {
-                showPopMessage(
-                    TopPopUp(
-                        message = it,
-                        icon = Icons.Default.Android
-                    )
-                )
-            },
+            packageInfo = packageInfo,
             onDismissRequest = {
                 showDialog.value = false
             },
@@ -335,11 +320,9 @@ fun UserHeader(user: FirebaseUser, onClick: () -> Unit) {
 }
 
 @Composable
-fun AppVersionInfo() {
-    val context = LocalContext.current
+fun PackageInfo.AppVersionInfo() {
     val version = remember {
-        context.packageManager
-            .getPackageInfo(context.packageName, 0).versionName
+        versionName
     }
     Text(
         text = "App Version: $version",
@@ -357,36 +340,27 @@ fun AppVersionInfo() {
 fun ShowAlertDialog(
     context: Context,
     appInfo: AppUpdateInfo,
-    snackBar: SnackbarHostState,
-    showPopMessage: (String) -> Unit,
+    packageInfo: PackageInfo,
     onDismissRequest: () -> Unit,
 ) {
     // Get current version info
-    val packageInfo = context.packageManager.getPackageInfo(context.packageName, 0)
-    val currentVersionCode = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.P)
-        packageInfo.longVersionCode
-    else
-        @Suppress("DEPRECATION")
-        packageInfo.versionCode.toLong()
-
-    val currentVersionName = try {
-        packageInfo.versionName?.toDoubleOrNull()
-    } catch (_: Exception) {
-        null
+    val currentVersionCode = remember {
+        PackageInfoCompat.getLongVersionCode(packageInfo)
     }
+    val newVersionCode = appInfo.versionCode
 
-    val isNewerVersion = appInfo.versionCode > currentVersionCode ||
-            (currentVersionName != null && (appInfo.versionName.toDoubleOrNull()
-                ?: 0.0) > currentVersionName)
+    val currentVersionName = packageInfo.versionName?.toDoubleOrNull() ?: 0.0
+    val newVersionName = appInfo.versionName.toDoubleOrNull() ?: 0.0
 
     // Show message if already up-to-date
-    if (!isNewerVersion) {
-        LaunchedEffect(Unit) {
-            showPopMessage("You're up to date")
-            snackBar.showSnackbar( "You're up to date")
+    LaunchedEffect(Unit) {
+        if (newVersionCode > currentVersionCode || newVersionName > currentVersionName) {
+            showNotificationDialog = TopPopUp(
+                message = "You're up to date",
+                icon = Icons.Default.Android
+            )
             onDismissRequest()
         }
-        return
     }
 
 

@@ -7,6 +7,6 @@ import kotlinx.serialization.Serializable
 @Parcelize
 @Serializable
 data class ViewCount(
-    val text: String,
+    val text: String? = null,
     val short: String? = null
 ): Parcelable

@@ -1,8 +1,8 @@
 package com.das.mediaHub.ui.players.videoPlayer
 
+import android.annotation.SuppressLint
 import android.content.Context
 import android.content.Intent
-import androidx.annotation.OptIn
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.combinedClickable
@@ -38,6 +38,7 @@ import androidx.compose.material.icons.filled.MoreVert
 import androidx.compose.material.icons.filled.MusicNote
 import androidx.compose.material.icons.filled.Share
 import androidx.compose.material.icons.filled.Videocam
+import androidx.compose.material.icons.filled.YouTube
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Card
 import androidx.compose.material3.CircularProgressIndicator
@@ -79,7 +80,7 @@ import androidx.compose.ui.viewinterop.AndroidView
 import androidx.compose.ui.window.Dialog
 import androidx.core.net.toUri
 import androidx.lifecycle.viewmodel.compose.viewModel
-import androidx.media3.common.util.UnstableApi
+import androidx.media3.exoplayer.ExoPlayer
 import androidx.media3.ui.AspectRatioFrameLayout
 import androidx.media3.ui.PlayerView
 import androidx.navigation3.runtime.NavBackStack
@@ -103,20 +104,20 @@ import com.das.mediaHub.data.local.WatchHistory
 import com.das.mediaHub.data.constants.Action.ACTION_START
 import com.das.mediaHub.data.model.VideoDetails
 import com.das.mediaHub.data.model.VideosListData
-import com.das.mediaHub.data.icons.YouTube
 import com.das.mediaHub.data.model.searcher.Video
 import com.das.mediaHub.mediacontroller.VideoPlayerListener
 import com.das.mediaHub.player.video.VideoPlayerManager
 import com.das.mediaHub.ui.players.videoPlayer.CustomMethods.SkeletonSuggestionLoadingLayout
 import com.das.mediaHub.ui.players.videoPlayer.CustomMethods.SkeletonLoadingLayout
 import com.das.mediaHub.ui.players.videoPlayer.CustomMethods.setFullscreen
+import com.das.mediaHub.ui.players.videoPlayer.state.UiState
 import com.das.mediaHub.ui.players.videoPlayer.state.VideoUiState
 import com.das.mediaHub.ui.theme.AppTheme
 import com.das.mediaHub.ui.theme.ThemePreferences.loadDarkModeState
 import kotlinx.coroutines.launch
 
 
-@OptIn(UnstableApi::class)
+
 @Composable
 fun MainActivity.OnlineVideoPlayer(
     backStack: NavBackStack<NavKey>,
@@ -128,9 +129,16 @@ fun MainActivity.OnlineVideoPlayer(
 
 
     val viewModel = viewModel<ViewerViewModel>()
+    val videoState by viewModel.videoState.collectAsState()
+    val videoUrl = videoState.data
 
 
     val videoID = data.id
+
+    LaunchedEffect(Unit) {
+        viewModel.loadDetails(videoID)
+    }
+
 
     val videoPlayerManager = remember {
         VideoPlayerManager(
@@ -140,26 +148,26 @@ fun MainActivity.OnlineVideoPlayer(
         )
     }
 
-
+    LaunchedEffect(videoUrl, videoState.isLoading) {
+        if (!videoUrl.isNullOrEmpty() && !videoState.isLoading) {
+            if (videoPlayerManager.isEmptyMediaItem) {
+                videoPlayerManager.playVideo(
+                    videoUrl.toUri()
+                )
+            }
+        }
+    }
     val mExoPlayer = videoPlayerManager.player
     var videoUiState by remember {
         mutableStateOf(VideoUiState.from(data))
     }
-
     val suggestionsState by viewModel.suggestionsState.collectAsState()
+
     val isLoadingVideos = suggestionsState.isLoading
     val videosListResult = suggestionsState.data.orEmpty()
     val suggestionError = suggestionsState.error
 
-    val videoState by viewModel.videoState.collectAsState()
 
-    val videoUrl = videoState.data.orEmpty()
-    val isLoading = videoState.isLoading
-    val isThereError = videoState.error
-
-    LaunchedEffect(videoID) {
-        viewModel.loadDetails(videoID)
-    }
 
 
     LaunchedEffect(videoUiState.title) {
@@ -180,17 +188,8 @@ fun MainActivity.OnlineVideoPlayer(
         }
     }
 
-    LaunchedEffect(videoUrl, isLoading) {
-        if (videoUrl.isNotEmpty() && !isLoading) {
-            if (videoPlayerManager.isEmptyMediaItem) {
-                videoPlayerManager.playVideo(
-                    videoUrl.toUri()
-                )
-            }
-        }
-    }
 
-    val isInPipMode = rememberIsInPipMode()
+
 
 
     Scaffold(
@@ -202,85 +201,11 @@ fun MainActivity.OnlineVideoPlayer(
                 .padding(paddings)
                 .fillMaxSize()
         ) {
-            if (videoUrl.isNotEmpty() && !isLoading) {
-
-
-                val playerModifier = if (isInFullScreen.value) {
-                    Modifier
-                        .fillMaxSize()
-                } else {
-                    Modifier
-                        .height(220.dp)
-                        .fillMaxWidth()
-                }
-
-
-                @Suppress("COMPOSE_APPLIER_CALL_MISMATCH")
-                AndroidView(
-                    modifier = playerModifier
-                        .background(Color.Black)
-                        .then(
-                            if (isInPipMode) Modifier.fillMaxSize() else Modifier
-                        ),
-                    factory = {
-                        PlayerView(it).apply {
-                            player = mExoPlayer
-                            keepScreenOn = true
-                        }
-                    },
-                    update = { playerView ->
-                        playerView.player = mExoPlayer
-                        playerView.setFullscreenButtonState(isInFullScreen.value)
-                        playerView.setFullscreenButtonClickListener {
-                            isInFullScreen.value = it
-                        }
-                        playerView.resizeMode = if (isInFullScreen.value)
-                            AspectRatioFrameLayout.RESIZE_MODE_ZOOM
-                        else
-                            AspectRatioFrameLayout.RESIZE_MODE_FIT
-                        playerView.useController = !isInPipMode
-                    }
-                )
-            } else if (isLoading) {
-                Box(
-                    modifier = Modifier
-                        .height(height = 220.dp)
-                        .fillMaxWidth()
-                        .background(Color.Black)
-                ) {
-                    CircularProgressIndicator(modifier = Modifier.align(Alignment.Center))
-                }
-            } else {
-                Box(
-                    modifier = Modifier
-                        .height(220.dp)
-                        .fillMaxWidth()
-                        .background(Color.Black),
-                    contentAlignment = Alignment.Center
-                ) {
-                    Column(
-                        modifier = Modifier
-                            .fillMaxSize()
-                            .align(Alignment.Center)
-                    ) {
-                        Icon(
-                            imageVector = Icons.Filled.Error,
-                            contentDescription = "Error message",
-                            modifier = Modifier
-                                .align(Alignment.CenterHorizontally)
-                        )
-                        Spacer(modifier = Modifier.height(6.dp))
-                        Text(
-                            text = isThereError.toString(),
-                            color = MaterialTheme.colorScheme.error,
-                            modifier = Modifier
-                                .fillMaxWidth(0.87f)
-                                .align(Alignment.CenterHorizontally)
-                        )
-                    }
-
-                }
-
+            VideoScreen(
+                videoState = videoState, mExoPlayer = mExoPlayer,
+                isInFullScreen.value
+            ) {
+                isInFullScreen.value = it
             }
             if (!isInFullScreen.value) {
                 LazyColumn(
@@ -316,8 +241,7 @@ fun MainActivity.OnlineVideoPlayer(
                         ) {
                             videoPlayerManager.pause()
                             val currentTimeSec = (mExoPlayer.currentPosition) / 1000
-                            val youtubeUrl =
-                                "https://www.youtube.com/watch?v=${videoID}&t=${currentTimeSec}s".toUri()
+                            val youtubeUrl = "https://www.youtube.com/watch?v=${videoID}&t=${currentTimeSec}s".toUri()
 
                             try {
                                 val intent = Intent(Intent.ACTION_VIEW, youtubeUrl).apply {
@@ -388,13 +312,109 @@ fun MainActivity.OnlineVideoPlayer(
     AskToPlay(
         showAlertDialog = showAlertDialog.value,
         mContext = this,
-        videoUrl,
+        videoUrl ?:"",
         videoID,
         videoUiState,
         onDismissRequest = {
             showAlertDialog.value = false
         }
     )
+}
+
+
+@SuppressLint("UnsafeOptInUsageError")
+@Suppress("COMPOSE_APPLIER_CALL_MISMATCH")
+@Composable
+private fun MainActivity.VideoScreen(
+    videoState: UiState<String>,
+    mExoPlayer: ExoPlayer,
+    isInFullScreen: Boolean,
+    fullScreen: (Boolean) -> Unit
+) {
+
+
+    val videoUrl = videoState.data
+    val isLoading = videoState.isLoading
+    val isThereError = videoState.error
+    val isInPipMode = rememberIsInPipMode()
+
+    val playerModifier = if (isInFullScreen) {
+        Modifier
+            .fillMaxSize()
+    } else {
+        Modifier
+            .height(220.dp)
+            .fillMaxWidth()
+    }
+
+
+    if (!videoUrl.isNullOrEmpty() && !isLoading) {
+        AndroidView(
+            modifier = playerModifier
+                .background(Color.Black)
+                .then(
+                    if (isInPipMode) Modifier.fillMaxSize() else Modifier
+                ),
+            factory = {
+                PlayerView(it).apply {
+                    player = mExoPlayer
+                    keepScreenOn = true
+                }
+            },
+            update = { playerView ->
+                playerView.player = mExoPlayer
+                playerView.setFullscreenButtonState(isInFullScreen)
+                playerView.setFullscreenButtonClickListener {
+                    fullScreen(it)
+                }
+                playerView.resizeMode = if (isInFullScreen)
+                    AspectRatioFrameLayout.RESIZE_MODE_ZOOM
+                else
+                    AspectRatioFrameLayout.RESIZE_MODE_FIT
+                playerView.useController = !isInPipMode
+            }
+        )
+    } else if (isThereError != null){
+        Box(
+            modifier = Modifier
+                .height(220.dp)
+                .fillMaxWidth()
+                .background(Color.Black),
+            contentAlignment = Alignment.Center
+        ) {
+            Column(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .align(Alignment.Center)
+            ) {
+                Icon(
+                    imageVector = Icons.Filled.Error,
+                    contentDescription = "Error message",
+                    modifier = Modifier
+                        .align(Alignment.CenterHorizontally)
+                )
+                Spacer(modifier = Modifier.height(6.dp))
+                Text(
+                    text = isThereError,
+                    color = MaterialTheme.colorScheme.error,
+                    modifier = Modifier
+                        .fillMaxWidth(0.87f)
+                        .align(Alignment.CenterHorizontally)
+                )
+            }
+
+        }
+
+    } else {
+        Box(
+            modifier = Modifier
+                .height(height = 220.dp)
+                .fillMaxWidth()
+                .background(Color.Black)
+        ) {
+            CircularProgressIndicator(modifier = Modifier.align(Alignment.Center))
+        }
+    }
 }
 
 
@@ -438,9 +458,206 @@ private fun VideoDetailsComposable(
     ) {
 
 
-        if (isLoading || videoDetails == null) {
-            SkeletonLoadingLayout()
+        if (!isLoading && videoDetails != null && error == null) {
+            val title = videoDetails.title
+            LaunchedEffect(title) {
+                finished(videoDetails)
+                if (channelThumbnailURL != "none is here") {
+                    watchHistory.insertNewVideo(
+                        videoId,
+                        title,
+                        videoDetails.date,
+                        videoDetails.viewNumber,
+                        videoDetails.channelName,
+                        duration,
+                        channelThumbnailURL
+                    )
+                }
+            }
 
+
+
+            Text(
+                text = title,
+                maxLines = 2,
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .combinedClickable(onClick = {
+                        showDescriptionDialog.value = true
+                    })
+            )
+//                Spacer(modifier = Modifier.height(5.dp))
+            Row(
+                horizontalArrangement = Arrangement.SpaceEvenly,
+                modifier = Modifier
+                    .fillMaxWidth()
+            ) {
+
+                AsyncImage(
+                    model = channelThumbnailURL,
+                    error = rememberVectorPainter(Icons.Default.Error),
+                    contentDescription = "Category Image",
+                    modifier = Modifier
+                        .size(34.dp, 34.dp)
+                        .clip(RoundedCornerShape(50))
+                        .combinedClickable(
+                            onClick = {
+                                comingSoonDialog.value = true
+                            }
+                        ),
+                    alignment = Alignment.CenterStart,
+                    contentScale = ContentScale.Crop
+                )
+                Text(
+                    text = videoDetails.channelName,
+                    maxLines = 1,
+                    textAlign = TextAlign.Start,
+                    fontSize = 14.sp,
+                    modifier = Modifier
+                        .width(142.dp)
+                        .align(Alignment.CenterVertically)
+                        .padding(bottom = 3.dp)
+                )
+
+                Text(
+                    text = videoDetails.viewNumber,
+                    maxLines = 1,
+                    fontSize = 13.sp,
+                    textAlign = TextAlign.Center,
+                    modifier = Modifier
+                        .wrapContentSize(Alignment.Center)
+                        .width(52.dp)
+                        .padding(bottom = 3.dp)
+                        .align(Alignment.CenterVertically)
+                )
+                Text(
+                    text = videoDetails.date,
+                    maxLines = 1,
+                    textAlign = TextAlign.Start,
+                    fontSize = 13.sp,
+                    modifier = Modifier
+                        .padding(bottom = 3.dp)
+                        .align(Alignment.CenterVertically)
+                )
+            }
+            Spacer(modifier = Modifier.height(8.dp))
+            Row(
+                horizontalArrangement = Arrangement.SpaceEvenly,
+                verticalAlignment = Alignment.CenterVertically,
+                modifier = Modifier
+                    .padding(horizontal = 2.dp)
+                    .fillMaxWidth()
+            ) {
+                OutlinedIconButton (
+                    onClick = {
+                        val shareIntent = Intent(Intent.ACTION_SEND).apply {
+                            type = "text/plain"
+                            putExtra(
+                                Intent.EXTRA_TEXT,
+                                "https://youtu.be/${videoId}?feature=shared"
+                            )
+                        }
+
+                        val chooser = Intent.createChooser(shareIntent, "Share via")
+                        mContext.startActivity(chooser)
+                    },
+                    shape = RoundedCornerShape(25)
+                ) {
+                    Icon(
+                        painter = rememberVectorPainter(Icons.Default.Share),
+                        "Share the video"
+                    )
+                }
+                OutlinedIconButton(
+                    onClick = {
+                        if (isSaved) {
+                            dbForFav.deleteWatchUrl(videoId)
+                            isSaved = false
+                        } else {
+                            dbForFav.insertData(
+                                videoId,
+                                title,
+                                videoDetails.date,
+                                videoDetails.viewNumber,
+                                videoDetails.channelName,
+                                duration,
+                                channelThumbnailURL
+                            )
+                            isSaved = true
+                        }
+                    },
+                    shape = RoundedCornerShape(25)
+                ) {
+                    Icon(
+                        painter = rememberVectorPainter(
+                            if (isSaved) {
+                                Icons.Filled.Favorite
+                            } else {
+                                Icons.Default.FavoriteBorder
+                            }
+                        ),
+                        contentDescription = if (isSaved) "Saved" else "Not Saved",
+                        tint = if (isSaved) Color.Red else MaterialTheme.colorScheme.primary
+                    )
+                }
+                OutlinedIconButton(
+                    onClick = {
+                        downloadAsMusic(title)
+                    },
+                    shape = RoundedCornerShape(25)
+                ) {
+                    Icon(
+                        painter = rememberVectorPainter(Icons.Default.MusicNote),
+                        "Download the video as music"
+                    )
+                }
+
+                OutlinedIconButton(
+                    onClick = {
+                        downloadAsVideo(
+                            title
+                        )
+                    },
+                    shape = RoundedCornerShape(25)
+                ) {
+                    Icon(
+                        painter = rememberVectorPainter(Icons.Default.Videocam),
+                        "Download video as video"
+                    )
+                }
+
+                OutlinedIconButton(
+                    onClick = {
+                        playItInYouTube()
+                    },
+                    shape = RoundedCornerShape(25)
+                ) {
+                    Icon(
+                        painter = rememberVectorPainter(Icons.Default.YouTube),
+                        tint = Color.Red,
+                        contentDescription = "Play in YouTube"
+                    )
+                }
+
+                OutlinedIconButton(
+                    onClick = {
+                        clickForMore()
+                    },
+                    shape = RoundedCornerShape(25)
+                ) {
+                    Icon(
+                        painter = rememberVectorPainter(Icons.AutoMirrored.Default.More),
+                        "Click here for more options"
+                    )
+                }
+            }
+            if (showDescriptionDialog.value) {
+                ShowDescriptionDialog(
+                    videoDetails.description
+                ) {
+                    showDescriptionDialog.value = false
+                }
+            }
         } else if (error != null) {
 
             Box(
@@ -452,211 +669,7 @@ private fun VideoDetailsComposable(
                 )
             }
         } else {
-            videoDetails.let {
-
-                val title = it.title
-                LaunchedEffect(title) {
-                    finished(it)
-                    if (channelThumbnailURL != "none is here") {
-                        watchHistory.insertNewVideo(
-                            videoId,
-                            title,
-                            it.date,
-                            it.viewNumber,
-                            it.channelName,
-                            duration,
-                            channelThumbnailURL
-                        )
-                    }
-                }
-
-
-
-                Text(
-                    text = title,
-                    maxLines = 2,
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .combinedClickable(onClick = {
-                            showDescriptionDialog.value = true
-                        })
-                )
-//                Spacer(modifier = Modifier.height(5.dp))
-                Row(
-                    horizontalArrangement = Arrangement.SpaceEvenly,
-                    modifier = Modifier
-                        .fillMaxWidth()
-                ) {
-
-                    AsyncImage(
-                        model = ImageRequest.Builder(mContext)
-                            .data(data=channelThumbnailURL)
-                            .crossfade(true)
-                            .error(R.mipmap.under_development)
-                            .build(),
-                        contentDescription = "Category Image",
-                        modifier = Modifier
-                            .size(34.dp, 34.dp)
-                            .clip(RoundedCornerShape(50))
-                            .combinedClickable(
-                                onClick = {
-                                    comingSoonDialog.value = true
-                                }
-                            ),
-                        alignment = Alignment.CenterStart,
-                        contentScale = ContentScale.Crop
-                    )
-                    Text(
-                        text = it.channelName,
-                        maxLines = 1,
-                        textAlign = TextAlign.Start,
-                        fontSize = 14.sp,
-                        modifier = Modifier
-                            .width(142.dp)
-                            .align(Alignment.CenterVertically)
-                            .padding(bottom = 3.dp)
-                    )
-
-                    Text(
-                        text = it.viewNumber,
-                        maxLines = 1,
-                        fontSize = 13.sp,
-                        textAlign = TextAlign.Center,
-                        modifier = Modifier
-                            .wrapContentSize(Alignment.Center)
-                            .width(52.dp)
-                            .padding(bottom = 3.dp)
-                            .align(Alignment.CenterVertically)
-                    )
-                    Text(
-                        text = it.date,
-                        maxLines = 1,
-                        textAlign = TextAlign.Start,
-                        fontSize = 13.sp,
-                        modifier = Modifier
-                            .padding(bottom = 3.dp)
-                            .align(Alignment.CenterVertically)
-                    )
-                }
-                Spacer(modifier = Modifier.height(8.dp))
-                Row(
-                    horizontalArrangement = Arrangement.SpaceEvenly,
-                    verticalAlignment = Alignment.CenterVertically,
-                    modifier = Modifier
-                        .padding(horizontal = 2.dp)
-                        .fillMaxWidth()
-                ) {
-                    OutlinedIconButton (
-                        onClick = {
-                            val shareIntent = Intent(Intent.ACTION_SEND).apply {
-                                type = "text/plain"
-                                putExtra(
-                                    Intent.EXTRA_TEXT,
-                                    "https://youtu.be/${videoId}?feature=shared"
-                                )
-                            }
-
-                            val chooser = Intent.createChooser(shareIntent, "Share via")
-                            mContext.startActivity(chooser)
-                        },
-                        shape = RoundedCornerShape(25)
-                    ) {
-                        Icon(
-                            painter = rememberVectorPainter(Icons.Default.Share),
-                            "Share the video"
-                        )
-                    }
-                    OutlinedIconButton(
-                        onClick = {
-                            if (isSaved) {
-                                dbForFav.deleteWatchUrl(videoId)
-                                isSaved = false
-                            } else {
-                                dbForFav.insertData(
-                                    videoId,
-                                    title,
-                                    it.date,
-                                    it.viewNumber,
-                                    it.channelName,
-                                    duration,
-                                    channelThumbnailURL
-                                )
-                                isSaved = true
-                            }
-                        },
-                        shape = RoundedCornerShape(25)
-                    ) {
-                        Icon(
-                            painter = rememberVectorPainter(
-                                if (isSaved) {
-                                    Icons.Filled.Favorite
-                                } else {
-                                    Icons.Default.FavoriteBorder
-                                }
-                            ),
-                            contentDescription = if (isSaved) "Saved" else "Not Saved",
-                            tint = if (isSaved) Color.Red else MaterialTheme.colorScheme.primary
-                        )
-                    }
-                    OutlinedIconButton(
-                        onClick = {
-                            downloadAsMusic(title)
-                        },
-                        shape = RoundedCornerShape(25)
-                    ) {
-                        Icon(
-                            painter = rememberVectorPainter(Icons.Default.MusicNote),
-                            "Download the video as music"
-                        )
-                    }
-
-                    OutlinedIconButton(
-                        onClick = {
-                            downloadAsVideo(
-                                title
-                            )
-                        },
-                        shape = RoundedCornerShape(25)
-                    ) {
-                        Icon(
-                            painter = rememberVectorPainter(Icons.Default.Videocam),
-                            "Download video as video"
-                        )
-                    }
-
-                    OutlinedIconButton(
-                        onClick = {
-                            playItInYouTube()
-                        },
-                        shape = RoundedCornerShape(25)
-                    ) {
-                        Icon(
-                            painter = rememberVectorPainter(YouTube),
-                            tint = Color.Red,
-                            contentDescription = "Play in YouTube"
-                        )
-                    }
-
-                    OutlinedIconButton(
-                        onClick = {
-                            clickForMore()
-                        },
-                        shape = RoundedCornerShape(25)
-                    ) {
-                        Icon(
-                            painter = rememberVectorPainter(Icons.AutoMirrored.Default.More),
-                            "Click here for more options"
-                        )
-                    }
-                }
-                if (showDescriptionDialog.value) {
-                    ShowDescriptionDialog(
-                        it.description
-                    ) {
-                        showDescriptionDialog.value = false
-                    }
-                }
-            }
+            SkeletonLoadingLayout()
         }
     }
 
@@ -1258,7 +1271,7 @@ private fun AlertDialogForUser(
                 verticalAlignment = Alignment.CenterVertically
             ) {
                 Image(
-                    painter = painterResource(R.mipmap.under_development),
+                    painter = painterResource(R.mipmap.ic_launcher_ofme),
                     contentDescription = null,
                     modifier = Modifier
                         .size(20.dp)

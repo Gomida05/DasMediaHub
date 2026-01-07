@@ -1,74 +1,70 @@
 package com.das.mediaHub.ui.players.videoPlayerLocally
 
-import android.app.Application
 import androidx.compose.runtime.State
 import androidx.compose.runtime.mutableStateOf
 import androidx.core.net.toUri
-import androidx.lifecycle.AndroidViewModel
+import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import androidx.media3.common.MediaItem
-import androidx.media3.common.MediaMetadata
-import com.das.mediaHub.data.local.PathSaver
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.Job
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 import java.io.File
 
-class LocalPlayerViewModel(application: Application): AndroidViewModel(application) {
+class LocalPlayerViewModel : ViewModel() {
 
-    private val pathSaver by lazy {
-        PathSaver(application)
-    }
-    private val pathLocation = pathSaver.getVideosDownloadPath()
-    private val _isLoading = mutableStateOf(false)
-    val isLoading: State<Boolean> = _isLoading
+    private val _mediaItems = mutableStateOf<List<MediaItem>>(emptyList())
+    val mediaItems: State<List<MediaItem>> = _mediaItems
 
-    private val _isError = mutableStateOf<String?>(null)
-    val errorFound: State<String?> = _isError
-    private val _result = mutableStateOf<List<MediaItem>>(emptyList())
+    private val _error = mutableStateOf<String?>(null)
+    val errorFound: State<String?> = _error
 
-    val mediaItems: State<List<MediaItem>> = _result
+    private var lastScanPath: String? = null
+    private var scanJob: Job? = null
 
-    fun loadItems(currentMediaTitle: String) {
-        _isLoading.value = true
-        _isError.value = null
+    fun loadItemsDebounced(
+        currentMediaTitle: String,
+        pathLocation: String
+    ) {
+        if (pathLocation == lastScanPath && _mediaItems.value.isNotEmpty()) return
 
-        viewModelScope.launch(Dispatchers.IO) {
+        scanJob?.cancel()
+        scanJob = viewModelScope.launch {
+            delay(300)
             try {
-               val items = fetchDataFromDB(currentMediaTitle)
-                _result.value = items
+                val items = withContext(Dispatchers.IO) {
+                    scanFolder(currentMediaTitle, pathLocation)
+                }
+                lastScanPath = pathLocation
+                _mediaItems.value = items
             } catch (e: Exception) {
-                _isError.value = "Found some error: ${e.message}"
-            } finally {
-                _isLoading.value = false
+                _error.value = e.message
             }
         }
-
     }
 
-    private fun fetchDataFromDB(
-        currentMediaTitle: String
+    private val cache = mutableMapOf<String, List<MediaItem>>()
+
+    private fun scanFolder(
+        currentMediaTitle: String,
+        pathLocation: String
     ): List<MediaItem> {
 
-        val pathOfVideos = File(pathLocation)
+        cache[pathLocation]?.let { return it }
 
-        if (!pathOfVideos.exists() || !pathOfVideos.isDirectory) return emptyList()
+        val dir = File(pathLocation)
+        if (!dir.isDirectory) return emptyList()
 
-        return pathOfVideos.listFiles()
-            ?.asSequence()
+        val items = dir.listFiles()
             ?.filter { it.isFile && it.name != currentMediaTitle }
             ?.map { file ->
-                val metadata = MediaMetadata.Builder()
-                    .setTitle(file.name)
-                    .setMediaType(MediaMetadata.MEDIA_TYPE_VIDEO)
-                    .build()
-
-                MediaItem.Builder()
-                    .setMediaId(file.toUri().toString())
-                    .setUri(file.toUri())
-                    .setMediaMetadata(metadata)
-                    .build()
+                MediaItem.fromUri(file.toUri())
             }
-            ?.toList() ?: emptyList()
+            ?: emptyList()
 
+        cache[pathLocation] = items
+        return items
     }
 }

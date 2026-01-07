@@ -1,6 +1,5 @@
 package com.das.mediaHub.ui.result
 
-import android.content.Context
 import android.content.Intent
 import androidx.compose.foundation.background
 import androidx.compose.foundation.combinedClickable
@@ -56,7 +55,6 @@ import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation3.runtime.NavBackStack
 import androidx.navigation3.runtime.NavKey
 import coil.compose.AsyncImage
-import coil.request.ImageRequest
 import com.das.mediaHub.MainActivity
 import com.das.mediaHub.data.constants.Action.ACTION_START
 import com.das.mediaHub.services.AudioServiceFromUrl
@@ -70,21 +68,20 @@ import kotlinx.coroutines.launch
 @Composable
 fun ResultViewerPage(backStack: NavBackStack<NavKey>, data: String) {
 
-    val viewModel = viewModel<ResultViewModel>()
+    val viewModel = viewModel(modelClass = ResultViewModel::class.java, key = "ResultViewModel_$data")
     val isLoading by viewModel.isLoading.collectAsState()
     val searchResults by viewModel.searchResults.collectAsState()
     val foundError by viewModel.error.collectAsState()
 
     val isLoadingMore by viewModel.isLoadingMore.collectAsState()
 
-    val mContext = LocalContext.current
 
     val snackBar = remember { SnackbarHostState() }
 
     val scope = rememberCoroutineScope()
 
 
-    LaunchedEffect(data) {
+    LaunchedEffect(Unit) {
         if (data.isNotEmpty()) {
             viewModel.fetchSuggestions(data)
         }
@@ -176,7 +173,6 @@ fun ResultViewerPage(backStack: NavBackStack<NavKey>, data: String) {
                                 viewModel.loadMore()
                             }
                             VideoItems(
-                                mContext,
                                 backStack,
                                 item
                             ) {
@@ -210,7 +206,6 @@ fun ResultViewerPage(backStack: NavBackStack<NavKey>, data: String) {
 
 @Composable
 fun VideoItems(
-    context: Context,
     backStack: NavBackStack<NavKey>,
     searchItem: Video,
     snackBar: (String) -> Unit
@@ -353,7 +348,6 @@ fun VideoItems(
 
     if (showDialog.value) {
         ShowAlertDialog(
-            mContext = context,
             selectedItem = VideosListData(
                 videoId, title ?: "", viewsNumber, dateOfVideo,
                 duration, channelName, channelThumbnails
@@ -367,10 +361,10 @@ fun VideoItems(
 
 @Composable
 private fun ShowAlertDialog(
-    mContext: Context,
     selectedItem: VideosListData,
     onDismissRequest: () ->Unit
 ){
+    val mContext = LocalContext.current
     val thumbnailUrl = "https://img.youtube.com/vi/${selectedItem.videoId}/0.jpg"
 
     val shouldLoad = remember { mutableStateOf(false) }
@@ -419,10 +413,7 @@ private fun ShowAlertDialog(
                     modifier = Modifier.padding(8.dp),
                 )
                 AsyncImage(
-                    model = ImageRequest.Builder(mContext)
-                        .data(thumbnailUrl)
-                        .crossfade(true)
-                        .build(),
+                    model = thumbnailUrl,
                     contentDescription = "Category Image",
                     modifier = Modifier
                         .height(190.dp)

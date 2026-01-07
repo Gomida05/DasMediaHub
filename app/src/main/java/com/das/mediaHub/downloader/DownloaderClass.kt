@@ -7,7 +7,6 @@ import android.content.Context
 import android.content.Intent
 import android.database.Cursor
 import android.net.Uri
-import android.os.Build
 import android.os.Environment
 import android.os.Handler
 import android.os.Looper
@@ -15,7 +14,6 @@ import android.provider.Settings
 import android.webkit.MimeTypeMap
 import androidx.core.app.NotificationCompat
 import androidx.media3.session.R
-import com.das.mediaHub.data.local.PathSaver
 import com.das.mediaHub.data.model.AppUpdateInfo
 import com.das.mediaHub.data.model.DownloadData
 import com.das.mediaHub.data.constants.Notifications.DOWNLOADER_NOTIFICATION_CHANNEL
@@ -23,14 +21,14 @@ import com.das.mediaHub.data.constants.DownloadConstants.EXCEPTED_DOWNLOAD_ID
 import java.io.File
 import androidx.core.net.toUri
 import androidx.core.content.edit
+import com.das.mediaHub.data.local.PathPreferences.getAudioPath
+import com.das.mediaHub.data.local.PathPreferences.getVideoPath
 
 
 class DownloaderClass(private val context: Context): Downloader {
 
     private val downloadManager = context.getSystemService(DownloadManager::class.java)
     private val notificationManager = context.getSystemService(NotificationManager::class.java)
-
-    private val pathSaver = PathSaver(context)
 
 
 
@@ -39,7 +37,7 @@ class DownloaderClass(private val context: Context): Downloader {
         createNotificationChannel()
         val builder = createMediaNotificationForProgress(title)
 
-        val pathVideo = pathSaver.getVideosDownloadPath()
+        val pathVideo = getVideoPath(context)
         createSingleDirectory(pathVideo)
         val customFilePath = File("$pathVideo/$title.mp4")
 
@@ -73,7 +71,7 @@ class DownloaderClass(private val context: Context): Downloader {
         val builder = createMediaNotificationForProgress(title)
 
         val uri = url.toUri()
-        val pathVideo = pathSaver.getAudioDownloadPath()
+        val pathVideo = getAudioPath(context)
         createSingleDirectory(pathVideo)
         val customFilePath = File("$pathVideo/$title.mp3")
 
@@ -105,7 +103,7 @@ class DownloaderClass(private val context: Context): Downloader {
         createNotificationChannel()
         val builder = createMediaNotificationForProgress(title)
 
-        val pathVideo = pathSaver.getVideosDownloadPath()
+        val pathVideo = getVideoPath(context)
         createSingleDirectory(pathVideo)
         val customFilePath = File("$pathVideo/$playListName/$title.mp4")
 
@@ -134,7 +132,7 @@ class DownloaderClass(private val context: Context): Downloader {
 
     override fun downloadPlayListMusic(urls: List<DownloadData>): Long {
         createNotificationChannel()
-        val pathVideo = pathSaver.getAudioDownloadPath()
+        val pathVideo = getAudioPath(context)
         createSingleDirectory(pathVideo)
         for (i in urls) {
             val builder = createMediaNotificationForProgress(i.title)
@@ -259,22 +257,20 @@ class DownloaderClass(private val context: Context): Downloader {
     }
 
     private fun createNotificationChannel() {
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
-            val channelId = DOWNLOADER_NOTIFICATION_CHANNEL
-            val channelName = "Media Downloader"
-            val channel = NotificationChannel(
-                channelId, channelName,
-                NotificationManager.IMPORTANCE_LOW
-            ).apply {
-                enableVibration(false)
-                setShowBadge(false)
-                description = "Media Downloader for videos and musics"
-                enableLights(false)
-                setSound(null, null)
-            }
-            val notificationManager = context.getSystemService(NotificationManager::class.java)
-            notificationManager.createNotificationChannel(channel)
+        val channelId = DOWNLOADER_NOTIFICATION_CHANNEL
+        val channelName = "Media Downloader"
+        val channel = NotificationChannel(
+            channelId, channelName,
+            NotificationManager.IMPORTANCE_LOW
+        ).apply {
+            enableVibration(false)
+            setShowBadge(false)
+            description = "Media Downloader for videos and musics"
+            enableLights(false)
+            setSound(null, null)
         }
+        val notificationManager = context.getSystemService(NotificationManager::class.java)
+        notificationManager.createNotificationChannel(channel)
     }
 
 
@@ -282,9 +278,7 @@ class DownloaderClass(private val context: Context): Downloader {
     override fun downloadNewVersionAPK(appInfo: AppUpdateInfo) {
 
         createNotificationChannel()
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O &&
-            !context.packageManager.canRequestPackageInstalls()
-        ) {
+        if (!context.packageManager.canRequestPackageInstalls()) {
             val intent = Intent(Settings.ACTION_MANAGE_UNKNOWN_APP_SOURCES).apply {
                 data = ("package:" + context.packageName).toUri()
             }

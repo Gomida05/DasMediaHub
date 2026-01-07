@@ -20,10 +20,9 @@
 # hide the original source file name.
 -renamesourcefileattribute SourceFile
 
--keep class com.das.mediaHub.** { *; }
 
 # Keep Firebase services
--keep class com.google.firebase.** { *; }
+-keep class com.google.firebase.Firebase.** { *; }
 
 # Keep your Python code if you're using Chaquopy
 -keep class com.chaquo.python.** { *; }

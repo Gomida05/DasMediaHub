@@ -1,7 +1,8 @@
 package com.das.mediaHub
 
-import android.os.Build.VERSION
-import android.os.Build.VERSION_CODES
+import android.app.Activity
+import android.graphics.Rect
+import android.view.View
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.getValue
@@ -17,8 +18,6 @@ internal object PIP {
 
     @Composable
     internal fun MainActivity.rememberIsInPipMode(): Boolean {
-        if (VERSION.SDK_INT <= VERSION_CODES.O) return false
-
         var pipMode by remember { mutableStateOf(isInPictureInPictureMode) }
         val activity = rememberUpdatedState(this)
 
@@ -33,6 +32,16 @@ internal object PIP {
         }
 
         return pipMode
+    }
+
+    internal fun Activity.getPipSourceRect(): Rect {
+        val root = findViewById<View>(android.R.id.content)
+        val rect = Rect()
+        return if (root.isShown && root.getGlobalVisibleRect(rect)) {
+            rect
+        } else {
+            Rect(0, 0, 1, 1)
+        }
     }
 
 }

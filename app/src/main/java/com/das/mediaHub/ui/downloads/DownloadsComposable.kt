@@ -45,13 +45,14 @@ import androidx.compose.material3.TextButton
 import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateMapOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.retain.retain
 import androidx.compose.runtime.saveable.rememberSaveable
-import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -82,37 +83,27 @@ import com.das.mediaHub.R
 import com.das.mediaHub.NavScreens
 import com.das.mediaHub.data.constants.Action.ACTION_START
 import com.das.mediaHub.services.BackGroundPlayer
-import com.das.mediaHub.python.YouTuber.mediaItems
-import com.das.mediaHub.data.local.PathSaver
+import com.das.mediaHub.data.local.PathPreferences.audioPathState
+import com.das.mediaHub.data.local.PathPreferences.videoPathState
 import java.io.File
 import kotlin.collections.set
 
 @Composable
 fun DownloadsComposable(backStack: NavBackStack<NavKey>, tabIndex: Int = 0) {
 
-    var selectedTabIndex by rememberSaveable { mutableIntStateOf(tabIndex) }
+    val selectedTabIndex = retain { mutableIntStateOf(tabIndex) }
 
     val viewModel = viewModel<DownloadsPageViewModel>()
-    val videos by viewModel.videosListData
-    val musics by viewModel.musicListData
-    val isLoading by viewModel.isLoading
-    val error by viewModel.errorFound
+    val uiState by viewModel.uiState.collectAsState()
+    val videos = uiState.videos
+    val musics = uiState.musics
+    val isLoading = uiState.isLoading
+    val error = uiState.error
 
     val mContext = LocalContext.current
 
-    val pathSaver = remember {
-        PathSaver(mContext)
-    }
-
-
-
-
-    val videoPath = remember {
-        pathSaver.getVideosDownloadPath()
-    }
-    val audioPath = remember {
-        pathSaver.getAudioDownloadPath()
-    }
+    val videoPath by videoPathState()
+    val audioPath by audioPathState()
     val tabs = PageEnum.entries
 
 
@@ -130,8 +121,8 @@ fun DownloadsComposable(backStack: NavBackStack<NavKey>, tabIndex: Int = 0) {
                 scrollBehavior = topAppBarState,
                 title = {
                     CustomTabRow(
-                        selectedTabIndex = selectedTabIndex,
-                        onTabSelected = { selectedTabIndex = it },
+                        selectedTabIndex = selectedTabIndex.intValue,
+                        onTabSelected = { selectedTabIndex.intValue = it },
                         tabs = tabs
                     )
                 }
@@ -156,7 +147,7 @@ fun DownloadsComposable(backStack: NavBackStack<NavKey>, tabIndex: Int = 0) {
 
                 !error.isNullOrEmpty() -> {
                     Text(
-                        text = error ?: "",
+                        text = error,
                         color = MaterialTheme.colorScheme.error,
                         textAlign = TextAlign.Center,
                         modifier = Modifier.align(Alignment.Center)
@@ -166,7 +157,7 @@ fun DownloadsComposable(backStack: NavBackStack<NavKey>, tabIndex: Int = 0) {
                 else -> {
                     Box(Modifier.fillMaxSize()) {
                         // Videos list
-                        if (selectedTabIndex == 0) {
+                        if (selectedTabIndex.intValue == 0) {
                             if (videos.isEmpty()) {
                                 Text(
                                     text = "No videos found.",
@@ -179,7 +170,6 @@ fun DownloadsComposable(backStack: NavBackStack<NavKey>, tabIndex: Int = 0) {
                                     modifier = Modifier.fillMaxSize(),
                                     verticalArrangement = Arrangement.Top
                                 ) {
-                                    mediaItems = videos.toMutableList()
                                     itemsIndexed(videos) { index, item ->
                                         ListItems(
                                             itemDetails = item,
@@ -200,7 +190,7 @@ fun DownloadsComposable(backStack: NavBackStack<NavKey>, tabIndex: Int = 0) {
                         }
 
                         // Music list
-                        if (selectedTabIndex == 1) {
+                        if (selectedTabIndex.intValue == 1) {
                             if (musics.isEmpty()) {
                                 Text(
                                     text = "No music found.",
@@ -213,7 +203,6 @@ fun DownloadsComposable(backStack: NavBackStack<NavKey>, tabIndex: Int = 0) {
                                     modifier = Modifier.fillMaxSize(),
                                     verticalArrangement = Arrangement.Top
                                 ) {
-                                    mediaItems = musics.toMutableList()
                                     itemsIndexed(musics) { index, item ->
                                         ListItems(
                                             itemDetails = item,
@@ -248,7 +237,7 @@ fun ListItems(
 ) {
 
 
-    var showAlertDialog by remember { mutableStateOf(false) }
+    val showAlertDialog = remember { mutableStateOf(false) }
 
 
 
@@ -288,7 +277,7 @@ fun ListItems(
                                     options
                                 )
                             }
-                            .error(R.mipmap.under_development)
+                            .error(R.mipmap.ic_launcher_ofme)
                             .build(),
                     contentDescription = "loaded thumbnail ${itemDetails.mediaMetadata.artist}",
                     modifier = Modifier
@@ -351,7 +340,7 @@ fun ListItems(
 
             IconButton(
                 onClick = {
-                    showAlertDialog = true
+                    showAlertDialog.value = true
                 },
                 modifier = Modifier
                     .size(45.dp, 45.dp)
@@ -366,10 +355,10 @@ fun ListItems(
 
     }
 
-    if (showAlertDialog) {
+    if (showAlertDialog.value) {
         DeleteItem(
             onDismissRequest = {
-                showAlertDialog = false
+                showAlertDialog.value = false
             },
             onDelete = {
                 itemDetails.mediaId.toUri().path?.let { File(it).delete() }

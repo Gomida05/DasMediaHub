@@ -5,6 +5,8 @@ import androidx.credentials.CredentialManager
 import androidx.credentials.CustomCredential
 import androidx.credentials.GetCredentialRequest
 import androidx.credentials.PasswordCredential
+import androidx.credentials.exceptions.GetCredentialException
+import androidx.credentials.exceptions.NoCredentialException
 import com.das.mediaHub.R
 import com.google.android.libraries.identity.googleid.GetGoogleIdOption
 import com.google.android.libraries.identity.googleid.GoogleIdTokenCredential
@@ -75,7 +77,6 @@ class FirebaseAuthClient(private val context: Context): AuthClient {
                     .build()
 
                 val credentialManager = CredentialManager.create(context)
-
                 val result = credentialManager.getCredential(
                     context = context,
                     request = request
@@ -100,6 +101,12 @@ class FirebaseAuthClient(private val context: Context): AuthClient {
                     }
                 }
 
+            } catch (_: NoCredentialException) {
+                // REQUIRED: user has no saved credentials or cancelled
+                trySend(AuthResponse.Failed("No credentials available"))
+            } catch (e: GetCredentialException) {
+                // Other credential-related errors
+                trySend(AuthResponse.Failed(e.message ?: "Credential error"))
             } catch (e: Exception) {
                 trySend(AuthResponse.Failed(e.message ?: ""))
             }

@@ -22,10 +22,6 @@ import com.das.mediaHub.NavScreens.Setting
 import com.das.mediaHub.data.constants.Action.ACTION_START
 import com.das.mediaHub.data.model.BottomNavItem.Companion.rememberBottomNavigationItems
 import com.das.mediaHub.data.model.ItemsStreamUrlsForMediaItemData
-import com.das.mediaHub.data.model.MediaData
-import com.das.mediaHub.downloader.DownloaderClass
-import com.das.mediaHub.python.YouTuber.getAudioStreamUrl
-import com.das.mediaHub.python.YouTuber.getVideoStreamUrl
 import com.das.mediaHub.services.AudioServiceFromUrl
 
 internal object OnLaunchComponents {
@@ -49,35 +45,6 @@ internal object OnLaunchComponents {
         }
         startService(playIntent)
     }
-
-    suspend fun Context.DownloadMedia(data: MediaData, failed: (String) -> Unit) {
-        val downloader = DownloaderClass(this)
-
-        when (data.type) {
-            true -> {
-                getAudioStreamUrl(videoId = data.id,
-                    onSuccess = {
-                        downloader.downloadVideo(it, data.title)
-                    }
-                ) {
-                    failed(it)
-                }
-            }
-
-            false -> {
-                getVideoStreamUrl(videoId = data.id,
-                    onSuccess = {
-                        downloader.downloadMusic(it, data.title)
-                    }
-                ) {
-                    failed(it)
-                }
-            }
-        }
-
-
-    }
-
 
     @Composable
     fun BottomNavItems(currentRoute: NavKey?, backStack: NavBackStack<NavKey>) {

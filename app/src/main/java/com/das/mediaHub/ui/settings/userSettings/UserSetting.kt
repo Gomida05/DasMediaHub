@@ -45,7 +45,6 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
-import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -54,7 +53,8 @@ import androidx.compose.ui.unit.dp
 import androidx.documentfile.provider.DocumentFile
 import androidx.navigation3.runtime.NavBackStack
 import androidx.navigation3.runtime.NavKey
-import com.das.mediaHub.data.local.PathSaver
+import com.das.mediaHub.data.local.PathPreferences.saveAudioPath
+import com.das.mediaHub.data.local.PathPreferences.saveVideoPath
 import com.das.mediaHub.ui.theme.ThemePreferences.loadDarkModeState
 import com.das.mediaHub.ui.theme.ThemePreferences.saveDarkMode
 import com.das.mediaHub.ui.theme.AppTheme
@@ -68,7 +68,7 @@ fun UserSettingComposable(backStack: NavBackStack<NavKey>) {
     val snackBarHostState = remember { SnackbarHostState() }
     val scope = rememberCoroutineScope()
 
-    var showAlertDialog by remember { mutableStateOf(false) }
+    val showAlertDialog = remember { mutableStateOf(false) }
 
 
 
@@ -113,13 +113,13 @@ fun UserSettingComposable(backStack: NavBackStack<NavKey>) {
                     HorizontalDivider()
                     Spacer(modifier = Modifier.height(12.dp))
                     Change_Downloading_Location {
-                        showAlertDialog = true
+                        showAlertDialog.value = true
                     }
                 }
             }
         }
     }
-    FolderPickerDialog(showAlertDialog, onDismiss = { showAlertDialog = false })
+    FolderPickerDialog(showAlertDialog.value, onDismiss = { showAlertDialog.value = false })
 
 }
 
@@ -183,13 +183,13 @@ fun SettingCard(title: String, content: @Composable () -> Unit) {
 @Composable
 fun DarkModeToggleWithPrefs(context: Context) {
     val themeState by loadDarkModeState()
-    var expanded by remember { mutableStateOf(false) }
+    val expanded = remember { mutableStateOf(false) }
 
     Row(
         modifier = Modifier
             .fillMaxWidth()
             .clip(RoundedCornerShape(8.dp))
-            .clickable { expanded = true }
+            .clickable { expanded.value = true }
             .padding(12.dp),
         verticalAlignment = Alignment.CenterVertically
     ) {
@@ -210,8 +210,8 @@ fun DarkModeToggleWithPrefs(context: Context) {
     }
 
     DropdownMenu(
-        expanded = expanded,
-        onDismissRequest = { expanded = false }
+        expanded = expanded.value,
+        onDismissRequest = { expanded.value = false }
     ) {
         AppTheme.entries.forEach { theme ->
             DropdownMenuItem(
@@ -227,7 +227,7 @@ fun DarkModeToggleWithPrefs(context: Context) {
                 },
                 onClick = {
                     saveDarkMode(context, theme)
-                    expanded = false
+                    expanded.value = false
                 }
             )
         }
@@ -316,26 +316,21 @@ private fun extractFolderPath(path: String): String {
 
 
 
-private fun getFolderPathFromUri(mContext: Context, uri: Uri, type: String): String? {
-
-    val pathSaver = PathSaver(mContext)
+private fun getFolderPathFromUri(context: Context, uri: Uri, type: String): String? {
 
     try {
 
-        val documentFile = DocumentFile.fromTreeUri(mContext, uri)
+        val documentFile = DocumentFile.fromTreeUri(context, uri)
 
 
         if (documentFile != null && documentFile.isDirectory) {
 
             val pather = "/storage/emulated/0/${extractFolderPath(uri.path.toString())}"
             if (type == "video") {
-
-                pathSaver.setMoviesDownloadPath(pather)
+                saveVideoPath(context = context, path = pather)
 
             } else if (type == "audio") {
-
-                pathSaver.setAudioDownloadPath(pather)
-
+                saveAudioPath(context = context, path = pather)
             }
         } else {
             println("URI is not a directory or invalid")

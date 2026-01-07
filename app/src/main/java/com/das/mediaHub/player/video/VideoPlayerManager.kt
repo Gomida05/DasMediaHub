@@ -4,7 +4,7 @@ import android.app.PendingIntent
 import android.app.PictureInPictureParams
 import android.content.Intent
 import android.net.Uri
-import android.os.Build.VERSION
+import android.os.Build.VERSION.SDK_INT
 import android.os.Build.VERSION_CODES
 import android.os.Bundle
 import android.support.v4.media.MediaMetadataCompat
@@ -18,6 +18,7 @@ import androidx.media3.common.C
 import androidx.media3.common.C.AUDIO_CONTENT_TYPE_MOVIE
 import androidx.media3.common.MediaItem
 import androidx.media3.exoplayer.ExoPlayer
+import com.das.mediaHub.PIP.getPipSourceRect
 import com.das.mediaHub.data.constants.Action.ACTION_KILL
 import com.das.mediaHub.data.constants.Playback.PAUSE
 import com.das.mediaHub.data.constants.Playback.PLAY
@@ -134,12 +135,16 @@ internal class VideoPlayerManager(
     }
 
     private fun updatePipActions() {
-        if (VERSION.SDK_INT >= VERSION_CODES.O) {
-            val params = PictureInPictureParams.Builder()
-                .setAspectRatio(Rational(16, 9))
-                .build()
-            playerListener.mainActivity.setPictureInPictureParams(params)
+        val params = PictureInPictureParams.Builder()
+            .setAspectRatio(Rational(16, 9))
+
+        if (SDK_INT >= VERSION_CODES.S) {
+            params
+                .setAutoEnterEnabled(true)
+                .setSeamlessResizeEnabled(true)
+                .setSourceRectHint(playerListener.mainActivity.getPipSourceRect())
         }
+        playerListener.mainActivity.setPictureInPictureParams(params.build())
     }
 
 
@@ -183,51 +188,42 @@ internal class VideoPlayerManager(
             super.onCustomAction(action, extras)
             if (action.toString() == ACTION_KILL) {
                 release()
-                updatePipActions()
             }
+            updatePipActions()
         }
 
         override fun onMediaButtonEvent(mediaButtonEvent: Intent?): Boolean {
-            mediaButtonEvent?.let {
-                @Suppress("DEPRECATION")
-                val keyEvent = if (VERSION.SDK_INT >= VERSION_CODES.TIRAMISU)
-                    it.getParcelableExtra(Intent.EXTRA_KEY_EVENT, KeyEvent::class.java)
-                else it.getParcelableExtra(Intent.EXTRA_KEY_EVENT)
+            if (mediaButtonEvent == null) return super.onMediaButtonEvent(mediaButtonEvent)
 
-                if (it.action == Intent.ACTION_MEDIA_BUTTON) {
-                    // Extract the key event from the intent
-                    keyEvent?.let { event ->
-                        when (event.keyCode) {
+            @Suppress("DEPRECATION")
+            val keyEvent = if (SDK_INT >= VERSION_CODES.TIRAMISU)
+                mediaButtonEvent.getParcelableExtra(Intent.EXTRA_KEY_EVENT, KeyEvent::class.java)
+            else mediaButtonEvent.getParcelableExtra<KeyEvent>(Intent.EXTRA_KEY_EVENT)
 
-                            KeyEvent.KEYCODE_MEDIA_PAUSE -> {
-                                player.pause()
-                            }
+            if (mediaButtonEvent.action == Intent.ACTION_MEDIA_BUTTON && keyEvent != null) {
+                // Extract the key event from the intent
+                when (keyEvent.keyCode) {
 
-                            KeyEvent.KEYCODE_MEDIA_PLAY -> {
-                                player.play()
-                            }
-
-                            KeyEvent.KEYCODE_MEDIA_NEXT -> {
-                                onSkipToNext()
-                                return true
-                            }
-
-                            KeyEvent.KEYCODE_MEDIA_PREVIOUS -> {
-                                player.seekToPrevious()
-                                return true
-                            }
-
-                            else -> {
-                                return true
-                            }
-                        }
+                    KeyEvent.KEYCODE_MEDIA_PAUSE -> {
+                        player.pause()
                     }
-                    updatePipActions()
-                }
-            }
-            // If the event is not handled, call the superclass method
-            return super.onMediaButtonEvent(mediaButtonEvent)
 
+                    KeyEvent.KEYCODE_MEDIA_PLAY -> {
+                        player.play()
+                    }
+
+                    KeyEvent.KEYCODE_MEDIA_NEXT -> {
+                        onSkipToNext()
+                    }
+
+                    KeyEvent.KEYCODE_MEDIA_PREVIOUS -> {
+                        player.seekToPrevious()
+                    }
+                }
+                updatePipActions()
+                return true
+            }
+            return super.onMediaButtonEvent(mediaButtonEvent)
 
         }
     }

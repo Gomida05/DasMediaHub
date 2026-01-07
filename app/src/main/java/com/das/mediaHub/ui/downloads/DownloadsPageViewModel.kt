@@ -1,16 +1,16 @@
 package com.das.mediaHub.ui.downloads
 
-import androidx.compose.runtime.State
-import androidx.compose.runtime.mutableStateOf
 import androidx.core.net.toUri
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import androidx.media3.common.MediaItem
 import androidx.media3.common.MediaMetadata
+import com.das.mediaHub.python.YouTuber.updateGlobalMediaItems
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
+import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
-import kotlinx.coroutines.withContext
 import java.io.File
 import java.text.SimpleDateFormat
 import java.util.Date
@@ -21,17 +21,8 @@ class DownloadsPageViewModel : ViewModel() {
 
     private val dateFormat = SimpleDateFormat("dd/MM/yyyy", Locale.getDefault())
 
-    private val _videosListData = mutableStateOf<List<MediaItem>>(emptyList())
-    val videosListData: State<List<MediaItem>> = _videosListData
-
-    private val _musicListData = mutableStateOf<List<MediaItem>>(emptyList())
-    val musicListData: State<List<MediaItem>> = _musicListData
-
-    private val _loading = mutableStateOf(false)
-    val isLoading: State<Boolean> = _loading
-
-    private val _error = mutableStateOf<String?>(null)
-    val errorFound: State<String?> = _error
+    private val _uiState = MutableStateFlow(DownloadsUiState())
+    val uiState = _uiState.asStateFlow()
 
     var currentJob: Job? = null
 
@@ -40,40 +31,53 @@ class DownloadsPageViewModel : ViewModel() {
 
     fun fetchVideoFiles(pathLocation: String) {
         if (cachedVideos != null) {
-            _videosListData.value = cachedVideos!!
+            val videos = cachedVideos!!
+            _uiState.value = _uiState.value.copy(videos = videos)
+            videos.updateGlobalMediaItems()
             return
         }
 
         startLoading {
             val result = loadMediaFiles(pathLocation, ".mp4", MediaMetadata.MEDIA_TYPE_VIDEO)
             cachedVideos = result
-            _videosListData.value = result
+            _uiState.value = _uiState.value.copy(videos = result)
+            result.updateGlobalMediaItems()
+
         }
     }
 
     fun fetchMusicFiles(pathLocation: String) {
         if (cachedMusic != null) {
-            _musicListData.value = cachedMusic!!
+            val musics = cachedMusic!!
+            _uiState.value = _uiState.value.copy(musics = musics)
+            musics.updateGlobalMediaItems()
             return
         }
 
         startLoading {
             val result = loadMediaFiles(pathLocation, ".mp3", MediaMetadata.MEDIA_TYPE_MUSIC)
             cachedMusic = result
-            _musicListData.value = result
+            _uiState.value = _uiState.value.copy(musics = result)
+            result.updateGlobalMediaItems()
         }
     }
 
     private fun startLoading(block: suspend () -> Unit) {
         currentJob?.cancel()
+        _uiState.value.copy(
+            isLoading = true
+        )
         currentJob = viewModelScope.launch(Dispatchers.IO) {
             try {
-                _loading.value = true
                 block()
             } catch (e: Exception) {
-                _error.value = "Something went wrong: ${e.message}"
+                _uiState.value.copy(
+                    error = "Something went wrong: ${e.message}"
+                )
             } finally {
-                _loading.value = false
+                _uiState.value.copy(
+                    isLoading = false
+                )
             }
         }
     }

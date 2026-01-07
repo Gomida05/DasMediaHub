@@ -4,29 +4,26 @@ import android.app.NotificationChannel
 import android.app.NotificationChannelGroup
 import android.app.NotificationManager
 import android.content.Context
-import androidx.core.content.getSystemService
 
 
 internal class NotificationChannels(context: Context) {
 
-    private val manager = context.getSystemService<NotificationManager>()
+    private val manager = context.getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
 
     fun createAllNotificationChannels() {
-        manager?.let {
-            it.createChannelGroups()
-            it.createChannels()
-        }
+        createChannelGroups()
+        createChannels()
     }
 
-    private fun NotificationManager.createChannelGroups() {
+    private fun createChannelGroups() {
         val groups = listOf(
             NotificationChannelGroup("MNGC", "MediaPlayer notifications"),
             NotificationChannelGroup("NGC", "Download notifications")
         )
-        createNotificationChannelGroups(groups)
+        manager.createNotificationChannelGroups(groups)
     }
 
-    private fun NotificationManager.createChannels() {
+    private fun createChannels() {
         val channels = listOf(
             NotificationChannel(
                 "error_searching",
@@ -53,9 +50,19 @@ internal class NotificationChannels(context: Context) {
                 enableLights(false)
                 enableVibration(false)
                 setSound(null, null)
+            },
+            NotificationChannel(
+                "MusicPlayerNotification",
+                "Local Music Player",
+                NotificationManager.IMPORTANCE_LOW
+            ).apply {
+                group = "MNGC"
+                enableLights(false)
+                enableVibration(false)
+                setSound(null, null)
             }
         )
 
-        createNotificationChannels(channels)
+        manager.createNotificationChannels(channels)
     }
 }

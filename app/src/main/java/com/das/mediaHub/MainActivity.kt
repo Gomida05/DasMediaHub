@@ -69,6 +69,7 @@ import com.das.mediaHub.ui.players.videoPlayer.OnlineVideoPlayer
 import com.das.mediaHub.ui.watchedVideos.WatchedVideosComposable
 import com.das.mediaHub.NavScreens.*
 import com.das.mediaHub.OnLaunchComponents.BottomNavItems
+import com.das.mediaHub.PIP.getPipSourceRect
 import com.das.mediaHub.PIP.shouldEnterPipMode
 import com.das.mediaHub.WakeLockHelper.releaseWakeLock
 import com.das.mediaHub.auth.MyFirebase.rememberFirebaseUser
@@ -196,8 +197,8 @@ class MainActivity : ComponentActivity() {
 
                     is Setting -> {
                         NavEntry(key = key) {
-                            backStack.SettingsComposable {
-                                showNotificationDialog = it
+                            SettingsComposable(user = currentUser) {
+                                backStack.add(it)
                             }
 
                         }
@@ -326,18 +327,20 @@ class MainActivity : ComponentActivity() {
 
     override fun onUserLeaveHint() {
         super.onUserLeaveHint()
-        if (shouldEnterPipMode.value) {
 
-            val params = PictureInPictureParams.Builder()
-                .apply {
-                    setAspectRatio(Rational(16, 9))
-                    if (SDK_INT >= VERSION_CODES.S) {
-                        setSeamlessResizeEnabled(true)
-                    }
-                }
-                .build()
-            enterPictureInPictureMode(params)
+        if (!shouldEnterPipMode.value) return
+
+        val builder = PictureInPictureParams.Builder()
+            .setAspectRatio(Rational(16, 9))
+
+        if (SDK_INT >= VERSION_CODES.S) {
+            builder
+                .setAutoEnterEnabled(true)
+                .setSeamlessResizeEnabled(true)
+                .setSourceRectHint(getPipSourceRect())
         }
+
+        enterPictureInPictureMode(builder.build())
     }
 
 

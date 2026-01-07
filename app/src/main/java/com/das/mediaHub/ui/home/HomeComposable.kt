@@ -15,6 +15,9 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.AccountCircle
 import androidx.compose.material.icons.filled.Download
+import androidx.compose.material.icons.filled.Instagram
+import androidx.compose.material.icons.filled.TikTok
+import androidx.compose.material.icons.filled.YouTube
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
@@ -40,9 +43,6 @@ import androidx.navigation3.runtime.NavKey
 import com.das.mediaHub.NavScreens
 import com.das.mediaHub.NavScreens.Searcher
 import com.das.mediaHub.NavScreens.Downloads
-import com.das.mediaHub.data.icons.Instagram
-import com.das.mediaHub.data.icons.TikTok
-import com.das.mediaHub.data.icons.YouTube
 import kotlinx.coroutines.launch
 
 @Composable
@@ -118,7 +118,7 @@ fun NavBackStack<NavKey>.HomePageComposable() {
                     verticalAlignment = Alignment.CenterVertically,
                     modifier = Modifier.padding(bottom = 32.dp)
                 ) {
-                    PlatformIcon(icon = TikTok, "TikTok") {
+                    PlatformIcon(icon = Icons.Default.TikTok, "TikTok") {
                         scope.launch {
                             snackBar.showSnackbar(
                                 message = "Coming soon",
@@ -126,8 +126,8 @@ fun NavBackStack<NavKey>.HomePageComposable() {
                             )
                         }
                     }
-                    PlatformIcon(icon = YouTube, "YouTube") { add(Searcher("")) }
-                    PlatformIcon(icon = Instagram, "Instagram") {
+                    PlatformIcon(icon = Icons.Default.YouTube, "YouTube") { add(Searcher("")) }
+                    PlatformIcon(icon = Icons.Default.Instagram, "Instagram") {
                         scope.launch {
                             snackBar.showSnackbar(
                                 message = "Coming soon",
@@ -136,19 +136,6 @@ fun NavBackStack<NavKey>.HomePageComposable() {
                         }
                     }
                 }
-                /*  FilledTonalButton(
-                onClick = { navigate(Searcher.route) },
-                shape = RoundedCornerShape(30.dp),
-                modifier = Modifier.fillMaxWidth().height(56.dp),
-                elevation = ButtonDefaults.buttonElevation(8.dp)
-                ) {
-                Icon(
-                imageVector = Icons.Default.Search,
-                contentDescription = "Search",
-                modifier = Modifier.padding(end = 8.dp).size(22.dp)
-                ) Text ("Search or Paste URL")
-                }
-                 **/
             }
         }
 
@@ -177,84 +164,5 @@ fun PlatformIcon(icon: ImageVector, label: String, onClick: ()-> Unit) {
             textAlign = TextAlign.Center,
             modifier = Modifier.padding(top = 4.dp)
         )
-    }
-}
-
-
-
-@Composable
-fun NavBackStack<NavKey>.HomePageComposable(setTopBar: (@Composable () -> Unit) -> Unit) {
-
-    setTopBar {
-        TopAppBar(
-            title = {
-                Text(
-                    text = "DasMediaHub",
-                    style = MaterialTheme.typography.titleLarge
-                        .copy(textAlign = TextAlign.Center),
-                    modifier = Modifier.fillMaxWidth(),
-                )
-            },
-            navigationIcon = {
-                IconButton(
-                    onClick = {
-                        add(NavScreens.AccountSetting)
-                    }
-                ) {
-                    Icon(
-                        imageVector = Icons.Default.AccountCircle,
-                        contentDescription = "User account"
-                    )
-                }
-            },
-            actions = {
-                IconButton(
-                    onClick = {
-                        add(Downloads)
-                    }
-                ) {
-                    Icon(
-                        imageVector = Icons.Default.Download,
-                        contentDescription = "Downloaded medias"
-                    )
-                }
-            }
-        )
-    }
-
-    val scope = rememberCoroutineScope()
-    val snackBar = remember { SnackbarHostState() }
-
-    Column(
-        modifier = Modifier
-            .fillMaxSize()
-    ) {
-        Text(
-            text = "Welcome to",
-            style = MaterialTheme.typography.bodyLarge,
-            color = MaterialTheme.colorScheme.onBackground.copy(alpha = 0.6f),
-        )
-
-        Text(
-            text = "DasMediaHub",
-            style = MaterialTheme.typography.headlineLarge,
-            fontWeight = FontWeight.Bold,
-            modifier = Modifier.padding(bottom = 32.dp)
-        )
-
-        Row(
-            horizontalArrangement = Arrangement.spacedBy(16.dp),
-            verticalAlignment = Alignment.CenterVertically
-        ) {
-            PlatformIcon(icon = TikTok, "TikTok") {
-                scope.launch { snackBar.showSnackbar("Coming soon") }
-            }
-            PlatformIcon(icon = YouTube, "YouTube") {
-                add(Searcher(""))
-            }
-            PlatformIcon(icon = Instagram, "Instagram") {
-                scope.launch { snackBar.showSnackbar("Coming soon") }
-            }
-        }
     }
 }

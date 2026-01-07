@@ -1,6 +1,5 @@
 package com.das.mediaHub.ui.search
 
-import android.os.Bundle
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
@@ -390,11 +389,6 @@ private fun keyEvent(
         when {
             editTextText.isValidYoutubeURL() -> {
                 val videoId = editTextText.youtubeExtractor()
-                val bundled = Bundle().apply {
-                    putString("View_ID", videoId)
-                    putString("View_URL", "https://www.youtube.com/watch?v=$videoId")
-                }
-
                 backStack.add(NavScreens.VideoViewer(
                     Video(
                         id = videoId.toString()
