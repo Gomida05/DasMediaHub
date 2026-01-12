@@ -56,7 +56,7 @@ def get_video_url(video_url: str, retries: int = 3, delay: float = 1.0):
         except Exception as e:
             last_error = f"Unexpected error: {e}"
 
-        print(f"[get_video_url] attempt {attempt}/{retries} failed: {last_error}")
+
         time.sleep(delay)
 
     # --- Final failure ---
@@ -134,15 +134,10 @@ def getPlayListUrls(youtube_url):
         print(f"There is an error in searching that playlist {e}")
         return False
 
-def Searcher(inputer: str):
-    print(f"hello {inputer}")
-    if not inputer:
-        print("not looking good")
+def Searcher(inputer):
     try:
-        print(f"here is the type {type(inputer)}")
         search = VideosSearch(query=inputer)
         results = search.result()
-        print("it is working actually")
         return make_response(success=True, error=None, result= results)
 
     except RequestException as e:

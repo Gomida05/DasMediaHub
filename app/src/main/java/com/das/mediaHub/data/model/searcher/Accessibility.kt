@@ -7,6 +7,6 @@ import kotlinx.serialization.Serializable
 @Parcelize
 @Serializable
 data class Accessibility(
-    val title: String,
-    val duration: String
+    val title: String? = null,
+    val duration: String? = null
 ): Parcelable

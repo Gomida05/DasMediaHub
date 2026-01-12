@@ -23,7 +23,7 @@ import androidx.compose.ui.autofill.ContentType
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.semantics.contentDataType
 import androidx.compose.ui.semantics.contentType
-import androidx.compose.ui.semantics.onAutofillText
+import androidx.compose.ui.semantics.onFillData
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.input.KeyboardType
@@ -58,8 +58,8 @@ fun SignUpUserInputs(
             .semantics {
                 contentType = ContentType.PersonFirstName
                 contentDataType = ContentDataType.Text
-                onAutofillText {
-                    onFirstNameChange(it.text)
+                onFillData {
+                    onFirstNameChange(it.textValue.toString())
                     true
                 }
             },
@@ -82,8 +82,8 @@ fun SignUpUserInputs(
             .semantics {
                 contentType = ContentType.PersonLastName
                 contentDataType = ContentDataType.Text
-                onAutofillText {
-                    onLastNameChange(it.text)
+                onFillData {
+                    onLastNameChange(it.textValue.toString())
                     true
                 }
             },
@@ -106,8 +106,8 @@ fun SignUpUserInputs(
             .semantics {
                 contentType = ContentType.EmailAddress
                 contentDataType = ContentDataType.Text
-                onAutofillText {
-                    onEmailChange(it.text)
+                onFillData {
+                    onEmailChange(it.textValue.toString())
                     true
                 }
             },

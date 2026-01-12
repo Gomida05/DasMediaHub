@@ -42,6 +42,7 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.runtime.retain.retain
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -74,7 +75,7 @@ fun SearchPageCompose(
     backStack: NavBackStack<NavKey>,
     newText: String
 ) {
-    val viewMode = viewModel<SearchPageViewMode>()
+    val viewMode = viewModel(modelClass = SearchPageViewMode::class.java, key = "SearchPageViewMode_$newText")
 
     val searchHistory by viewMode.searchHistory
     val isThereError by viewMode.error
@@ -85,10 +86,8 @@ fun SearchPageCompose(
     val scope = rememberCoroutineScope()
     val snackBar = remember { SnackbarHostState() }
 
-    val textState = remember { mutableStateOf(newText) }
-
-    val playListUrl = remember { mutableStateOf("") }
-    val askToDownloadPlayList = remember { mutableStateOf(false) }
+    val playListUrl = retain { mutableStateOf("") }
+    val askToDownloadPlayList = retain { mutableStateOf(false) }
 
     LaunchedEffect(Unit) {
         viewMode.fetchDatabase()
@@ -110,9 +109,10 @@ fun SearchPageCompose(
         ) {
             Spacer(modifier = Modifier.height(17.dp))
             OutlinedTextField(
-                value = textState.value,
-                onValueChange = { newText ->
-                    textState.value = newText
+                value = viewMode.query.value,
+
+                onValueChange = {
+                    viewMode.setQuery(it)
                 },
                 placeholder = {
                     Text(
@@ -141,8 +141,8 @@ fun SearchPageCompose(
                     }
                 },
                 trailingIcon = {
-                    if (textState.value.isNotEmpty()) {
-                        IconButton(onClick = { textState.value = "" }) {
+                    if (viewMode.query.value.isNotEmpty()) {
+                        IconButton(onClick = { viewMode.query.value = "" }) {
                             Icon(
                                 imageVector = Icons.Default.Close,
                                 contentDescription = "Clear"
@@ -158,10 +158,10 @@ fun SearchPageCompose(
                 ),
                 keyboardActions = KeyboardActions(
                     onSearch = {
-                        if (textState.value.isNotBlank()) {
+                        if (viewMode.query.value.isNotBlank()) {
                             keyEvent(
                                 backStack = backStack,
-                                editTextText = textState.value,
+                                editTextText = viewMode.query.value,
                                 addIt = {
                                     viewMode.addNew(
                                         it
@@ -203,6 +203,7 @@ fun SearchPageCompose(
                         items = searchHistory,
                         key = { it.id }
                     ) { settingsItem ->
+
                         RecentlySearchList(
                             title = settingsItem.value,
                             settingsResults = settingsItem,
@@ -210,7 +211,7 @@ fun SearchPageCompose(
                                 viewMode.deleById(it)
                             },
                             onButtonClicked = { text ->
-                                textState.value = text
+                                viewMode.query.value = text
                                 backStack.add(ResultViewerPage(text))
                             }
                         )

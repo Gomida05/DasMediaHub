@@ -32,6 +32,15 @@ class ResultViewModel: ViewModel() {
     private var currentBatch = 0
     private val batchSize = 20
 
+
+    private var hasLoaded = false
+
+    fun fetchSuggestionsIfNeeded(inputText: String) {
+        if (hasLoaded) return
+        hasLoaded = true
+        fetchSuggestions(inputText)
+    }
+
     fun fetchSuggestions(inputText: String) {
         _isLoading.value = true
         _error.value = null

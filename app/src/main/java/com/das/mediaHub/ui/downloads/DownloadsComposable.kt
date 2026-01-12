@@ -52,7 +52,6 @@ import androidx.compose.runtime.mutableStateMapOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.retain.retain
-import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -82,7 +81,7 @@ import coil.request.videoFrameMillis
 import com.das.mediaHub.R
 import com.das.mediaHub.NavScreens
 import com.das.mediaHub.data.constants.Action.ACTION_START
-import com.das.mediaHub.services.BackGroundPlayer
+import com.das.mediaHub.services.local.BackGroundPlayer
 import com.das.mediaHub.data.local.PathPreferences.audioPathState
 import com.das.mediaHub.data.local.PathPreferences.videoPathState
 import java.io.File

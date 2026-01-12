@@ -46,7 +46,9 @@ internal object PythonMain {
      */
     suspend inline fun <reified T> Python.callMethod(name: Names, args: String): T =
         withContext(Dispatchers.IO) {
-            getModule("main")[name.value]?.call(args).toString().decodeStringToJson()
+            val module = getModule("main")[name.value]?.call(args)
+//                ?: throw NullPointerException("Module not found")
+            module.toString().decodeStringToJson()
         }
 
     /**
@@ -67,14 +69,10 @@ internal object PythonMain {
 
     suspend fun getPlayListUrl(url: String): List<PlayListDataClass> {
 
-
-        val python = pythonInstant.getModule("main")
-
-        val getResultFromPython = withContext(Dispatchers.IO) {
-            python["getPlayListUrls"]?.call(url)
-        }.toString()
-
-        return getResultFromPython.decodeStringToJson()
+        return pythonInstant.callMethod(
+            name = Names.GET_PLAYLIST_URL,
+            args = url
+        )
     }
 
     /**

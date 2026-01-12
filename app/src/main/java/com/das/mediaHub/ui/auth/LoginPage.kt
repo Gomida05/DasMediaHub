@@ -29,7 +29,7 @@ import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.saveable.rememberSaveable
+import androidx.compose.runtime.retain.retain
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -63,10 +63,10 @@ fun LoginPage(
     backStack: NavBackStack<NavKey>
 ) {
     val auth = Firebase.auth
-    val email = rememberSaveable { mutableStateOf("") }
-    val password = rememberSaveable { mutableStateOf("") }
-    var isPasswordVisible by rememberSaveable { mutableStateOf(false) }
-    var message by rememberSaveable { mutableStateOf<String?>(null) }
+    val email = retain { mutableStateOf("") }
+    val password = retain { mutableStateOf("") }
+    var isPasswordVisible by retain { mutableStateOf(false) }
+    var message by retain { mutableStateOf<String?>(null) }
 
     Scaffold(
         contentWindowInsets = WindowInsets.safeDrawing

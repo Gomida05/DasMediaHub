@@ -54,7 +54,7 @@ import com.das.mediaHub.data.constants.Action.ACTION_START
 import com.das.mediaHub.python.YouTuber.extractPlaylistId
 import com.das.mediaHub.python.YouTuber.getPlayListStreamUrl
 import com.das.mediaHub.python.YouTuber.isValidYouTubePlaylistUrl
-import com.das.mediaHub.services.BackGroundPlayer
+import com.das.mediaHub.services.local.BackGroundPlayer
 import com.das.mediaHub.ui.downloads.DownloadsComposable
 import com.das.mediaHub.ui.home.HomePageComposable
 import com.das.mediaHub.ui.result.ResultViewerPage

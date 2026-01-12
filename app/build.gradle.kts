@@ -35,8 +35,8 @@ android {
         applicationId = "com.das.mediaHub"
         minSdk = 26
         targetSdk = 36
-        versionCode = 7
-        versionName = "1.27"
+        versionCode = 8
+        versionName = "1.28"
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
         flavorDimensions.add("pyVersion")
@@ -178,5 +178,4 @@ dependencies {
     implementation(libs.kotlin.stdlib)
 
     //Python
-    implementation(libs.chaquopy)
 }

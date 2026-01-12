@@ -81,10 +81,8 @@ fun ResultViewerPage(backStack: NavBackStack<NavKey>, data: String) {
     val scope = rememberCoroutineScope()
 
 
-    LaunchedEffect(Unit) {
-        if (data.isNotEmpty()) {
-            viewModel.fetchSuggestions(data)
-        }
+    LaunchedEffect(data) {
+        viewModel.fetchSuggestionsIfNeeded(data)
     }
 
 
@@ -437,7 +435,7 @@ private fun ShowAlertDialog(
                     }
                     TextButton(
                         onClick = {
-                            MainActivity().startDownloadingAudio(
+                            (mContext as? MainActivity)?.startDownloadingAudio(
                                 selectedItem.videoId,
                                 selectedItem.title
                             )
@@ -449,7 +447,7 @@ private fun ShowAlertDialog(
                     }
                     TextButton(
                         onClick = {
-                            MainActivity().startDownloadingVideo(
+                            (mContext as? MainActivity)?.startDownloadingVideo(
                                 selectedItem.videoId,
                                 selectedItem.title
                             )

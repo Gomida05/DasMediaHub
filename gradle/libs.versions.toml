@@ -23,7 +23,7 @@ lifecycleViewmodelKtxVersion = "2.10.0"
 media3Version = "1.9.0"
 mediaVersion = "1.7.1"
 nav3Core = "1.0.0"
-playServicesAuthVersion = "21.4.0"
+playServicesAuthVersion = "21.5.0"
 runtimeAndroidVersion = "1.10.0"
 runtimeLivedataVersion = "1.10.0"
 uiViewbindingVersion = "1.10.0"
@@ -34,7 +34,6 @@ googleidVersion = "1.1.1"
 activity-compose = { module = "androidx.activity:activity-compose", version.ref = "activityComposeVersion" }
 appcompat = { module = "androidx.appcompat:appcompat", version.ref = "appcompatVersion" }
 browser = { module = "androidx.browser:browser", version.ref = "browserVersion" }
-chaquopy = { module = "com.chaquo.python.runtime:chaquopy", version.ref = "chaquo" }
 coil-video = { module = "io.coil-kt:coil-video", version.ref = "coilVideoVersion" }
 coil-compose = { module = "io.coil-kt:coil-compose", version.ref = "coilComposeVersion" }
 compose-bom = { module = "androidx.compose:compose-bom", version.ref = "composeBomVersion" }

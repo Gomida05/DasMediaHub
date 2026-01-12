@@ -14,7 +14,7 @@ import com.das.mediaHub.R
 import com.das.mediaHub.data.constants.DownloadConstants
 import com.das.mediaHub.data.constants.Notifications
 import com.das.mediaHub.services.AudioServiceFromUrl
-import com.das.mediaHub.services.BackGroundPlayer
+import com.das.mediaHub.services.local.BackGroundPlayer
 import java.io.File
 
 class Receiver: BroadcastReceiver() {

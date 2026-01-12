@@ -20,5 +20,10 @@ enum class Names(val value: String) {
     /**
      * GET_AUDIO_STREAM_URL is a function in Python that allows fetching a video's audio stream URL.
      */
-    GET_AUDIO_STREAM_URL("get_audio_url");
+    GET_AUDIO_STREAM_URL("get_audio_url"),
+
+    /**
+     * GET_PLAYLIST_URL is a function in Python that allows fetching a playlist's URL.
+     */
+    GET_PLAYLIST_URL("get_playlist_url");
 }

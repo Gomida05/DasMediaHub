@@ -23,6 +23,12 @@ class SearchPageViewMode(application: Application): AndroidViewModel(application
     private val _error = mutableStateOf<String?>(null)
     val error: State<String?> = _error
 
+    var query = mutableStateOf("")
+        private set
+
+    fun setQuery(value: String) {
+        query.value = value
+    }
 
     fun addNew(searchKey: String) {
         viewModelScope.launch {
