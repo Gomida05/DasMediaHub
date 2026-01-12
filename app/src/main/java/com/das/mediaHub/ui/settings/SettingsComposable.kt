@@ -349,12 +349,11 @@ fun ShowAlertDialog(
     }
     val newVersionCode = appInfo.versionCode
 
-    val currentVersionName = packageInfo.versionName?.toDoubleOrNull() ?: 0.0
-    val newVersionName = appInfo.versionName.toDoubleOrNull() ?: 0.0
+
 
     // Show message if already up-to-date
     LaunchedEffect(Unit) {
-        if (newVersionCode > currentVersionCode || newVersionName > currentVersionName) {
+        if (newVersionCode <= currentVersionCode) {
             showNotificationDialog = TopPopUp(
                 message = "You're up to date",
                 icon = Icons.Default.Android
