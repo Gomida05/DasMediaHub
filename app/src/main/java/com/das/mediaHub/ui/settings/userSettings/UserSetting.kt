@@ -4,8 +4,12 @@ import android.content.Context
 import android.net.Uri
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
+import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.ColumnScope
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.WindowInsets
@@ -14,11 +18,14 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.safeDrawing
+import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
+import androidx.compose.material.icons.automirrored.filled.ArrowForwardIos
 import androidx.compose.material.icons.filled.Contrast
 import androidx.compose.material.icons.filled.DarkMode
 import androidx.compose.material.icons.filled.Folder
@@ -29,7 +36,7 @@ import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.DropdownMenuItem
-import androidx.compose.material3.HorizontalDivider
+import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
@@ -37,9 +44,11 @@ import androidx.compose.material3.RadioButton
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.SnackbarHost
 import androidx.compose.material3.SnackbarHostState
+import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.material3.TopAppBar
+import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -47,8 +56,11 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.Brush
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.documentfile.provider.DocumentFile
 import androidx.navigation3.runtime.NavBackStack
@@ -60,216 +72,232 @@ import com.das.mediaHub.ui.theme.ThemePreferences.saveDarkMode
 import com.das.mediaHub.ui.theme.AppTheme
 import kotlinx.coroutines.launch
 
-
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun UserSettingComposable(backStack: NavBackStack<NavKey>) {
     val context = LocalContext.current
-
     val snackBarHostState = remember { SnackbarHostState() }
     val scope = rememberCoroutineScope()
-
     val showAlertDialog = remember { mutableStateOf(false) }
 
+    Box(
+        modifier = Modifier
+            .fillMaxSize()
+            .background(
+                Brush.verticalGradient(
+                    listOf(
+                        MaterialTheme.colorScheme.surface,
+                        MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.05f)
+                    )
+                )
+            )
+    ) {
+        Scaffold(
+            snackbarHost = { SnackbarHost(hostState = snackBarHostState) },
+            containerColor = Color.Transparent,
+            topBar = {
+                TopAppBar(
+                    title = {
+                        Text(
+                            "Preferences",
+                            style = MaterialTheme.typography.titleLarge.copy(fontWeight = FontWeight.Bold)
+                        )
+                    },
+                    navigationIcon = {
+                        IconButton(onClick = { backStack.removeLastOrNull() }) {
+                            Icon(
+                                imageVector = Icons.AutoMirrored.Filled.ArrowBack,
+                                contentDescription = "Back"
+                            )
+                        }
+                    },
+                    colors = TopAppBarDefaults.topAppBarColors(
+                        containerColor = Color.Transparent
+                    )
+                )
+            },
+            contentWindowInsets = WindowInsets.safeDrawing
+        ) { paddingValues ->
+            LazyColumn(
+                contentPadding = paddingValues,
+                modifier = Modifier
+                    .fillMaxSize()
+                    .padding(horizontal = 16.dp),
+                verticalArrangement = Arrangement.spacedBy(16.dp)
+            ) {
+                item { Spacer(modifier = Modifier.height(8.dp)) }
 
+                item {
+                    SettingSection(title = "Appearance") {
+                        DarkModeToggleWithPrefs(context)
+                    }
+                }
 
-    Scaffold(
-        snackbarHost = { SnackbarHost(hostState = snackBarHostState) },
-        topBar = {
-            TopAppBar(
-                title = { Text("Settings") },
-                navigationIcon = {
-                    IconButton(onClick = { backStack.removeLastOrNull() }) {
-                        Icon(
-                            imageVector = Icons.AutoMirrored.Filled.ArrowBack,
-                            contentDescription = "Back"
+                item {
+                    SettingSection(title = "Storage & Security") {
+                        SettingItem(
+                            icon = Icons.Default.Security,
+                            text = "Security Settings",
+                            onClick = {
+                                scope.launch {
+                                    snackBarHostState.showSnackbar("Currently under development")
+                                }
+                            }
+                        )
+                        SettingItem(
+                            icon = Icons.Default.Folder,
+                            text = "Change Downloading Location",
+                            onClick = { showAlertDialog.value = true }
                         )
                     }
                 }
-            )
-        },
-        contentWindowInsets = WindowInsets.safeDrawing
-    ) { paddingValues ->
-        LazyColumn(
-            contentPadding = paddingValues,
-            modifier = Modifier
-                .fillMaxSize()
-                .padding(16.dp)
-        ) {
-            item {
-                SettingCard(title = "Appearance") {
-                    DarkModeToggleWithPrefs(context)
-                }
-            }
-            item {
-                Column {
-                    Spacer(modifier = Modifier.height(12.dp))
-                    SettingCard(title = "Settings") {
-                        SecuritySettings {
-                            scope.launch {
-                                snackBarHostState.showSnackbar("Currently under development")
-                            }
-                        }
-                    }
-                    HorizontalDivider()
-                    Spacer(modifier = Modifier.height(12.dp))
-                    Change_Downloading_Location {
-                        showAlertDialog.value = true
-                    }
-                }
+                
+                item { Spacer(modifier = Modifier.height(24.dp)) }
             }
         }
     }
     FolderPickerDialog(showAlertDialog.value, onDismiss = { showAlertDialog.value = false })
-
 }
 
-
 @Composable
-fun SecuritySettings(onClick: () -> Unit) {
-    Row(
-        modifier = Modifier
-            .fillMaxWidth()
-            .clickable {
-                onClick()
+fun SettingSection(
+    title: String,
+    content: @Composable ColumnScope.() -> Unit
+) {
+    Column(modifier = Modifier.fillMaxWidth()) {
+        Text(
+            text = title.uppercase(),
+            style = MaterialTheme.typography.labelLarge,
+            color = MaterialTheme.colorScheme.primary,
+            fontWeight = FontWeight.Bold,
+            modifier = Modifier.padding(start = 8.dp, bottom = 8.dp, top = 8.dp)
+        )
+        Card(
+            shape = RoundedCornerShape(24.dp),
+            colors = CardDefaults.cardColors(
+                containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.4f)
+            ),
+            elevation = CardDefaults.cardElevation(0.dp)
+        ) {
+            Column {
+                content()
             }
-            .padding(12.dp),
-        verticalAlignment = Alignment.CenterVertically
-    ) {
-        Icon(Icons.Default.Security, contentDescription = null)
-        Spacer(modifier = Modifier.width(16.dp))
-        Text("Security Settings")
-    }
-}
-
-@Composable
-private fun Change_Downloading_Location(onClick: () -> Unit) {
-    Row(
-        modifier = Modifier
-            .fillMaxWidth()
-            .clickable {
-                onClick()
-            }
-            .padding(12.dp),
-        verticalAlignment = Alignment.CenterVertically
-    ) {
-        Icon(Icons.Default.Folder, contentDescription = null)
-        Spacer(modifier = Modifier.width(16.dp))
-        Text("Change Downloading Location")
-    }
-
-}
-
-@Composable
-fun SettingCard(title: String, content: @Composable () -> Unit) {
-    Card(
-        modifier = Modifier.fillMaxWidth(),
-        shape = RoundedCornerShape(12.dp),
-        elevation = CardDefaults.elevatedCardElevation(defaultElevation = 4.dp)
-    ) {
-        Column(modifier = Modifier.padding(16.dp)) {
-            Text(
-                text = title,
-                style = MaterialTheme.typography.titleMedium,
-                color = MaterialTheme.colorScheme.primary
-            )
-            Spacer(modifier = Modifier.height(12.dp))
-            content()
         }
     }
 }
 
-
+@Composable
+fun SettingItem(
+    icon: ImageVector,
+    text: String,
+    onClick: () -> Unit,
+    trailingContent: @Composable (() -> Unit)? = null
+) {
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .clickable(onClick = onClick)
+            .padding(16.dp),
+        verticalAlignment = Alignment.CenterVertically
+    ) {
+        Surface(
+            shape = CircleShape,
+            color = MaterialTheme.colorScheme.primary.copy(alpha = 0.1f),
+            modifier = Modifier.size(40.dp)
+        ) {
+            Box(contentAlignment = Alignment.Center) {
+                Icon(
+                    imageVector = icon,
+                    contentDescription = null,
+                    tint = MaterialTheme.colorScheme.primary,
+                    modifier = Modifier.size(20.dp)
+                )
+            }
+        }
+        Spacer(Modifier.width(16.dp))
+        Text(
+            text = text,
+            style = MaterialTheme.typography.bodyLarge.copy(fontWeight = FontWeight.Medium),
+            modifier = Modifier.weight(1f)
+        )
+        if (trailingContent != null) {
+            trailingContent()
+        } else {
+            Icon(
+                imageVector = Icons.AutoMirrored.Default.ArrowForwardIos,
+                contentDescription = null,
+                tint = MaterialTheme.colorScheme.outline.copy(alpha = 0.5f),
+                modifier = Modifier.size(14.dp)
+            )
+        }
+    }
+}
 
 @Composable
 fun DarkModeToggleWithPrefs(context: Context) {
     val themeState by loadDarkModeState()
     val expanded = remember { mutableStateOf(false) }
 
-    Row(
-        modifier = Modifier
-            .fillMaxWidth()
-            .clip(RoundedCornerShape(8.dp))
-            .clickable { expanded.value = true }
-            .padding(12.dp),
-        verticalAlignment = Alignment.CenterVertically
-    ) {
-        Icon(
-            imageVector = when (themeState) {
+    Box {
+        SettingItem(
+            icon = when (themeState) {
                 AppTheme.LIGHT -> Icons.Default.LightMode
                 AppTheme.DARK -> Icons.Default.DarkMode
                 else -> Icons.Default.Contrast
             },
-            contentDescription = null,
-            tint = MaterialTheme.colorScheme.primary
-        )
-        Spacer(modifier = Modifier.width(16.dp))
-        Text(
             text = "Theme: ${themeState.name}",
-            style = MaterialTheme.typography.bodyLarge
+            onClick = { expanded.value = true }
         )
-    }
 
-    DropdownMenu(
-        expanded = expanded.value,
-        onDismissRequest = { expanded.value = false }
-    ) {
-        AppTheme.entries.forEach { theme ->
-            DropdownMenuItem(
-                text = {
-                    Row(verticalAlignment = Alignment.CenterVertically) {
-                        RadioButton(
-                            selected = themeState == theme,
-                            onClick = null
-                        )
-                        Spacer(modifier = Modifier.width(8.dp))
-                        Text(theme.name)
+        DropdownMenu(
+            expanded = expanded.value,
+            onDismissRequest = { expanded.value = false },
+            modifier = Modifier.background(MaterialTheme.colorScheme.surface)
+        ) {
+            AppTheme.entries.forEach { theme ->
+                DropdownMenuItem(
+                    text = {
+                        Row(verticalAlignment = Alignment.CenterVertically) {
+                            RadioButton(
+                                selected = themeState == theme,
+                                onClick = null
+                            )
+                            Spacer(modifier = Modifier.width(8.dp))
+                            Text(theme.name)
+                        }
+                    },
+                    onClick = {
+                        saveDarkMode(context, theme)
+                        expanded.value = false
                     }
-                },
-                onClick = {
-                    saveDarkMode(context, theme)
-                    expanded.value = false
-                }
-            )
+                )
+            }
         }
     }
 }
 
-
-
-
 @Composable
 fun FolderPickerDialog(showDialog: Boolean, onDismiss: () -> Unit) {
-
     val context = LocalContext.current.applicationContext
-
     val audioPickerLauncher = rememberLauncherForActivityResult(
         contract = ActivityResultContracts.OpenDocumentTree(),
         onResult = { uri: Uri? ->
-            uri?.let {
-                getFolderPathFromUri(context, it, "audio")
-            }
+            uri?.let { getFolderPathFromUri(context, it, "audio") }
         }
     )
 
     val videoPickerLauncher = rememberLauncherForActivityResult(
         contract = ActivityResultContracts.OpenDocumentTree(),
         onResult = { uri: Uri? ->
-            uri?.let {
-                getFolderPathFromUri(context, it, "video")
-            }
+            uri?.let { getFolderPathFromUri(context, it, "video") }
         }
     )
 
     if (showDialog) {
-
         AlertDialogPathChoose(
             onDismissRequest = onDismiss,
-            onAudioSelect = {
-                audioPickerLauncher.launch(null)
-            },
-            onVideoSelect = {
-                videoPickerLauncher.launch(null)
-            }
+            onAudioSelect = { audioPickerLauncher.launch(null) },
+            onVideoSelect = { videoPickerLauncher.launch(null) }
         )
     }
 }
@@ -282,63 +310,49 @@ fun AlertDialogPathChoose(
 ) {
     AlertDialog(
         onDismissRequest = onDismissRequest,
+        shape = RoundedCornerShape(28.dp),
         title = {
-            Text("Which location do you want to change? Please select one of them:")
+            Text(
+                "Storage Location",
+                style = MaterialTheme.typography.headlineSmall.copy(fontWeight = FontWeight.Bold)
+            )
+        },
+        text = {
+            Text("Select which media type's download directory you would like to change.")
         },
         confirmButton = {
             TextButton(onClick = {
                 onAudioSelect()
                 onDismissRequest()
-            }) {
-                Text("Audio's")
-            }
+            }) { Text("Audio Path") }
         },
         dismissButton = {
             TextButton(onClick = {
                 onVideoSelect()
                 onDismissRequest()
-            }) {
-                Text("Video's")
-            }
+            }) { Text("Video Path") }
         }
     )
 }
-
-
-
-
-
 
 private fun extractFolderPath(path: String): String {
     val prefix = "/tree/primary:"
     return path.removePrefix(prefix)
 }
 
-
-
 private fun getFolderPathFromUri(context: Context, uri: Uri, type: String): String? {
-
     try {
-
         val documentFile = DocumentFile.fromTreeUri(context, uri)
-
-
         if (documentFile != null && documentFile.isDirectory) {
-
             val pather = "/storage/emulated/0/${extractFolderPath(uri.path.toString())}"
             if (type == "video") {
                 saveVideoPath(context = context, path = pather)
-
             } else if (type == "audio") {
                 saveAudioPath(context = context, path = pather)
             }
-        } else {
-            println("URI is not a directory or invalid")
         }
     } catch (e: Exception) {
         e.printStackTrace()
-        println("Error: ${e.message}")
     }
-
     return uri.path
 }

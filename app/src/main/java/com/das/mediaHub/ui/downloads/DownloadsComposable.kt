@@ -25,21 +25,24 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.itemsIndexed
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.material3.AlertDialog
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.LibraryMusic
 import androidx.compose.material.icons.filled.MoreVert
 import androidx.compose.material.icons.filled.MusicNote
 import androidx.compose.material.icons.filled.VideoLibrary
+import androidx.compose.material3.AlertDialog
+import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.CenterAlignedTopAppBar
 import androidx.compose.material3.CircularProgressIndicator
+import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.OutlinedCard
 import androidx.compose.material3.Scaffold
+import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.material3.TopAppBarDefaults
@@ -51,12 +54,12 @@ import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateMapOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
-import androidx.compose.runtime.retain.retain
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.graphics.graphicsLayer
-import androidx.compose.ui.graphics.vector.rememberVectorPainter
+import androidx.compose.ui.draw.shadow
+import androidx.compose.ui.graphics.Brush
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.hapticfeedback.HapticFeedbackType
 import androidx.compose.ui.input.nestedscroll.nestedScroll
 import androidx.compose.ui.layout.ContentScale
@@ -66,9 +69,10 @@ import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.LocalHapticFeedback
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.unit.sp
 import androidx.compose.ui.zIndex
+import androidx.core.content.ContextCompat
 import androidx.core.net.toUri
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.media3.common.MediaItem
@@ -85,14 +89,12 @@ import com.das.mediaHub.services.local.BackGroundPlayer
 import com.das.mediaHub.data.local.PathPreferences.audioPathState
 import com.das.mediaHub.data.local.PathPreferences.videoPathState
 import java.io.File
-import kotlin.collections.set
 
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun DownloadsComposable(backStack: NavBackStack<NavKey>, tabIndex: Int = 0) {
-
-    val selectedTabIndex = retain { mutableIntStateOf(tabIndex) }
-
-    val viewModel = viewModel<DownloadsPageViewModel>()
+    val selectedTabIndex = remember { mutableIntStateOf(tabIndex) }
+    val viewModel = viewModel(modelClass = DownloadsPageViewModel::class.java)
     val uiState by viewModel.uiState.collectAsState()
     val videos = uiState.videos
     val musics = uiState.musics
@@ -100,124 +102,91 @@ fun DownloadsComposable(backStack: NavBackStack<NavKey>, tabIndex: Int = 0) {
     val error = uiState.error
 
     val mContext = LocalContext.current
-
     val videoPath by videoPathState()
     val audioPath by audioPathState()
     val tabs = PageEnum.entries
 
-
-    val topAppBarState = TopAppBarDefaults.enterAlwaysScrollBehavior()
-
+    val scrollBehavior = TopAppBarDefaults.enterAlwaysScrollBehavior()
 
     LaunchedEffect(Unit) {
         viewModel.fetchVideoFiles(videoPath)
         viewModel.fetchMusicFiles(audioPath)
     }
 
-    Scaffold(
-        topBar = {
-            CenterAlignedTopAppBar(
-                scrollBehavior = topAppBarState,
-                title = {
-                    CustomTabRow(
-                        selectedTabIndex = selectedTabIndex.intValue,
-                        onTabSelected = { selectedTabIndex.intValue = it },
-                        tabs = tabs
-                    )
-                }
-            )
-        },
-        contentWindowInsets = WindowInsets.safeDrawing,
+    Box(
         modifier = Modifier
-            .nestedScroll(topAppBarState.nestedScrollConnection)
-    ) { paddingValues ->
-        Box(
-            modifier = Modifier
-                .padding(paddingValues)
-                .fillMaxSize()
-        ) {
-
-            when {
-                isLoading -> {
-                    CircularProgressIndicator(
-                        modifier = Modifier.align(Alignment.Center)
+            .fillMaxSize()
+            .background(
+                Brush.verticalGradient(
+                    listOf(
+                        MaterialTheme.colorScheme.surface,
+                        MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.05f)
                     )
-                }
+                )
+            )
+    ) {
+        Scaffold(
+            modifier = Modifier.nestedScroll(scrollBehavior.nestedScrollConnection),
+            containerColor = Color.Transparent,
+            topBar = {
+                CenterAlignedTopAppBar(
+                    scrollBehavior = scrollBehavior,
+                    colors = TopAppBarDefaults.topAppBarColors(
+                        containerColor = Color.Transparent,
+                        scrolledContainerColor = MaterialTheme.colorScheme.surface.copy(alpha = 0.9f)
+                    ),
+                    title = {
+                        CustomTabRow(
+                            selectedTabIndex = selectedTabIndex.intValue,
+                            onTabSelected = { selectedTabIndex.intValue = it },
+                            tabs = tabs
+                        )
+                    }
+                )
+            },
+            contentWindowInsets = WindowInsets.safeDrawing
+        ) { paddingValues ->
+            Box(
+                modifier = Modifier
+                    .padding(paddingValues)
+                    .fillMaxSize()
+            ) {
+                when {
+                    isLoading -> {
+                        CircularProgressIndicator(modifier = Modifier.align(Alignment.Center))
+                    }
 
-                !error.isNullOrEmpty() -> {
-                    Text(
-                        text = error,
-                        color = MaterialTheme.colorScheme.error,
-                        textAlign = TextAlign.Center,
-                        modifier = Modifier.align(Alignment.Center)
-                    )
-                }
+                    !error.isNullOrEmpty() -> {
+                        Text(
+                            text = error,
+                            color = MaterialTheme.colorScheme.error,
+                            textAlign = TextAlign.Center,
+                            modifier = Modifier.align(Alignment.Center).padding(24.dp)
+                        )
+                    }
 
-                else -> {
-                    Box(Modifier.fillMaxSize()) {
-                        // Videos list
-                        if (selectedTabIndex.intValue == 0) {
-                            if (videos.isEmpty()) {
-                                Text(
-                                    text = "No videos found.",
-                                    fontSize = 18.sp,
-                                    textAlign = TextAlign.Center,
-                                    modifier = Modifier.align(Alignment.Center)
-                                )
-                            } else {
-                                LazyColumn(
-                                    modifier = Modifier.fillMaxSize(),
-                                    verticalArrangement = Arrangement.Top
-                                ) {
-                                    itemsIndexed(videos) { index, item ->
-                                        ListItems(
-                                            itemDetails = item,
-                                            isVideo = true,
-                                            mContext = mContext
-                                        ) {
-                                            itemClicked(
-                                                index,
-                                                item.mediaId,
-                                                true,
-                                                mContext,
-                                                backStack
-                                            )
-                                        }
+                    else -> {
+                        val currentList = if (selectedTabIndex.intValue == 0) videos else musics
+                        val isVideo = selectedTabIndex.intValue == 0
+
+                        if (currentList.isEmpty()) {
+                            EmptyDownloadsState(isVideo)
+                        } else {
+                            LazyColumn(
+                                modifier = Modifier.fillMaxSize(),
+                                verticalArrangement = Arrangement.spacedBy(4.dp)
+                            ) {
+                                item { Spacer(modifier = Modifier.height(8.dp)) }
+                                itemsIndexed(currentList) { index, item ->
+                                    DownloadItem(
+                                        itemDetails = item,
+                                        isVideo = isVideo,
+                                        mContext = mContext
+                                    ) {
+                                        itemClicked(index, item.mediaId, isVideo, mContext, backStack)
                                     }
                                 }
-                            }
-                        }
-
-                        // Music list
-                        if (selectedTabIndex.intValue == 1) {
-                            if (musics.isEmpty()) {
-                                Text(
-                                    text = "No music found.",
-                                    fontSize = 18.sp,
-                                    textAlign = TextAlign.Center,
-                                    modifier = Modifier.align(Alignment.Center)
-                                )
-                            } else {
-                                LazyColumn(
-                                    modifier = Modifier.fillMaxSize(),
-                                    verticalArrangement = Arrangement.Top
-                                ) {
-                                    itemsIndexed(musics) { index, item ->
-                                        ListItems(
-                                            itemDetails = item,
-                                            isVideo = false,
-                                            mContext = mContext
-                                        ) {
-                                            itemClicked(
-                                                index,
-                                                item.mediaId,
-                                                false,
-                                                mContext,
-                                                backStack
-                                            )
-                                        }
-                                    }
-                                }
+                                item { Spacer(modifier = Modifier.height(16.dp)) }
                             }
                         }
                     }
@@ -228,143 +197,155 @@ fun DownloadsComposable(backStack: NavBackStack<NavKey>, tabIndex: Int = 0) {
 }
 
 @Composable
-fun ListItems(
+fun DownloadItem(
     itemDetails: MediaItem,
     isVideo: Boolean,
     mContext: Context,
     onClick: () -> Unit
 ) {
-
-
     val showAlertDialog = remember { mutableStateOf(false) }
 
-
-
-    OutlinedCard(
+    Card(
         onClick = onClick,
-        shape = RoundedCornerShape(15),
-        colors = CardDefaults.outlinedCardColors(
-            containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(
-                alpha = 0.2f
-            )
-        ),
+        shape = RoundedCornerShape(20.dp),
+        colors = CardDefaults.cardColors(containerColor = Color.Transparent),
         modifier = Modifier
-            .padding(2.dp)
             .fillMaxWidth()
-
+            .padding(horizontal = 16.dp, vertical = 4.dp)
     ) {
-
-
         Row(
-            horizontalArrangement = Arrangement.SpaceBetween,
-            modifier = Modifier
-                .padding(5.dp)
-                .fillMaxWidth()
-                .height(65.dp)
-                .align(Alignment.CenterHorizontally)
+            modifier = Modifier.padding(8.dp),
+            verticalAlignment = Alignment.CenterVertically
         ) {
-
-            if (isVideo) {
-                AsyncImage(
-                    model =
-                        ImageRequest.Builder(mContext)
+            Box(
+                modifier = Modifier
+                    .size(80.dp)
+                    .clip(RoundedCornerShape(16.dp))
+                    .background(MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f)),
+                contentAlignment = Alignment.Center
+            ) {
+                if (isVideo) {
+                    AsyncImage(
+                        model = ImageRequest.Builder(mContext)
                             .data(itemDetails.mediaId.toUri())
                             .videoFrameMillis(10000)
-                            .decoderFactory { result, options, _ ->
-                                VideoFrameDecoder(
-                                    result.source,
-                                    options
-                                )
-                            }
+                            .decoderFactory { result, options, _ -> VideoFrameDecoder(result.source, options) }
                             .error(R.mipmap.ic_launcher_ofme)
                             .build(),
-                    contentDescription = "loaded thumbnail ${itemDetails.mediaMetadata.artist}",
-                    modifier = Modifier
-                        .size(65.dp, 65.dp)
-                        .align(Alignment.CenterVertically)
-                        .clip(RoundedCornerShape(10)),
-                    alignment = Alignment.Center,
-                    contentScale = ContentScale.Crop
-                )
-            } else {
-                Icon(
-                    imageVector = Icons.Default.MusicNote,
-                    contentDescription = "loaded thumbnail ${itemDetails.mediaMetadata.artist}",
-                    modifier = Modifier
-                        .size(65.dp, 65.dp)
-                        .align(Alignment.CenterVertically)
-                        .clip(RoundedCornerShape(10)),
-                )
-            }
-
-            Column(
-                modifier = Modifier
-//                    .width(250.dp)
-                    .fillMaxWidth(0.86f)
-            ) {
-                Text(
-                    text = itemDetails.mediaMetadata.title.toString(),
-                    fontSize = 14.sp,
-                    maxLines = 2,
-                    style = MaterialTheme.typography.headlineSmall,
-                    modifier = Modifier
-                        .fillMaxWidth()
-
-                )
-                Row(
-                    horizontalArrangement = Arrangement.SpaceEvenly,
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .height(90.dp)
-                        .align(Alignment.CenterHorizontally)
-                ) {
-                    Text(
-                        text = itemDetails.mediaMetadata.description.toString(),
-                        fontSize = 13.sp,
-                        maxLines = 1,
-                        style = MaterialTheme.typography.headlineSmall,
-                        modifier = Modifier
-                            .width(95.dp)
+                        contentDescription = null,
+                        modifier = Modifier.fillMaxSize(),
+                        contentScale = ContentScale.Crop
                     )
-                    Text(
-                        text = itemDetails.mediaMetadata.artist.toString(),
-                        fontSize = 13.sp,
-                        maxLines = 1,
-                        style = MaterialTheme.typography.headlineSmall,
-                        modifier = Modifier
-                            .width(95.dp)
+                } else {
+                    Icon(
+                        imageVector = Icons.Default.MusicNote,
+                        contentDescription = null,
+                        tint = MaterialTheme.colorScheme.primary,
+                        modifier = Modifier.size(32.dp)
                     )
                 }
             }
 
-            IconButton(
-                onClick = {
-                    showAlertDialog.value = true
-                },
-                modifier = Modifier
-                    .size(45.dp, 45.dp)
-                    .align(Alignment.CenterVertically)
-            ) {
+            Spacer(modifier = Modifier.width(16.dp))
+
+            Column(modifier = Modifier.weight(1f)) {
+                Text(
+                    text = itemDetails.mediaMetadata.title.toString(),
+                    style = MaterialTheme.typography.bodyLarge,
+                    fontWeight = FontWeight.Bold,
+                    maxLines = 2,
+                    overflow = TextOverflow.Ellipsis
+                )
+                Spacer(modifier = Modifier.height(4.dp))
+                Text(
+                    text = if (isVideo) {
+                        itemDetails.mediaMetadata.description.toString()
+                    } else {
+                        "${itemDetails.mediaMetadata.artist} • ${itemDetails.mediaMetadata.description}"
+                    },
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis
+                )
+            }
+
+            IconButton(onClick = { showAlertDialog.value = true }) {
                 Icon(
-                    painter = rememberVectorPainter(Icons.Default.MoreVert),
-                    ""
+                    imageVector = Icons.Default.MoreVert,
+                    contentDescription = "Options",
+                    tint = MaterialTheme.colorScheme.onSurfaceVariant,
+                    modifier = Modifier.size(20.dp)
                 )
             }
         }
-
     }
 
     if (showAlertDialog.value) {
-        DeleteItem(
-            onDismissRequest = {
-                showAlertDialog.value = false
-            },
+        DeleteFileDialog(
+            onDismiss = { showAlertDialog.value = false },
             onDelete = {
                 itemDetails.mediaId.toUri().path?.let { File(it).delete() }
             }
         )
     }
+}
 
+@Composable
+private fun EmptyDownloadsState(isVideo: Boolean) {
+    Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+        Column(horizontalAlignment = Alignment.CenterHorizontally) {
+            Surface(
+                shape = CircleShape,
+                color = MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.3f),
+                modifier = Modifier.size(120.dp)
+            ) {
+                Box(contentAlignment = Alignment.Center) {
+                    Icon(
+                        imageVector = if (isVideo) Icons.Default.VideoLibrary else Icons.Default.LibraryMusic,
+                        contentDescription = null,
+                        modifier = Modifier.size(64.dp),
+                        tint = MaterialTheme.colorScheme.primary
+                    )
+                }
+            }
+            Spacer(modifier = Modifier.height(24.dp))
+            Text(
+                text = if (isVideo) "No videos downloaded" else "No music found",
+                style = MaterialTheme.typography.headlineSmall.copy(fontWeight = FontWeight.Bold)
+            )
+            Text(
+                text = "Your downloaded media will appear here.",
+                style = MaterialTheme.typography.bodyMedium,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                modifier = Modifier.padding(top = 8.dp)
+            )
+        }
+    }
+}
+
+@Composable
+private fun DeleteFileDialog(
+    onDismiss: () -> Unit,
+    onDelete: () -> Unit
+) {
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        shape = RoundedCornerShape(28.dp),
+        title = { Text("Delete File?", fontWeight = FontWeight.Bold) },
+        text = { Text("Are you sure you want to permanently delete this file from your device?") },
+        confirmButton = {
+            TextButton(onClick = {
+                onDelete()
+                onDismiss()
+            }) {
+                Text("Delete", color = MaterialTheme.colorScheme.error)
+            }
+        },
+        dismissButton = {
+            TextButton(onClick = onDismiss) { Text("Cancel") }
+        }
+    )
 }
 
 private fun itemClicked(
@@ -374,54 +355,16 @@ private fun itemClicked(
     context: Context,
     backStack: NavBackStack<NavKey>
 ) {
-
-
     if (isVideo) {
         backStack.add(NavScreens.ExoPlayerUI(selectedFilePath))
     } else {
-
         val playIntent = Intent(context, BackGroundPlayer::class.java).apply {
             action = ACTION_START
             putExtra("media_id", index)
         }
-        context.startService(playIntent)
-
+        ContextCompat.startForegroundService(context, playIntent)
     }
 }
-
-@Composable
-private fun DeleteItem(
-    onDismissRequest: ()-> Unit,
-    onDelete: () -> Unit
-) {
-
-    AlertDialog(
-        onDismissRequest = onDismissRequest,
-        title = {
-            Text("Are you sure you want to delete this file?")
-        },
-        confirmButton = {
-            TextButton(
-                onClick = {
-                    onDelete()
-                    onDismissRequest()
-                }
-            ) {
-                Text("Yes")
-            }
-        },
-        dismissButton = {
-            TextButton(
-                onClick = {
-                    onDismissRequest()
-                }
-            ) {
-                Text("No")
-            }
-        }
-    )
-}
-
 
 @Composable
 private fun CustomTabRow(
@@ -446,30 +389,29 @@ private fun CustomTabRow(
     Box(
         modifier = Modifier
             .padding(horizontal = 8.dp, vertical = 2.dp)
-            .fillMaxWidth()
-            .height(56.dp)
-            .clip(RoundedCornerShape(12.dp))
-            .background(MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.2f))
+            .width(280.dp)
+            .height(48.dp)
+            .clip(RoundedCornerShape(24.dp))
+            .background(MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.3f))
     ) {
-        // Animated underline indicator
+        // Animated indicator
         Box(
             modifier = Modifier
                 .offset(x = indicatorOffset)
                 .width(indicatorWidth)
-                .height(3.dp)
-                .align(Alignment.BottomStart)
+                .fillMaxHeight()
+                .padding(4.dp)
                 .background(
-                    MaterialTheme.colorScheme.primary,
-                    shape = RoundedCornerShape(topStart = 8.dp, topEnd = 8.dp)
+                    MaterialTheme.colorScheme.surface,
+                    shape = RoundedCornerShape(20.dp)
                 )
+                .shadow(elevation = 2.dp, shape = RoundedCornerShape(20.dp))
                 .zIndex(1f)
         )
 
         // Tab items
         Row(
-            modifier = Modifier
-                .fillMaxWidth()
-                .height(56.dp),
+            modifier = Modifier.fillMaxSize(),
             horizontalArrangement = Arrangement.SpaceEvenly
         ) {
             tabs.forEachIndexed { index, mode ->
@@ -479,11 +421,6 @@ private fun CustomTabRow(
                     else MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f),
                     animationSpec = spring(dampingRatio = 0.8f),
                     label = "textColor"
-                )
-                val iconScale by animateDpAsState(
-                    targetValue = if (isSelected) 1.2.dp else 1.dp,
-                    animationSpec = spring(dampingRatio = 0.7f, stiffness = 300f),
-                    label = "iconScale"
                 )
 
                 Box(
@@ -499,38 +436,26 @@ private fun CustomTabRow(
                         }
                         .onGloballyPositioned {
                             tabWidths[index] = it.size.width.toFloat() / density.density
-                        },
+                        }
+                        .zIndex(2f),
                     contentAlignment = Alignment.Center
                 ) {
-                    Column(
-                        horizontalAlignment = Alignment.CenterHorizontally,
-                        verticalArrangement = Arrangement.Center
-                    ) {
+                    Row(verticalAlignment = Alignment.CenterVertically) {
                         Icon(
                             imageVector = when (mode) {
                                 PageEnum.VIDEOS -> Icons.Filled.VideoLibrary
                                 PageEnum.AUDIOS -> Icons.Filled.LibraryMusic
                             },
-                            contentDescription = mode.name.lowercase()
-                                .replaceFirstChar { it.uppercase() },
+                            contentDescription = null,
                             tint = textColor,
-                            modifier = Modifier
-                                .size(24.dp)
-                                .graphicsLayer {
-                                    scaleX = iconScale.value
-                                    scaleY = iconScale.value
-                                }
+                            modifier = Modifier.size(18.dp)
                         )
-                        Spacer(Modifier.height(2.dp))
+                        Spacer(Modifier.width(8.dp))
                         Text(
-                            text = mode.name
-                                .lowercase()
-                                .replace('_', ' ')
-                                .replaceFirstChar { it.uppercase() },
+                            text = mode.title,
                             color = textColor,
-                            fontSize = 11.sp,
-                            fontWeight = if (isSelected) FontWeight.SemiBold else FontWeight.Normal,
-                            maxLines = 1
+                            style = MaterialTheme.typography.labelLarge,
+                            fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Medium
                         )
                     }
                 }

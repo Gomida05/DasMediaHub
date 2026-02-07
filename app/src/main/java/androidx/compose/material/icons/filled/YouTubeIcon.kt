@@ -1,41 +1,53 @@
-/*
- * Copyright 2025 The Android Open Source Project
+/**
+ * The MIT License (MIT)
  *
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with the License.
- * You may obtain a copy of the License at
+ * Copyright (c) 2019-2024 The Bootstrap Authors
  *
- *      http://www.apache.org/licenses/LICENSE-2.0
+ * Permission is hereby granted, free of charge, to any person obtaining a copy
+ * of this software and associated documentation files (the "Software"), to deal
+ * in the Software without restriction, including without limitation the rights
+ * to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+ * copies of the Software, and to permit persons to whom the Software is
+ * furnished to do so, subject to the following conditions:
+ * The above copyright notice and this permission notice shall be included in
+ * all copies or substantial portions of the Software.
  *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
- */
+ * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+ * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+ * FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+ * AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+ * LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+ * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
+ * THE SOFTWARE.
+**/
 
 package androidx.compose.material.icons.filled
 
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.materialIcon
-import androidx.compose.material.icons.materialPath
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.SolidColor
 import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.graphics.vector.path
+import androidx.compose.ui.unit.dp
 
-val Icons.Filled.YouTube: ImageVector
+val Icons.Filled.YouTubeIcon: ImageVector
     get() {
         if (youtube != null) return youtube!!
 
-        youtube = materialIcon(name = "Filled.YouTube") {
-            materialPath {
+        youtube = ImageVector.Builder(
+            name = "youtube",
+            defaultWidth = 24.dp,
+            defaultHeight = 24.dp,
+            viewportWidth = 16f,
+            viewportHeight = 16f
+        ).apply {
+            path(
+                fill = SolidColor(Color.Black)
+            ) {
                 moveTo(8.051f, 1.999f)
                 horizontalLineToRelative(0.089f)
                 curveToRelative(0.822f, 0.003f, 4.987f, 0.033f, 6.11f, 0.335f)
-                arcToRelative(2.01f, 2.01f, 0f,
-                    isMoreThanHalf = false,
-                    isPositiveArc = true,
-                    dx1 = 1.415f,
-                    dy1 = 1.42f
-                )
+                arcToRelative(2.01f, 2.01f, 0f, false, true, 1.415f, 1.42f)
                 curveToRelative(0.101f, 0.38f, 0.172f, 0.883f, 0.22f, 1.402f)
                 lineToRelative(0.01f, 0.104f)
                 lineToRelative(0.022f, 0.26f)
@@ -46,12 +58,7 @@ val Icons.Filled.YouTube: ImageVector
                 lineToRelative(-0.008f, 0.105f)
                 lineToRelative(-0.009f, 0.104f)
                 curveToRelative(-0.05f, 0.572f, -0.124f, 1.14f, -0.235f, 1.558f)
-                arcToRelative(2.01f, 2.01f, 0f,
-                    isMoreThanHalf = false,
-                    isPositiveArc = true,
-                    dx1 = -1.415f,
-                    dy1 = 1.42f
-                )
+                arcToRelative(2.01f, 2.01f, 0f, false, true, -1.415f, 1.42f)
                 curveToRelative(-1.16f, 0.312f, -5.569f, 0.334f, -6.18f, 0.335f)
                 horizontalLineToRelative(-0.142f)
                 curveToRelative(-0.309f, 0f, -1.587f, -0.006f, -2.927f, -0.052f)
@@ -60,21 +67,11 @@ val Icons.Filled.YouTube: ImageVector
                 lineToRelative(-0.171f, -0.007f)
                 lineToRelative(-0.171f, -0.007f)
                 curveToRelative(-1.11f, -0.049f, -2.167f, -0.128f, -2.654f, -0.26f)
-                arcToRelative(2.01f, 2.01f, 0f,
-                    isMoreThanHalf = false,
-                    isPositiveArc = true,
-                    dx1 = -1.415f,
-                    dy1 = -1.419f
-                )
+                arcToRelative(2.01f, 2.01f, 0f, false, true, -1.415f, -1.419f)
                 curveToRelative(-0.111f, -0.417f, -0.185f, -0.986f, -0.235f, -1.558f)
                 lineTo(0.09f, 9.82f)
                 lineToRelative(-0.008f, -0.104f)
-                arcTo(31f, 31f, 0f,
-                    isMoreThanHalf = false,
-                    isPositiveArc = true,
-                    x1 = 0f,
-                    y1 = 7.68f
-                )
+                arcTo(31f, 31f, 0f, false, true, 0f, 7.68f)
                 verticalLineToRelative(-0.123f)
                 curveToRelative(0.002f, -0.215f, 0.01f, -0.958f, 0.064f, -1.778f)
                 lineToRelative(0.007f, -0.103f)
@@ -83,31 +80,20 @@ val Icons.Filled.YouTube: ImageVector
                 lineToRelative(0.022f, -0.26f)
                 lineToRelative(0.01f, -0.104f)
                 curveToRelative(0.048f, -0.519f, 0.119f, -1.023f, 0.22f, -1.402f)
-                arcToRelative(2.01f, 2.01f, 0f,
-                    isMoreThanHalf = false,
-                    isPositiveArc = true,
-                    dx1 = 1.415f,
-                    dy1 = -1.42f
-                )
+                arcToRelative(2.01f, 2.01f, 0f, false, true, 1.415f, -1.42f)
                 curveToRelative(0.487f, -0.13f, 1.544f, -0.21f, 2.654f, -0.26f)
                 lineToRelative(0.17f, -0.007f)
                 lineToRelative(0.172f, -0.006f)
                 lineToRelative(0.086f, -0.003f)
                 lineToRelative(0.171f, -0.007f)
-                arcTo(
-                    horizontalEllipseRadius = 100f, verticalEllipseRadius = 100f, theta = 0f,
-                    isMoreThanHalf = false,
-                    isPositiveArc = true,
-                    x1 = 7.858f,
-                    y1 = 2f
-                )
+                arcTo(100f, 100f, 0f, false, true, 7.858f, 2f)
                 close()
                 moveTo(6.4f, 5.209f)
                 verticalLineToRelative(4.818f)
                 lineToRelative(4.157f, -2.408f)
                 close()
             }
-        }
+        }.build()
 
         return youtube!!
     }

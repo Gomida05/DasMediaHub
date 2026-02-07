@@ -52,7 +52,10 @@ class DescriptionAdapter(val context: Context): MediaDescriptionAdapter {
         callback: PlayerNotificationManager.BitmapCallback
     ): Bitmap? {
 
-        cachedArtwork?.let { return it }
+        cachedArtwork?.let {
+            callback.onBitmap(it)
+            return it
+        }
 
         Glide.with(context)
             .asBitmap()

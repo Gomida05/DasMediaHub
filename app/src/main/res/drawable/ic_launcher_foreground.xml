@@ -1,0 +1,21 @@
+<?xml version="1.0" encoding="utf-8"?>
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="108dp"
+    android:height="108dp"
+    android:viewportWidth="108"
+    android:viewportHeight="108">
+    <!-- Stylized 'M' and 'H' combination representing Media Hub -->
+    <path
+        android:fillColor="#FFFFFF"
+        android:pathData="M30,35 L30,73 L42,73 L42,54 L54,66 L66,54 L66,73 L78,73 L78,35 L66,35 L54,47 L42,35 Z" />
+    <!-- Play symbol integrated into the design -->
+    <path
+        android:fillColor="#FF7043"
+        android:pathData="M50,48 L50,60 L60,54 Z" />
+    <!-- Subtle circular accent -->
+    <path
+        android:strokeColor="#FFFFFF"
+        android:strokeWidth="1.5"
+        android:strokeAlpha="0.3"
+        android:pathData="M54,20 A34,34 0 1,1 53.9,20" />
+</vector>

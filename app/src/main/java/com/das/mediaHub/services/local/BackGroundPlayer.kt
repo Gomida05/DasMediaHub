@@ -35,10 +35,10 @@ class BackGroundPlayer: Service() {
             .setLoadControl(
                 DefaultLoadControl.Builder()
                     .setBufferDurationsMs(
-                        1_000,
-                        10_000,
-                        1_000,
-                        1_000
+                        2_500,
+                        15_000,
+                        2_500,
+                        2_500
                     )
                     .build()
             )
@@ -58,6 +58,7 @@ class BackGroundPlayer: Service() {
         MediaSession.Builder(this, exoPlayer).build()
     }
 
+
     private val playerNotificationManager by lazy {
         PlayerNotificationManager.Builder(
             this,
@@ -73,11 +74,13 @@ class BackGroundPlayer: Service() {
             }
     }
     private val serviceScope = CoroutineScope(
-        Dispatchers.Main + SupervisorJob()
+        context = Dispatchers.Main + SupervisorJob()
     )
 
     override fun onCreate() {
         super.onCreate()
+        Log.d("BGP", "Service created")
+
         serviceScope.launch {
             val items = withContext(Dispatchers.IO) {
                 fetchDataFromFolder()
@@ -95,13 +98,13 @@ class BackGroundPlayer: Service() {
 
     override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
 
+
         val mediaId = intent?.getIntExtra("media_id", 0) ?: 0
 
         when (intent?.action) {
             ACTION_START -> {
                 if (exoPlayer.isPlaying) {
                     exoPlayer.seekTo(mediaId, 0)
-                    exoPlayer.prepare()
                 }
                 exoPlayer.play()
             }

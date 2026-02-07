@@ -32,7 +32,7 @@ class FirebaseAuthClient(private val context: Context): AuthClient {
             .addOnCompleteListener { task->
                 if (task.isSuccessful) {
                     trySend(AuthResponse.Success(task.result.user!!))
-                } else{
+                } else {
                     trySend(
                         AuthResponse.Failed(
                             task.exception?.message ?: "Error"

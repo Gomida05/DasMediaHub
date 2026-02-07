@@ -21,7 +21,7 @@ def make_response(success: bool, error: Optional[str] = None, result: Any = None
     )
 
 
-def get_video_url(video_url: str, retries: int = 3, delay: float = 1.0):
+def get_video_url(video_url, retries: int = 3, delay: float = 1.0):
     last_error = None
 
     for attempt in range(1, retries + 1):
@@ -66,7 +66,7 @@ def get_video_url(video_url: str, retries: int = 3, delay: float = 1.0):
     )
 
 
-def get_audio_url(media_url: str, retries: int = 3):
+def get_audio_url(media_url, retries: int = 3):
     last_error = None
 
     for attempt in range(retries):
@@ -156,7 +156,7 @@ def Searcher(inputer):
     return make_response(success=False, error=err_msg)
 
 
-def SearchWithLink(inputer: str):
+def SearchWithLink(inputer):
     try:
 
         video = Video.getInfo(inputer)

@@ -4,7 +4,7 @@ import java.io.FileInputStream
 
 plugins {
     alias(libs.plugins.android.application)
-    alias(libs.plugins.kotlin.android)
+//    alias(libs.plugins.kotlin.android)
     alias(libs.plugins.kotlin.compose)
     alias(libs.plugins.chaquo.python)
     alias(libs.plugins.google.gms)
@@ -35,8 +35,8 @@ android {
         applicationId = "com.das.mediaHub"
         minSdk = 26
         targetSdk = 36
-        versionCode = 8
-        versionName = "1.28"
+        versionCode = 9
+        versionName = "1.29"
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
         flavorDimensions.add("pyVersion")
@@ -68,9 +68,6 @@ android {
         sourceCompatibility = JavaVersion.VERSION_17
         targetCompatibility = JavaVersion.VERSION_17
     }
-    kotlin {
-        jvmToolchain(17)
-    }
 
 
     tasks.withType<org.jetbrains.kotlin.gradle.tasks.KotlinCompile>().configureEach {
@@ -84,7 +81,6 @@ android {
 
     buildFeatures {
         compose = true
-
     }
 }
 
@@ -94,6 +90,7 @@ chaquopy {
         buildPython(loadLocalProperties["PYTHON_PATH"] as String)
 
         pip {
+            install("yt-dlp")
             install("pytubefix==8.12.1")
             install("youtube-search-python")
             install("httpx<0.28")

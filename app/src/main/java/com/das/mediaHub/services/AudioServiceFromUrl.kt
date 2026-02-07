@@ -1,5 +1,6 @@
 package com.das.mediaHub.services
 
+import android.annotation.SuppressLint
 import android.app.Notification
 import android.app.NotificationManager
 import android.app.PendingIntent
@@ -15,6 +16,7 @@ import android.support.v4.media.MediaMetadataCompat
 import android.support.v4.media.session.MediaSessionCompat
 import android.view.KeyEvent
 import androidx.core.app.NotificationCompat
+import androidx.core.content.getSystemService
 import androidx.media.app.NotificationCompat.MediaStyle
 import androidx.media.session.MediaButtonReceiver
 import androidx.media3.common.AudioAttributes
@@ -38,9 +40,9 @@ import com.das.mediaHub.receive.Receiver
 import com.das.mediaHub.data.constants.Notifications.AUDIO_SERVICE_FROM_URL_NOTIFICATION
 
 
+@SuppressLint("UnsafeOptInUsageError")
 class AudioServiceFromUrl : Service() {
 
-    private val channelId = "MediaYouTubePlayer"
     private val exoPlayer by lazy {
         ExoPlayer.Builder(this)
             .setDeviceVolumeControlEnabled(true)
@@ -55,7 +57,7 @@ class AudioServiceFromUrl : Service() {
     }
 
     private val notificationManager by lazy {
-        getSystemService(NOTIFICATION_SERVICE) as NotificationManager
+        getSystemService<NotificationManager>()
     }
     private lateinit var mediaUrl: String
     private lateinit var videoViews: String
@@ -202,7 +204,7 @@ class AudioServiceFromUrl : Service() {
 
 
 
-        val notification= NotificationCompat.Builder(this, channelId)
+        val notification= NotificationCompat.Builder(this, CHANNEL_ID)
             .setContentIntent(pendingIntent)
             .setSmallIcon(drawable.music_note_24dp)
             .setStyle(mediaStyle)
@@ -211,7 +213,7 @@ class AudioServiceFromUrl : Service() {
             .build()
 
 
-        notificationManager.notify(25, notification)
+        notificationManager?.notify(NOTIFICATION_ID, notification)
         return notification
     }
 
@@ -482,5 +484,10 @@ class AudioServiceFromUrl : Service() {
         if (exoPlayer.isPlaying){
             stopSelf()
         }
+    }
+
+    private companion object {
+        const val CHANNEL_ID = "MediaYouTubePlayer"
+        const val NOTIFICATION_ID = 25
     }
 }

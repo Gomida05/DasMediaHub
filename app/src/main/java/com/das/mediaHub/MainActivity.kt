@@ -81,7 +81,11 @@ import com.das.mediaHub.ui.TopPopupNotification.TopPopupNotification
 import com.das.mediaHub.ui.TopPopupNotification.showNotificationDialog
 import com.das.mediaHub.ui.auth.AccountSettingsPage
 import com.das.mediaHub.ui.auth.ChangePasswordPage
+import com.das.mediaHub.ui.home.PageNotFound
+import com.das.mediaHub.ui.instagram.InstagramComposable
+import com.das.mediaHub.ui.settings.AboutDasMediaHub
 import com.das.mediaHub.ui.settings.FeedbackComposable
+import com.das.mediaHub.ui.tiktok.TikTokComposable
 import com.das.mediaHub.ui.welcome.WelcomePage
 import com.google.firebase.Firebase
 import com.google.firebase.auth.auth
@@ -249,6 +253,18 @@ class MainActivity : ComponentActivity() {
                         }
                     }
 
+                    is TikTok -> {
+                        NavEntry(key = key) {
+                            backStack.TikTokComposable()
+                        }
+                    }
+
+                    is Instagram -> {
+                        NavEntry(key = key) {
+                            backStack.InstagramComposable()
+                        }
+                    }
+
                     is SignInPage -> {
                         NavEntry(key = key) {
                             LoginPage(backStack)
@@ -269,7 +285,11 @@ class MainActivity : ComponentActivity() {
 
                     is ChangePassword -> {
                         NavEntry(key = key) {
-                            ChangePasswordPage(backStack, auth)
+                            if (currentUser != null) {
+                                ChangePasswordPage(backStack, currentUser)
+                            } else {
+                                backStack.removeLastOrNull()
+                            }
                         }
                     }
 
@@ -307,13 +327,19 @@ class MainActivity : ComponentActivity() {
 
                     is FeedbackScreen -> {
                         NavEntry(key = key) {
-                            FeedbackComposable()
+                            FeedbackComposable(backStack = backStack)
+                        }
+                    }
+
+                    is AboutDasMediaHub -> {
+                        NavEntry(key = key) {
+                            AboutDasMediaHub(backStack = backStack)
                         }
                     }
 
                     else -> {
                         NavEntry(key = key) {
-
+                            PageNotFound(backStack = backStack)
                         }
                     }
                 }

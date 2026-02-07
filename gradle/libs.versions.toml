@@ -1,34 +1,34 @@
 [versions]
-activityComposeVersion = "1.12.2"
-agp = "8.13.2"
+activityComposeVersion = "1.12.3"
+agp = "9.0.0"
 appcompatVersion = "1.7.1"
 browserVersion = "1.9.0"
 coilComposeVersion = "2.7.0"
 coilVideoVersion = "2.7.0"
-composeBomVersion = "2025.12.01"
+composeBomVersion = "2026.01.01"
 constraintlayoutVersion = "2.2.1"
 coreKtxVersion = "1.17.0"
 chaquo = "17.0.0"
 firebaseAuthKtxVersion = "23.2.1"
-firebaseBomVersion = "34.7.0"
+firebaseBomVersion = "34.9.0"
 glideVersion = "5.0.5"
 gms = "4.4.4"
 junitJunit = "4.13.2"
 kotlin = "2.3.0"
 kotlinStdlibVersion = "2.3.0"
-kotlinxSerializationJsonVersion = "1.9.0"
+kotlinxSerializationJsonVersion = "1.10.0"
 lifecycleLivedataKtxVersion = "2.10.0"
 lifecycleViewmodelComposeVersion = "2.10.0"
 lifecycleViewmodelKtxVersion = "2.10.0"
-media3Version = "1.9.0"
+media3Version = "1.9.2"
 mediaVersion = "1.7.1"
 nav3Core = "1.0.0"
 playServicesAuthVersion = "21.5.0"
-runtimeAndroidVersion = "1.10.0"
-runtimeLivedataVersion = "1.10.0"
-uiViewbindingVersion = "1.10.0"
+runtimeAndroidVersion = "1.10.2"
+runtimeLivedataVersion = "1.10.2"
+uiViewbindingVersion = "1.10.2"
 firebaseFirestoreKtxVersion = "25.1.4"
-googleidVersion = "1.1.1"
+googleidVersion = "1.2.0"
 
 [libraries]
 activity-compose = { module = "androidx.activity:activity-compose", version.ref = "activityComposeVersion" }
@@ -75,7 +75,7 @@ googleid = { group = "com.google.android.libraries.identity.googleid", name = "g
 
 [plugins]
 android-application = { id = "com.android.application", version.ref = "agp" }
-kotlin-android = { id = "org.jetbrains.kotlin.android", version.ref = "kotlin" }
+#kotlin-android = { id = "org.jetbrains.kotlin.android", version.ref = "kotlin" }
 kotlin-compose = { id = "org.jetbrains.kotlin.plugin.compose", version.ref = "kotlin" }
 chaquo-python = { id = "com.chaquo.python", version.ref = "chaquo" }
 google-gms = { id = "com.google.gms.google-services", version.ref = "gms" }

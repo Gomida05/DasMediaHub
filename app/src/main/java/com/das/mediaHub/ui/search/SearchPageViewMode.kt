@@ -3,6 +3,7 @@ package com.das.mediaHub.ui.search
 import android.app.Application
 import androidx.compose.runtime.State
 import androidx.compose.runtime.mutableStateOf
+import androidx.compose.ui.text.input.TextFieldValue
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
 import com.das.mediaHub.data.local.SearchHistoryDB
@@ -23,10 +24,10 @@ class SearchPageViewMode(application: Application): AndroidViewModel(application
     private val _error = mutableStateOf<String?>(null)
     val error: State<String?> = _error
 
-    var query = mutableStateOf("")
+    var query = mutableStateOf(TextFieldValue(""))
         private set
 
-    fun setQuery(value: String) {
+    fun setQuery(value: TextFieldValue) {
         query.value = value
     }
 

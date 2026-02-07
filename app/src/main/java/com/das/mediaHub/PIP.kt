@@ -12,9 +12,10 @@ import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.runtime.setValue
 import androidx.core.app.PictureInPictureModeChangedInfo
 import androidx.core.util.Consumer
+import kotlinx.coroutines.flow.MutableStateFlow
 
 internal object PIP {
-    internal val shouldEnterPipMode = mutableStateOf(value =false)
+    internal val shouldEnterPipMode = MutableStateFlow(value = false)
 
     @Composable
     internal fun MainActivity.rememberIsInPipMode(): Boolean {

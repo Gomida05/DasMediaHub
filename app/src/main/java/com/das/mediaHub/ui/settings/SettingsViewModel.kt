@@ -1,12 +1,13 @@
 package com.das.mediaHub.ui.settings
 
-import androidx.compose.runtime.State
-import androidx.compose.runtime.mutableStateOf
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.das.mediaHub.data.constants.UrlLists.APP_URL
 import com.das.mediaHub.data.model.AppUpdateInfo
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
+import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import org.json.JSONObject
@@ -15,14 +16,14 @@ import java.net.URL
 
 class SettingsViewModel: ViewModel() {
 
-    private val _loading = mutableStateOf(false)
-    val isLoading: State<Boolean> = _loading
+    private val _loading = MutableStateFlow(false)
+    val isLoading = _loading.asStateFlow()
 
-    private val _error = mutableStateOf<String?>(null)
-    val foundError: State<String?> = _error
+    private val _error = MutableStateFlow<String?>(null)
+    val foundError = _error.asStateFlow()
 
-    private val _apkInfo = mutableStateOf(AppUpdateInfo.EMPTY)
-    val apkInfo: State<AppUpdateInfo> = _apkInfo
+    private val _apkInfo = MutableStateFlow(AppUpdateInfo.EMPTY)
+    val apkInfo = _apkInfo.asStateFlow()
 
     private var loadingJob: Job? = null
 
@@ -59,7 +60,7 @@ class SettingsViewModel: ViewModel() {
     }
 
     private suspend fun requestJson(): AppUpdateInfo = withContext(Dispatchers.IO) {
-        val url = URL("https://github.com/Gomida05/Gomida05/raw/refs/heads/main/AppToDownload.json")
+        val url = URL(APP_URL)
         val connection = url.openConnection() as HttpURLConnection
         connection.requestMethod = "GET"
 

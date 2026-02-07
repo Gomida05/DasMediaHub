@@ -52,7 +52,7 @@ class ReceiverNotActive: BroadcastReceiver() {
                     val notification = NotificationCompat.Builder(context,
                         Notifications.DOWNLOADER_NOTIFICATION_CHANNEL
                     )
-                        .setSmallIcon(R.mipmap.launcher_foreground)
+                        .setSmallIcon(R.mipmap.ic_launcher)
                         .setContentTitle("Download complete")
                         .setContentText("Click here to install new version")
                         .setContentIntent(mainPendingIntent)

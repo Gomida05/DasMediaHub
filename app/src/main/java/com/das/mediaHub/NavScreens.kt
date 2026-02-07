@@ -5,42 +5,50 @@ import com.das.mediaHub.data.model.searcher.Video
 import kotlinx.serialization.Serializable
 
 @Serializable
-sealed class NavScreens: NavKey {
+sealed interface NavScreens: NavKey {
     @Serializable
-    data object WelcomePage : NavScreens()
+    data object WelcomePage : NavScreens
     @Serializable
-    data object Home: NavScreens()
+    data object Home: NavScreens
     @Serializable
-    data class Searcher(val text: String) : NavScreens()
-
-
-    @Serializable
-    data class VideoViewer(val data: Video) : NavScreens()
-    @Serializable
-    data class ResultViewerPage(val value: String) : NavScreens()
-    @Serializable
-    data object RecentlyWatched : NavScreens()
-    @Serializable
-    data object Saved : NavScreens()
-    @Serializable
-    data object Downloads : NavScreens()
-    @Serializable
-    data object UserSettings : NavScreens()
-    @Serializable
-    data class ExoPlayerUI(val uri: String) : NavScreens()
+    data class Searcher(val text: String) : NavScreens
 
     @Serializable
-    data object Setting : NavScreens()
+    data class VideoViewer(val data: Video) : NavScreens
     @Serializable
-    data object FeedbackScreen: NavScreens()
+    data class ResultViewerPage(val value: String) : NavScreens
+    @Serializable
+    data object RecentlyWatched : NavScreens
+    @Serializable
+    data object Saved : NavScreens
+    @Serializable
+    data object Downloads : NavScreens
+    @Serializable
+    data object UserSettings : NavScreens
+    @Serializable
+    data class ExoPlayerUI(val uri: String) : NavScreens
 
     @Serializable
-    data object SignInPage : NavScreens()
+    data object Setting : NavScreens
     @Serializable
-    data object SignUpPage : NavScreens()
+    data object FeedbackScreen: NavScreens
 
     @Serializable
-    data object AccountSetting : NavScreens()
+    data object SignInPage : NavScreens
     @Serializable
-    data object ChangePassword : NavScreens()
+    data object SignUpPage : NavScreens
+
+    @Serializable
+    data object AccountSetting : NavScreens
+    @Serializable
+    data object ChangePassword : NavScreens
+
+    @Serializable
+    data object TikTok : NavScreens
+
+    @Serializable
+    data object Instagram : NavScreens
+
+    @Serializable
+    data object AboutDasMediaHub: NavScreens
 }

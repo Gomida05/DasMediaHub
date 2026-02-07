@@ -1,7 +1,7 @@
 package com.das.mediaHub.ui.home
 
+import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
-import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -11,46 +11,47 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.AccountCircle
 import androidx.compose.material.icons.filled.Download
-import androidx.compose.material.icons.filled.Instagram
-import androidx.compose.material.icons.filled.TikTok
-import androidx.compose.material.icons.filled.YouTube
+import androidx.compose.material.icons.filled.Info
+import androidx.compose.material.icons.filled.InstagramIcon
+import androidx.compose.material.icons.filled.TikTokIcon
+import androidx.compose.material.icons.filled.YouTubeIcon
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
-import androidx.compose.material3.SnackbarHost
-import androidx.compose.material3.SnackbarHostState
+import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBar
 import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.remember
-import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.clip
+import androidx.compose.ui.draw.shadow
+import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import androidx.navigation3.runtime.NavBackStack
 import androidx.navigation3.runtime.NavKey
 import com.das.mediaHub.NavScreens
 import com.das.mediaHub.NavScreens.Searcher
 import com.das.mediaHub.NavScreens.Downloads
-import kotlinx.coroutines.launch
+import com.das.mediaHub.data.model.TopPopUp
+import com.das.mediaHub.ui.TopPopupNotification.showNotificationDialog
 
 @Composable
 fun NavBackStack<NavKey>.HomePageComposable() {
-    val scope = rememberCoroutineScope()
-    val snackBar = remember { SnackbarHostState() }
+
+
     Scaffold(
-        snackbarHost = { SnackbarHost(snackBar) },
         topBar = {
             TopAppBar(
                 colors = TopAppBarDefaults.topAppBarColors(
@@ -60,18 +61,20 @@ fun NavBackStack<NavKey>.HomePageComposable() {
                 title = {
                     Text(
                         text = "DasMediaHub",
-                        style = MaterialTheme.typography.titleLarge.copy(textAlign = TextAlign.Center),
+                        style = MaterialTheme.typography.titleLarge.copy(
+                            fontWeight = FontWeight.Bold,
+                            letterSpacing = 1.sp
+                        ),
                         modifier = Modifier.fillMaxWidth(),
+                        textAlign = TextAlign.Center
                     )
                 },
                 navigationIcon = {
-                    IconButton(
-                        onClick = {
-                            add(NavScreens.AccountSetting)
-                        }) {
+                    IconButton(onClick = { add(NavScreens.AccountSetting) }) {
                         Icon(
                             imageVector = Icons.Default.AccountCircle,
-                            contentDescription = "User account"
+                            contentDescription = "User account",
+                            modifier = Modifier.size(28.dp)
                         )
                     }
                 },
@@ -79,90 +82,146 @@ fun NavBackStack<NavKey>.HomePageComposable() {
                     IconButton(onClick = { add(Downloads) }) {
                         Icon(
                             imageVector = Icons.Default.Download,
-                            contentDescription = "Downloaded medias"
+                            contentDescription = "Downloaded medias",
+                            modifier = Modifier.size(28.dp)
                         )
                     }
-                })
+                }
+            )
         },
         contentWindowInsets = WindowInsets(0, 0, 0, 0),
+        containerColor = Color.Transparent,
         modifier = Modifier.fillMaxSize()
     ) { padding ->
         Box(
             modifier = Modifier
-                .padding(padding)
-                .fillMaxSize(),
+                .fillMaxSize()
+                .background(
+                    Brush.verticalGradient(
+                        listOf(
+                            MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.15f),
+                            MaterialTheme.colorScheme.surface
+                        )
+                    )
+                )
+                .padding(padding),
             contentAlignment = Alignment.Center
         ) {
             Column(
                 modifier = Modifier
                     .padding(horizontal = 24.dp)
-                    .padding(bottom = 20.dp)
-                    .fillMaxSize()
-                    .align(Alignment.TopCenter),
+                    .fillMaxSize(),
                 horizontalAlignment = Alignment.CenterHorizontally,
-                verticalArrangement = Arrangement.Center
+                verticalArrangement = Arrangement.spacedBy(48.dp, Alignment.CenterVertically)
             ) {
-                Text(
-                    text = "Welcome to",
-                    style = MaterialTheme.typography.bodyLarge,
-                    color = MaterialTheme.colorScheme.onBackground.copy(alpha = 0.6f),
-                )
-                Text(
-                    text = "DasMediaHub",
-                    style = MaterialTheme.typography.headlineLarge,
-                    fontWeight = FontWeight.Bold,
-                    modifier = Modifier.padding(bottom = 32.dp)
-                ) // Quick platform icons
+                // Hero Text Section
+                Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                    Text(
+                        text = "EXPLORE & DOWNLOAD",
+                        style = MaterialTheme.typography.labelLarge,
+                        color = MaterialTheme.colorScheme.primary,
+                        fontWeight = FontWeight.Bold,
+                        letterSpacing = 2.sp
+                    )
+                    Text(
+                        text = "Your Favorite Media",
+                        style = MaterialTheme.typography.headlineLarge.copy(
+                            fontWeight = FontWeight.ExtraBold,
+                        ),
+                        textAlign = TextAlign.Center,
+                        modifier = Modifier.padding(top = 8.dp)
+                    )
+                    Text(
+                        text = "Access content from multiple platforms in one place.",
+                        style = MaterialTheme.typography.bodyMedium,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        textAlign = TextAlign.Center,
+                        modifier = Modifier.padding(top = 12.dp)
+                            .padding(horizontal = 16.dp)
+                    )
+                }
+
+                // Platforms Row
                 Row(
-                    horizontalArrangement = Arrangement.spacedBy(16.dp),
-                    verticalAlignment = Alignment.CenterVertically,
-                    modifier = Modifier.padding(bottom = 32.dp)
+                    horizontalArrangement = Arrangement.spacedBy(20.dp),
+                    verticalAlignment = Alignment.CenterVertically
                 ) {
-                    PlatformIcon(icon = Icons.Default.TikTok, "TikTok") {
-                        scope.launch {
-                            snackBar.showSnackbar(
-                                message = "Coming soon",
-                                withDismissAction = true
-                            )
-                        }
+
+                    PlatformIcon(
+                        icon = Icons.Default.TikTokIcon,
+                        label = "TikTok (Beta 3.5)",
+                        tint = MaterialTheme.colorScheme.onSurface
+                    ) {
+                        add(NavScreens.TikTok)
                     }
-                    PlatformIcon(icon = Icons.Default.YouTube, "YouTube") { add(Searcher("")) }
-                    PlatformIcon(icon = Icons.Default.Instagram, "Instagram") {
-                        scope.launch {
-                            snackBar.showSnackbar(
-                                message = "Coming soon",
-                                withDismissAction = true
-                            )
-                        }
+
+                    PlatformIcon(
+                        icon = Icons.Default.YouTubeIcon,
+                        label = "YouTube",
+                        tint = Color(0xFFFF0000)
+                    ) {
+                        add(Searcher(""))
+                    }
+
+                    PlatformIcon(
+                        icon = Icons.Default.InstagramIcon,
+                        label = "Instagram",
+                        tint = Color(0xFFE4405F)
+                    ) {
+                        showNotificationDialog = TopPopUp(
+                            // currently not available
+                            message = "This feature is currently not available, please try again later",
+                            icon = Icons.Default.Info
+                        )
                     }
                 }
             }
         }
-
     }
 }
+
 @Composable
-fun PlatformIcon(icon: ImageVector, label: String, onClick: ()-> Unit) {
+fun PlatformIcon(
+    icon: ImageVector,
+    label: String,
+    tint: Color = MaterialTheme.colorScheme.primary,
+    onClick: () -> Unit
+) {
     Column(
         horizontalAlignment = Alignment.CenterHorizontally,
-        verticalArrangement = Arrangement.Center,
-        modifier = Modifier
-            .size(72.dp)
-            .clip(RoundedCornerShape(12.dp))
-            .background(MaterialTheme.colorScheme.surfaceVariant)
-            .clickable { onClick() }
-            .padding(8.dp)
+        modifier = Modifier.width(84.dp)
     ) {
-        Icon(
-            imageVector = icon,
-            contentDescription = label,
-            modifier = Modifier.size(28.dp)
-        )
+        Surface(
+            onClick = onClick,
+            shape = RoundedCornerShape(24.dp),
+            color = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.7f),
+            border = BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.3f)),
+            modifier = Modifier
+                .size(76.dp)
+                .shadow(
+                    elevation = 12.dp,
+                    shape = RoundedCornerShape(24.dp),
+                    ambientColor = tint.copy(alpha = 0.5f),
+                    spotColor = tint
+                )
+        ) {
+            Box(contentAlignment = Alignment.Center) {
+                Icon(
+                    imageVector = icon,
+                    contentDescription = label,
+                    tint = tint,
+                    modifier = Modifier
+                        .size(32.dp)
+                        .align(Alignment.Center)
+                )
+            }
+        }
         Text(
             text = label,
-            style = MaterialTheme.typography.labelSmall,
-            textAlign = TextAlign.Center,
-            modifier = Modifier.padding(top = 4.dp)
+            style = MaterialTheme.typography.labelMedium,
+            fontWeight = FontWeight.Bold,
+            modifier = Modifier.padding(top = 12.dp),
+            color = MaterialTheme.colorScheme.onSurface
         )
     }
 }

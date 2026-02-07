@@ -54,8 +54,6 @@ class ViewerViewModel : ViewModel() {
                     _videoState.value = _videoState.value.copy(
                         data = result.result
                     )
-                    println("New value from 2: ${result.result}")
-                    println("New value from 3: ${_videoState.value.data}")
                 } else {
                     _videoState.value = _videoState.value.copy(
                         error = result.error

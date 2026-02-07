@@ -17,7 +17,6 @@ import java.time.ZonedDateTime
 import java.time.format.DateTimeFormatter
 import java.util.Date
 import java.util.Locale
-import java.util.regex.Pattern
 
 internal object YouTuber {
     val mediaItems = mutableStateListOf<MediaItem>()
@@ -36,7 +35,7 @@ internal object YouTuber {
     fun String.youtubeExtractor(): String? {
 
         val pattern = Regex(YouTubeRegexes.YOUTUBE_REGEX)
-        val match = pattern.find((this))
+        val match = pattern.find(input = this)
         return match?.groups?.get(1)?.value
     }
 
@@ -89,27 +88,37 @@ internal object YouTuber {
      * @return true if the URL is a valid YouTube video link, false otherwise.
      */
     fun String.isValidYoutubeURL(): Boolean {
-        try {
+        return try {
             val trimmedUrl = trim().removeSuffix("&feature=shared")
 
             val url = URL(trimmedUrl)
 
             val host = url.host
-            if (host == YouTubeRegexes.YOUTUBE_HOST_1 || host == YouTubeRegexes.YOUTUBE_HOST_2) {
-                val videoPattern = Pattern.compile("^/watch\\?v=([A-Za-z0-9_-]{11})$")
-                val matcher = videoPattern.matcher("${url.path}?${url.query}")
-                return matcher.matches()
-            } else if (host == YouTubeRegexes.YOUTUBE_HOST_3) {
-                // Shortened YouTube URL (youtu.be/VIDEO_ID)
-                val videoPattern = Pattern.compile("^/([A-Za-z0-9_-]{11})$")
-                val matcher = videoPattern.matcher(url.path)  // Check the path only
-                return matcher.matches()
-            }
+            when (host) {
+                YouTubeRegexes.YOUTUBE_HOST_1, YouTubeRegexes.YOUTUBE_HOST_2 -> {
+                    val queryParams = url.query
+                        ?.split("&")
+                        ?.mapNotNull {
+                            val parts = it.split("=")
+                            if (parts.size == 2) parts[0] to parts[1] else null
+                        }
+                        ?.toMap()
 
-            return false
-        } catch (e: Exception) {
-            println("error on isValidYoutubeUrl: ${e.message}")
-            return false
+                    val videoId = queryParams?.get("v")
+                    videoId?.matches(Regex("[A-Za-z0-9_-]{11}")) == true
+                }
+
+                YouTubeRegexes.YOUTUBE_HOST_3 -> {
+                    val videoId = url.path.removePrefix("/")
+                    videoId.matches(Regex("[A-Za-z0-9_-]{11}"))
+                }
+
+                else -> {
+                    false
+                }
+            }
+        } catch (_: Exception) {
+            false
         }
     }
 

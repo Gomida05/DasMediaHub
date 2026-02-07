@@ -90,7 +90,7 @@ fun WelcomePage(
                         color = Color.White
                     )
                     Image(
-                        painter = painterResource(R.mipmap.launcher_foreground),
+                        painter = painterResource(R.mipmap.ic_launcher),
                         contentDescription = "App icon",
                         modifier = Modifier
                             .clip(RoundedCornerShape(17))

@@ -44,9 +44,9 @@ internal object PythonMain {
      * @param args Arguments to pass to the Python function.
      * @return The result of the Python call as a string.
      */
-    suspend inline fun <reified T> Python.callMethod(name: Names, args: String): T =
+    suspend inline fun <reified T> Python.callMethod(name: Names, args: String, module: String = "main"): T =
         withContext(Dispatchers.IO) {
-            val module = getModule("main")[name.value]?.call(args)
+            val module = getModule(module)[name.value]?.call(args)
 //                ?: throw NullPointerException("Module not found")
             module.toString().decodeStringToJson()
         }

@@ -18,6 +18,7 @@ import androidx.media3.common.C
 import androidx.media3.common.C.AUDIO_CONTENT_TYPE_MOVIE
 import androidx.media3.common.MediaItem
 import androidx.media3.exoplayer.ExoPlayer
+import com.das.mediaHub.PIP
 import com.das.mediaHub.PIP.getPipSourceRect
 import com.das.mediaHub.data.constants.Action.ACTION_KILL
 import com.das.mediaHub.data.constants.Playback.PAUSE
@@ -132,6 +133,7 @@ internal class VideoPlayerManager(
 
     override fun release() {
         player.release()
+        PIP.shouldEnterPipMode.value = false
     }
 
     private fun updatePipActions() {

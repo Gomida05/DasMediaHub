@@ -4,7 +4,8 @@ import android.content.Context
 import android.content.Intent
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
-import androidx.compose.foundation.combinedClickable
+import androidx.compose.foundation.clickable
+import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -19,16 +20,23 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.filled.ArrowBack
+import androidx.compose.material.icons.filled.History
 import androidx.compose.material.icons.filled.MoreVert
 import androidx.compose.material.icons.filled.VideoLibrary
 import androidx.compose.material3.AlertDialog
+import androidx.compose.material3.Card
+import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.CircularProgressIndicator
+import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
+import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.material3.TopAppBar
@@ -42,22 +50,21 @@ import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.graphics.vector.rememberVectorPainter
 import androidx.compose.ui.input.nestedscroll.nestedScroll
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.unit.sp
+import androidx.core.content.ContextCompat
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation3.runtime.NavBackStack
 import androidx.navigation3.runtime.NavKey
 import coil.compose.AsyncImage
-import coil.request.CachePolicy
-import coil.request.ImageRequest
-import com.das.mediaHub.MainActivity
 import com.das.mediaHub.R
 import com.das.mediaHub.data.local.WatchHistory
 import com.das.mediaHub.data.model.SavedVideosListData
@@ -71,11 +78,8 @@ import com.das.mediaHub.data.model.searcher.Video
 import com.das.mediaHub.python.YouTuber.loadStreamUrl
 import com.das.mediaHub.ui.TopPopupNotification.showNotificationDialog
 
-
 @Composable
 fun WatchedVideosComposable(backStack: NavBackStack<NavKey>) {
-
-
     val viewModel = viewModel(WatchedVideosViewModel::class.java.kotlin)
     val scrollBehavior = TopAppBarDefaults.enterAlwaysScrollBehavior()
     val searchResults by viewModel.savedLists.collectAsState()
@@ -87,109 +91,110 @@ fun WatchedVideosComposable(backStack: NavBackStack<NavKey>) {
         viewModel.fetchData()
     }
 
-    Scaffold(
+    Box(
         modifier = Modifier
-            .nestedScroll(scrollBehavior.nestedScrollConnection),
-        topBar = {
-            TopAppBar(
-                scrollBehavior = scrollBehavior,
-                colors = TopAppBarDefaults.topAppBarColors(
-                    containerColor = Color.Transparent,
-                    scrolledContainerColor = Color.Transparent
-                ),
-                actions = {
-                    IconButton(
-                        onClick = {
-                            backStack.add(Saved)
+            .fillMaxSize()
+            .background(
+                Brush.verticalGradient(
+                    listOf(
+                        MaterialTheme.colorScheme.surface,
+                        MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.05f)
+                    )
+                )
+            )
+    ) {
+        Scaffold(
+            modifier = Modifier.nestedScroll(scrollBehavior.nestedScrollConnection),
+            containerColor = Color.Transparent,
+            topBar = {
+                TopAppBar(
+                    scrollBehavior = scrollBehavior,
+                    colors = TopAppBarDefaults.topAppBarColors(
+                        containerColor = Color.Transparent,
+                        scrolledContainerColor = MaterialTheme.colorScheme.surface.copy(alpha = 0.9f)
+                    ),
+                    navigationIcon = {
+                        IconButton(onClick = { backStack.removeLastOrNull() }) {
+                            Icon(Icons.AutoMirrored.Default.ArrowBack, contentDescription = "Back")
                         }
-                    ) {
-                        Icon(
-                            imageVector = Icons.Default.VideoLibrary,
-                            contentDescription = "Saved videos",
-                            modifier = Modifier
-                                .align(Alignment.CenterVertically)
+                    },
+                    actions = {
+                        IconButton(onClick = { backStack.add(Saved) }) {
+                            Icon(
+                                imageVector = Icons.Default.VideoLibrary,
+                                contentDescription = "Saved videos",
+                                tint = MaterialTheme.colorScheme.primary
+                            )
+                        }
+                    },
+                    title = {
+                        Text(
+                            "Watch History",
+                            style = MaterialTheme.typography.titleLarge.copy(fontWeight = FontWeight.Bold)
                         )
                     }
-                },
-                title = {
-                    Text(
-                        "Recently watched videos",
-                        style = MaterialTheme.typography.headlineSmall
-                            .copy(textAlign = TextAlign.Center),
-                        modifier = Modifier
-                            .fillMaxWidth()
-                    )
-                }
-            )
-        },
-        contentWindowInsets = WindowInsets.safeDrawing
-    ) { paddingValues ->
-
-        LazyColumn(
-            contentPadding = paddingValues,
-            modifier = Modifier
-                .fillMaxWidth()
-        ) {
+                )
+            },
+            contentWindowInsets = WindowInsets.safeDrawing
+        ) { paddingValues ->
             if (isLoading) {
-                item {
+                Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
                     CircularProgressIndicator()
                 }
             } else if (!isError.isNullOrEmpty()) {
-                item {
-                    Box(
-                        modifier = Modifier
-                            .padding(5.dp)
-                            .fillMaxSize()
-                    ) {
+                Box(modifier = Modifier.fillMaxSize().padding(16.dp), contentAlignment = Alignment.Center) {
+                    Text(
+                        text = isError.toString(),
+                        color = MaterialTheme.colorScheme.error,
+                        textAlign = TextAlign.Center
+                    )
+                }
+            } else if (searchResults.isEmpty()) {
+                Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+                    Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                        Surface(
+                            shape = CircleShape,
+                            color = MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.3f),
+                            modifier = Modifier.size(120.dp)
+                        ) {
+                            Box(contentAlignment = Alignment.Center) {
+                                Icon(
+                                    imageVector = Icons.Default.History,
+                                    contentDescription = null,
+                                    modifier = Modifier.size(64.dp),
+                                    tint = MaterialTheme.colorScheme.primary
+                                )
+                            }
+                        }
+                        Spacer(modifier = Modifier.height(24.dp))
                         Text(
-                            text = isError.toString(),
-                            style = MaterialTheme.typography.bodyMedium
-                                .copy(color = MaterialTheme.colorScheme.error),
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .align(Alignment.Center)
+                            text = "Your history is empty",
+                            style = MaterialTheme.typography.headlineSmall.copy(fontWeight = FontWeight.Bold)
+                        )
+                        Text(
+                            text = "Videos you watch will appear here.",
+                            style = MaterialTheme.typography.bodyMedium,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                            modifier = Modifier.padding(top = 8.dp)
                         )
                     }
                 }
             } else {
-                if (searchResults.isEmpty()) {
-
-                    item {
-                        Box(
-                            contentAlignment = Alignment.Center,
-                            modifier = Modifier.fillMaxSize()
-                        ) {
-                            Column(
-                                modifier = Modifier
-                                    .align(Alignment.Center)
-                            ) {
-                                Text(
-                                    text = "You haven't watched any video!.",
-                                    style = MaterialTheme.typography.headlineMedium,
-                                    fontSize = 20.sp,
-                                    textAlign = TextAlign.Center,
-                                )
-                                Icon(
-                                    imageVector = Icons.Default.VideoLibrary,
-                                    "",
-
-                                    modifier = Modifier
-                                        .align(Alignment.CenterHorizontally)
-                                        .size(60.dp)
-                                )
-                            }
-                        }
-                    }
-                } else {
+                LazyColumn(
+                    contentPadding = paddingValues,
+                    modifier = Modifier.fillMaxSize(),
+                    verticalArrangement = Arrangement.spacedBy(4.dp)
+                ) {
+                    item { Spacer(modifier = Modifier.height(8.dp)) }
                     items(searchResults, key = { it.watchUrl }) { searchItem ->
-                        WatchedMedia(
+                        WatchedMediaItem(
                             backStack,
                             dbHelper = dbHelper,
-                            searchItem,
-                            viewModel
+                            selectedItem = searchItem,
+                            viewModel = viewModel
                         )
-
                     }
+                    item { Spacer(modifier = Modifier.height(16.dp)) }
                 }
             }
         }
@@ -197,269 +202,147 @@ fun WatchedVideosComposable(backStack: NavBackStack<NavKey>) {
 }
 
 @Composable
-private fun WatchedMedia(
+private fun WatchedMediaItem(
     backStack: NavBackStack<NavKey>,
     dbHelper: WatchHistory,
     selectedItem: SavedVideosListData,
     viewModel: WatchedVideosViewModel
 ) {
-
+    val context = LocalContext.current
     val showDialog = remember { mutableStateOf(false) }
-
     val showInfoDialog = remember { mutableStateOf(false) }
 
-    val videoId = selectedItem.watchUrl
-    val title = selectedItem.title
-    val viewsNumber = selectedItem.viewer
-    val dateOfVideo = selectedItem.dateTime
-    val channelName = selectedItem.channelName
-    val duration = selectedItem.duration
-    val videoThumbnailURL = selectedItem.thumbnailUrl
-    val channelThumbnails = selectedItem.channelThumbnail
-
-    val context = LocalContext.current
-
-
-
-    Box(
+    Card(
+        onClick = {
+            onClickListListener(
+                dbHelper = dbHelper,
+                selectedId = selectedItem.watchUrl,
+                controller = backStack
+            )
+        },
+        shape = RoundedCornerShape(20.dp),
+        colors = CardDefaults.cardColors(containerColor = Color.Transparent),
         modifier = Modifier
             .fillMaxWidth()
-            .clip(RoundedCornerShape(1))
-            .padding(bottom = 3.dp, top = 3.dp)
-            .combinedClickable(
-                onClick = {
-                    onClickListListener(
-                        context,
-                        dbHelper = dbHelper,
-                        videoId,
-                        backStack
-                    )
-                },
-                onLongClick = {
-                    showDialog.value = true
-                }
-            )
+            .padding(horizontal = 16.dp, vertical = 8.dp)
     ) {
-        Column(
-            modifier = Modifier
-                .height(260.dp)
-                .fillMaxWidth()
-
-        ) {
-            Box {
+        Column {
+            Box(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .height(200.dp)
+                    .clip(RoundedCornerShape(20.dp))
+            ) {
                 AsyncImage(
-                    model = videoThumbnailURL,
-                    contentDescription = "Category Image",
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .height(210.dp),
-                    alignment = Alignment.Center,
+                    model = selectedItem.thumbnailUrl,
+                    contentDescription = null,
+                    modifier = Modifier.fillMaxSize(),
                     contentScale = ContentScale.Crop
                 )
-                Text(
-                    text = duration,
-                    maxLines = 1,
-                    color = Color.White,
-                    textAlign = TextAlign.Justify,
+                Surface(
+                    color = Color.Black.copy(alpha = 0.7f),
+                    shape = RoundedCornerShape(4.dp),
                     modifier = Modifier
-                        .height(25.dp)
-                        .padding(end = 6.dp, bottom = 3.dp)
                         .align(Alignment.BottomEnd)
-                        .background(Color(0xCC2C2B2B), RoundedCornerShape(25))
-                )
-            }
-
-            Row(
-                modifier = Modifier
-                    .fillMaxSize()
-            ) {
-
-
-                IconButton(
-                    onClick = {
-                        showInfoDialog.value = true
-                    }
+                        .padding(8.dp)
                 ) {
-                    AsyncImage(
-                        model = channelThumbnails,
-                        error = painterResource(R.mipmap.ic_launcher_ofme),
-                        contentDescription = "Category Image",
-                        modifier = Modifier
-                            .fillMaxSize(),
-                        alignment = Alignment.Center,
-                        contentScale = ContentScale.Crop
-                    )
-                }
-                Column(
-                    modifier = Modifier
-                        .width(285.dp)
-                        .padding(3.dp)
-                ) {
-
-
                     Text(
-                        text = title,
-                        maxLines = 1,
-                        fontSize = 15.sp,
-                        textAlign = TextAlign.Start,
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .padding(start = 2.dp)
-                    )
-                    Row {
-                        Text(
-                            text = channelName,
-                            maxLines = 1,
-                            fontSize = 12.sp,
-                            textAlign = TextAlign.Start,
-                            modifier = Modifier
-                                .width(112.dp)
-                                .padding(start = 2.dp)
-                        )
-                        Text(
-                            text = viewsNumber,
-                            maxLines = 1,
-                            fontSize = 12.sp,
-                            textAlign = TextAlign.Center,
-                            modifier = Modifier
-                                .width(55.dp)
-                                .padding(start = 5.dp, end = 5.dp)
-                        )
-                        Text(
-                            text = dateOfVideo,
-                            maxLines = 1,
-                            fontSize = 12.sp,
-                            textAlign = TextAlign.Center,
-                            modifier = Modifier
-                                .width(100.dp)
-                                .padding(start = 2.dp)
-                        )
-                    }
-
-                }
-                IconButton(
-                    onClick = {
-                        showDialog.value = true
-                    }
-
-                ) {
-                    Icon(
-                        painter = rememberVectorPainter(Icons.Default.MoreVert),
-                        contentDescription = "Back"
+                        text = selectedItem.duration,
+                        color = Color.White,
+                        style = MaterialTheme.typography.labelSmall,
+                        modifier = Modifier.padding(horizontal = 6.dp, vertical = 2.dp)
                     )
                 }
             }
-        }
-    }
-    if (showDialog.value){
-        ShowAlertDialog(
-            context,
-            selectedItem,
-            deleteTheItem = { selectedId->
-                WatchHistory(context).deleteWatchUrl(selectedId)
-                viewModel.removeSearchItem(selectedItem)
-            },
-            onDismissRequest = {showDialog.value = false}
-        )
-    }
-    if (showInfoDialog.value){
-        InfoDialog{
-            showInfoDialog.value = false
-        }
-    }
-}
 
-
-@Composable
-private fun InfoDialog(onDismissRequest: () -> Unit){
-
-    AlertDialog(
-        onDismissRequest = onDismissRequest,
-        title = {
             Row(
-                modifier = Modifier.fillMaxWidth(),
-                verticalAlignment = Alignment.CenterVertically
+                modifier = Modifier.padding(vertical = 12.dp, horizontal = 4.dp),
+                verticalAlignment = Alignment.Top
             ) {
-                Image(
-                    painter = painterResource(R.mipmap.ic_launcher_ofme),
+                AsyncImage(
+                    model = selectedItem.channelThumbnail,
+                    error = painterResource(R.mipmap.ic_launcher_ofme),
                     contentDescription = null,
                     modifier = Modifier
-                        .size(14.dp)
+                        .size(40.dp)
+                        .clip(CircleShape)
+                        .clickable { showInfoDialog.value = true },
+                    contentScale = ContentScale.Crop
                 )
-                Spacer(modifier = Modifier.width(6.dp))
-                Text(
-                    text ="This feature is currently under development!!!",
-                    fontSize = 16.sp
-                )
+
+                Spacer(modifier = Modifier.width(12.dp))
+
+                Column(modifier = Modifier.weight(1f)) {
+                    Text(
+                        text = selectedItem.title,
+                        style = MaterialTheme.typography.bodyLarge,
+                        fontWeight = FontWeight.Bold,
+                        maxLines = 2,
+                        overflow = TextOverflow.Ellipsis
+                    )
+                    Spacer(modifier = Modifier.height(4.dp))
+                    Text(
+                        text = "${selectedItem.channelName} • ${selectedItem.viewer} • ${selectedItem.dateTime}",
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                }
+
+                IconButton(onClick = { showDialog.value = true }) {
+                    Icon(
+                        imageVector = Icons.Default.MoreVert,
+                        contentDescription = "More",
+                        tint = MaterialTheme.colorScheme.onSurfaceVariant,
+                        modifier = Modifier.size(20.dp)
+                    )
+                }
             }
-        },
-        text = {
-            Text(
-                "Thank you!😊",
-                fontSize = 18.sp
-            )
-        },
-        confirmButton = {
-            TextButton(
-                onClick = onDismissRequest
-            ) {
-                Text("Okay")
-            }
-        },
+        }
+    }
 
+    if (showDialog.value) {
+        HistoryActionDialog(
+            context = context,
+            selectedData = selectedItem,
+            deleteTheItem = {
+                WatchHistory(context).deleteWatchUrl(selectedItem.watchUrl)
+                viewModel.removeSearchItem(selectedItem)
+            },
+            onDismissRequest = { showDialog.value = false }
         )
-
-}
-
-private fun onClickListListener(
-    context: Context,
-    dbHelper: WatchHistory,
-    selectedId: String,
-    controller: NavBackStack<NavKey>
-) {
-    try {
-        val title = dbHelper.getVideoTitle(selectedId)
-        /*
-        val viewNumber = dbHelper.getViewNumber(selectedId)
-        val datVideo = dbHelper.getVideoDate(selectedId)
-        val videoChannel = dbHelper.getVideoChannelName(selectedId)
-        val ourDuration = dbHelper.getDuration(selectedId).toString()
-        val channelThumbnail = dbHelper.getChannelNameThumbnail(selectedId)
-        val bundle = Bundle().apply {
-            putString("View_ID", selectedId)
-            putString("View_URL", "https://www.youtube.com/watch?v=$selectedId")
-            putString("View_Title", title)
-            putString("View_Number", viewNumber)
-            putString("dateOfVideo", datVideo)
-            putString("channelName", videoChannel)
-            putString("duration", ourDuration)
-            putString("channel_Thumbnails", channelThumbnail)
-        }*/
-        controller.add(VideoViewer(
-            Video(
-                id =selectedId,
-                title = title
-            )
-        ))
-
-    } catch (e: Exception) {
-        showNotificationDialog = TopPopUp(
-            message = "Error: ${e.message}",
-            icon = Icons.Default.VideoLibrary,
-            loading = false
-        )
+    }
+    if (showInfoDialog.value) {
+        DevelopmentInfoDialog { showInfoDialog.value = false }
     }
 }
 
 @Composable
-private fun ShowAlertDialog(
+private fun DevelopmentInfoDialog(onDismissRequest: () -> Unit) {
+    AlertDialog(
+        onDismissRequest = onDismissRequest,
+        shape = RoundedCornerShape(28.dp),
+        icon = {
+            Image(
+                painter = painterResource(R.mipmap.ic_launcher_ofme),
+                contentDescription = null,
+                modifier = Modifier.size(40.dp)
+            )
+        },
+        title = { Text("Under Development", fontWeight = FontWeight.Bold) },
+        text = { Text("This feature is currently being built. Thank you for your patience! 😊") },
+        confirmButton = {
+            TextButton(onClick = onDismissRequest) { Text("Okay") }
+        }
+    )
+}
+
+@Composable
+private fun HistoryActionDialog(
     context: Context,
     selectedData: SavedVideosListData,
     deleteTheItem: (selectedId: String) -> Unit,
-    onDismissRequest: () ->Unit
+    onDismissRequest: () -> Unit
 ) {
-
-
     val shouldLoad = remember { mutableStateOf(false) }
 
     if (shouldLoad.value) {
@@ -479,42 +362,55 @@ private fun ShowAlertDialog(
                         putExtra("videoDate", selectedData.dateTime)
                         putExtra("duration", selectedData.duration)
                     }
-                    context.startService(playIntent)
+                    ContextCompat.startForegroundService(context, playIntent)
                 },
-                onFailure = {
-                    println("Error: $it")
-                }
+                onFailure = { println("Error: $it") }
             )
             shouldLoad.value = false
         }
     }
+
     AlertDialog(
-        onDismissRequest= onDismissRequest,
-        title = {
-            Text("Are you sure you want to remove this item?")
-        },
+        onDismissRequest = onDismissRequest,
+        shape = RoundedCornerShape(28.dp),
+        title = { Text("Manage History", fontWeight = FontWeight.Bold) },
+        text = { Text("What would you like to do with this video?") },
         confirmButton = {
             TextButton(
                 onClick = {
                     deleteTheItem(selectedData.watchUrl)
                     onDismissRequest()
-                },
-
-                ) {
-                Text("Remove")
+                }
+            ) {
+                Text("Remove from History", color = MaterialTheme.colorScheme.error)
             }
         },
         dismissButton = {
             TextButton(
                 onClick = {
-                   shouldLoad.value = true
+                    shouldLoad.value = true
                     onDismissRequest()
-                },
-
-                ) {
-                Text("Play in background!")
+                }
+            ) {
+                Text("Play in Background")
             }
-
         }
     )
+}
+
+private fun onClickListListener(
+    dbHelper: WatchHistory,
+    selectedId: String,
+    controller: NavBackStack<NavKey>
+) {
+    try {
+        val title = dbHelper.getVideoTitle(selectedId)
+        controller.add(VideoViewer(Video(id = selectedId, title = title)))
+    } catch (e: Exception) {
+        showNotificationDialog = TopPopUp(
+            message = "Error: ${e.message}",
+            icon = Icons.Default.VideoLibrary,
+            loading = false
+        )
+    }
 }

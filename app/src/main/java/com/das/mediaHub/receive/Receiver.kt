@@ -34,7 +34,6 @@ class Receiver: BroadcastReceiver() {
             DownloadManager.ACTION_DOWNLOAD_COMPLETE -> {
                 context.downloadComplete(intent)
             }
-
         }
     }
 
@@ -42,10 +41,12 @@ class Receiver: BroadcastReceiver() {
         val downloadManager = getSystemService<DownloadManager>()
         val notificationManager = getSystemService<NotificationManager>()
 
-        val downloadId = intent.getLongExtra(DownloadManager.EXTRA_DOWNLOAD_ID, -1L)
+        val downloadId = intent.getLongExtra(/* name = */ DownloadManager.EXTRA_DOWNLOAD_ID, /* defaultValue = */
+            -1L)
 
-        val prefs = getSharedPreferences("app_prefs", Context.MODE_PRIVATE)
-        val expectedId = prefs.getLong(DownloadConstants.EXCEPTED_DOWNLOAD_ID, -1L)
+        val prefs = getSharedPreferences(/* name = */ "app_prefs", /* mode = */ Context.MODE_PRIVATE)
+        val expectedId = prefs.getLong(/* key = */ DownloadConstants.EXCEPTED_DOWNLOAD_ID, /* defValue = */
+            -1L)
 
         if (downloadId == expectedId) {
             val query = DownloadManager.Query().setFilterById(downloadId)
@@ -71,7 +72,7 @@ class Receiver: BroadcastReceiver() {
                 val notification = NotificationCompat.Builder(this,
                     Notifications.DOWNLOADER_NOTIFICATION_CHANNEL
                 )
-                    .setSmallIcon(R.mipmap.launcher_foreground)
+                    .setSmallIcon(R.mipmap.ic_launcher)
                     .setContentTitle("Download complete")
                     .setContentText("Click here to install new version")
                     .setContentIntent(mainPendingIntent)
