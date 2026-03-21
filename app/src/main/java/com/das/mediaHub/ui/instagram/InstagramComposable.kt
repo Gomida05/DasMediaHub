@@ -28,7 +28,7 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.Download
-import androidx.compose.material.icons.filled.InstagramIcon
+import com.das.mediaHub.data.model.icons.filled.InstagramIcon
 import androidx.compose.material.icons.filled.Link
 import androidx.compose.material.icons.filled.Person
 import androidx.compose.material.icons.filled.Search
@@ -70,7 +70,7 @@ import androidx.navigation3.runtime.NavBackStack
 import androidx.navigation3.runtime.NavKey
 import coil.compose.AsyncImage
 import com.das.mediaHub.data.model.tiktok.TikTokInfo
-import com.das.mediaHub.downloader.DownloaderClass
+import com.das.mediaHub.services.download.DownloadService
 import kotlinx.coroutines.launch
 
 @Composable
@@ -276,9 +276,10 @@ fun NavBackStack<NavKey>.InstagramComposable() {
                     resolvedInfo?.let { info ->
                         InstagramPreviewCard(info) {
                             val title = info.title ?: "Instagram_Video_${System.currentTimeMillis()}"
-                            DownloaderClass(context).downloadVideo(info.stream_url!!, title)
                             scope.launch {
-                                snackBarHostState.showSnackbar("Download started: $title")
+                                snackBarHostState.showSnackbar(
+                                    "Coming soon"
+                                )
                             }
                         }
                     }

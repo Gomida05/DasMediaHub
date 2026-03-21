@@ -4,6 +4,7 @@ import android.app.NotificationChannel
 import android.app.NotificationChannelGroup
 import android.app.NotificationManager
 import android.content.Context
+import com.das.mediaHub.data.constants.Notifications.DOWNLOADER_NOTIFICATION_CHANNEL
 
 
 internal class NotificationChannels(context: Context) {
@@ -59,6 +60,17 @@ internal class NotificationChannels(context: Context) {
                 group = "MNGC"
                 enableLights(false)
                 enableVibration(false)
+                setSound(null, null)
+            },
+            NotificationChannel(
+                DOWNLOADER_NOTIFICATION_CHANNEL,
+                "Media Downloader",
+                NotificationManager.IMPORTANCE_LOW
+            ).apply {
+                enableVibration(false)
+                setShowBadge(false)
+                description = "Media Downloader for videos and music"
+                enableLights(false)
                 setSound(null, null)
             }
         )

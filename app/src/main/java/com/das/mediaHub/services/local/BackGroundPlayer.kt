@@ -2,46 +2,27 @@ package com.das.mediaHub.services.local
 
 import android.annotation.SuppressLint
 import android.app.Notification
-import android.app.Service
 import android.content.Intent
-import android.os.IBinder
-import android.text.format.Formatter
-import android.util.Log
-import androidx.core.net.toUri
 import androidx.media3.common.AudioAttributes
 import androidx.media3.common.C
 import androidx.media3.common.MediaItem
-import androidx.media3.common.MediaMetadata
-import androidx.media3.exoplayer.DefaultLoadControl
 import androidx.media3.exoplayer.ExoPlayer
 import androidx.media3.session.MediaSession
+import androidx.media3.session.MediaSessionService
 import androidx.media3.ui.PlayerNotificationManager
 import androidx.media3.ui.PlayerNotificationManager.NotificationListener
-import com.das.mediaHub.data.constants.Action.ACTION_START
-import com.das.mediaHub.data.local.PathPreferences
-import com.das.mediaHub.python.YouTuber
-import kotlinx.coroutines.CoroutineScope
-import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.SupervisorJob
-import kotlinx.coroutines.launch
-import kotlinx.coroutines.withContext
-import java.io.File
+import com.das.mediaHub.data.media.MediaStoreCache
 
 @SuppressLint("UnsafeOptInUsageError")
-class BackGroundPlayer: Service() {
+class BackGroundPlayer: MediaSessionService() {
 
-    private val exoPlayer by lazy {
+
+    private val mediaSession: MediaSession by lazy {
+        MediaSession.Builder(this, player)
+            .build()
+    }
+    private val player: ExoPlayer by lazy {
         ExoPlayer.Builder(this)
-            .setLoadControl(
-                DefaultLoadControl.Builder()
-                    .setBufferDurationsMs(
-                        2_500,
-                        15_000,
-                        2_500,
-                        2_500
-                    )
-                    .build()
-            )
             .setAudioAttributes(
                 AudioAttributes.Builder()
                     .setUsage(C.USAGE_MEDIA)
@@ -51,11 +32,6 @@ class BackGroundPlayer: Service() {
             )
             .setHandleAudioBecomingNoisy(true)
             .build()
-    }
-
-
-    private val mediaSession by lazy {
-        MediaSession.Builder(this, exoPlayer).build()
     }
 
 
@@ -69,44 +45,41 @@ class BackGroundPlayer: Service() {
             .setNotificationListener(notificationListener)
             .build()
             .apply {
-                setPlayer(exoPlayer)
+                setPlayer(player)
                 setMediaSessionToken(mediaSession.platformToken)
             }
     }
-    private val serviceScope = CoroutineScope(
-        context = Dispatchers.Main + SupervisorJob()
-    )
+
 
     override fun onCreate() {
         super.onCreate()
-        Log.d("BGP", "Service created")
-
-        serviceScope.launch {
-            val items = withContext(Dispatchers.IO) {
-                fetchDataFromFolder()
-            }
-
-
-            if (items.isNotEmpty() && exoPlayer.mediaItemCount == 0) {
-                exoPlayer.setMediaItems(items)
-                exoPlayer.prepare()
-            }
-
+        val items: List<MediaItem> = MediaStoreCache.getMusics()
+        if (items.isNotEmpty()) {
+            player.setMediaItems(items)
+            player.prepare()
         }
         playerNotificationManager
     }
+    override fun onGetSession(controllerInfo: MediaSession.ControllerInfo): MediaSession {
+        return mediaSession
+    }
 
     override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
-
-
+        super.onStartCommand(intent, flags, startId)
         val mediaId = intent?.getIntExtra("media_id", 0) ?: 0
 
         when (intent?.action) {
             ACTION_START -> {
-                if (exoPlayer.isPlaying) {
-                    exoPlayer.seekTo(mediaId, 0)
+                if (mediaId in 0 until player.mediaItemCount) {
+                    player.seekTo(mediaId, 0)
                 }
-                exoPlayer.play()
+                player.play()
+            }
+
+            ACTION_PAUSE -> player.pause()
+            ACTION_STOP -> {
+                player.stop()
+                stopSelf()
             }
         }
 
@@ -114,59 +87,6 @@ class BackGroundPlayer: Service() {
     }
 
 
-
-
-
-
-    override fun onBind(intent: Intent?): IBinder? {
-        return null
-    }
-
-    private fun fetchDataFromFolder(): List<MediaItem> {
-        val musicDir = File(PathPreferences.getAudioPath(this))
-
-        if (!musicDir.exists() || !musicDir.isDirectory) {
-            Log.w("fetchDataFromFolder", "Invalid music directory")
-            return emptyList()
-        }
-
-        val files = musicDir.listFiles { file ->
-            file.isFile && file.extension.equals("mp3", ignoreCase = true)
-        } ?: return emptyList()
-
-        return files.mapNotNull { file ->
-            try {
-                val formattedDate =
-                    YouTuber.formatDateFromLong(file.lastModified())
-
-                val fileSizeFormatted =
-                    Formatter.formatFileSize(this, file.length())
-
-                val metadata = MediaMetadata.Builder()
-                    .setTitle(file.nameWithoutExtension)
-                    .setArtist("Unknown artist")
-                    .setAlbumTitle("Unknown album")
-                    .setDescription(formattedDate)
-                    .setMediaType(MediaMetadata.MEDIA_TYPE_MUSIC)
-                    .build()
-
-                MediaItem.Builder()
-                    .setMediaId(file.toUri().toString())
-                    .setUri(file.toUri())
-                    .setMediaMetadata(metadata)
-                    .setTag(fileSizeFormatted)
-                    .build()
-
-            } catch (e: Exception) {
-                Log.e(
-                    "fetchDataFromFolder",
-                    "Skipping unreadable file: ${file.name}",
-                    e
-                )
-                null // skip bad file, continue scanning
-            }
-        }
-    }
 
     private val notificationListener =
         object : NotificationListener {
@@ -190,21 +110,25 @@ class BackGroundPlayer: Service() {
         }
 
     override fun onTaskRemoved(rootIntent: Intent?) {
-        super.onTaskRemoved(rootIntent)
-        if (!exoPlayer.isPlaying){
+        if (!player.isPlaying) {
             stopSelf()
         }
+        super.onTaskRemoved(rootIntent)
     }
 
     override fun onDestroy() {
         playerNotificationManager.setPlayer(null)
+        player.release()
         mediaSession.release()
-        exoPlayer.release()
         super.onDestroy()
     }
 
-    private companion object {
-        const val CHANNEL_ID = "MusicPlayerNotification"
-        const val NOTIFICATION_ID = 95
+
+    companion object {
+        private const val CHANNEL_ID = "MusicPlayerNotification"
+        private const val NOTIFICATION_ID = 95
+        private const val ACTION_START = "com.das.mediaHub.START_BACKGROUND_MEDIA"
+        private const val ACTION_PAUSE = "com.das.mediaHub.PAUSE_BACKGROUND_MEDIA"
+        private const val ACTION_STOP = "com.das.mediaHub.STOP_BACKGROUND_MEDIA"
     }
 }

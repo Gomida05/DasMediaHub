@@ -1,6 +1,6 @@
 package com.das.mediaHub.ui.players.videoPlayer.state
 
-import com.das.mediaHub.data.model.searcher.Video
+import com.das.python.data.model.searcher.Video
 
 data class VideoUiState(
     val title: String? = null,
@@ -11,14 +11,14 @@ data class VideoUiState(
     val channelThumbnail: String? = null
 ) {
     companion object {
-        fun from(video: Video): VideoUiState {
+        fun Video.toVideoUiState(): VideoUiState {
             return VideoUiState(
-                title = video.title,
-                duration = video.duration,
-                views = video.viewCount?.short,
-                date = video.publishedTime,
-                channelName = video.channel?.name,
-                channelThumbnail = video.channel?.thumbnails?.firstOrNull()?.url
+                title = title,
+                duration = duration,
+                views = viewCount?.short,
+                date = publishedTime,
+                channelName = channel?.name,
+                channelThumbnail = channel?.thumbnails?.firstOrNull()?.url
             )
         }
     }

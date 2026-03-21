@@ -1,6 +1,5 @@
 package com.das.mediaHub.ui.result
 
-import android.content.Intent
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
@@ -23,6 +22,7 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.MoreVert
 import androidx.compose.material.icons.outlined.Search
+import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
@@ -31,6 +31,7 @@ import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.SnackbarHost
 import androidx.compose.material3.SnackbarHostState
@@ -40,7 +41,6 @@ import androidx.compose.material3.TextButton
 import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
-import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -58,30 +58,30 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.window.Dialog
-import androidx.core.content.ContextCompat
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation3.runtime.NavBackStack
 import androidx.navigation3.runtime.NavKey
 import coil.compose.AsyncImage
-import com.das.mediaHub.MainActivity
-import com.das.mediaHub.data.constants.Action.ACTION_START
-import com.das.mediaHub.services.AudioServiceFromUrl
-import com.das.mediaHub.data.model.VideosListData
 import com.das.mediaHub.NavScreens.VideoViewer
-import com.das.mediaHub.python.YouTuber.loadStreamUrl
-import com.das.mediaHub.data.model.searcher.Video
-import com.das.mediaHub.ui.players.videoPlayer.CustomMethods.SkeletonSuggestionLoadingLayout
+import com.das.mediaHub.OnLaunchComponents.playAudioFromUrl
+import com.das.mediaHub.data.model.download.DownloadType
+import com.das.mediaHub.services.download.DownloadService
+import com.das.mediaHub.ui.players.videoPlayer.CustomLayouts.SkeletonSuggestionLoadingLayout
+import com.das.mediaHub.ui.players.videoPlayer.state.UiState
+import com.das.python.YouTuber.loadStreamUrl
+import com.das.python.data.model.VideosListData
+import com.das.python.data.model.searcher.Video
 import kotlinx.coroutines.launch
 
 @Composable
 fun ResultViewerPage(backStack: NavBackStack<NavKey>, data: String) {
 
-    val viewModel = viewModel(modelClass = ResultViewModel::class.java, key = "ResultViewModel_$data")
-    val isLoading by viewModel.isLoading.collectAsState()
-    val searchResults by viewModel.searchResults.collectAsState()
-    val foundError by viewModel.error.collectAsState()
+    val viewModel = viewModel(modelClass = ResultViewModel::class.java.kotlin)
 
-    val isLoadingMore by viewModel.isLoadingMore.collectAsState()
+    val searchResultsState by viewModel.searchResults.collectAsStateWithLifecycle()
+
+    val isLoadingMore by viewModel.isLoadingMore.collectAsStateWithLifecycle()
 
 
     val snackBar = remember { SnackbarHostState() }
@@ -90,7 +90,7 @@ fun ResultViewerPage(backStack: NavBackStack<NavKey>, data: String) {
 
 
     LaunchedEffect(data) {
-        viewModel.fetchSuggestionsIfNeeded(data)
+        viewModel.fetchSuggestions(data)
     }
 
 
@@ -163,65 +163,94 @@ fun ResultViewerPage(backStack: NavBackStack<NavKey>, data: String) {
                 verticalArrangement = Arrangement.spacedBy(4.dp)
             ) {
 
-                if (isLoading) {
-                    item {
-                        Box(modifier = Modifier.fillMaxWidth(), contentAlignment = Alignment.Center) {
-                            SkeletonSuggestionLoadingLayout(true)
+                when (val state = searchResultsState) {
+                    UiState.Idle,
+                    UiState.Loading -> {
+                        item {
+                            Box(
+                                modifier = Modifier.fillMaxWidth(),
+                                contentAlignment = Alignment.Center
+                            ) {
+                                SkeletonSuggestionLoadingLayout(true)
+                            }
                         }
                     }
-                } else {
-                    when {
-                        searchResults.isEmpty() -> item {
-                            Box(modifier = Modifier.fillMaxWidth().padding(32.dp), contentAlignment = Alignment.Center) {
+
+                    UiState.Empty -> {
+                        item {
+                            Box(
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .padding(32.dp),
+                                contentAlignment = Alignment.Center
+                            ) {
                                 Text(
-                                    text = foundError ?: "No results found for \"$data\"",
+                                    text = "No results found for \"$data\"",
                                     style = MaterialTheme.typography.bodyLarge,
                                     textAlign = TextAlign.Center,
                                     color = MaterialTheme.colorScheme.onSurfaceVariant
                                 )
                             }
                         }
+                    }
 
-                        !foundError.isNullOrEmpty() -> item {
-                            Box(modifier = Modifier.fillMaxWidth().padding(32.dp), contentAlignment = Alignment.Center) {
+                    is UiState.Error -> {
+                        item {
+                            Box(
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .padding(32.dp),
+                                contentAlignment = Alignment.Center
+                            ) {
                                 Text(
-                                    text = foundError ?: "Something went wrong, please check your internet and try again!",
+                                    text = state.message,
                                     style = MaterialTheme.typography.bodyLarge,
                                     textAlign = TextAlign.Center,
                                     color = MaterialTheme.colorScheme.error
                                 )
                             }
                         }
+                    }
 
-                        else -> {
-                            itemsIndexed(items = searchResults) { index, item ->
-                                if (index >= searchResults.size - 3 && !isLoadingMore) {
+                    is UiState.Success -> {
+                        itemsIndexed(
+                            items = state.data,
+                            key = { _, item -> item.id }
+                        ) { index, item ->
+                            if (index >= state.data.size - 3 && !isLoadingMore) {
+                                LaunchedEffect(index) {
                                     viewModel.loadMore()
                                 }
-                                VideoResultItem(
-                                    backStack,
-                                    item
+                            }
+
+                            VideoResultItem(
+                                backStack = backStack,
+                                searchItem = item
+                            ) {
+                                scope.launch {
+                                    snackBar.showSnackbar(it)
+                                }
+                            }
+                        }
+
+                        if (isLoadingMore) {
+                            item {
+                                Box(
+                                    modifier = Modifier
+                                        .fillMaxWidth()
+                                        .padding(24.dp),
+                                    contentAlignment = Alignment.Center
                                 ) {
-                                    scope.launch {
-                                        snackBar.showSnackbar(it)
-                                    }
+                                    CircularProgressIndicator(
+                                        strokeWidth = 3.dp,
+                                        modifier = Modifier.size(32.dp)
+                                    )
                                 }
                             }
+                        }
 
-                            if (isLoadingMore) {
-                                item {
-                                    Box(
-                                        modifier = Modifier
-                                            .fillMaxWidth()
-                                            .padding(24.dp),
-                                        contentAlignment = Alignment.Center
-                                    ) {
-                                        CircularProgressIndicator(strokeWidth = 3.dp, modifier = Modifier.size(32.dp))
-                                    }
-                                }
-                            }
-
-                            item { Spacer(modifier = Modifier.height(16.dp)) }
+                        item {
+                            Spacer(modifier = Modifier.height(16.dp))
                         }
                     }
                 }
@@ -348,109 +377,154 @@ private fun ShowResultDialog(
 ) {
     val mContext = LocalContext.current
     val thumbnailUrl = "https://img.youtube.com/vi/${selectedItem.videoId}/0.jpg"
-    val shouldLoad = remember { mutableStateOf(false) }
 
-    if (shouldLoad.value) {
-        LaunchedEffect(shouldLoad.value) {
-            selectedItem.loadStreamUrl(
-                onSuccess = {
-                    val playIntent = Intent(mContext, AudioServiceFromUrl::class.java).apply {
-                        action = ACTION_START
-                        putExtra("videoId", selectedItem.videoId)
-                        putExtra("media_url", it.audioUrl)
-                        putExtra("title", selectedItem.title)
-                        putExtra("channelName", selectedItem.channelName)
-                        putExtra("viewNumber", selectedItem.views)
-                        putExtra("videoDate", selectedItem.dateOfVideo)
-                        putExtra("duration", selectedItem.duration)
-                    }
-                    ContextCompat.startForegroundService(mContext, playIntent)
-                },
-                onFailure = {
-                    println("Error: $it")
+    val isLoading = remember { mutableStateOf(false) }
+    val errorMessage = remember { mutableStateOf<String?>(null) }
+    val scope = rememberCoroutineScope()
+
+    if (isLoading.value) {
+        Dialog(onDismissRequest = {}) {
+            Surface(
+                shape = RoundedCornerShape(24.dp),
+                color = MaterialTheme.colorScheme.surface
+            ) {
+                Column(
+                    modifier = Modifier.padding(28.dp),
+                    horizontalAlignment = Alignment.CenterHorizontally
+                ) {
+                    CircularProgressIndicator()
+                    Spacer(modifier = Modifier.height(14.dp))
+                    Text("Fetching stream URL...")
                 }
-            )
-            shouldLoad.value = false
+            }
         }
     }
 
-    Dialog(onDismissRequest = { onDismissRequest() }) {
-        Card(
-            shape = RoundedCornerShape(28.dp),
-            colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(16.dp)
-        ) {
-            Column(
-                modifier = Modifier.padding(20.dp),
-                horizontalAlignment = Alignment.CenterHorizontally
+    if (errorMessage.value != null) {
+        AlertDialog(
+            onDismissRequest = { errorMessage.value = null },
+            confirmButton = {
+                TextButton(onClick = { errorMessage.value = null }) {
+                    Text("OK")
+                }
+            },
+            title = { Text("Error") },
+            text = { Text(errorMessage.value ?: "Unknown error") }
+        )
+    } else if (!isLoading.value && errorMessage.value == null) {
+        Dialog(onDismissRequest = onDismissRequest) {
+            Card(
+                shape = RoundedCornerShape(24.dp),
+                colors = CardDefaults.cardColors(
+                    containerColor = MaterialTheme.colorScheme.surface
+                ),
+                modifier = Modifier
+                    .fillMaxWidth(0.95f)
             ) {
-                Text(
-                    text = "Choose Action",
-                    style = MaterialTheme.typography.titleLarge,
-                    fontWeight = FontWeight.Bold
-                )
-                Spacer(modifier = Modifier.height(16.dp))
-                AsyncImage(
-                    model = thumbnailUrl,
-                    contentDescription = null,
-                    modifier = Modifier.fillMaxWidth().height(160.dp).clip(RoundedCornerShape(16.dp)),
-                    contentScale = ContentScale.Crop
-                )
-                Spacer(modifier = Modifier.height(20.dp))
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.spacedBy(8.dp)
+                Column(
+                    modifier = Modifier.padding(20.dp),
+                    horizontalAlignment = Alignment.CenterHorizontally
                 ) {
-                    TextButton(
-                        modifier = Modifier.weight(1f),
+
+                    Text(
+                        text = "Choose Action",
+                        style = MaterialTheme.typography.titleMedium,
+                        fontWeight = FontWeight.SemiBold
+                    )
+
+                    Spacer(modifier = Modifier.height(16.dp))
+
+                    AsyncImage(
+                        model = thumbnailUrl,
+                        contentDescription = null,
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .height(150.dp)
+                            .clip(RoundedCornerShape(14.dp)),
+                        contentScale = ContentScale.Crop
+                    )
+
+                    Spacer(modifier = Modifier.height(20.dp))
+
+                    Button(
+                        modifier = Modifier.fillMaxWidth(),
                         onClick = {
-                            shouldLoad.value = true
+                            isLoading.value = true
+
+                            scope.launch {
+                                selectedItem.loadStreamUrl(
+                                    onSuccess = { streamResult ->
+                                        isLoading.value = false
+
+                                        if (streamResult.audioUrl.isBlank()) {
+                                            errorMessage.value =
+                                                "Audio stream URL is empty."
+                                            return@loadStreamUrl
+                                        }
+
+                                        mContext.playAudioFromUrl(
+                                            streamResult.audioUrl,
+                                            selectedItem
+                                        )
+
+                                        onDismissRequest()
+                                    },
+                                    onFailure = {
+                                        isLoading.value = false
+                                        errorMessage.value =
+                                            it.message ?: "Failed to fetch stream URL."
+                                    }
+                                )
+                            }
+                        }
+                    ) {
+                        Text("Play in Background")
+                    }
+
+                    Spacer(modifier = Modifier.height(8.dp))
+
+                    OutlinedButton(
+                        modifier = Modifier.fillMaxWidth(),
+                        onClick = {
+                            DownloadService.startForYouTube(
+                                mContext,
+                                selectedItem.videoId,
+                                selectedItem.title,
+                                DownloadType.MUSIC
+                            )
                             onDismissRequest()
                         }
                     ) {
-                        Text(
-                            text = "Background",
-                            style = MaterialTheme.typography.bodySmall
-                        )
+                        Text("Download Music")
                     }
 
-                    Button(
-                        modifier = Modifier.weight(1f),
+                    Spacer(modifier = Modifier.height(8.dp))
+
+                    OutlinedButton(
+                        modifier = Modifier.fillMaxWidth(),
                         onClick = {
-                            (mContext as? MainActivity)?.startDownloadingAudio(
+                            DownloadService.startForYouTube(
+                                mContext,
                                 selectedItem.videoId,
-                                selectedItem.title
+                                selectedItem.title,
+                                DownloadType.VIDEO
                             )
                             onDismissRequest()
-                        },
-                        shape = RoundedCornerShape(12.dp)
+                        }
                     ) {
-                        Text(
-                            text = "Music",
-                            style = MaterialTheme.typography.bodySmall
-                        )
+                        Text("Download Video")
                     }
 
-                    Button(
-                        modifier = Modifier.weight(1f),
-                        onClick = {
-                            (mContext as? MainActivity)?.startDownloadingVideo(
-                                selectedItem.videoId,
-                                selectedItem.title
-                            )
-                            onDismissRequest()
-                        },
-                        shape = RoundedCornerShape(12.dp)
+                    Spacer(modifier = Modifier.height(6.dp))
+
+                    TextButton(
+                        onClick = onDismissRequest
                     ) {
-                        Text(
-                            text = "Video",
-                            style = MaterialTheme.typography.bodySmall
-                        )
+                        Text("Cancel")
                     }
                 }
             }
         }
     }
 }
+

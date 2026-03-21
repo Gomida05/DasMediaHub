@@ -4,19 +4,15 @@ import android.Manifest.permission.POST_NOTIFICATIONS
 import android.Manifest.permission.READ_MEDIA_AUDIO
 import android.Manifest.permission.READ_MEDIA_VIDEO
 import android.app.PictureInPictureParams
-import android.content.Context
 import android.content.Intent
 import android.content.Intent.EXTRA_STREAM
 import android.content.Intent.EXTRA_TEXT
 import android.content.pm.PackageManager
 import android.net.Uri
 import android.os.Build.VERSION.SDK_INT
-import android.os.Build.VERSION_CODES
 import android.os.Build.VERSION_CODES.TIRAMISU
 import android.os.Bundle
-import android.util.Log
 import android.util.Rational
-import android.widget.Toast
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
@@ -26,86 +22,74 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.Downloading
+import androidx.compose.material.icons.filled.Info
 import androidx.compose.material3.Scaffold
 import androidx.compose.runtime.Composable
-import androidx.compose.ui.Modifier
-import androidx.core.app.ActivityCompat
-import androidx.core.app.NotificationCompat
-import androidx.core.app.NotificationManagerCompat
-import com.das.mediaHub.python.YouTuber.youtubeExtractor
-import com.das.mediaHub.python.YouTuber.isValidYoutubeURL
-import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
+import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.zIndex
 import androidx.core.content.FileProvider
-import androidx.lifecycle.lifecycleScope
 import androidx.navigation3.runtime.NavBackStack
 import androidx.navigation3.runtime.NavEntry
 import androidx.navigation3.runtime.NavKey
 import androidx.navigation3.runtime.rememberNavBackStack
 import androidx.navigation3.ui.NavDisplay
-import com.das.mediaHub.python.YouTuber.getAudioStreamUrl
-import com.das.mediaHub.python.YouTuber.getVideoStreamUrl
-import com.das.mediaHub.downloader.DownloaderClass
-import com.das.mediaHub.data.constants.Action.ACTION_START
-import com.das.mediaHub.python.YouTuber.extractPlaylistId
-import com.das.mediaHub.python.YouTuber.getPlayListStreamUrl
-import com.das.mediaHub.python.YouTuber.isValidYouTubePlaylistUrl
-import com.das.mediaHub.services.local.BackGroundPlayer
-import com.das.mediaHub.ui.downloads.DownloadsComposable
-import com.das.mediaHub.ui.home.HomePageComposable
-import com.das.mediaHub.ui.result.ResultViewerPage
-import com.das.mediaHub.ui.search.SearchPageCompose
-import com.das.mediaHub.ui.settings.watch_later.WatchLaterComposable
-import com.das.mediaHub.ui.settings.SettingsComposable
-import com.das.mediaHub.ui.settings.userSettings.UserSettingComposable
-import com.das.mediaHub.ui.players.videoPlayerLocally.LocalVideoPlayer
-import com.das.mediaHub.ui.auth.LoginPage
-import com.das.mediaHub.ui.auth.signup.SignUpPage
-import com.das.mediaHub.ui.players.videoPlayer.OnlineVideoPlayer
-import com.das.mediaHub.ui.watchedVideos.WatchedVideosComposable
-import com.das.mediaHub.NavScreens.*
+import com.das.mediaHub.NavScreens.AboutDasMediaHub
+import com.das.mediaHub.NavScreens.Downloaded
+import com.das.mediaHub.NavScreens.DownloadsPage
+import com.das.mediaHub.NavScreens.ExoPlayerUI
+import com.das.mediaHub.NavScreens.FeedbackScreen
+import com.das.mediaHub.NavScreens.Home
+import com.das.mediaHub.NavScreens.Instagram
+import com.das.mediaHub.NavScreens.RecentlyWatched
+import com.das.mediaHub.NavScreens.Saved
+import com.das.mediaHub.NavScreens.Searcher
+import com.das.mediaHub.NavScreens.Setting
+import com.das.mediaHub.NavScreens.TikTok
+import com.das.mediaHub.NavScreens.VideoViewer
 import com.das.mediaHub.OnLaunchComponents.BottomNavItems
-import com.das.mediaHub.PIP.getPipSourceRect
-import com.das.mediaHub.PIP.shouldEnterPipMode
-import com.das.mediaHub.WakeLockHelper.releaseWakeLock
-import com.das.mediaHub.auth.MyFirebase.rememberFirebaseUser
+import com.das.mediaHub.OnLaunchComponents.newTextIntent
+import com.das.mediaHub.data.constants.Action.ACTION_START
 import com.das.mediaHub.data.constants.DownloadConstants.DOWNLOAD_FINISHED
 import com.das.mediaHub.data.model.TopPopUp
-import com.das.mediaHub.data.model.searcher.Video
-import com.das.mediaHub.ui.theme.CustomTheme
+import com.das.mediaHub.services.local.BackGroundPlayer
 import com.das.mediaHub.ui.TopPopupNotification.TopPopupNotification
 import com.das.mediaHub.ui.TopPopupNotification.showNotificationDialog
-import com.das.mediaHub.ui.auth.AccountSettingsPage
-import com.das.mediaHub.ui.auth.ChangePasswordPage
+import com.das.mediaHub.ui.downloaded.DownloadedComposable
+import com.das.mediaHub.ui.downloads.DownloadingComposable
+import com.das.mediaHub.ui.home.HomePageComposable
 import com.das.mediaHub.ui.home.PageNotFound
 import com.das.mediaHub.ui.instagram.InstagramComposable
+import com.das.mediaHub.ui.players.videoPlayer.OnlineVideoPlayer
+import com.das.mediaHub.ui.players.videoPlayerLocally.LocalVideoPlayer
+import com.das.mediaHub.ui.result.ResultViewerPage
+import com.das.mediaHub.ui.search.SearchPageCompose
 import com.das.mediaHub.ui.settings.AboutDasMediaHub
 import com.das.mediaHub.ui.settings.FeedbackComposable
+import com.das.mediaHub.ui.settings.SettingsComposable
+import com.das.mediaHub.ui.settings.watch_later.WatchLaterComposable
+import com.das.mediaHub.ui.theme.DasMediaHubTheme
 import com.das.mediaHub.ui.tiktok.TikTokComposable
-import com.das.mediaHub.ui.welcome.WelcomePage
-import com.google.firebase.Firebase
-import com.google.firebase.auth.auth
-import kotlinx.coroutines.launch
+import com.das.mediaHub.ui.watchedVideos.WatchedVideosComposable
 import java.io.File
 
 
 class MainActivity : ComponentActivity() {
 
-    private val intentListeners = mutableSetOf<(Intent) -> Unit>()
-
-    private var intentListener: ((Intent) -> Unit)? = null
-
+    private var pendingIntent by mutableStateOf<Intent?>(null)
 
 
     override fun onCreate(savedInstanceState: Bundle?) {
         enableEdgeToEdge()
         super.onCreate(savedInstanceState)
+        onNewIntent(intent)
         setContent {
-            CustomTheme {
+            DasMediaHubTheme {
                 MainLauncherPageComposable()
             }
         }
@@ -115,52 +99,29 @@ class MainActivity : ComponentActivity() {
 
     override fun onNewIntent(intent: Intent) {
         super.onNewIntent(intent)
-        intentListeners.forEach { it(intent) }
+        pendingIntent = intent
     }
-
-    private fun registerIntentListener(listener: (Intent) -> Unit) {
-        intentListeners.add(listener)
-    }
-
-    private fun unregisterIntentListener(listener: (Intent) -> Unit) {
-        intentListeners.remove(listener)
-    }
-
-
 
     @Composable
     private fun MainLauncherPageComposable() {
 
         val backStack = rememberNavBackStack(Home)
 
-        val currentRoute = backStack.lastOrNull()
 
-        LaunchedEffect(Unit) {
-            intent?.let {
-                backStack.listenNewIntent(it)
+        LaunchedEffect(pendingIntent) {
+            pendingIntent?.let {
+                backStack.handleNavIntent(it)
+                pendingIntent = null
             }
         }
 
-        DisposableEffect(Unit) {
-            val listener: (Intent) -> Unit = {
-                backStack.listenNewIntent(it)
-            }
-            registerIntentListener(listener)
-            onDispose {
-                unregisterIntentListener(listener)
-            }
-        }
-
-
-        val auth = Firebase.auth
-        val currentUser = auth.rememberFirebaseUser()
 
         Scaffold(
             contentWindowInsets = WindowInsets(0, 0, 0, 0),
             modifier = Modifier
                 .fillMaxSize(),
             bottomBar = {
-                BottomNavItems(currentRoute, backStack)
+                BottomNavItems(backStack)
             },
         ) { paddingValues ->
 
@@ -201,7 +162,7 @@ class MainActivity : ComponentActivity() {
 
                     is Setting -> {
                         NavEntry(key = key) {
-                            SettingsComposable(user = currentUser) {
+                            SettingsComposable {
                                 backStack.add(it)
                             }
 
@@ -223,21 +184,21 @@ class MainActivity : ComponentActivity() {
                         }
                     }
 
-                    is Downloads -> {
+                    is DownloadsPage -> {
                         NavEntry(key = key) {
-                            DownloadsComposable(backStack)
+                            DownloadingComposable(backStack)
+                        }
+                    }
+
+                    is Downloaded -> {
+                        NavEntry(key = key) {
+                            DownloadedComposable(backStack)
                         }
                     }
 
                     is Searcher -> {
                         NavEntry(key = key) {
                             SearchPageCompose(backStack, key.text)
-                        }
-                    }
-
-                    is UserSettings -> {
-                        NavEntry(key = key) {
-                            UserSettingComposable(backStack)
                         }
                     }
 
@@ -262,66 +223,6 @@ class MainActivity : ComponentActivity() {
                     is Instagram -> {
                         NavEntry(key = key) {
                             backStack.InstagramComposable()
-                        }
-                    }
-
-                    is SignInPage -> {
-                        NavEntry(key = key) {
-                            LoginPage(backStack)
-                        }
-                    }
-
-                    is AccountSetting -> {
-                        NavEntry(key = key) {
-                            if (currentUser != null) {
-                                AccountSettingsPage(backStack, currentUser) {
-                                    auth.signOut()
-                                }
-                            } else {
-                                LoginPage(backStack)
-                            }
-                        }
-                    }
-
-                    is ChangePassword -> {
-                        NavEntry(key = key) {
-                            if (currentUser != null) {
-                                ChangePasswordPage(backStack, currentUser)
-                            } else {
-                                backStack.removeLastOrNull()
-                            }
-                        }
-                    }
-
-                    is WelcomePage -> {
-                        NavEntry(key = key) {
-                            WelcomePage(backStack) {
-                                if (auth.currentUser == null) {
-                                    auth.signInAnonymously()
-                                        .addOnCompleteListener { task ->
-                                            if (task.isSuccessful) {
-                                                Log.d(
-                                                    "Auth",
-                                                    "Signed in anonymously as ${auth.currentUser?.uid}"
-                                                )
-                                            } else {
-                                                Log.e(
-                                                    "Auth",
-                                                    "Anonymous sign-in failed",
-                                                    task.exception
-                                                )
-                                            }
-                                        }
-                                }
-                                backStack.add(Home)
-                                backStack.removeLastOrNull()
-                            }
-                        }
-                    }
-
-                    is SignUpPage -> {
-                        NavEntry(key = key) {
-                            SignUpPage(backStack)
                         }
                     }
 
@@ -354,46 +255,46 @@ class MainActivity : ComponentActivity() {
     override fun onUserLeaveHint() {
         super.onUserLeaveHint()
 
-        if (!shouldEnterPipMode.value) return
-
-        val builder = PictureInPictureParams.Builder()
-            .setAspectRatio(Rational(16, 9))
-
-        if (SDK_INT >= VERSION_CODES.S) {
-            builder
-                .setAutoEnterEnabled(true)
-                .setSeamlessResizeEnabled(true)
-                .setSourceRectHint(getPipSourceRect())
+        if (PIP.canEnterPipMode.value) {
+            enterPictureInPictureMode(
+                PictureInPictureParams.Builder()
+                    .setAspectRatio(Rational(16, 9))
+                    .build()
+            )
         }
 
-        enterPictureInPictureMode(builder.build())
     }
 
+    private fun NavBackStack<NavKey>.handleNavIntent(intent: Intent) {
+        when (intent.action) {
 
-    private fun NavBackStack<NavKey>.listenNewIntent(
-        newIntent: Intent
-    ) {
-        if (newIntent.action == Intent.ACTION_SEND) {
-            val intentType = newIntent.type.toString()
+            Intent.ACTION_SEND -> {
+                val type = intent.type.orEmpty()
+                when {
+                    type.startsWith("text/") ->
+                        newTextIntent(intent.getStringExtra(EXTRA_TEXT).orEmpty())
 
-            if (intentType.startsWith("text/")) {
-                newTextIntent(
-                    sharedText = newIntent.getStringExtra(EXTRA_TEXT).toString()
-                )
-            } else if (intentType.startsWith("video/")) {
-                newIntent.newReceivedMediaTypeVideo(this)
-            } else if (intentType.startsWith("audio/")) {
-                newIntent.newReceivedMediaTypeAudio()
+                    type.startsWith("video/") ->
+                        intent.newReceivedMediaTypeVideo(this)
+
+                    type.startsWith("audio/") ->
+                        intent.newReceivedMediaTypeAudio()
+                }
             }
-        } else if (newIntent.action == Intent.ACTION_VIEW) {
-            newIntent.data?.newMediaIntent(backStack = this)
 
-        } else if (newIntent.action == DOWNLOAD_FINISHED) {
-            val apkPath = newIntent.getStringExtra("apk_path") ?: return
-            File(apkPath)
-                .requestToInstall()
-        } else if (newIntent.action == Intent.ACTION_APPLICATION_PREFERENCES) {
-            add(Setting)
+            Intent.ACTION_VIEW -> {
+                intent.data?.newMediaIntent(this)
+            }
+
+            DOWNLOAD_FINISHED -> {
+                intent.getStringExtra("apk_path")?.let {
+                    File(it).requestToInstall()
+                }
+            }
+
+            Intent.ACTION_APPLICATION_PREFERENCES -> {
+                add(Setting)
+            }
         }
     }
 
@@ -480,166 +381,18 @@ class MainActivity : ComponentActivity() {
             startService(playIntent)
 
         } else {
-            showDialogs("Unsupported media type")
-        }
-    }
-    private fun NavBackStack<NavKey>.newTextIntent(
-        sharedText: String
-    ) {
-        if (sharedText.isValidYoutubeURL()) {
-            val videoId = sharedText.youtubeExtractor()
-            add(
-                VideoViewer(
-                    Video(id = videoId.toString())
-                )
-            )
-
-        } else if (sharedText.isValidYouTubePlaylistUrl()) {
-
-            add(
-                VideoViewer(
-                    Video(id = extractPlaylistId(sharedText).toString())
-                )
-            )
-
-        } else if (sharedText.startsWith("DownloadsPageFr")) {
-            add(Downloads)
-        } else {
-            add(Searcher(sharedText))
-        }
-    }
-
-
-    fun startDownloadingVideo(videoId: String, title: String){
-        val downloaderClass = DownloaderClass(this)
-        showNotificationDialog = TopPopUp(
-            message = "Start downloading $title now",
-            icon = Icons.Default.Downloading,
-            loading = true
-        )
-        lifecycleScope.launch {
-            getVideoStreamUrl(videoId,
-                onSuccess = {
-                    downloaderClass.downloadVideo(it, title)
-                },
-                onFailure = {
-                    alertUserError(this@MainActivity, it)
-                    showDialogs(it)
-                }
+            showNotificationDialog = TopPopUp(
+                message = "Unsupported media type",
+                icon = Icons.Default.Info
             )
         }
     }
 
-    fun startPlayListDownload(
-        playListUrl: String
-    ){
-        val downloaderClass = DownloaderClass(this)
-
-        lifecycleScope.launch {
-            try {
-                getPlayListStreamUrl(
-                    playListUrl,
-                    onSuccess = { playListName, videoList ->
-                        for (i in videoList) {
-                            downloaderClass.downloadVideosPlayList(
-                                i.url,
-                                playListName,
-                                i.title
-                            )
-                        }
-                    },
-                    onFailure = {
-                        alertUserError(this@MainActivity, it)
-                        Log.e("There is an error ", it)
-                    }
-                )
-            } catch (e: Exception) {
-                Log.e("Playlist", "Error getting playlist", e)
-            }
-        }
-    }
-
-
-
-    fun startDownloadingAudio(videoId: String, title: String){
-        val downloaderClass = DownloaderClass(this)
-        showNotificationDialog = TopPopUp(
-            message = "Start downloading $title now",
-            icon = Icons.Default.Downloading,
-            loading = true
-        )
-        lifecycleScope.launch {
-            getAudioStreamUrl(videoId,
-                onSuccess = {
-                    downloaderClass.downloadMusic(it, title)
-                },
-                onFailure = {
-                    showDialogs(it)
-                }
-            )
-        }
-    }
-
-
-    fun alertUserError(context: Context, message: String?) {
-
-        val notification = NotificationCompat.Builder(context, "error_searching")
-            .setContentTitle("Found an error")
-            .setContentText(message)
-            .setSmallIcon(R.mipmap.ic_launcher_ofme)
-            .setOngoing(true)
-            .setAutoCancel(false)
-            .setGroup("NGC")
-            .setPriority(NotificationCompat.PRIORITY_HIGH)
-            .setStyle(
-                NotificationCompat.BigTextStyle()
-                    .setBigContentTitle("Found an error")
-                    .setSummaryText(message)
-            )
-            .setCategory(NotificationCompat.CATEGORY_SERVICE) // Heads-up notification
-            .build()
-
-        val notificationManager = NotificationManagerCompat.from(context)
-        if (ActivityCompat.checkSelfPermission(
-                context,
-                POST_NOTIFICATIONS
-            ) != PackageManager.PERMISSION_GRANTED
-        ) {
-            if (SDK_INT >= TIRAMISU) {
-                ActivityCompat.requestPermissions(this, arrayOf(POST_NOTIFICATIONS), 0)
-            }
-            return
-        }
-        notificationManager.notify(1001, notification)  // Unique ID for your notification
-    }
-
-
-
-
-
-
-
-
-    private fun showDialogs(inputText: String) {
-        Toast.makeText(this, inputText, Toast.LENGTH_SHORT).show()
-    }
-
-
-
-    override fun onPause() {
-        super.onPause()
-        releaseWakeLock()
-    }
 
 
     override fun onDestroy() {
         super.onDestroy()
-
-        intentListener?.let {
-            unregisterIntentListener(it)
-        }
-        intentListeners.clear()
-        releaseWakeLock()
+        pendingIntent = null
     }
 
 }

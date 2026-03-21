@@ -3,6 +3,8 @@ package com.das.mediaHub.data.local
 import android.content.Context
 import android.content.SharedPreferences
 import androidx.compose.runtime.*
+import androidx.compose.runtime.retain.RetainedEffect
+import androidx.compose.runtime.retain.retain
 import androidx.compose.ui.platform.LocalContext
 import androidx.core.content.edit
 
@@ -76,7 +78,7 @@ internal object PathPreferences {
             }
         }
 
-        DisposableEffect(Unit) {
+        RetainedEffect (Unit) {
             val listener =
                 SharedPreferences.OnSharedPreferenceChangeListener { _, changedKey ->
                     if (changedKey == key) {
@@ -86,7 +88,7 @@ internal object PathPreferences {
                 }
 
             prefs.registerOnSharedPreferenceChangeListener(listener)
-            onDispose {
+            onRetire {
                 prefs.unregisterOnSharedPreferenceChangeListener(listener)
             }
         }

@@ -1,40 +1,35 @@
 package com.das.mediaHub.ui.settings.watch_later
 
-import android.app.Application
-import androidx.lifecycle.AndroidViewModel
+import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.das.mediaHub.data.local.DatabaseFavorite
 import com.das.mediaHub.data.model.SavedVideosListData
+import com.das.mediaHub.ui.players.videoPlayer.state.UiState
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 
-class WatchLaterViewModel(application: Application) : AndroidViewModel(application) {
+class WatchLaterViewModel(private val dbHelper: DatabaseFavorite) : ViewModel() {
 
-    val dbHelper = DatabaseFavorite(getApplication())
-
-    private val _searchResults = MutableStateFlow<List<SavedVideosListData>>(emptyList())
+    private val _searchResults = MutableStateFlow<UiState<List<SavedVideosListData>>>(UiState.Idle)
     val searchResults = _searchResults.asStateFlow()
 
-    private val _isLoading = MutableStateFlow(true)
-    val isLoading = _isLoading.asStateFlow()
-
-    private val _error = MutableStateFlow<String?>(null)
-    val error = _error.asStateFlow()
     fun fetchData() {
-        _isLoading.value = true
-        _error.value = null
+        _searchResults.value = UiState.Loading
         viewModelScope.launch {
             try {
 
-                _searchResults.value = fetchDataFromDatabase()
+                val savedVideosListData = fetchDataFromDatabase()
+                if (savedVideosListData.isEmpty()) {
+                    _searchResults.value = UiState.Empty
+                } else {
+                    _searchResults.value = UiState.Success(savedVideosListData)
+                }
 
             } catch (e: Exception) {
-                _error.value = e.message
-            } finally {
-                _isLoading.value = false
+                _searchResults.value = UiState.Error(message = e.message ?: "Unknown error")
             }
         }
     }
@@ -47,7 +42,7 @@ class WatchLaterViewModel(application: Application) : AndroidViewModel(applicati
             val cursor = dbHelper.getResults()
             val savedVideosListData = mutableListOf<SavedVideosListData>()
 
-            try {
+            cursor.use { cursor ->
                 while (cursor.moveToNext()) {
                     val watchUrl = cursor.getString(cursor.getColumnIndexOrThrow("video_id"))
                     val title = dbHelper.getVideoTitle(watchUrl).toString()
@@ -72,15 +67,23 @@ class WatchLaterViewModel(application: Application) : AndroidViewModel(applicati
                         )
                     )
                 }
-            } finally {
-                cursor.close()
             }
 
             savedVideosListData
         }
 
     fun removeSearchItem(searchItem: SavedVideosListData) {
-        _searchResults.value = _searchResults.value.filter { it != searchItem }
+        val currentState = _searchResults.value
+
+        if (currentState is UiState.Success) {
+            val updatedList = currentState.data.filter { it != searchItem }
+
+            _searchResults.value = if (updatedList.isEmpty()) {
+                UiState.Empty
+            } else {
+                UiState.Success(updatedList)
+            }
+        }
     }
 
 }

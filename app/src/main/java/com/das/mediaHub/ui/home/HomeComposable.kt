@@ -16,10 +16,9 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.AccountCircle
 import androidx.compose.material.icons.filled.Download
-import androidx.compose.material.icons.filled.Info
-import androidx.compose.material.icons.filled.InstagramIcon
-import androidx.compose.material.icons.filled.TikTokIcon
-import androidx.compose.material.icons.filled.YouTubeIcon
+import com.das.mediaHub.data.model.icons.filled.InstagramIcon
+import com.das.mediaHub.data.model.icons.filled.TikTokIcon
+import com.das.mediaHub.data.model.icons.filled.YouTubeIcon
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
@@ -43,9 +42,6 @@ import androidx.navigation3.runtime.NavBackStack
 import androidx.navigation3.runtime.NavKey
 import com.das.mediaHub.NavScreens
 import com.das.mediaHub.NavScreens.Searcher
-import com.das.mediaHub.NavScreens.Downloads
-import com.das.mediaHub.data.model.TopPopUp
-import com.das.mediaHub.ui.TopPopupNotification.showNotificationDialog
 
 @Composable
 fun NavBackStack<NavKey>.HomePageComposable() {
@@ -70,7 +66,10 @@ fun NavBackStack<NavKey>.HomePageComposable() {
                     )
                 },
                 navigationIcon = {
-                    IconButton(onClick = { add(NavScreens.AccountSetting) }) {
+                    IconButton(
+                        onClick = {
+                        }
+                    ) {
                         Icon(
                             imageVector = Icons.Default.AccountCircle,
                             contentDescription = "User account",
@@ -79,7 +78,7 @@ fun NavBackStack<NavKey>.HomePageComposable() {
                     }
                 },
                 actions = {
-                    IconButton(onClick = { add(Downloads) }) {
+                    IconButton(onClick = { add(NavScreens.DownloadsPage) }) {
                         Icon(
                             imageVector = Icons.Default.Download,
                             contentDescription = "Downloaded medias",
@@ -149,7 +148,7 @@ fun NavBackStack<NavKey>.HomePageComposable() {
 
                     PlatformIcon(
                         icon = Icons.Default.TikTokIcon,
-                        label = "TikTok (Beta 3.5)",
+                        label = "TikTok",
                         tint = MaterialTheme.colorScheme.onSurface
                     ) {
                         add(NavScreens.TikTok)
@@ -168,11 +167,7 @@ fun NavBackStack<NavKey>.HomePageComposable() {
                         label = "Instagram",
                         tint = Color(0xFFE4405F)
                     ) {
-                        showNotificationDialog = TopPopUp(
-                            // currently not available
-                            message = "This feature is currently not available, please try again later",
-                            icon = Icons.Default.Info
-                        )
+                        add(NavScreens.Instagram)
                     }
                 }
             }
@@ -195,11 +190,14 @@ fun PlatformIcon(
             onClick = onClick,
             shape = RoundedCornerShape(24.dp),
             color = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.7f),
-            border = BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.3f)),
+            border = BorderStroke(
+                1.dp,
+                MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.3f)
+            ),
             modifier = Modifier
                 .size(76.dp)
                 .shadow(
-                    elevation = 12.dp,
+                    elevation = 0.dp,
                     shape = RoundedCornerShape(24.dp),
                     ambientColor = tint.copy(alpha = 0.5f),
                     spotColor = tint
@@ -218,10 +216,11 @@ fun PlatformIcon(
         }
         Text(
             text = label,
-            style = MaterialTheme.typography.labelMedium,
-            fontWeight = FontWeight.Bold,
+            style = MaterialTheme.typography.labelMedium.copy(
+                    fontWeight = FontWeight.Bold,
+                    color = MaterialTheme.colorScheme.onSurface
+                ),
             modifier = Modifier.padding(top = 12.dp),
-            color = MaterialTheme.colorScheme.onSurface
         )
     }
 }

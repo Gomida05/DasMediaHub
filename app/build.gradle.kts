@@ -6,7 +6,6 @@ plugins {
     alias(libs.plugins.android.application)
 //    alias(libs.plugins.kotlin.android)
     alias(libs.plugins.kotlin.compose)
-    alias(libs.plugins.chaquo.python)
     alias(libs.plugins.google.gms)
     alias(libs.plugins.kotlin.serialization)
 
@@ -27,12 +26,10 @@ android {
         }
     }
     namespace = "com.das.mediaHub"
-    compileSdk {
-        version = release(36)
-    }
 
     defaultConfig {
         applicationId = "com.das.mediaHub"
+        compileSdk = 36
         minSdk = 26
         targetSdk = 36
         versionCode = 9
@@ -65,17 +62,8 @@ android {
     }
 
     compileOptions {
-        sourceCompatibility = JavaVersion.VERSION_17
-        targetCompatibility = JavaVersion.VERSION_17
-    }
-
-
-    tasks.withType<org.jetbrains.kotlin.gradle.tasks.KotlinCompile>().configureEach {
-        compilerOptions {
-            jvmTarget.set(JvmTarget.JVM_17)
-            freeCompilerArgs.add("-opt-in=androidx.compose.material3.ExperimentalMaterial3Api")
-
-        }
+        sourceCompatibility = JavaVersion.VERSION_18
+        targetCompatibility = JavaVersion.VERSION_18
     }
 
 
@@ -84,36 +72,27 @@ android {
     }
 }
 
-chaquopy {
-    defaultConfig {
-        version = "3.14"
-        buildPython(loadLocalProperties["PYTHON_PATH"] as String)
-
-        pip {
-            install("yt-dlp")
-            install("pytubefix==8.12.1")
-            install("youtube-search-python")
-            install("httpx<0.28")
-            install("requests")
-        }
-    }
-    sourceSets {
-        getByName("main"){
-            srcDir("src/main/python")
-        }
+kotlin {
+    compilerOptions {
+        jvmTarget.set(JvmTarget.JVM_18)
+        freeCompilerArgs.add("-opt-in=androidx.compose.material3.ExperimentalMaterial3Api")
     }
 }
 
 
 dependencies {
 
+    //add project
+    implementation(project(":python"))
+//    implementation(files("libs/aar/python-debug.aar"))
 
     //Firebase dependencies
     implementation(platform(libs.firebase.bom))
     implementation(libs.firebase.analytics)
-    implementation(libs.firebase.auth.ktx)
     implementation(libs.firebase.firestore.ktx)
 
+
+    //Google
     implementation(libs.play.services.auth)
 
     implementation(libs.coil.compose)
@@ -132,6 +111,11 @@ dependencies {
     //preview
     implementation(libs.ui.tooling.preview)
     implementation(libs.googleid)
+    implementation(libs.androidx.lifecycle.runtime.ktx)
+    implementation(libs.androidx.ui)
+    implementation(libs.androidx.ui.graphics)
+    androidTestImplementation(platform(libs.compose.bom))
+    androidTestImplementation(libs.androidx.ui.test.junit4)
     debugImplementation(libs.ui.tooling)
 
     //icons
@@ -163,6 +147,7 @@ dependencies {
     implementation(libs.media3.exoplayer.hls)
     implementation(libs.media3.ui)
     implementation(libs.media3.ui.compose)
+    implementation(libs.media3.ui.material3)
     implementation(libs.media3.exoplayer)
     implementation(libs.media3.common)
     implementation(libs.media3.common.ktx)
@@ -173,6 +158,9 @@ dependencies {
 
     testImplementation(libs.junit)
     implementation(libs.kotlin.stdlib)
+    debugImplementation(libs.androidx.ui.test.manifest)
 
-    //Python
+    //okhttp
+    implementation(libs.okhttp)
+
 }

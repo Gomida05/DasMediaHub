@@ -1,13 +1,11 @@
 package com.das.mediaHub
 
 import androidx.navigation3.runtime.NavKey
-import com.das.mediaHub.data.model.searcher.Video
+import com.das.python.data.model.searcher.Video
 import kotlinx.serialization.Serializable
 
 @Serializable
 sealed interface NavScreens: NavKey {
-    @Serializable
-    data object WelcomePage : NavScreens
     @Serializable
     data object Home: NavScreens
     @Serializable
@@ -22,9 +20,11 @@ sealed interface NavScreens: NavKey {
     @Serializable
     data object Saved : NavScreens
     @Serializable
-    data object Downloads : NavScreens
+    data object DownloadsPage : NavScreens
+
     @Serializable
-    data object UserSettings : NavScreens
+    data object Downloaded : NavScreens
+
     @Serializable
     data class ExoPlayerUI(val uri: String) : NavScreens
 
@@ -32,16 +32,6 @@ sealed interface NavScreens: NavKey {
     data object Setting : NavScreens
     @Serializable
     data object FeedbackScreen: NavScreens
-
-    @Serializable
-    data object SignInPage : NavScreens
-    @Serializable
-    data object SignUpPage : NavScreens
-
-    @Serializable
-    data object AccountSetting : NavScreens
-    @Serializable
-    data object ChangePassword : NavScreens
 
     @Serializable
     data object TikTok : NavScreens

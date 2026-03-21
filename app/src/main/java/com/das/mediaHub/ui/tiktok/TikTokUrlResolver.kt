@@ -2,9 +2,9 @@ package com.das.mediaHub.ui.tiktok
 
 import com.das.mediaHub.data.model.tiktok.ApiResponse
 import com.das.mediaHub.data.model.tiktok.TikTokInfo
-import com.das.mediaHub.python.PythonMain.callMethod
-import com.das.mediaHub.python.PythonMain.pythonInstant
-import com.das.mediaHub.python.data.Names
+import com.das.python.PythonMain.callMethod
+import com.das.python.PythonMain.pythonInstant
+import com.das.python.data.Names
 
 object TikTokUrlResolver {
 

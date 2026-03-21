@@ -31,7 +31,7 @@ import androidx.compose.material.icons.filled.Download
 import androidx.compose.material.icons.filled.Link
 import androidx.compose.material.icons.filled.Person
 import androidx.compose.material.icons.filled.Search
-import androidx.compose.material.icons.filled.TikTokIcon
+import com.das.mediaHub.data.model.icons.filled.TikTokIcon
 import androidx.compose.material3.Button
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
@@ -58,31 +58,29 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
-import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation3.runtime.NavBackStack
 import androidx.navigation3.runtime.NavKey
 import coil.compose.AsyncImage
 import com.das.mediaHub.data.model.tiktok.TikTokInfo
-import com.das.mediaHub.downloader.DownloaderClass
+import com.das.mediaHub.ui.players.videoPlayer.state.UiState
 import kotlinx.coroutines.launch
 
 @Composable
 fun NavBackStack<NavKey>.TikTokComposable() {
     val viewModel = viewModel<TikTokViewModel>()
     val url by viewModel.url.collectAsState()
-    val isLoading by viewModel.isLoading.collectAsState()
-    val resolvedInfo by viewModel.resolvedInfo.collectAsState()
-    val error by viewModel.error.collectAsState()
+    val uiState by viewModel.uiState.collectAsStateWithLifecycle()
 
     val snackBarHostState = remember { SnackbarHostState() }
     val scope = rememberCoroutineScope()
-    val context = LocalContext.current
+
 
     Box(
         modifier = Modifier
@@ -146,7 +144,7 @@ fun NavBackStack<NavKey>.TikTokComposable() {
 
                 // Initial Icon when no result is shown
                 AnimatedVisibility(
-                    visible = resolvedInfo == null,
+                    visible = uiState is UiState.Idle,
                     enter = fadeIn() + expandVertically(),
                     exit = fadeOut() + shrinkVertically()
                 ) {
@@ -191,7 +189,7 @@ fun NavBackStack<NavKey>.TikTokComposable() {
                         OutlinedTextField(
                             value = url,
                             onValueChange = { viewModel.setUrl(it) },
-                            enabled = !isLoading,
+                            enabled = uiState !is UiState.Loading,
                             placeholder = { 
                                 Text(
                                     "Paste TikTok link here...",
@@ -233,13 +231,13 @@ fun NavBackStack<NavKey>.TikTokComposable() {
 
                         Button(
                             onClick = { viewModel.fetchInfo() },
-                            enabled = url.isNotBlank() && !isLoading,
+                            enabled = url.isNotBlank() && uiState !is UiState.Loading,
                             modifier = Modifier
                                 .fillMaxWidth()
                                 .height(48.dp),
                             shape = RoundedCornerShape(12.dp)
                         ) {
-                            if (isLoading) {
+                            if (uiState is UiState.Loading) {
                                 CircularProgressIndicator(
                                     modifier = Modifier.size(20.dp),
                                     color = MaterialTheme.colorScheme.onPrimary,
@@ -254,33 +252,37 @@ fun NavBackStack<NavKey>.TikTokComposable() {
                     }
                 }
 
-                error?.let {
-                    Text(
-                        text = it,
-                        color = MaterialTheme.colorScheme.error,
-                        style = MaterialTheme.typography.bodySmall,
-                        modifier = Modifier.padding(top = 12.dp)
-                    )
-                }
+                when (val newState = uiState) {
+                    is UiState.Error -> {
+                        Text(
+                            text = newState.message,
+                            color = MaterialTheme.colorScheme.error,
+                            style = MaterialTheme.typography.bodySmall,
+                            modifier = Modifier.padding(top = 12.dp)
+                        )
+                    }
 
-                Spacer(modifier = Modifier.height(24.dp))
+                    is UiState.Success -> {
+                        Spacer(modifier = Modifier.height(24.dp))
 
-                // Resolved Preview Section
-                AnimatedVisibility(
-                    visible = resolvedInfo != null,
-                    enter = fadeIn() + expandVertically(),
-                    exit = fadeOut() + shrinkVertically()
-                ) {
-                    resolvedInfo?.let { info ->
-                        TikTokPreviewCard(info) {
-                            val title = info.title?: "TikTok_Video_${System.currentTimeMillis()}"
-                            println(info.stream_url)
-                            DownloaderClass(context).downloadVideo(info.stream_url!!, title)
-                            scope.launch {
-                                snackBarHostState.showSnackbar("Download started: $title")
+                        // Resolved Preview Section
+                        AnimatedVisibility(
+                            visible = true,
+                            enter = fadeIn() + expandVertically(),
+                            exit = fadeOut() + shrinkVertically()
+                        ) {
+                            newState.data.let { info ->
+                                TikTokPreviewCard(info) {
+                                    val title = info.title ?: "TikTok_Video_${System.currentTimeMillis()}"
+
+                                    scope.launch {
+                                        snackBarHostState.showSnackbar("Download currently is unavailable")
+                                    }
+                                }
                             }
                         }
                     }
+                    else -> Unit
                 }
                 
                 Spacer(modifier = Modifier.height(32.dp))

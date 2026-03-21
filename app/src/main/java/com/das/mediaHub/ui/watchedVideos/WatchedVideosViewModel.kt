@@ -1,41 +1,31 @@
 package com.das.mediaHub.ui.watchedVideos
 
-import android.app.Application
-import androidx.lifecycle.AndroidViewModel
+import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.das.mediaHub.data.local.WatchHistory
 import com.das.mediaHub.data.model.SavedVideosListData
+import com.das.mediaHub.ui.players.videoPlayer.state.UiState
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 
-class WatchedVideosViewModel(application: Application): AndroidViewModel(application) {
+class WatchedVideosViewModel(private val dbHelper: WatchHistory): ViewModel() {
 
-    val dbHelper = WatchHistory(application)
+    private val _savedListsState = MutableStateFlow<UiState<List<SavedVideosListData>>>(UiState.Idle)
+    val savedListState = _savedListsState.asStateFlow()
 
-    private val _savedLists = MutableStateFlow<List<SavedVideosListData>>(emptyList())
-    val savedLists = _savedLists.asStateFlow()
-
-    private val _isLoading = MutableStateFlow(false)
-    val isLoading = _isLoading.asStateFlow()
-
-    private val _error = MutableStateFlow<String?>(null)
-    val isError = _error.asStateFlow()
 
     fun fetchData() {
-        _isLoading.value = true
-        _error.value = null
+        _savedListsState.value = UiState.Loading
         viewModelScope.launch {
             try {
                 val result = fetchDataFromDatabase()
-                _savedLists.value = result
+
+                _savedListsState.value = if (result.isEmpty()) UiState.Empty else UiState.Success(result)
             } catch (e: Exception) {
-                _error.value = "Something went wrong: ${e.message}"
-            }
-            finally {
-                _isLoading.value = false
+                _savedListsState.value = UiState.Error(e.message ?: "Unknown error")
             }
 
         }
@@ -47,37 +37,45 @@ class WatchedVideosViewModel(application: Application): AndroidViewModel(applica
         val cursor = dbHelper.getResults()
 
         val savedVideosListData = mutableListOf<SavedVideosListData>()
-        try {
-            while (cursor.moveToNext()) {
-                val watchUrl = cursor.getString(cursor.getColumnIndexOrThrow("video_id"))
-                val title = dbHelper.getVideoTitle(watchUrl).toString()
-                val viewerNumber = dbHelper.getViewNumber(watchUrl).toString()
-                val dateTime = dbHelper.getVideoDate(watchUrl).toString()
-                val channelName = dbHelper.getVideoChannelName(watchUrl).toString()
-                val myDuration = dbHelper.getDuration(watchUrl).toString()
-                val channelThumbnail = dbHelper.getChannelNameThumbnail(watchUrl).toString()
-                savedVideosListData.add(
-                    SavedVideosListData(
-                        title,
-                        watchUrl,
-                        "https://img.youtube.com/vi/$watchUrl/0.jpg",
-                        viewerNumber,
-                        dateTime,
-                        myDuration,
-                        channelName,
-                        channelThumbnail
+            cursor.use { cursor ->
+                while (cursor.moveToNext()) {
+                    val watchUrl = cursor.getString(cursor.getColumnIndexOrThrow("video_id"))
+                    val title = dbHelper.getVideoTitle(watchUrl).toString()
+                    val viewerNumber = dbHelper.getViewNumber(watchUrl).toString()
+                    val dateTime = dbHelper.getVideoDate(watchUrl).toString()
+                    val channelName = dbHelper.getVideoChannelName(watchUrl).toString()
+                    val myDuration = dbHelper.getDuration(watchUrl).toString()
+                    val channelThumbnail = dbHelper.getChannelNameThumbnail(watchUrl).toString()
+                    savedVideosListData.add(
+                        SavedVideosListData(
+                            title,
+                            watchUrl,
+                            "https://img.youtube.com/vi/$watchUrl/0.jpg",
+                            viewerNumber,
+                            dateTime,
+                            myDuration,
+                            channelName,
+                            channelThumbnail
+                        )
                     )
-                )
-            }
+                }
 
-            savedVideosListData
-        } finally {
-            cursor.close()
-        }
+                savedVideosListData
+            }
     }
 
 
     fun removeSearchItem(searchItem: SavedVideosListData) {
-        _savedLists.value = _savedLists.value.filter { it != searchItem }
+        val currentState = _savedListsState.value
+
+        if (currentState is UiState.Success) {
+            val updatedList = currentState.data.filter { it != searchItem }
+
+            _savedListsState.value = if (updatedList.isEmpty()) {
+                UiState.Empty
+            } else {
+                UiState.Success(updatedList)
+            }
+        }
     }
 }

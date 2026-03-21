@@ -1,7 +1,6 @@
 package com.das.mediaHub.ui.settings.watch_later
 
 import android.content.Context
-import android.content.Intent
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
@@ -15,7 +14,7 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.safeDrawing
+import androidx.compose.foundation.layout.safeContent
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
@@ -30,7 +29,6 @@ import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.CircularProgressIndicator
-import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
@@ -42,10 +40,11 @@ import androidx.compose.material3.TopAppBar
 import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
-import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.runtime.retain.retain
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -59,31 +58,45 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
-import androidx.core.content.ContextCompat
+import androidx.compose.ui.window.Dialog
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
+import androidx.lifecycle.viewmodel.initializer
+import androidx.lifecycle.viewmodel.viewModelFactory
 import androidx.navigation3.runtime.NavBackStack
 import androidx.navigation3.runtime.NavKey
 import coil.compose.AsyncImage
 import coil.request.ImageRequest
 import com.das.mediaHub.NavScreens
+import com.das.mediaHub.OnLaunchComponents.playAudioFromUrl
 import com.das.mediaHub.R
-import com.das.mediaHub.python.YouTuber.loadStreamUrl
 import com.das.mediaHub.data.local.DatabaseFavorite
-import com.das.mediaHub.data.constants.Action.ACTION_START
 import com.das.mediaHub.data.model.SavedVideosListData
 import com.das.mediaHub.data.model.TopPopUp
-import com.das.mediaHub.data.model.VideosListData
-import com.das.mediaHub.services.AudioServiceFromUrl
-import com.das.mediaHub.data.model.searcher.Video
 import com.das.mediaHub.ui.TopPopupNotification.showNotificationDialog
+import com.das.mediaHub.ui.players.videoPlayer.state.UiState
+import com.das.python.YouTuber.loadStreamUrl
+import com.das.python.data.model.VideosListData
+import com.das.python.data.model.searcher.Video
+import kotlinx.coroutines.launch
 
 @Composable
 fun WatchLaterComposable(backStack: NavBackStack<NavKey>) {
-    val viewModel = viewModel<WatchLaterViewModel>()
+    val context = LocalContext.current
+    val dbHelper = remember {
+        DatabaseFavorite(context)
+    }
+    val viewModel = viewModel(
+        modelClass = WatchLaterViewModel::class.java.kotlin,
+        factory = viewModelFactory {
+            initializer {
+                WatchLaterViewModel(dbHelper)
+            }
+        }
+    )
+
     val scrollBehavior = TopAppBarDefaults.enterAlwaysScrollBehavior()
-    val videos by viewModel.searchResults.collectAsState()
-    val isLoading by viewModel.isLoading.collectAsState()
-    val errorMessage by viewModel.error.collectAsState()
+    val videos by viewModel.searchResults.collectAsStateWithLifecycle()
 
     LaunchedEffect(Unit) {
         viewModel.fetchData()
@@ -124,26 +137,26 @@ fun WatchLaterComposable(backStack: NavBackStack<NavKey>) {
                     )
                 )
             },
-            contentWindowInsets = WindowInsets.safeDrawing
+            contentWindowInsets = WindowInsets.safeContent
         ) { paddingValues ->
-            when {
-                isLoading -> {
+            when(val newState = videos) {
+                UiState.Idle -> Unit
+                UiState.Loading -> {
                     Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
                         CircularProgressIndicator()
                     }
                 }
 
-                errorMessage != null -> {
+                is UiState.Error -> {
                     Box(modifier = Modifier.fillMaxSize().padding(16.dp), contentAlignment = Alignment.Center) {
                         Text(
-                            text = errorMessage!!,
+                            text = newState.message,
                             color = MaterialTheme.colorScheme.error,
                             textAlign = TextAlign.Center
                         )
                     }
                 }
-
-                videos.isEmpty() -> {
+                UiState.Empty -> {
                     Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
                         Column(horizontalAlignment = Alignment.CenterHorizontally) {
                             Surface(
@@ -175,14 +188,14 @@ fun WatchLaterComposable(backStack: NavBackStack<NavKey>) {
                     }
                 }
 
-                else -> {
+                is UiState.Success -> {
                     LazyColumn(
                         contentPadding = paddingValues,
                         modifier = Modifier.fillMaxSize(),
                         verticalArrangement = Arrangement.spacedBy(4.dp)
                     ) {
                         item { Spacer(modifier = Modifier.height(8.dp)) }
-                        items(videos, key = { it.watchUrl }) { video ->
+                        items(newState.data, key = { it.watchUrl }) { video ->
                             WatchLaterItem(
                                 backStack = backStack,
                                 item = video,
@@ -341,55 +354,112 @@ private fun ManageSavedDialog(
     onDelete: () -> Unit,
     onDismiss: () -> Unit
 ) {
-    val shouldLoad = remember { mutableStateOf(false) }
+    val isLoading = remember { mutableStateOf(false) }
+    val errorMessage = remember { mutableStateOf<String?>(null) }
 
-    if (shouldLoad.value) {
-        LaunchedEffect(Unit) {
+    val mediaDetails by retain {
+        mutableStateOf(
             VideosListData(
-                selectedData.watchUrl, selectedData.title, selectedData.viewer,
-                selectedData.dateTime, selectedData.duration, selectedData.channelName, ""
-            ).loadStreamUrl(
-                onSuccess = {
-                    val playIntent = Intent(context, AudioServiceFromUrl::class.java).apply {
-                        action = ACTION_START
-                        putExtra("videoId", selectedData.watchUrl)
-                        putExtra("media_url", it.audioUrl)
-                        putExtra("title", selectedData.title)
-                        putExtra("channelName", selectedData.channelName)
-                        putExtra("viewNumber", selectedData.viewer)
-                        putExtra("videoDate", selectedData.dateTime)
-                        putExtra("duration", selectedData.duration)
-                    }
-                    ContextCompat.startForegroundService(context, playIntent)
-                },
-                onFailure = { println("Error: $it") }
+                selectedData.watchUrl,
+                selectedData.title,
+                selectedData.viewer,
+                selectedData.dateTime,
+                selectedData.duration,
+                selectedData.channelName,
+                ""
             )
-            shouldLoad.value = false
+        )
+    }
+    val scope = rememberCoroutineScope()
+
+    if (isLoading.value) {
+        Dialog(onDismissRequest = {}) {
+            Surface(
+                shape = RoundedCornerShape(28.dp),
+                color = MaterialTheme.colorScheme.surface
+            ) {
+                Column(
+                    modifier = Modifier.padding(24.dp),
+                    horizontalAlignment = Alignment.CenterHorizontally
+                ) {
+                    CircularProgressIndicator()
+                    Spacer(modifier = Modifier.height(16.dp))
+                    Text("Fetching stream URL...")
+                }
+            }
         }
     }
 
-    AlertDialog(
-        onDismissRequest = onDismiss,
-        shape = RoundedCornerShape(28.dp),
-        title = { Text("Saved Video Options", fontWeight = FontWeight.Bold) },
-        text = { Text("Choose an action for this video.") },
-        confirmButton = {
-            TextButton(onClick = {
-                onDelete()
-                onDismiss()
-            }) {
-                Text("Remove from Saved", color = MaterialTheme.colorScheme.error)
+    if (errorMessage.value != null) {
+        AlertDialog(
+            onDismissRequest = { errorMessage.value = null },
+            title = { Text("Error") },
+            text = { Text(errorMessage.value ?: "Unknown error") },
+            confirmButton = {
+                TextButton(onClick = { errorMessage.value = null }) {
+                    Text("OK")
+                }
             }
-        },
-        dismissButton = {
-            TextButton(onClick = {
-                shouldLoad.value = true
-                onDismiss()
-            }) {
-                Text("Play in Background")
+        )
+    }
+
+    if (!isLoading.value) {
+        AlertDialog(
+            onDismissRequest = onDismiss,
+            shape = RoundedCornerShape(28.dp),
+            title = {
+                Text("Saved Video Options", fontWeight = FontWeight.Bold)
+            },
+            text = {
+                Text("Choose an action for this video.")
+            },
+            confirmButton = {
+                TextButton(
+                    onClick = {
+                        onDelete()
+                        onDismiss()
+                    }
+                ) {
+                    Text(
+                        "Remove from Saved",
+                        color = MaterialTheme.colorScheme.error
+                    )
+                }
+            },
+            dismissButton = {
+                TextButton(
+                    onClick = {
+                        isLoading.value = true
+
+                        scope.launch {
+                            mediaDetails.loadStreamUrl(
+                                onSuccess = { streamResult ->
+                                    isLoading.value = false
+
+                                    if (streamResult.audioUrl.isBlank()) {
+                                        errorMessage.value = "Audio stream URL is empty."
+                                        return@loadStreamUrl
+                                    }
+                                    context.playAudioFromUrl(
+                                        streamResult.audioUrl,
+                                        mediaDetails
+                                    )
+                                    onDismiss()
+                                },
+                                onFailure = { throwable ->
+                                    isLoading.value = false
+                                    errorMessage.value =
+                                        throwable.message ?: "Failed to fetch stream URL."
+                                }
+                            )
+                        }
+                    }
+                ) {
+                    Text("Play in Background")
+                }
             }
-        }
-    )
+        )
+    }
 }
 
 private fun onClickListListener(

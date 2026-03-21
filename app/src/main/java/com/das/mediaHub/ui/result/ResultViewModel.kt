@@ -2,11 +2,9 @@ package com.das.mediaHub.ui.result
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import com.das.mediaHub.data.model.responds.ResponseVideo
-import com.das.mediaHub.data.model.searcher.Video
-import com.das.mediaHub.python.PythonMain.callMethod
-import com.das.mediaHub.python.PythonMain.pythonInstant
-import com.das.mediaHub.python.data.Names.SEARCHER
+import com.das.mediaHub.ui.players.videoPlayer.state.UiState
+import com.das.python.YouTuber
+import com.das.python.data.model.searcher.Video
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -15,7 +13,7 @@ import kotlinx.coroutines.launch
 class ResultViewModel: ViewModel() {
 
 
-    private val _searchResults = MutableStateFlow<List<Video>>(emptyList())
+    private val _searchResults = MutableStateFlow<UiState<List<Video>>>(UiState.Idle)
     val searchResults = _searchResults.asStateFlow()
     private val _isLoading = MutableStateFlow(false)
     val isLoading = _isLoading.asStateFlow()
@@ -24,71 +22,70 @@ class ResultViewModel: ViewModel() {
     private val _isLoadingMore = MutableStateFlow(false)
     val isLoadingMore = _isLoadingMore.asStateFlow()
 
-    private val _error = MutableStateFlow<String?>(null)
 
-    val error = _error.asStateFlow()
 
 
     private var currentBatch = 0
     private val batchSize = 20
 
 
-    private var hasLoaded = false
-
-    fun fetchSuggestionsIfNeeded(inputText: String) {
-        if (hasLoaded) return
-        hasLoaded = true
-        fetchSuggestions(inputText)
-    }
 
     fun fetchSuggestions(inputText: String) {
-        _isLoading.value = true
-        _error.value = null
+        _searchResults.value = UiState.Loading
 
         viewModelScope.launch {
             try {
-                val result = callPythonForSearchVideos(inputText)
-                if (result.success && result.result != null) {
+                val result = YouTuber.search(inputText)
+                val newResult = result.result?.result.orEmpty()
+
+                if (result.success) {
                     _allResults.clear()
-                    _allResults.addAll(result.result.result)
-
+                    _allResults.addAll(
+                        elements = newResult
+                            .asSequence()
+                            .distinctBy { it.id }
+                            .toList()
+                    )
                     currentBatch = 1
-                    _searchResults.value = _allResults.take(batchSize)
-                }
-                else {
-                    _error.value = result.error ?: "Something went wrong!"
-                }
 
+                    val firstBatch = _allResults.take(batchSize)
+
+                    _searchResults.value = when {
+                        firstBatch.isEmpty() -> UiState.Empty
+                        else -> UiState.Success(firstBatch)
+                    }
+                } else {
+                    _searchResults.value = UiState.Error(
+                        result.error ?: "Something went wrong!"
+                    )
+                }
             } catch (e: Exception) {
-                _error.value = e.message
-            } finally {
-                _isLoading.value = false
+                _searchResults.value = UiState.Error(
+                    e.message ?: "Something went wrong!"
+                )
             }
         }
     }
 
     fun loadMore() {
-
-        if (_isLoadingMore.value || _allResults.isEmpty()) return
+        val currentState = _searchResults.value
+        if (_isLoadingMore.value || _allResults.isEmpty() || currentState !is UiState.Success) return
 
         _isLoadingMore.value = true
+
         viewModelScope.launch {
             delay(500)
-            val nextBatch = currentBatch * batchSize
-            val moreItems = _allResults.drop(nextBatch).take(batchSize)
+
+            val nextBatchStart = currentBatch * batchSize
+            val moreItems = _allResults.drop(nextBatchStart).take(batchSize)
 
             if (moreItems.isNotEmpty()) {
-                _searchResults.value += moreItems
+                _searchResults.value = UiState.Success(currentState.data + moreItems)
                 currentBatch++
             }
+
             _isLoadingMore.value = false
         }
-
     }
-
-    private suspend fun callPythonForSearchVideos(inputText: String): ResponseVideo {
-        return pythonInstant.callMethod<ResponseVideo>(name = SEARCHER, args = inputText)
-    }
-
 
 }

@@ -1,7 +1,10 @@
 package com.das.mediaHub.player.video
 
+import android.annotation.SuppressLint
+import android.app.Activity
 import android.app.PendingIntent
 import android.app.PictureInPictureParams
+import android.content.Context
 import android.content.Intent
 import android.net.Uri
 import android.os.Build.VERSION.SDK_INT
@@ -18,6 +21,7 @@ import androidx.media3.common.C
 import androidx.media3.common.C.AUDIO_CONTENT_TYPE_MOVIE
 import androidx.media3.common.MediaItem
 import androidx.media3.exoplayer.ExoPlayer
+import androidx.media3.session.R
 import com.das.mediaHub.PIP
 import com.das.mediaHub.PIP.getPipSourceRect
 import com.das.mediaHub.data.constants.Action.ACTION_KILL
@@ -25,17 +29,19 @@ import com.das.mediaHub.data.constants.Playback.PAUSE
 import com.das.mediaHub.data.constants.Playback.PLAY
 import com.das.mediaHub.mediacontroller.VideoPlayerListener
 
+@SuppressLint("UnsafeOptInUsageError")
 internal class VideoPlayerManager(
+    private val activity: Activity,
     private val playerListener: VideoPlayerListener
 ): PlayerController {
-    val context = playerListener.mainActivity
-    private val myMediaSession = MediaSessionCompat(context, "VideoPlayer").apply {
+    val applicationContext: Context = activity.applicationContext
+
+    private val myMediaSession = MediaSessionCompat(applicationContext, "VideoPlayer").apply {
         isActive = true
-        @Suppress("DEPRECATION")
-        setFlags(MediaSessionCompat.FLAG_HANDLES_MEDIA_BUTTONS or MediaSessionCompat.FLAG_HANDLES_TRANSPORT_CONTROLS)
+
         setMediaButtonReceiver(
             PendingIntent.getBroadcast(
-                context, 0,
+                applicationContext, 0,
                 Intent(Intent.ACTION_MEDIA_BUTTON),
                 PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
             )
@@ -43,21 +49,22 @@ internal class VideoPlayerManager(
 
     }
 
-    override val player by lazy {
-        ExoPlayer.Builder(context)
+    override val player by lazy<ExoPlayer> {
+        ExoPlayer.Builder(applicationContext)
             .setAudioAttributes(
                 AudioAttributes.Builder()
                     .setUsage(C.USAGE_MEDIA)
                     .setContentType(AUDIO_CONTENT_TYPE_MOVIE)
                     .build(), true
             )
+            .setWakeMode(C.WAKE_MODE_NONE)
+            .setPriority(C.PRIORITY_PLAYBACK)
             .setHandleAudioBecomingNoisy(true)
             .build()
     }
 
 
-    val isEmptyMediaItem = player.currentMediaItem == null
-    val isPlaying = mutableStateOf(player.isPlaying)
+    val isPlaying = mutableStateOf(value = player.isPlaying)
 
     override fun addListener() {
         player.addListener(
@@ -80,7 +87,7 @@ internal class VideoPlayerManager(
                     )
                     .addCustomAction(
                         if (isPlaying.value) PAUSE else PLAY, "play OR pause",
-                        if (isPlaying.value) androidx.media3.session.R.drawable.media3_icon_pause else androidx.media3.session.R.drawable.media3_icon_play
+                        if (isPlaying.value) R.drawable.media3_icon_pause else R.drawable.media3_icon_play
                     )
                     .setBufferedPosition(player.currentPosition)
                     .build()
@@ -133,7 +140,7 @@ internal class VideoPlayerManager(
 
     override fun release() {
         player.release()
-        PIP.shouldEnterPipMode.value = false
+        PIP.canEnterPipMode.value = false
     }
 
     private fun updatePipActions() {
@@ -144,9 +151,9 @@ internal class VideoPlayerManager(
             params
                 .setAutoEnterEnabled(true)
                 .setSeamlessResizeEnabled(true)
-                .setSourceRectHint(playerListener.mainActivity.getPipSourceRect())
+                .setSourceRectHint(activity.getPipSourceRect())
         }
-        playerListener.mainActivity.setPictureInPictureParams(params.build())
+        activity.setPictureInPictureParams(params.build())
     }
 
 

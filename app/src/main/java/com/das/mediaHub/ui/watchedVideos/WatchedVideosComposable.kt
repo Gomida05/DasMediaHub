@@ -1,7 +1,6 @@
 package com.das.mediaHub.ui.watchedVideos
 
 import android.content.Context
-import android.content.Intent
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
@@ -31,22 +30,27 @@ import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.CircularProgressIndicator
-import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.PlainTooltip
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
+import androidx.compose.material3.TooltipAnchorPosition
+import androidx.compose.material3.TooltipBox
+import androidx.compose.material3.TooltipDefaults.rememberTooltipPositionProvider
 import androidx.compose.material3.TopAppBar
 import androidx.compose.material3.TopAppBarDefaults
+import androidx.compose.material3.rememberTooltipState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
-import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.runtime.retain.retain
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -60,37 +64,52 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
-import androidx.core.content.ContextCompat
+import androidx.compose.ui.window.Dialog
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
+import androidx.lifecycle.viewmodel.initializer
+import androidx.lifecycle.viewmodel.viewModelFactory
 import androidx.navigation3.runtime.NavBackStack
 import androidx.navigation3.runtime.NavKey
 import coil.compose.AsyncImage
+import com.das.mediaHub.NavScreens.Saved
+import com.das.mediaHub.NavScreens.VideoViewer
+import com.das.mediaHub.OnLaunchComponents.playAudioFromUrl
 import com.das.mediaHub.R
 import com.das.mediaHub.data.local.WatchHistory
 import com.das.mediaHub.data.model.SavedVideosListData
-import com.das.mediaHub.data.model.VideosListData
-import com.das.mediaHub.data.constants.Action.ACTION_START
-import com.das.mediaHub.services.AudioServiceFromUrl
-import com.das.mediaHub.NavScreens.VideoViewer
-import com.das.mediaHub.NavScreens.Saved
 import com.das.mediaHub.data.model.TopPopUp
-import com.das.mediaHub.data.model.searcher.Video
-import com.das.mediaHub.python.YouTuber.loadStreamUrl
 import com.das.mediaHub.ui.TopPopupNotification.showNotificationDialog
+import com.das.mediaHub.ui.players.videoPlayer.state.UiState
+import com.das.python.YouTuber.loadStreamUrl
+import com.das.python.data.model.VideosListData
+import com.das.python.data.model.searcher.Video
+import kotlinx.coroutines.launch
 
 @Composable
 fun WatchedVideosComposable(backStack: NavBackStack<NavKey>) {
-    val viewModel = viewModel(WatchedVideosViewModel::class.java.kotlin)
+    val context = LocalContext.current
+    val dbHelper = remember {
+        WatchHistory(context)
+    }
+
+    val viewModel = viewModel(
+        modelClass = WatchedVideosViewModel::class.java.kotlin,
+        factory = viewModelFactory {
+            initializer {
+                WatchedVideosViewModel(dbHelper)
+            }
+        }
+    )
     val scrollBehavior = TopAppBarDefaults.enterAlwaysScrollBehavior()
-    val searchResults by viewModel.savedLists.collectAsState()
-    val isLoading by viewModel.isLoading.collectAsState()
-    val isError by viewModel.isError.collectAsState()
-    val dbHelper = viewModel.dbHelper
+    val uiState by viewModel.savedListState.collectAsStateWithLifecycle()
 
     LaunchedEffect(Unit) {
         viewModel.fetchData()
     }
-
+    val positionProvider = rememberTooltipPositionProvider(
+        positioning = TooltipAnchorPosition.Below
+    )
     Box(
         modifier = Modifier
             .fillMaxSize()
@@ -119,12 +138,23 @@ fun WatchedVideosComposable(backStack: NavBackStack<NavKey>) {
                         }
                     },
                     actions = {
-                        IconButton(onClick = { backStack.add(Saved) }) {
-                            Icon(
-                                imageVector = Icons.Default.VideoLibrary,
-                                contentDescription = "Saved videos",
-                                tint = MaterialTheme.colorScheme.primary
-                            )
+                        TooltipBox(
+                            modifier = Modifier,
+                            positionProvider = positionProvider,
+                            tooltip = {
+                                PlainTooltip {
+                                    Text(text = "Saved videos")
+                                }
+                            },
+                            state = rememberTooltipState()
+                        ) {
+                            IconButton(onClick = { backStack.add(Saved) }) {
+                                Icon(
+                                    imageVector = Icons.Default.VideoLibrary,
+                                    contentDescription = "Saved videos",
+                                    tint = MaterialTheme.colorScheme.primary
+                                )
+                            }
                         }
                     },
                     title = {
@@ -137,65 +167,94 @@ fun WatchedVideosComposable(backStack: NavBackStack<NavKey>) {
             },
             contentWindowInsets = WindowInsets.safeDrawing
         ) { paddingValues ->
-            if (isLoading) {
-                Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-                    CircularProgressIndicator()
-                }
-            } else if (!isError.isNullOrEmpty()) {
-                Box(modifier = Modifier.fillMaxSize().padding(16.dp), contentAlignment = Alignment.Center) {
-                    Text(
-                        text = isError.toString(),
-                        color = MaterialTheme.colorScheme.error,
-                        textAlign = TextAlign.Center
-                    )
-                }
-            } else if (searchResults.isEmpty()) {
-                Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-                    Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                        Surface(
-                            shape = CircleShape,
-                            color = MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.3f),
-                            modifier = Modifier.size(120.dp)
-                        ) {
-                            Box(contentAlignment = Alignment.Center) {
-                                Icon(
-                                    imageVector = Icons.Default.History,
-                                    contentDescription = null,
-                                    modifier = Modifier.size(64.dp),
-                                    tint = MaterialTheme.colorScheme.primary
+            LazyColumn(
+                contentPadding = paddingValues,
+                modifier = Modifier.fillMaxSize(),
+                verticalArrangement = Arrangement.spacedBy(4.dp)
+            ) {
+                when (val newState = uiState) {
+                    UiState.Loading -> {
+                        item {
+                            Box(
+                                modifier = Modifier.fillMaxSize(),
+                                contentAlignment = Alignment.Center
+                            ) {
+                                CircularProgressIndicator()
+                            }
+                        }
+                    }
+
+                    is UiState.Error -> {
+                        item {
+                            Box(
+                                modifier = Modifier.fillMaxSize().padding(16.dp),
+                                contentAlignment = Alignment.Center
+                            ) {
+                                Text(
+                                    text = newState.message,
+                                    color = MaterialTheme.colorScheme.error,
+                                    textAlign = TextAlign.Center
                                 )
                             }
                         }
-                        Spacer(modifier = Modifier.height(24.dp))
-                        Text(
-                            text = "Your history is empty",
-                            style = MaterialTheme.typography.headlineSmall.copy(fontWeight = FontWeight.Bold)
-                        )
-                        Text(
-                            text = "Videos you watch will appear here.",
-                            style = MaterialTheme.typography.bodyMedium,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant,
-                            modifier = Modifier.padding(top = 8.dp)
-                        )
                     }
-                }
-            } else {
-                LazyColumn(
-                    contentPadding = paddingValues,
-                    modifier = Modifier.fillMaxSize(),
-                    verticalArrangement = Arrangement.spacedBy(4.dp)
-                ) {
-                    item { Spacer(modifier = Modifier.height(8.dp)) }
-                    items(searchResults, key = { it.watchUrl }) { searchItem ->
-                        WatchedMediaItem(
-                            backStack,
-                            dbHelper = dbHelper,
-                            selectedItem = searchItem,
-                            viewModel = viewModel
-                        )
+
+                    UiState.Empty -> {
+                        item {
+                            Box(
+                                modifier = Modifier.fillMaxSize(),
+                                contentAlignment = Alignment.Center
+                            ) {
+                                Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                                    Surface(
+                                        shape = CircleShape,
+                                        color = MaterialTheme.colorScheme.primaryContainer.copy(
+                                            alpha = 0.3f
+                                        ),
+                                        modifier = Modifier.size(120.dp)
+                                    ) {
+                                        Box(contentAlignment = Alignment.Center) {
+                                            Icon(
+                                                imageVector = Icons.Default.History,
+                                                contentDescription = null,
+                                                modifier = Modifier.size(64.dp),
+                                                tint = MaterialTheme.colorScheme.primary
+                                            )
+                                        }
+                                    }
+                                    Spacer(modifier = Modifier.height(24.dp))
+                                    Text(
+                                        text = "Your history is empty",
+                                        style = MaterialTheme.typography.headlineSmall.copy(
+                                            fontWeight = FontWeight.Bold
+                                        )
+                                    )
+                                    Text(
+                                        text = "Videos you watch will appear here.",
+                                        style = MaterialTheme.typography.bodyMedium,
+                                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                        modifier = Modifier.padding(top = 8.dp)
+                                    )
+                                }
+                            }
+                        }
                     }
-                    item { Spacer(modifier = Modifier.height(16.dp)) }
+
+                    is UiState.Success -> {
+                        items(newState.data, key = { it.watchUrl }) { searchItem ->
+                            WatchedMediaItem(
+                                backStack,
+                                dbHelper = dbHelper,
+                                selectedItem = searchItem,
+                                viewModel = viewModel
+                            )
+                        }
+                    }
+
+                    else -> Unit
+
                 }
+                item { Spacer(modifier = Modifier.height(16.dp)) }
             }
         }
     }
@@ -343,60 +402,112 @@ private fun HistoryActionDialog(
     deleteTheItem: (selectedId: String) -> Unit,
     onDismissRequest: () -> Unit
 ) {
-    val shouldLoad = remember { mutableStateOf(false) }
+    val isLoading = remember { mutableStateOf(false) }
+    val errorMessage = remember { mutableStateOf<String?>(null) }
 
-    if (shouldLoad.value) {
-        LaunchedEffect(Unit) {
+    val mediaDetails by retain {
+        mutableStateOf(
             VideosListData(
-                selectedData.watchUrl, selectedData.title, selectedData.viewer,
-                selectedData.dateTime, selectedData.duration, selectedData.channelName, ""
-            ).loadStreamUrl(
-                onSuccess = {
-                    val playIntent = Intent(context, AudioServiceFromUrl::class.java).apply {
-                        action = ACTION_START
-                        putExtra("videoId", selectedData.watchUrl)
-                        putExtra("media_url", it.audioUrl)
-                        putExtra("title", selectedData.title)
-                        putExtra("channelName", selectedData.channelName)
-                        putExtra("viewNumber", selectedData.viewer)
-                        putExtra("videoDate", selectedData.dateTime)
-                        putExtra("duration", selectedData.duration)
-                    }
-                    ContextCompat.startForegroundService(context, playIntent)
-                },
-                onFailure = { println("Error: $it") }
+                selectedData.watchUrl,
+                selectedData.title,
+                selectedData.viewer,
+                selectedData.dateTime,
+                selectedData.duration,
+                selectedData.channelName,
+                ""
             )
-            shouldLoad.value = false
+        )
+    }
+
+    val scope = rememberCoroutineScope()
+
+    if (isLoading.value) {
+        Dialog(onDismissRequest = {}) {
+            Surface(
+                shape = RoundedCornerShape(28.dp),
+                color = MaterialTheme.colorScheme.surface
+            ) {
+                Column(
+                    modifier = Modifier.padding(24.dp),
+                    horizontalAlignment = Alignment.CenterHorizontally
+                ) {
+                    CircularProgressIndicator()
+                    Spacer(modifier = Modifier.height(16.dp))
+                    Text("Fetching stream URL...")
+                }
+            }
         }
     }
 
-    AlertDialog(
-        onDismissRequest = onDismissRequest,
-        shape = RoundedCornerShape(28.dp),
-        title = { Text("Manage History", fontWeight = FontWeight.Bold) },
-        text = { Text("What would you like to do with this video?") },
-        confirmButton = {
-            TextButton(
-                onClick = {
-                    deleteTheItem(selectedData.watchUrl)
-                    onDismissRequest()
+    if (errorMessage.value != null) {
+        AlertDialog(
+            onDismissRequest = { errorMessage.value = null },
+            title = { Text("Error") },
+            text = { Text(errorMessage.value ?: "Unknown error") },
+            confirmButton = {
+                TextButton(onClick = { errorMessage.value = null }) {
+                    Text("OK")
                 }
-            ) {
-                Text("Remove from History", color = MaterialTheme.colorScheme.error)
             }
-        },
-        dismissButton = {
-            TextButton(
-                onClick = {
-                    shouldLoad.value = true
-                    onDismissRequest()
+        )
+    }
+
+    if (!isLoading.value) {
+        AlertDialog(
+            onDismissRequest = onDismissRequest,
+            shape = RoundedCornerShape(28.dp),
+            title = {
+                Text("Manage History", fontWeight = FontWeight.Bold)
+            },
+            text = {
+                Text("What would you like to do with this video?")
+            },
+            confirmButton = {
+                TextButton(
+                    onClick = {
+                        deleteTheItem(selectedData.watchUrl)
+                        onDismissRequest()
+                    }
+                ) {
+                    Text(
+                        "Remove from History",
+                        color = MaterialTheme.colorScheme.error
+                    )
                 }
-            ) {
-                Text("Play in Background")
+            },
+            dismissButton = {
+                TextButton(
+                    onClick = {
+                        isLoading.value = true
+
+                        scope.launch {
+                            mediaDetails.loadStreamUrl(
+                                onSuccess = { streamResult ->
+                                    isLoading.value = false
+
+                                    if (streamResult.audioUrl.isBlank()) {
+                                        errorMessage.value = "Audio stream URL is empty."
+                                        return@loadStreamUrl
+                                    }
+                                    context.playAudioFromUrl(audioUrl = streamResult.audioUrl, streamResult)
+                                    onDismissRequest()
+                                },
+                                onFailure = { throwable ->
+                                    isLoading.value = false
+                                    errorMessage.value =
+                                        throwable.message ?: "Failed to fetch stream URL."
+                                }
+                            )
+                        }
+                    }
+                ) {
+                    Text("Play in Background")
+                }
             }
-        }
-    )
+        )
+    }
 }
+
 
 private fun onClickListListener(
     dbHelper: WatchHistory,

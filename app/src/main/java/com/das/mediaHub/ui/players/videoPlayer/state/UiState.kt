@@ -1,7 +1,9 @@
 package com.das.mediaHub.ui.players.videoPlayer.state
 
-data class UiState<T>(
-    val isLoading: Boolean = false,
-    val data: T? = null,
-    val error: String? = null
-)
+sealed interface UiState<out T> {
+    object Idle : UiState<Nothing>
+    object Loading : UiState<Nothing>
+    object Empty : UiState<Nothing>
+    data class Error(val message: String) : UiState<Nothing>
+    data class Success<T>(val data: T) : UiState<T>
+}

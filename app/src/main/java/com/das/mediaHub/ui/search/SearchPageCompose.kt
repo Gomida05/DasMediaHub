@@ -1,6 +1,5 @@
 package com.das.mediaHub.ui.search
 
-import androidx.activity.compose.LocalActivity
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -27,6 +26,7 @@ import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.Download
+import androidx.compose.material.icons.filled.Error
 import androidx.compose.material.icons.filled.History
 import androidx.compose.material.icons.filled.Search
 import androidx.compose.material3.AlertDialog
@@ -46,13 +46,13 @@ import androidx.compose.material3.TextButton
 import androidx.compose.material3.TopAppBar
 import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
-import androidx.compose.runtime.saveable.rememberSaveable
+import androidx.compose.runtime.retain.RetainedEffect
+import androidx.compose.runtime.retain.retain
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -61,6 +61,7 @@ import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalSoftwareKeyboardController
 import androidx.compose.ui.text.TextRange
 import androidx.compose.ui.text.font.FontWeight
@@ -70,18 +71,24 @@ import androidx.compose.ui.text.input.TextFieldValue
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
+import androidx.lifecycle.viewmodel.initializer
+import androidx.lifecycle.viewmodel.viewModelFactory
 import androidx.navigation3.runtime.NavBackStack
 import androidx.navigation3.runtime.NavKey
 import coil.compose.AsyncImage
-import com.das.mediaHub.MainActivity
 import com.das.mediaHub.NavScreens
-import com.das.mediaHub.python.YouTuber.youtubeExtractor
-import com.das.mediaHub.python.YouTuber.isValidYoutubeURL
-import com.das.mediaHub.python.YouTuber.extractPlaylistId
-import com.das.mediaHub.python.YouTuber.isValidYouTubePlaylistUrl
+import com.das.python.YouTuber.extractPlaylistId
 import com.das.mediaHub.NavScreens.ResultViewerPage
-import com.das.mediaHub.data.model.searcher.Video
+import com.das.mediaHub.data.local.SearchHistoryDB
+import com.das.mediaHub.data.model.TopPopUp
+import com.das.python.data.model.searcher.Video
+import com.das.mediaHub.ui.TopPopupNotification.showNotificationDialog
+import com.das.mediaHub.ui.players.videoPlayer.state.UiState
+import com.das.python.YouTuber.isValidYouTubePlaylistUrl
+import com.das.python.YouTuber.isValidYoutubeURL
+import com.das.python.YouTuber.youtubeExtractor
 import kotlinx.coroutines.launch
 
 @Composable
@@ -89,31 +96,38 @@ fun SearchPageCompose(
     backStack: NavBackStack<NavKey>,
     newText: String
 ) {
-    val viewMode = viewModel(modelClass = SearchPageViewMode::class.java, key = "SearchPageViewMode_$newText")
-    val focusRequester = remember { FocusRequester() }
+    val context = LocalContext.current
+    val searchDB = remember {
+        SearchHistoryDB(context)
+    }
+    val viewMode = viewModel(
+        modelClass = SearchPageViewMode::class.java.kotlin,
+        factory = viewModelFactory {
+            initializer {
+                SearchPageViewMode(searchDB)
+            }
+        }
+    )
+    val focusRequester = retain { FocusRequester() }
     val keyboardController = LocalSoftwareKeyboardController.current
 
-    val searchHistory by viewMode.searchHistory
-    val isThereError by viewMode.error
-    val isLoading by viewMode.isLoading
+    val uiState by viewMode.searchHistory.collectAsStateWithLifecycle()
 
     val scope = rememberCoroutineScope()
     val snackBar = remember { SnackbarHostState() }
 
-    val playListUrl = rememberSaveable { mutableStateOf("") }
-    val askToDownloadPlayList = remember { mutableStateOf(false) }
+    val playListUrl = retain { mutableStateOf("") }
+    val askToDownloadPlayList = retain { mutableStateOf(false) }
 
     LaunchedEffect(Unit) {
         viewMode.fetchDatabase()
         focusRequester.requestFocus()
-        viewMode.query.value = viewMode.query.value.copy(
-            selection = TextRange(viewMode.query.value.text.length)
-        )
+        viewMode.setQuery(TextFieldValue(newText, TextRange(viewMode.query.value.text.length)))
         keyboardController?.show()
     }
 
-    DisposableEffect(Unit) {
-        onDispose {
+    RetainedEffect (Unit) {
+        onRetire {
             keyboardController?.hide()
         }
     }
@@ -195,8 +209,15 @@ fun SearchPageCompose(
                         },
                         trailingIcon = {
                             if (viewMode.query.value.text.isNotEmpty()) {
-                                IconButton(onClick = { viewMode.setQuery(TextFieldValue("")) }) {
-                                    Icon(Icons.Default.Close, contentDescription = "Clear")
+                                IconButton(
+                                    onClick = {
+                                        viewMode.setQuery(TextFieldValue(""))
+                                    }
+                                ) {
+                                    Icon(
+                                        imageVector = Icons.Default.Close,
+                                        contentDescription = "Clear"
+                                    )
                                 }
                             }
                         },
@@ -226,45 +247,67 @@ fun SearchPageCompose(
 
                 Spacer(modifier = Modifier.height(16.dp))
 
-                if (!isThereError.isNullOrEmpty()) {
-                    Box(modifier = Modifier.fillMaxWidth().padding(16.dp), contentAlignment = Alignment.Center) {
-                        Text(
-                            text = isThereError ?: "Unknown error",
-                            color = MaterialTheme.colorScheme.error,
-                            style = MaterialTheme.typography.bodyMedium
-                                .copy(textAlign = TextAlign.Center)
-                        )
-                    }
-                } else if (isLoading) {
-                    Box(modifier = Modifier.fillMaxWidth().padding(32.dp), contentAlignment = Alignment.Center) {
-                        CircularProgressIndicator(strokeWidth = 3.dp, modifier = Modifier.size(32.dp))
-                    }
-                } else if (searchHistory.isNotEmpty()) {
-                    Text(
-                        text = "RECENT SEARCHES",
-                        style = MaterialTheme.typography.labelLarge,
-                        color = MaterialTheme.colorScheme.primary,
-                        fontWeight = FontWeight.Bold,
-                        modifier = Modifier.padding(start = 24.dp, bottom = 12.dp, top = 8.dp)
-                    )
-
-                    LazyVerticalGrid(
-                        columns = GridCells.Adaptive(minSize = 160.dp),
-                        contentPadding = PaddingValues(horizontal = 12.dp, vertical = 8.dp),
-                        horizontalArrangement = Arrangement.spacedBy(8.dp),
-                        verticalArrangement = Arrangement.spacedBy(8.dp)
-                    ) {
-                        items(items = searchHistory, key = { it.id }) { item ->
-                            HistoryItem(
-                                title = item.value,
-                                onDelete = { viewMode.deleById(item.id) },
-                                onClick = { text ->
-                                    viewMode.setQuery(TextFieldValue(text, TextRange(text.length)))
-                                    backStack.add(ResultViewerPage(text))
-                                }
+                when (val newState = uiState) {
+                    is UiState.Error -> {
+                        Box(
+                            modifier = Modifier.fillMaxWidth().padding(16.dp),
+                            contentAlignment = Alignment.Center
+                        ) {
+                            Text(
+                                text = newState.message,
+                                color = MaterialTheme.colorScheme.error,
+                                style = MaterialTheme.typography.bodyMedium
+                                    .copy(textAlign = TextAlign.Center)
                             )
                         }
                     }
+
+                    is UiState.Loading -> {
+                        Box(
+                            modifier = Modifier.fillMaxWidth().padding(32.dp),
+                            contentAlignment = Alignment.Center
+                        ) {
+                            CircularProgressIndicator(
+                                strokeWidth = 3.dp,
+                                modifier = Modifier.size(32.dp)
+                            )
+
+                        }
+                    }
+
+                    is UiState.Success -> {
+                        Text(
+                            text = "RECENT SEARCHES",
+                            style = MaterialTheme.typography.labelLarge,
+                            color = MaterialTheme.colorScheme.primary,
+                            fontWeight = FontWeight.Bold,
+                            modifier = Modifier.padding(start = 24.dp, bottom = 12.dp, top = 8.dp)
+                        )
+
+                        LazyVerticalGrid(
+                            columns = GridCells.Adaptive(minSize = 160.dp),
+                            contentPadding = PaddingValues(horizontal = 12.dp, vertical = 8.dp),
+                            horizontalArrangement = Arrangement.spacedBy(8.dp),
+                            verticalArrangement = Arrangement.spacedBy(8.dp)
+                        ) {
+                            items(items = newState.data, key = { it.id }) { item ->
+                                HistoryItem(
+                                    title = item.value,
+                                    onDelete = { viewMode.deleById(item.id) },
+                                    onClick = { text ->
+                                        viewMode.setQuery(
+                                            TextFieldValue(
+                                                text,
+                                                TextRange(text.length)
+                                            )
+                                        )
+                                        backStack.add(ResultViewerPage(text))
+                                    }
+                                )
+                            }
+                        }
+                    }
+                    else -> Unit
                 }
             }
         }
@@ -284,7 +327,7 @@ private fun HistoryItem(
     onDelete: () -> Unit,
     onClick: (String) -> Unit
 ) {
-    val showDeleteConfirm = remember { mutableStateOf(false) }
+    val showDeleteConfirm = retain { mutableStateOf(false) }
 
     Surface(
         onClick = { onClick(title) },
@@ -346,7 +389,7 @@ private fun HistoryItem(
 
 @Composable
 fun PlayListDownloadDialog(url: String, onDismiss: () -> Unit) {
-    val mContext = LocalActivity.current as? MainActivity
+
     AlertDialog(
         onDismissRequest = onDismiss,
         shape = RoundedCornerShape(28.dp),
@@ -374,8 +417,11 @@ fun PlayListDownloadDialog(url: String, onDismiss: () -> Unit) {
         confirmButton = {
             Button(
                 onClick = {
+                    showNotificationDialog = TopPopUp(
+                        message = "Sorry this feature is currently underdevelopment",
+                        icon = Icons.Default.Error
+                    )
                     onDismiss()
-                    mContext?.startPlayListDownload(playListUrl = url)
                 },
                 shape = RoundedCornerShape(12.dp)
             ) {

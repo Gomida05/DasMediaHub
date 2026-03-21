@@ -14,9 +14,11 @@ import android.os.Bundle
 import android.os.IBinder
 import android.support.v4.media.MediaMetadataCompat
 import android.support.v4.media.session.MediaSessionCompat
+import android.util.Log
 import android.view.KeyEvent
 import androidx.core.app.NotificationCompat
 import androidx.core.content.getSystemService
+import androidx.core.net.toUri
 import androidx.media.app.NotificationCompat.MediaStyle
 import androidx.media.session.MediaButtonReceiver
 import androidx.media3.common.AudioAttributes
@@ -31,13 +33,15 @@ import com.das.mediaHub.mediacontroller.MediaSessionPlaybackState
 import com.das.mediaHub.data.constants.Action.ACTION_ADD_TO_WATCH_LATER
 import com.das.mediaHub.data.constants.Action.ACTION_KILL
 import com.das.mediaHub.data.constants.Action.ACTION_START
-import com.das.mediaHub.data.model.VideosListData
 import androidx.media3.exoplayer.ExoPlayer
 import androidx.media3.common.MediaItem
+import androidx.media3.common.MediaMetadata
 import androidx.media3.common.PlaybackException
 import androidx.media3.common.Player
 import com.das.mediaHub.receive.Receiver
 import com.das.mediaHub.data.constants.Notifications.AUDIO_SERVICE_FROM_URL_NOTIFICATION
+import com.das.mediaHub.data.local.DatabaseFavorite
+import com.das.python.data.model.VideosListData
 
 
 @SuppressLint("UnsafeOptInUsageError")
@@ -59,7 +63,7 @@ class AudioServiceFromUrl : Service() {
     private val notificationManager by lazy {
         getSystemService<NotificationManager>()
     }
-    private lateinit var mediaUrl: String
+    private var mediaUrl: String? = null
     private lateinit var videoViews: String
     private lateinit var videoDate: String
     private lateinit var videoId: String
@@ -68,9 +72,6 @@ class AudioServiceFromUrl : Service() {
     private val myMediaSession by lazy {
         MediaSessionCompat(this, "AudioService").apply {
             isActive = true
-            @Suppress("DEPRECATION")
-            setFlags(MediaSessionCompat.FLAG_HANDLES_MEDIA_BUTTONS or MediaSessionCompat.FLAG_HANDLES_TRANSPORT_CONTROLS)
-
             setMediaButtonReceiver(
                 PendingIntent.getBroadcast(
                     this@AudioServiceFromUrl, 0,
@@ -82,8 +83,12 @@ class AudioServiceFromUrl : Service() {
         }
     }
 
+    private val db by lazy {
+        DatabaseFavorite(this)
+    }
+
     private val mediaSessionState by lazy {
-        MediaSessionPlaybackState(this)
+        MediaSessionPlaybackState(db)
     }
 
 
@@ -91,15 +96,38 @@ class AudioServiceFromUrl : Service() {
     override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
 
 
-        mediaUrl = intent?.getStringExtra("media_url").orEmpty()
+        mediaUrl = intent?.getStringExtra("media_url")
         val title =  intent?.getStringExtra("title").toString()
         val channelName = intent?.getStringExtra("channelName").toString()
-        val mediaItem = MediaItem.fromUri(mediaUrl)
+
         videoId = intent?.getStringExtra("videoId").toString()
         videoViews = intent?.getStringExtra("viewNumber").toString()
         videoDate = intent?.getStringExtra("videoDate").toString()
         durationFromActivity = intent?.getStringExtra("duration").toString()
 
+        if (mediaUrl.isNullOrBlank()) {
+            Log.e("AudioServiceFromUrl", "media_url is null or blank")
+            stopSelf()
+            return START_NOT_STICKY
+        }
+
+        val uri = mediaUrl?.toUri()
+        if (uri.toString().isBlank()) {
+            Log.e("AudioServiceFromUrl", "Parsed uri is invalid: $mediaUrl")
+            stopSelf()
+            return START_NOT_STICKY
+        }
+
+        val metadata = MediaMetadata.Builder()
+            .setMediaType(MediaMetadata.MEDIA_TYPE_MUSIC)
+            .setDisplayTitle(title)
+            .build()
+
+        val mediaItem = MediaItem.Builder()
+            .setMediaId(videoId)
+            .setUri(uri)
+            .setMediaMetadata(metadata)
+            .build()
         val mediaDetails = VideosListData(
             videoId, title,
             videoDate, videoViews,
@@ -335,7 +363,7 @@ class AudioServiceFromUrl : Service() {
             mediaButtonEvent.getParcelableExtra(Intent.EXTRA_KEY_EVENT)
 
             if (mediaButtonEvent.action == Intent.ACTION_MEDIA_BUTTON && keyEvent != null) {
-                // Extract the key event from the intent]
+                // Extract the key event from the intent
                 when (keyEvent.keyCode) {
 
                     KeyEvent.KEYCODE_MEDIA_PAUSE -> {

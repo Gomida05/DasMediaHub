@@ -10,7 +10,7 @@ import androidx.compose.material.icons.outlined.Settings
 import androidx.compose.material.icons.outlined.WatchLater
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.Stable
-import androidx.compose.runtime.remember
+import androidx.compose.runtime.retain.retain
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.navigation3.runtime.NavKey
 import com.das.mediaHub.NavScreens.Home
@@ -27,7 +27,7 @@ data class BottomNavItem(
     internal companion object {
         @Composable
         fun rememberBottomNavigationItems(): List<BottomNavItem> {
-            return remember {
+            return retain {
                 listOf(
                     BottomNavItem(
                         title = "Home",
