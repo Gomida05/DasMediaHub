@@ -83,8 +83,8 @@ kotlin {
 dependencies {
 
     //add project
-    implementation(project(":python"))
-//    implementation(files("libs/aar/python-debug.aar"))
+//    implementation(project(":python"))
+    implementation(files("libs/aar/python-release.aar"))
 
     //Firebase dependencies
     implementation(platform(libs.firebase.bom))

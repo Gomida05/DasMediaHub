@@ -94,11 +94,11 @@ object PythonMain {
         Exception::class
     )
     @RequiresPythonInit
-    suspend inline fun <reified T> Python.callMethod(
+    inline fun <reified T> Python.callMethod(
         name: Names,
         args: String,
         @PythonModule module: String = "main"
-    ): T = withContext(Dispatchers.IO) {
+    ): T  {
 
         ensurePythonInitialized(Python.isStarted())
         val pyModule = getModule(module)
@@ -108,7 +108,7 @@ object PythonMain {
         val callResult = result.call(args)
             ?: throw NullPointerException("Python call returned null")
 
-        callResult.toString().decodeStringToJson()
+        return callResult.toString().decodeStringToJson()
     }
 
     /**
