@@ -58,14 +58,14 @@ The heart of DasMediaHub's extraction logic lies in a dedicated Python module po
 
 ## 🛠 Tech Stack & Tools
 
-| Category | Technology |
-| :--- | :--- |
-| **Language** | Kotlin 2.x, Python (via Chaquopy) |
-| **UI** | Jetpack Compose, Material 3, Navigation 3 |
-| **Networking** | OkHttp 5, Kotlin Serialization |
-| **Media** | AndroidX Media3 (ExoPlayer, Session), Coil, Glide |
-| **Storage** | Firebase Firestore, Local File System |
-| **Build** | Gradle Kotlin DSL, Version Catalog |
+| Category       | Technology                                        |
+|:---------------|:--------------------------------------------------|
+| **Language**   | Kotlin 2.x, Python (via Chaquopy)                 |
+| **UI**         | Jetpack Compose, Material 3, Navigation 3         |
+| **Networking** | OkHttp 5, Kotlin Serialization                    |
+| **Media**      | AndroidX Media3 (ExoPlayer, Session), Coil, Glide |
+| **Storage**    | Firebase Firestore, Local File System             |
+| **Build**      | Gradle Kotlin DSL, Version Catalog                |
 
 ---
 
@@ -101,7 +101,7 @@ PYTHON_PATH=/usr/bin/python3
 
 # App Signing (Required for Release)
 KEYSTORE_FILE=C:/path/to/your/release.jks
-KEYSTORE_PASSWORD=your_password
+KEYSTORE_PASSWORD= your_password
 KEY_ALIAS=your_alias
 KEY_PASSWORD=your_password
 ```
