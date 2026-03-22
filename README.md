@@ -32,6 +32,8 @@ The heart of DasMediaHub's extraction logic lies in a dedicated Python module po
 - **`youtube-search-python`**: Fast, lightweight YouTube searching without API keys.
 - **`httpx` & `requests`**: Robust networking for scraping and API interaction.
 
+> ⚠️ Some features rely on third-party tools such as `yt-dlp`. Their behavior and legality may vary depending on your region and usage.
+
 ---
 
 ## ✨ Features
