@@ -1,85 +1,167 @@
 # 🎬 DasMediaHub
 
-**Transforming Media Experience with Limitless Innovation**
+**The Ultimate All-in-One Media Discovery & Download Suite**
 
-An extensible, multi-module Android media framework supporting background media playback, theme customization, content discovery, and smart download management.
+DasMediaHub is a cutting-edge Android application engineered with **Jetpack Compose** and **Material 3**. It provides a unified, high-performance interface for discovering, streaming, and downloading content from across the web, including **YouTube, TikTok, and Instagram**.
 
-![Last Commit](https://img.shields.io/github/last-commit/Gomida05/DasMediaHub)
-![Top Language](https://img.shields.io/github/languages/top/Gomida05/DasMediaHub)
-![Repo Languages](https://img.shields.io/github/languages/count/Gomida05/DasMediaHub)
+> ⚠️ This project is intended for educational purposes. Users are responsible for complying with all applicable laws and platform terms.
+
+[![Kotlin Version](https://img.shields.io/badge/Kotlin-2.x-purple.svg)](https://kotlinlang.org/)
+[![Compose](https://img.shields.io/badge/UI-Jetpack_Compose-green.svg)](https://developer.android.com/jetpack/compose)
+[![Material 3](https://img.shields.io/badge/Design-Material_3-blue.svg)](https://m3.material.io/)
+[![License](https://img.shields.io/badge/License-Apache%202.0-blue.svg)](LICENSE)
+---
+
+## 🌟 Key Highlights
+
+- **🚀 Performance-First Architecture:** Built using the latest Android standards (Compile/Target SDK 36, Kotlin 2.x).
+- **🎞️ Premium Playback:** Seamless media experience powered by **AndroidX Media3 (ExoPlayer)** with background playback and PiP support.
+- **📥 Smart Downloads:** A robust, background-resilient download manager with real-time status notifications.
+- **🐍 Python-Powered Intelligence:** Leverages **Chaquopy** to execute Python scripts for advanced metadata extraction and content scraping.
+- **☁️ Firebase Integration:** Real-time data persistence and analytics via Firestore.
 
 ---
 
-## 📚 Table of Contents
+## 🐍 Python Engine (`:python` module)
 
-- [🧾 Overview](#-overview)
-- [🔍 Why DasMediaHub?](#-why-dasmediahub)
-- [🚀 Getting Started](#-getting-started)
-- [🛠 Installation](#-installation)
+The heart of DasMediaHub's extraction logic lies in a dedicated Python module powered by **Chaquopy**. This allows the app to leverage powerful Python libraries for media scraping that are not natively available in Kotlin.
 
----
-
-## 🧾 Overview
-
-**DasMediaHub** is an all-in-one Android media platform. It enables seamless media consumption through:
-
-- 🔊 Audio and video playback with background support
-- 📥 File and app update download management
-- 🔎 YouTube-powered content search and preview
-- 🧱 Modular architecture supporting Kotlin, Compose, XML, and Python tools
+### 🛠 Core Python Libraries Used:
+- **`yt-dlp`**: High-performance extraction of video/audio URLs and metadata from 1000+ sites.
+- **`pytubefix`**: Specialized handling for YouTube-specific streams.
+- **`youtube-search-python`**: Fast, lightweight YouTube searching without API keys.
+- **`httpx` & `requests`**: Robust networking for scraping and API interaction.
 
 ---
 
-## 🔍 Why DasMediaHub?
+## ✨ Features
 
-| Feature                        | Description                                                         |
-|--------------------------------|---------------------------------------------------------------------|
-| 🎨 Custom Themes & Light/Dark  | Fully themeable Compose UI with user personalization                |
-| 🎧 Background Media Playback   | ExoPlayer & MediaSession support with PiP and controls              |
-| 📥 Download Management         | Background-safe download manager with progress and notifications    |
-| 🔍 Smart Discovery             | YouTube API integration, search history, and result previews        |
-| 🛎️ Notification Integration   | Native Android notifications for media and download controls        |
-| 🧱 Multi-Module Project        | Separation of concerns using Gradle + Kotlin DSL modules            |
-| 🐍 Kotlin + Python Integration | Python for automation, metadata scraping, or future ML enhancements |
+### 🔍 Discovery & Search
+- **Universal Search:** Find content across multiple platforms simultaneously.
+- **Platform Specific Hubs:** Dedicated interfaces for YouTube, TikTok, and Instagram.
+- **Rich Previews:** High-quality thumbnails and metadata for every result.
+
+### 🎥 Media Experience
+- **Advanced Player:** Support for HLS, DASH, and standard MP4/WebM formats.
+- **Picture-in-Picture (PiP):** Continue watching while using other apps.
+- **Background Audio:** Listen to your favorite content even when the screen is off.
+- **History & Library:** Track what you've watched and manage your local downloads effortlessly.
+
+### 🎨 Design & Personalization
+- **Material 3 Interface:** Sleek, modern components with intuitive navigation.
+- **Dynamic Color:** Adapts its theme based on your device's wallpaper.
+- **Full Customization:** Toggle between Light and Dark modes with smooth transitions.
+
+---
+
+## 🛠 Tech Stack & Tools
+
+| Category | Technology |
+| :--- | :--- |
+| **Language** | Kotlin 2.x, Python (via Chaquopy) |
+| **UI** | Jetpack Compose, Material 3, Navigation 3 |
+| **Networking** | OkHttp 5, Kotlin Serialization |
+| **Media** | AndroidX Media3 (ExoPlayer, Session), Coil, Glide |
+| **Storage** | Firebase Firestore, Local File System |
+| **Build** | Gradle Kotlin DSL, Version Catalog |
 
 ---
 
 ## 🚀 Getting Started
 
-### 📦 Prerequisites
+### 📋 Prerequisites
+- **Android Studio Ladybug** (or later)
+- **Android SDK 36**
+- **JDK 17**
+- **Local Python Interpreter** (for build-time compilation)
 
-- Android Studio
-- Kotlin 1.9+
-- Gradle 8.0+
-- Python 3.9+
-- Git CLI
+### 🔨 Installation & Build
+1. Clone the repository:
+   ```bash
+   git clone https://github.com/Gomida05/DasMediaHub.git
+   ```
+2. Configure your `local.properties` (see below).
+3. Open the project in Android Studio and sync with Gradle.
+4. Run the app:
+   ```bash
+   ./gradlew installDebug
+   ```
 
-## 🛠 Installation
+---
 
-```bash
-# Clone the repository
-git clone https://github.com/Gomida05/DasMediaHub.git
+## 🔐 Local Configuration (`local.properties`)
 
-# Move into the project directory
-cd DasMediaHub
+To ensure all features work correctly, add the following to your `local.properties`:
 
-# Sync and build the project
-./gradlew build
+```properties
+# Path to your local Python interpreter (required by Chaquopy)
+PYTHON_PATH=/usr/bin/python3
+
+# App Signing (Required for Release)
+KEYSTORE_FILE=C:/path/to/your/release.jks
+KEYSTORE_PASSWORD=your_password
+KEY_ALIAS=your_alias
+KEY_PASSWORD=your_password
 ```
 
 ---
 
-## 🔐 Required Local Configuration
+## 🤝 Contributing
 
-Before building or releasing the app, you must create a `local.properties` file in the root directory of the project (same level as `build.gradle`). This file should contain the following entries:
+Contributions make the open-source community an amazing place! If you'd like to contribute:
+1. **Fork** the project.
+2. **Create** your Feature Branch (`git checkout -b feature/AmazingFeature`).
+3. **Commit** your changes (`git commit -m 'Add some AmazingFeature'`).
+4. **Push** to the branch (`git push origin feature/AmazingFeature`).
+5. **Open** a Pull Request.
 
-```properties
-# Path to your local Python interpreter
-PYTHON_PATH=/usr/bin/python3
+---
 
-# Release keystore configuration (used for signing the app)
-KEYSTORE_FILE=/absolute/path/to/your/release.jks
-KEYSTORE_PASSWORD=your_keystore_password
-KEY_ALIAS=your_key_alias
-KEY_PASSWORD=your_key_password
-```
+
+## 📄 License
+
+This project is licensed under the **Apache License 2.0**.
+
+See the [LICENSE](LICENSE) file for full details.
+
+---
+
+
+## ⚠️ Legal Disclaimer
+
+DasMediaHub is an open-source project provided for **educational and personal use only**.
+
+This application does **not host, store, or distribute any media content**. It functions as a client that accesses publicly available data from third-party services.
+
+### ❗ User Responsibility
+By using this software, you agree that:
+- You are solely responsible for your use of the application
+- You will comply with all applicable local, national, and international laws
+- You will adhere to the Terms of Service of all platforms accessed through this app
+
+### 🚫 No Affiliation
+DasMediaHub is **not affiliated with, endorsed by, or sponsored by**:
+- YouTube (Google LLC)
+- TikTok (ByteDance Ltd.)
+- Instagram (Meta Platforms, Inc.)
+
+All trademarks and copyrights belong to their respective owners.
+
+### 📥 Content & Copyright
+Accessing, downloading, or redistributing media may violate:
+- Platform Terms of Service
+- Copyright and intellectual property laws
+
+You are solely responsible for ensuring that your actions are lawful and permitted.
+
+### ⚠️ Limitation of Liability
+The developers and contributors of DasMediaHub:
+- Make **no guarantees** about the legality of usage in your jurisdiction
+- Are **not responsible** for any misuse of the software
+- Shall **not be held liable** for any claims, damages, or legal issues arising from its use
+
+---
+
+By using this software, you acknowledge and agree to this disclaimer.
+
+**Developed with ❤️ by the DasMediaHub Team**

@@ -82,9 +82,11 @@ kotlin {
 
 dependencies {
 
-    //add project
-//    implementation(project(":python"))
+    // Python Integration: The app uses a dedicated :python module
+    // for metadata scraping and extraction via Chaquopy.
+    // implementation(project(":python")) // Uncomment for development
     implementation(files("libs/aar/python-release.aar"))
+
 
     //Firebase dependencies
     implementation(platform(libs.firebase.bom))
