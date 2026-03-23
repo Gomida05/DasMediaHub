@@ -9,6 +9,8 @@ composeBomVersion = "2026.03.00"
 constraintlayoutVersion = "2.2.1"
 coreKtxVersion = "1.18.0"
 chaquo = "17.0.0"
+credentialsVersion = "1.5.0"
+credentialsPlayServicesAuthVersion = "1.5.0"
 firebaseBomVersion = "34.11.0"
 glideVersion = "5.0.5"
 gms = "4.4.4"
@@ -36,6 +38,8 @@ materialVersion = "1.13.0"
 
 [libraries]
 activity-compose = { module = "androidx.activity:activity-compose", version.ref = "activityComposeVersion" }
+androidx-credentials-play-services-auth = { module = "androidx.credentials:credentials-play-services-auth", version.ref = "credentialsPlayServicesAuthVersion" }
+androidx-credentials = { module = "androidx.credentials:credentials", version.ref = "credentialsVersion" }
 appcompat = { module = "androidx.appcompat:appcompat", version.ref = "appcompatVersion" }
 browser = { module = "androidx.browser:browser", version.ref = "browserVersion" }
 coil-video = { module = "io.coil-kt:coil-video", version.ref = "coilVideoVersion" }

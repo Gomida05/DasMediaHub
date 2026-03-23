@@ -1,4 +1,4 @@
-package com.das.mediaHub.ui.tiktok
+package com.das.mediaHub.ui.instagram
 
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.expandVertically
@@ -28,10 +28,12 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.Download
+import com.das.mediaHub.data.model.icons.filled.InstagramIcon
 import androidx.compose.material.icons.filled.Link
 import androidx.compose.material.icons.filled.Person
 import androidx.compose.material.icons.filled.Search
 import androidx.compose.material3.Button
+import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.CircularProgressIndicator
@@ -48,7 +50,6 @@ import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBar
 import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
@@ -57,6 +58,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.input.KeyboardType
@@ -65,20 +67,20 @@ import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
 import coil.compose.AsyncImage
-import com.das.mediaHub.data.model.icons.filled.TikTokIcon
 import com.das.mediaHub.data.model.tiktok.TikTokInfo
-import com.das.mediaHub.ui.players.videoPlayer.state.UiState
 import kotlinx.coroutines.launch
 
 @Composable
-fun TikTokComposable(navigateUp: () -> Unit) {
-    val viewModel = viewModel<TikTokViewModel>()
-    val url by viewModel.url.collectAsState()
-    val uiState by viewModel.uiState.collectAsStateWithLifecycle()
+fun InstagramScreen(navigateUp: () -> Unit) {
+    val viewModel = viewModel<InstagramViewModel>()
+    val url by viewModel.url.collectAsStateWithLifecycle()
+    val isLoading by viewModel.isLoading.collectAsStateWithLifecycle()
+    val resolvedInfo by viewModel.resolvedInfo.collectAsStateWithLifecycle()
+    val error by viewModel.error.collectAsStateWithLifecycle()
 
     val snackBarHostState = remember { SnackbarHostState() }
     val scope = rememberCoroutineScope()
-
+    val context = LocalContext.current
 
     Box(
         modifier = Modifier
@@ -100,7 +102,7 @@ fun TikTokComposable(navigateUp: () -> Unit) {
                     title = {
                         Row(verticalAlignment = Alignment.CenterVertically) {
                             Text(
-                                "TikTok Downloader",
+                                "Instagram Downloader",
                                 style = MaterialTheme.typography.titleLarge.copy(fontWeight = FontWeight.Bold)
                             )
                             Spacer(Modifier.width(8.dp))
@@ -110,7 +112,7 @@ fun TikTokComposable(navigateUp: () -> Unit) {
                                 modifier = Modifier.padding(top = 2.dp)
                             ) {
                                 Text(
-                                    text = "BETA 3.0",
+                                    text = "BETA",
                                     style = MaterialTheme.typography.labelSmall.copy(
                                         fontWeight = FontWeight.Bold,
                                         color = MaterialTheme.colorScheme.onTertiaryContainer
@@ -140,22 +142,21 @@ fun TikTokComposable(navigateUp: () -> Unit) {
             ) {
                 Spacer(modifier = Modifier.height(16.dp))
 
-                // Initial Icon when no result is shown
                 AnimatedVisibility(
-                    visible = uiState is UiState.Idle,
+                    visible = resolvedInfo == null,
                     enter = fadeIn() + expandVertically(),
                     exit = fadeOut() + shrinkVertically()
                 ) {
                     Surface(
                         shape = CircleShape,
-                        color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.1f),
+                        color = Color(0xFFE4405F).copy(alpha = 0.1f),
                         modifier = Modifier.size(80.dp)
                     ) {
                         Box(contentAlignment = Alignment.Center) {
                             Icon(
-                                imageVector = Icons.Default.TikTokIcon,
+                                imageVector = Icons.Default.InstagramIcon,
                                 contentDescription = null,
-                                tint = MaterialTheme.colorScheme.onSurface,
+                                tint = Color(0xFFE4405F),
                                 modifier = Modifier.size(40.dp)
                             )
                         }
@@ -165,12 +166,12 @@ fun TikTokComposable(navigateUp: () -> Unit) {
                 Spacer(modifier = Modifier.height(16.dp))
 
                 Text(
-                    text = "Grab Your Favorite Video",
+                    text = "Save Instagram Reels",
                     style = MaterialTheme.typography.headlineSmall.copy(fontWeight = FontWeight.Bold)
                 )
                 
                 Text(
-                    text = "Enter the TikTok link to preview and download.",
+                    text = "Paste the Instagram link to preview and download.",
                     style = MaterialTheme.typography.bodyMedium,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                     modifier = Modifier.padding(top = 4.dp, bottom = 24.dp)
@@ -187,10 +188,10 @@ fun TikTokComposable(navigateUp: () -> Unit) {
                         OutlinedTextField(
                             value = url,
                             onValueChange = { viewModel.setUrl(it) },
-                            enabled = uiState !is UiState.Loading,
+                            enabled = !isLoading,
                             placeholder = { 
                                 Text(
-                                    "Paste TikTok link here...",
+                                    "Paste Instagram link here...",
                                     style = MaterialTheme.typography.bodyMedium,
                                     color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.6f)
                                 ) 
@@ -200,7 +201,7 @@ fun TikTokComposable(navigateUp: () -> Unit) {
                                 Icon(
                                     imageVector = Icons.Default.Link,
                                     contentDescription = null,
-                                    tint = MaterialTheme.colorScheme.primary
+                                    tint = Color(0xFFE4405F)
                                 )
                             },
                             trailingIcon = {
@@ -212,7 +213,7 @@ fun TikTokComposable(navigateUp: () -> Unit) {
                             },
                             shape = RoundedCornerShape(16.dp),
                             colors = OutlinedTextFieldDefaults.colors(
-                                focusedBorderColor = MaterialTheme.colorScheme.primary,
+                                focusedBorderColor = Color(0xFFE4405F),
                                 unfocusedBorderColor = MaterialTheme.colorScheme.outline.copy(alpha = 0.3f)
                             ),
                             singleLine = true,
@@ -229,16 +230,19 @@ fun TikTokComposable(navigateUp: () -> Unit) {
 
                         Button(
                             onClick = { viewModel.fetchInfo() },
-                            enabled = url.isNotBlank() && uiState !is UiState.Loading,
+                            enabled = url.isNotBlank() && !isLoading,
                             modifier = Modifier
                                 .fillMaxWidth()
                                 .height(48.dp),
-                            shape = RoundedCornerShape(12.dp)
+                            shape = RoundedCornerShape(12.dp),
+                            colors = ButtonDefaults.buttonColors(
+                                containerColor = Color(0xFFE4405F)
+                            )
                         ) {
-                            if (uiState is UiState.Loading) {
+                            if (isLoading) {
                                 CircularProgressIndicator(
                                     modifier = Modifier.size(20.dp),
-                                    color = MaterialTheme.colorScheme.onPrimary,
+                                    color = Color.White,
                                     strokeWidth = 2.dp
                                 )
                             } else {
@@ -250,37 +254,32 @@ fun TikTokComposable(navigateUp: () -> Unit) {
                     }
                 }
 
-                when (val newState = uiState) {
-                    is UiState.Error -> {
-                        Text(
-                            text = newState.message,
-                            color = MaterialTheme.colorScheme.error,
-                            style = MaterialTheme.typography.bodySmall,
-                            modifier = Modifier.padding(top = 12.dp)
-                        )
-                    }
+                error?.let {
+                    Text(
+                        text = it,
+                        color = MaterialTheme.colorScheme.error,
+                        style = MaterialTheme.typography.bodySmall,
+                        modifier = Modifier.padding(top = 12.dp)
+                    )
+                }
 
-                    is UiState.Success -> {
-                        Spacer(modifier = Modifier.height(24.dp))
+                Spacer(modifier = Modifier.height(24.dp))
 
-                        // Resolved Preview Section
-                        AnimatedVisibility(
-                            visible = true,
-                            enter = fadeIn() + expandVertically(),
-                            exit = fadeOut() + shrinkVertically()
-                        ) {
-                            newState.data.let { info ->
-                                TikTokPreviewCard(info) {
-                                    val title = info.title ?: "TikTok_Video_${System.currentTimeMillis()}"
-
-                                    scope.launch {
-                                        snackBarHostState.showSnackbar("Download currently is unavailable")
-                                    }
-                                }
+                AnimatedVisibility(
+                    visible = resolvedInfo != null,
+                    enter = fadeIn() + expandVertically(),
+                    exit = fadeOut() + shrinkVertically()
+                ) {
+                    resolvedInfo?.let { info ->
+                        InstagramPreviewCard(info) {
+                            val title = info.title ?: "Instagram_Video_${System.currentTimeMillis()}"
+                            scope.launch {
+                                snackBarHostState.showSnackbar(
+                                    "Coming soon"
+                                )
                             }
                         }
                     }
-                    else -> Unit
                 }
                 
                 Spacer(modifier = Modifier.height(32.dp))
@@ -290,7 +289,7 @@ fun TikTokComposable(navigateUp: () -> Unit) {
 }
 
 @Composable
-fun TikTokPreviewCard(info: TikTokInfo, onDownload: () -> Unit) {
+fun InstagramPreviewCard(info: TikTokInfo, onDownload: () -> Unit) {
     Card(
         shape = RoundedCornerShape(24.dp),
         colors = CardDefaults.cardColors(
@@ -328,7 +327,7 @@ fun TikTokPreviewCard(info: TikTokInfo, onDownload: () -> Unit) {
                         )
                         Spacer(Modifier.width(6.dp))
                         Text(
-                            text = info.uploader ?: "Unknown",
+                            text = info.uploader ?: "Instagram User",
                             color = Color.White,
                             style = MaterialTheme.typography.labelMedium
                         )
@@ -338,7 +337,7 @@ fun TikTokPreviewCard(info: TikTokInfo, onDownload: () -> Unit) {
 
             Column(modifier = Modifier.padding(20.dp)) {
                 Text(
-                    text = info.title ?: "No Title Available",
+                    text = info.title ?: "Instagram Video",
                     style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Bold),
                     maxLines = 2,
                     overflow = TextOverflow.Ellipsis
@@ -351,12 +350,15 @@ fun TikTokPreviewCard(info: TikTokInfo, onDownload: () -> Unit) {
                     modifier = Modifier
                         .fillMaxWidth()
                         .height(56.dp),
-                    shape = RoundedCornerShape(16.dp)
+                    shape = RoundedCornerShape(16.dp),
+                    colors = ButtonDefaults.buttonColors(
+                        containerColor = Color(0xFFE4405F)
+                    )
                 ) {
                     Icon(Icons.Default.Download, null)
                     Spacer(Modifier.width(12.dp))
                     Text(
-                        "Download Video",
+                        "Download Reel",
                         style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Bold)
                     )
                 }

@@ -1,5 +1,6 @@
 package com.das.mediaHub.ui.downloads
 
+import android.app.Application
 import android.text.format.Formatter
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
@@ -54,9 +55,11 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
+import androidx.lifecycle.viewmodel.initializer
+import androidx.lifecycle.viewmodel.viewModelFactory
 import androidx.navigation3.runtime.NavBackStack
 import androidx.navigation3.runtime.NavKey
-import com.das.mediaHub.NavScreens
+import com.das.mediaHub.navigation.NavScreens
 import com.das.mediaHub.data.model.download.DownloadInfo
 import com.das.mediaHub.data.model.download.DownloadState
 import com.das.mediaHub.data.model.download.DownloadStatus
@@ -64,8 +67,14 @@ import com.das.mediaHub.data.model.download.DownloadingUiState
 
 @Composable
 fun DownloadingComposable(backStack: NavBackStack<NavKey>) {
+    val context = LocalContext.current
     val viewModel = viewModel(
-        modelClass = DownloadingViewModel::class.java
+        modelClass = DownloadingViewModel::class.java.kotlin,
+        factory = viewModelFactory {
+            initializer {
+                DownloadingViewModel(context.applicationContext as Application)
+            }
+        }
     )
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
 

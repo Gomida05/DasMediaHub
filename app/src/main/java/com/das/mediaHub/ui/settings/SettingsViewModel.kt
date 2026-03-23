@@ -3,6 +3,7 @@ package com.das.mediaHub.ui.settings
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.das.mediaHub.data.constants.UrlLists.APP_URL
+import com.das.mediaHub.data.error.ErrorMapper
 import com.das.mediaHub.data.model.AppUpdateInfo
 import com.das.mediaHub.ui.players.videoPlayer.state.UiState
 import kotlinx.coroutines.Dispatchers
@@ -32,22 +33,19 @@ class SettingsViewModel: ViewModel() {
                 val result = requestJson()
                 _apkInfoState.value = UiState.Success(result)
             } catch (e: Exception) {
-                _apkInfoState.value = UiState.Error(e.message ?: "Unknown error")
+                _apkInfoState.value = UiState.Error(ErrorMapper.map(e))
             }
         }
     }
 
     fun cancelLoading() {
         loadingJob?.cancel()
-        clearError()
+        clearResult()
     }
 
-    fun clearError() {
-        _apkInfoState.value = UiState.Idle
-    }
 
     fun retryLoad() {
-        clearError()
+        clearResult()
         loadJson()
     }
 
@@ -85,6 +83,10 @@ class SettingsViewModel: ViewModel() {
         } finally {
             connection.disconnect()
         }
+    }
+
+    fun clearResult() {
+        _apkInfoState.value = UiState.Idle
     }
 
 }

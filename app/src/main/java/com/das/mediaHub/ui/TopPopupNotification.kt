@@ -63,6 +63,15 @@ internal object TopPopupNotification {
      */
     var showNotificationDialog by mutableStateOf<TopPopUp?>(null)
 
+    @Composable
+    fun Notification() {
+        showNotificationDialog?.let {
+            it.PopupNotification {
+                showNotificationDialog = null
+            }
+        }
+    }
+
     /**
      * Displays a top popup notification for this [TopPopUp] instance.
      *
@@ -76,7 +85,7 @@ internal object TopPopupNotification {
      * @param onDismiss Callback invoked when the popup should be dismissed.
      */
     @Composable
-    fun TopPopUp.TopPopupNotification(
+    private fun TopPopUp.PopupNotification(
         durationMillis: Long = 4000,
         onDismiss: () -> Unit
     ) {
@@ -117,58 +126,65 @@ internal object TopPopupNotification {
             )
         }
 
-        AnimatedVisibility(
-            visible = true,
-            enter = slideInVertically(initialOffsetY = { -100 }) + fadeIn(),
-            exit = slideOutVertically(targetOffsetY = { -100 }) + fadeOut()
+        Box(
+            Modifier
+                .padding(6.dp)
+                .fillMaxWidth()
+                .zIndex(1f),
+            contentAlignment = Alignment.TopCenter
         ) {
-            Box(
-                modifier = Modifier
-                    .padding(6.dp)
-                    .fillMaxWidth()
-                    .padding(horizontal = 16.dp, vertical = 16.dp)
-                    .zIndex(1f),
-                contentAlignment = Alignment.TopCenter
+            AnimatedVisibility(
+                visible = true,
+                enter = slideInVertically(initialOffsetY = { -100 }) + fadeIn(),
+                exit = slideOutVertically(targetOffsetY = { -100 }) + fadeOut()
             ) {
-                Card(
-                    elevation = CardDefaults.cardElevation(8.dp),
-                    shape = RoundedCornerShape(12.dp),
-                    colors = CardDefaults.cardColors(
-                        containerColor = MaterialTheme.colorScheme.background
-                    ),
+                Box(
                     modifier = Modifier
+                        .padding(6.dp)
                         .fillMaxWidth()
-                        .height(70.dp)
-                        .offset { IntOffset(0, offsetY.value.roundToInt()) }
-                        .then(dragModifier)
+                        .padding(horizontal = 16.dp, vertical = 16.dp),
+                    contentAlignment = Alignment.TopCenter
                 ) {
-                    Column(modifier = Modifier.fillMaxSize()) {
-                        Row(
-                            verticalAlignment = Alignment.CenterVertically,
-                            modifier = Modifier
-                                .weight(1f)
-                                .padding(horizontal = 16.dp, vertical = 12.dp)
-                        ) {
-                            Icon(
-                                imageVector = icon,
-                                contentDescription = "Notification Icon",
-                                tint = MaterialTheme.colorScheme.primary,
-                                modifier = Modifier.size(24.dp)
-                            )
-                            Spacer(modifier = Modifier.width(12.dp))
-                            Text(
-                                text = message,
-                                style = MaterialTheme.typography.bodyMedium,
-                                modifier = Modifier.weight(1f)
-                            )
-                        }
-
-                        if (loading) {
-                            LinearProgressIndicator(
+                    Card(
+                        elevation = CardDefaults.cardElevation(8.dp),
+                        shape = RoundedCornerShape(12.dp),
+                        colors = CardDefaults.cardColors(
+                            containerColor = MaterialTheme.colorScheme.background
+                        ),
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .height(70.dp)
+                            .offset { IntOffset(0, offsetY.value.roundToInt()) }
+                            .then(dragModifier)
+                    ) {
+                        Column(modifier = Modifier.fillMaxSize()) {
+                            Row(
+                                verticalAlignment = Alignment.CenterVertically,
                                 modifier = Modifier
-                                    .fillMaxWidth()
-                                    .height(2.dp)
-                            )
+                                    .weight(1f)
+                                    .padding(horizontal = 16.dp, vertical = 12.dp)
+                            ) {
+                                Icon(
+                                    imageVector = icon,
+                                    contentDescription = "Notification Icon",
+                                    tint = MaterialTheme.colorScheme.primary,
+                                    modifier = Modifier.size(24.dp)
+                                )
+                                Spacer(modifier = Modifier.width(12.dp))
+                                Text(
+                                    text = message,
+                                    style = MaterialTheme.typography.bodyMedium,
+                                    modifier = Modifier.weight(1f)
+                                )
+                            }
+
+                            if (loading) {
+                                LinearProgressIndicator(
+                                    modifier = Modifier
+                                        .fillMaxWidth()
+                                        .height(2.dp)
+                                )
+                            }
                         }
                     }
                 }

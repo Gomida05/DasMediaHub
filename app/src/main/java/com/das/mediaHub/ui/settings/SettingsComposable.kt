@@ -32,7 +32,6 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowForwardIos
-import androidx.compose.material.icons.filled.AccountCircle
 import androidx.compose.material.icons.filled.Android
 import androidx.compose.material.icons.filled.Check
 import androidx.compose.material.icons.filled.ColorLens
@@ -87,12 +86,12 @@ import androidx.core.content.pm.PackageInfoCompat
 import androidx.documentfile.provider.DocumentFile
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
-import com.das.mediaHub.NavScreens
 import com.das.mediaHub.data.local.PathPreferences
 import com.das.mediaHub.data.local.PathPreferences.saveAudioPath
 import com.das.mediaHub.data.local.PathPreferences.saveVideoPath
 import com.das.mediaHub.data.model.AppUpdateInfo
 import com.das.mediaHub.data.model.TopPopUp
+import com.das.mediaHub.navigation.NavScreens
 import com.das.mediaHub.services.download.DownloadService
 import com.das.mediaHub.ui.TopPopupNotification.showNotificationDialog
 import com.das.mediaHub.ui.players.videoPlayer.state.UiState
@@ -275,7 +274,7 @@ fun SettingsComposable(add: (NavScreens) -> Unit) {
             is UiState.Error -> {
                 ErrorDialog(
                     message = newState.message,
-                    onDismiss = { viewModel.clearError() }
+                    onDismiss = { viewModel.clearResult() }
                 ) {
                     viewModel.retryLoad()
                 }
@@ -285,7 +284,10 @@ fun SettingsComposable(add: (NavScreens) -> Unit) {
                     context = context,
                     appInfo = newState.data,
                     packageInfo = packageInfo,
-                    onDismissRequest = { showDialog.value = false }
+                    onDismissRequest = {
+                        showDialog.value = false
+                        viewModel.clearResult()
+                    }
                 )
             }
 
@@ -401,10 +403,9 @@ fun PackageInfo.AppVersionInfo() {
 @Composable
 fun LoadingDialog(
     title: String = "Checking for updates",
-    message: String = "Fetching the latest update info...",
     onCancel: () -> Unit
 ) {
-    val animatedMessage = loadingMessage("Fetching update info")
+    val animatedMessage = loadingMessage()
     Dialog(onDismissRequest = {}) {
         Card(
             shape = RoundedCornerShape(28.dp),
@@ -483,7 +484,7 @@ fun LoadingDialog(
 
 
 @Composable
-private fun loadingMessage(base: String): String {
+private fun loadingMessage(): String {
     var dots by remember { mutableStateOf("") }
 
     LaunchedEffect(Unit) {
@@ -498,7 +499,7 @@ private fun loadingMessage(base: String): String {
         }
     }
 
-    return base + dots
+    return "Fetching the latest update info...$dots"
 }
 
 
@@ -507,13 +508,11 @@ private fun StyledDialogContainer(
     icon: ImageVector? = null,
     title: String,
     message: String,
-    onDismissRequest: () -> Unit = {},
-    dismissOnOutsideClick: Boolean = false,
     actions: @Composable () -> Unit
 ) {
     BasicAlertDialog(
         onDismissRequest = {
-            if (dismissOnOutsideClick) onDismissRequest()
+
         }
     ) {
         Card(
@@ -591,107 +590,9 @@ private fun StyledDialogContainer(
     }
 }
 
-@Composable
-private fun rememberAnimatedLoadingText(base: String): String {
-    var dots by remember { mutableStateOf("") }
-
-    LaunchedEffect(base) {
-        while (true) {
-            dots = when (dots) {
-                "" -> "."
-                "." -> ".."
-                ".." -> "..."
-                else -> ""
-            }
-            delay(450)
-        }
-    }
-
-    return "$base$dots"
-}
 
 @Composable
-fun LoadingDialog(
-    onCancel: () -> Unit,
-    title: String = "Checking for updates"
-) {
-    val animatedMessage = rememberAnimatedLoadingText("Fetching the latest update info")
-
-    BasicAlertDialog(onDismissRequest = {}) {
-        Card(
-            shape = RoundedCornerShape(28.dp),
-            colors = CardDefaults.cardColors(
-                containerColor = MaterialTheme.colorScheme.surface
-            ),
-            elevation = CardDefaults.cardElevation(defaultElevation = 12.dp),
-            modifier = Modifier.fillMaxWidth()
-        ) {
-            Column(
-                modifier = Modifier
-                    .background(
-                        Brush.verticalGradient(
-                            listOf(
-                                MaterialTheme.colorScheme.surface,
-                                MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.18f)
-                            )
-                        )
-                    )
-                    .padding(horizontal = 24.dp, vertical = 22.dp),
-                horizontalAlignment = Alignment.CenterHorizontally
-            ) {
-                Surface(
-                    shape = RoundedCornerShape(20.dp),
-                    color = MaterialTheme.colorScheme.primary.copy(alpha = 0.10f)
-                ) {
-                    Box(
-                        modifier = Modifier
-                            .size(72.dp)
-                            .padding(16.dp),
-                        contentAlignment = Alignment.Center
-                    ) {
-                        CircularProgressIndicator(
-                            strokeWidth = 3.5.dp,
-                            modifier = Modifier.size(34.dp)
-                        )
-                    }
-                }
-
-                Spacer(modifier = Modifier.height(18.dp))
-
-                Text(
-                    text = title,
-                    style = MaterialTheme.typography.titleLarge.copy(
-                        fontWeight = FontWeight.Bold
-                    ),
-                    textAlign = TextAlign.Center
-                )
-
-                Spacer(modifier = Modifier.height(8.dp))
-
-                Text(
-                    text = animatedMessage,
-                    style = MaterialTheme.typography.bodyMedium,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                    textAlign = TextAlign.Center
-                )
-
-                Spacer(modifier = Modifier.height(22.dp))
-
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.End
-                ) {
-                    TextButton(onClick = onCancel) {
-                        Text("Cancel")
-                    }
-                }
-            }
-        }
-    }
-}
-
-@Composable
-fun ErrorDialog(
+private fun ErrorDialog(
     message: String?,
     onDismiss: () -> Unit,
     onRetry: (() -> Unit)? = null
@@ -700,9 +601,7 @@ fun ErrorDialog(
         StyledDialogContainer(
             icon = Icons.Default.ErrorOutline,
             title = "Something went wrong",
-            message = message,
-            onDismissRequest = onDismiss,
-            dismissOnOutsideClick = false
+            message = message
         ) {
             if (onRetry != null) {
                 TextButton(onClick = onRetry) {
@@ -740,9 +639,7 @@ fun ShowAlertDialog(
                 if (appInfo.whatsNew.isNotBlank()) {
                     append("\n\nWhat’s new:\n${appInfo.whatsNew}")
                 }
-            },
-            onDismissRequest = onDismissRequest,
-            dismissOnOutsideClick = false
+            }
         ) {
             TextButton(onClick = onDismissRequest) {
                 Text("Later")

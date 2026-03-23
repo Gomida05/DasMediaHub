@@ -6,9 +6,10 @@ import android.content.Intent
 import android.os.IBinder
 import androidx.core.content.ContextCompat
 import com.das.mediaHub.data.model.AppUpdateInfo
-import com.das.mediaHub.downloader.DownloadCoordinator
-import com.das.mediaHub.downloader.DownloadNotifier
-import com.das.mediaHub.downloader.DownloadQueueManager
+import com.das.mediaHub.data.downloader.DownloadCoordinator
+import com.das.mediaHub.data.downloader.DownloadNotifier
+import com.das.mediaHub.data.downloader.DownloadQueueManager
+import com.das.mediaHub.data.downloader.DownloaderRepo
 import com.das.mediaHub.data.model.download.DownloadType
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
@@ -29,7 +30,7 @@ class DownloadService : Service() {
         super.onCreate()
         queue = DownloadQueueManager.get(this)
         notifier = DownloadNotifier(this)
-        coordinator = DownloadCoordinator(this)
+        coordinator = DownloadCoordinator(DownloaderRepo(this))
 
         startForeground(FOREGROUND_NOTIFICATION_ID, notifier.foregroundNotification())
 

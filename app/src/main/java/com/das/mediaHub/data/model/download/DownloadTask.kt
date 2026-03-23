@@ -8,17 +8,4 @@ data class DownloadTask(
     val destinationPath: String,
     val headers: Map<String, String> = emptyMap(),
     val playlistName: String? = null
-) {
-    companion object {
-        fun fromDownloadState(state: DownloadState): DownloadTask {
-            return DownloadTask(
-                id = state.id,
-                url = state.url,
-                title = state.title,
-                type = state.type,
-                destinationPath = state.destinationPath,
-                playlistName = state.playlistName
-            )
-        }
-    }
-}
+)

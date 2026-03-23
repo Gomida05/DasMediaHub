@@ -177,69 +177,70 @@ fun LocalVideoPlayer(videoUri: String) {
                     playerView.player = controller
                 }
             )
-
-            when {
-                showMetadataLoading -> {
-                    Box(
-                        modifier = Modifier
-                            .fillMaxSize()
-                            .zIndex(1f),
-                        contentAlignment = Alignment.Center
-                    ) {
-                        CircularProgressIndicator()
+            if (controller != null && controller?.isPlaying == true) {
+                when {
+                    showMetadataLoading -> {
+                        Box(
+                            modifier = Modifier
+                                .fillMaxSize()
+                                .zIndex(1f),
+                            contentAlignment = Alignment.Center
+                        ) {
+                            CircularProgressIndicator()
+                        }
                     }
-                }
 
-                metadataError != null && controller == null -> {
-                    Box(
-                        modifier = Modifier
-                            .fillMaxSize()
-                            .zIndex(1f),
-                        contentAlignment = Alignment.Center
-                    ) {
-                        Text(
-                            text = metadataError.message,
-                            color = MaterialTheme.colorScheme.error
-                        )
+                    metadataError != null && controller == null -> {
+                        Box(
+                            modifier = Modifier
+                                .fillMaxSize()
+                                .zIndex(1f),
+                            contentAlignment = Alignment.Center
+                        ) {
+                            Text(
+                                text = metadataError.message,
+                                color = MaterialTheme.colorScheme.error
+                            )
+                        }
                     }
-                }
 
-                playlistState is UiState.Loading && !isContentUri -> {
-                    Box(
-                        modifier = Modifier
-                            .fillMaxSize()
-                            .zIndex(1f),
-                        contentAlignment = Alignment.Center
-                    ) {
-                        CircularProgressIndicator()
+                    playlistState is UiState.Loading && !isContentUri -> {
+                        Box(
+                            modifier = Modifier
+                                .fillMaxSize()
+                                .zIndex(1f),
+                            contentAlignment = Alignment.Center
+                        ) {
+                            CircularProgressIndicator()
+                        }
                     }
-                }
 
-                playlistState is UiState.Empty && !isContentUri -> {
-                    Box(
-                        modifier = Modifier
-                            .fillMaxSize()
-                            .zIndex(1f),
-                        contentAlignment = Alignment.Center
-                    ) {
-                        Text(
-                            text = "No videos found",
-                            color = MaterialTheme.colorScheme.onBackground
-                        )
+                    playlistState is UiState.Empty && !isContentUri -> {
+                        Box(
+                            modifier = Modifier
+                                .fillMaxSize()
+                                .zIndex(1f),
+                            contentAlignment = Alignment.Center
+                        ) {
+                            Text(
+                                text = "No videos found",
+                                color = MaterialTheme.colorScheme.onBackground
+                            )
+                        }
                     }
-                }
 
-                playlistError != null && !isContentUri -> {
-                    Box(
-                        modifier = Modifier
-                            .fillMaxSize()
-                            .zIndex(1f),
-                        contentAlignment = Alignment.Center
-                    ) {
-                        Text(
-                            text = playlistError.message,
-                            color = MaterialTheme.colorScheme.error
-                        )
+                    playlistError != null && !isContentUri -> {
+                        Box(
+                            modifier = Modifier
+                                .fillMaxSize()
+                                .zIndex(1f),
+                            contentAlignment = Alignment.Center
+                        ) {
+                            Text(
+                                text = playlistError.message,
+                                color = MaterialTheme.colorScheme.error
+                            )
+                        }
                     }
                 }
             }

@@ -38,13 +38,12 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import androidx.navigation3.runtime.NavBackStack
 import androidx.navigation3.runtime.NavKey
-import com.das.mediaHub.NavScreens
-import com.das.mediaHub.NavScreens.Searcher
+import com.das.mediaHub.navigation.NavScreens
+import com.das.mediaHub.navigation.NavScreens.Searcher
 
 @Composable
-fun NavBackStack<NavKey>.HomePageComposable() {
+fun HomePageScreen(navigate: (NavKey) -> Unit) {
 
 
     Scaffold(
@@ -78,7 +77,7 @@ fun NavBackStack<NavKey>.HomePageComposable() {
                     }
                 },
                 actions = {
-                    IconButton(onClick = { add(NavScreens.DownloadsPage) }) {
+                    IconButton(onClick = { navigate(NavScreens.DownloadsPage) }) {
                         Icon(
                             imageVector = Icons.Default.Download,
                             contentDescription = "Downloaded medias",
@@ -151,7 +150,7 @@ fun NavBackStack<NavKey>.HomePageComposable() {
                         label = "TikTok",
                         tint = MaterialTheme.colorScheme.onSurface
                     ) {
-                        add(NavScreens.TikTok)
+                        navigate(NavScreens.TikTok)
                     }
 
                     PlatformIcon(
@@ -159,7 +158,7 @@ fun NavBackStack<NavKey>.HomePageComposable() {
                         label = "YouTube",
                         tint = Color(0xFFFF0000)
                     ) {
-                        add(Searcher(""))
+                        navigate(Searcher(""))
                     }
 
                     PlatformIcon(
@@ -167,7 +166,7 @@ fun NavBackStack<NavKey>.HomePageComposable() {
                         label = "Instagram",
                         tint = Color(0xFFE4405F)
                     ) {
-                        add(NavScreens.Instagram)
+                        navigate(NavScreens.Instagram)
                     }
                 }
             }

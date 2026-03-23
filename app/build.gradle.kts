@@ -157,6 +157,8 @@ dependencies {
     //serialization JSON
     implementation(libs.kotlinx.serialization.json)
 
+    implementation(libs.androidx.credentials)
+    implementation(libs.androidx.credentials.play.services.auth)
 
     testImplementation(libs.junit)
     implementation(libs.kotlin.stdlib)

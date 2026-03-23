@@ -2,6 +2,7 @@ package com.das.mediaHub.ui.watchedVideos
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.das.mediaHub.data.error.ErrorMapper
 import com.das.mediaHub.data.local.WatchHistory
 import com.das.mediaHub.data.model.SavedVideosListData
 import com.das.mediaHub.ui.players.videoPlayer.state.UiState
@@ -25,7 +26,7 @@ class WatchedVideosViewModel(private val dbHelper: WatchHistory): ViewModel() {
 
                 _savedListsState.value = if (result.isEmpty()) UiState.Empty else UiState.Success(result)
             } catch (e: Exception) {
-                _savedListsState.value = UiState.Error(e.message ?: "Unknown error")
+                _savedListsState.value = UiState.Error(ErrorMapper.map(e))
             }
 
         }

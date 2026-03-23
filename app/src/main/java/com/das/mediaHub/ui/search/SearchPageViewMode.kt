@@ -4,6 +4,7 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.ui.text.input.TextFieldValue
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.das.mediaHub.data.error.ErrorMapper
 import com.das.mediaHub.data.local.SearchHistoryDB
 import com.das.mediaHub.data.model.SearchData
 import com.das.mediaHub.ui.players.videoPlayer.state.UiState
@@ -33,7 +34,7 @@ class SearchPageViewMode(private val db: SearchHistoryDB): ViewModel() {
                 db.insert(searchData)
             } catch (e: Exception) {
                 println("Something went wrong: ${e.message}")
-                _searchHistory.value = UiState.Error(message = e.message?: "Something went wrong: ${e.localizedMessage}")
+                _searchHistory.value = UiState.Error(message = ErrorMapper.map(e))
             }
         }
     }
@@ -48,7 +49,7 @@ class SearchPageViewMode(private val db: SearchHistoryDB): ViewModel() {
                 if (result.isEmpty()) _searchHistory.value = UiState.Empty
                 else _searchHistory.value = UiState.Success(result)
             } catch (e: Exception) {
-                _searchHistory.value = UiState.Error(message = e.message?: "Something went wrong: ${e.localizedMessage}")
+                _searchHistory.value = UiState.Error(message = ErrorMapper.map(e))
             }
         }
     }

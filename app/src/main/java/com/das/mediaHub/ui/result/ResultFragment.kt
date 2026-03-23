@@ -63,8 +63,8 @@ import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation3.runtime.NavBackStack
 import androidx.navigation3.runtime.NavKey
 import coil.compose.AsyncImage
-import com.das.mediaHub.NavScreens.VideoViewer
-import com.das.mediaHub.OnLaunchComponents.playAudioFromUrl
+import com.das.mediaHub.navigation.NavScreens.OnlineVideoPlayer
+import com.das.mediaHub.services.media.OnlineBackgroundPlayer.Companion.playAudioFromUrl
 import com.das.mediaHub.data.model.download.DownloadType
 import com.das.mediaHub.services.download.DownloadService
 import com.das.mediaHub.ui.players.videoPlayer.CustomLayouts.SkeletonSuggestionLoadingLayout
@@ -276,7 +276,7 @@ fun VideoResultItem(
     val showDialog = remember { mutableStateOf(false) }
 
     Card(
-        onClick = { backStack.add(VideoViewer(searchItem)) },
+        onClick = { backStack.add(OnlineVideoPlayer(searchItem)) },
         shape = RoundedCornerShape(20.dp),
         colors = CardDefaults.cardColors(containerColor = Color.Transparent),
         modifier = Modifier

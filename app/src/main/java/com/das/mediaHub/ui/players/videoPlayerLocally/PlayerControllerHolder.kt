@@ -5,7 +5,7 @@ import android.content.Context
 import androidx.core.content.ContextCompat
 import androidx.media3.session.MediaController
 import androidx.media3.session.SessionToken
-import com.das.mediaHub.services.local.PlaybackService
+import com.das.mediaHub.services.media.PlaybackService
 import com.google.common.util.concurrent.ListenableFuture
 
 object PlayerControllerHolder {

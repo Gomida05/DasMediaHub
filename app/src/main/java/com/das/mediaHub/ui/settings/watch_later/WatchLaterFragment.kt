@@ -67,8 +67,8 @@ import androidx.navigation3.runtime.NavBackStack
 import androidx.navigation3.runtime.NavKey
 import coil.compose.AsyncImage
 import coil.request.ImageRequest
-import com.das.mediaHub.NavScreens
-import com.das.mediaHub.OnLaunchComponents.playAudioFromUrl
+import com.das.mediaHub.navigation.NavScreens
+import com.das.mediaHub.services.media.OnlineBackgroundPlayer.Companion.playAudioFromUrl
 import com.das.mediaHub.R
 import com.das.mediaHub.data.local.DatabaseFavorite
 import com.das.mediaHub.data.model.SavedVideosListData
@@ -81,7 +81,7 @@ import com.das.python.data.model.searcher.Video
 import kotlinx.coroutines.launch
 
 @Composable
-fun WatchLaterComposable(backStack: NavBackStack<NavKey>) {
+fun SavedVideosScreen(backStack: NavBackStack<NavKey>) {
     val context = LocalContext.current
     val dbHelper = remember {
         DatabaseFavorite(context)
@@ -470,7 +470,7 @@ private fun onClickListListener(
     try {
         val dbHelper = DatabaseFavorite(context)
         val title = dbHelper.getVideoTitle(selectedId)
-        backStack.add(NavScreens.VideoViewer(Video(id = selectedId, title = title)))
+        backStack.add(NavScreens.OnlineVideoPlayer(Video(id = selectedId, title = title)))
     } catch (e: Exception) {
         showNotificationDialog = TopPopUp(
             message = "Error: ${e.message}",

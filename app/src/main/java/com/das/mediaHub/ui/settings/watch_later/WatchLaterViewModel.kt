@@ -2,6 +2,7 @@ package com.das.mediaHub.ui.settings.watch_later
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.das.mediaHub.data.error.ErrorMapper
 import com.das.mediaHub.data.local.DatabaseFavorite
 import com.das.mediaHub.data.model.SavedVideosListData
 import com.das.mediaHub.ui.players.videoPlayer.state.UiState
@@ -29,7 +30,7 @@ class WatchLaterViewModel(private val dbHelper: DatabaseFavorite) : ViewModel() 
                 }
 
             } catch (e: Exception) {
-                _searchResults.value = UiState.Error(message = e.message ?: "Unknown error")
+                _searchResults.value = UiState.Error(message = ErrorMapper.map(e))
             }
         }
     }

@@ -10,6 +10,7 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import androidx.media3.common.MediaItem
 import androidx.media3.common.MediaMetadata
+import com.das.mediaHub.data.error.ErrorMapper
 import com.das.mediaHub.ui.players.videoPlayer.state.UiState
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
@@ -55,7 +56,7 @@ class LocalPlayerViewModel(
                     else -> UiState.Success(items)
                 }
             } catch (e: Exception) {
-                _uiState.value = UiState.Error(e.message ?: "Something went wrong")
+                _uiState.value = UiState.Error(ErrorMapper.map(e))
                 Log.d(
                     "LocalPlayerViewModel",
                     "loadItemsDebounced: ${e.message}"
@@ -102,7 +103,7 @@ class LocalPlayerViewModel(
                 _currentMediaMetadata.value = UiState.Success(metadata)
             } catch (e: Exception) {
                 _currentMediaMetadata.value =
-                    UiState.Error(e.message ?: "Failed to load media info")
+                    UiState.Error(ErrorMapper.map(e))
                 Log.d("LocalPlayerViewModel", "loadCurrentMediaInfo: ${e.message}", e)
             }
         }

@@ -5,7 +5,8 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import androidx.media3.common.MediaItem
 import androidx.media3.common.MediaMetadata
-import com.das.mediaHub.data.media.MediaStoreCache
+import com.das.mediaHub.data.error.ErrorMapper
+import com.das.mediaHub.data.mediacontroller.MediaStoreCache
 import com.das.mediaHub.data.model.download.DownloadType
 import com.das.mediaHub.ui.players.videoPlayer.state.UiState
 import kotlinx.coroutines.Dispatchers
@@ -63,8 +64,7 @@ class DownloadedPageViewModel : ViewModel() {
                     try {
                         block()
                     } catch (e: Exception) {
-                        _videoUiState.value =
-                            UiState.Error(e.message ?: "Unknown error occurred")
+                        _videoUiState.value = UiState.Error(ErrorMapper.map(e))
                     }
                 }
             }
@@ -76,8 +76,7 @@ class DownloadedPageViewModel : ViewModel() {
                     try {
                         block()
                     } catch (e: Exception) {
-                        _musicUiState.value =
-                            UiState.Error(e.message ?: "Unknown error occurred")
+                        _musicUiState.value = UiState.Error(ErrorMapper.map(e))
                     }
                 }
             }

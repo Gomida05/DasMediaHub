@@ -2,6 +2,7 @@ package com.das.mediaHub.ui.tiktok
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.das.mediaHub.data.error.ErrorMapper
 import com.das.mediaHub.data.model.tiktok.TikTokInfo
 import com.das.mediaHub.ui.players.videoPlayer.state.UiState
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -38,12 +39,10 @@ class TikTokViewModel : ViewModel() {
                 if (tiktokInfo.success && tiktokResult != null) {
                     _uiState.value = UiState.Success(tiktokResult)
                 } else {
-                    _uiState.value = UiState.Error(
-                        tiktokInfo.error ?: "Beta 3.0 Error: Could not resolve video metadata"
-                    )
+                    _uiState.value = UiState.Error(ErrorMapper.mapMessage(tiktokInfo.error))
                 }
             } catch (e: Exception) {
-                _uiState.value = UiState.Error("Beta 3.0 Error: ${e.localizedMessage}")
+                _uiState.value = UiState.Error(ErrorMapper.map(e))
             }
         }
     }

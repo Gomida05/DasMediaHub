@@ -2,6 +2,7 @@ package com.das.mediaHub.ui.result
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.das.mediaHub.data.error.ErrorMapper
 import com.das.mediaHub.ui.players.videoPlayer.state.UiState
 import com.das.python.YouTuber
 import com.das.python.data.model.searcher.Video
@@ -15,8 +16,7 @@ class ResultViewModel: ViewModel() {
 
     private val _searchResults = MutableStateFlow<UiState<List<Video>>>(UiState.Idle)
     val searchResults = _searchResults.asStateFlow()
-    private val _isLoading = MutableStateFlow(false)
-    val isLoading = _isLoading.asStateFlow()
+
 
     private val _allResults = mutableListOf<Video>()
     private val _isLoadingMore = MutableStateFlow(false)
@@ -56,13 +56,11 @@ class ResultViewModel: ViewModel() {
                     }
                 } else {
                     _searchResults.value = UiState.Error(
-                        result.error ?: "Something went wrong!"
+                        ErrorMapper.mapMessage(result.error)
                     )
                 }
             } catch (e: Exception) {
-                _searchResults.value = UiState.Error(
-                    e.message ?: "Something went wrong!"
-                )
+                _searchResults.value = UiState.Error(ErrorMapper.map(e))
             }
         }
     }

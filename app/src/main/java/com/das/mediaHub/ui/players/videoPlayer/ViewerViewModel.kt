@@ -4,6 +4,7 @@ import android.util.Log
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.das.mediaHub.data.constants.GlobalVideoList
+import com.das.mediaHub.data.error.ErrorMapper
 import com.das.mediaHub.ui.players.videoPlayer.state.UiState
 import com.das.python.YouTuber
 import com.das.python.YouTuber.formatDate
@@ -48,11 +49,11 @@ class ViewerViewModel : ViewModel() {
                         _videoState.value = UiState.Success(newResult)
                     },
                     onFailure = { error->
-                        _videoState.value = UiState.Error(error)
+                        _videoState.value = UiState.Error(ErrorMapper.mapMessage(error))
                     }
                 )
             } catch (e: Exception) {
-                _videoState.value = UiState.Error(e.message ?: "Something went wrong!")
+                _videoState.value = UiState.Error(ErrorMapper.map(e))
             }
         }
     }
@@ -73,13 +74,13 @@ class ViewerViewModel : ViewModel() {
                         )
                     )
                 } else {
-                    _detailsState.value = UiState.Error(message = result.error ?: "Something went wrong!")
+                    _detailsState.value = UiState.Error(message = ErrorMapper.mapMessage(result.error))
                 }
-            } catch (js: SerializationException) {
-                _detailsState.value = UiState.Error(message = "Error fetching json video details: ${js.message}")
-                Log.e("VideoPlayer", "Error fetching json video details: ${js.message}")
+            } catch (s: SerializationException) {
+                _detailsState.value = UiState.Error(message = ErrorMapper.mapMessage(s.message))
+                Log.e("VideoPlayer", "Error fetching json video details: ${s.message}")
             } catch (e: Exception) {
-                _detailsState.value = UiState.Error(message = "Error loading video details: ${e.message}")
+                _detailsState.value = UiState.Error(message = ErrorMapper.map(e))
                 Log.e("VideoPlayer", "Error loading video details: $e")
             }
         }
@@ -113,14 +114,14 @@ class ViewerViewModel : ViewModel() {
                         _suggestionsState.value = UiState.Success(data = filtered)
                     }
                 } else {
-                    _suggestionsState.value = UiState.Error(message = result.error ?: "Something went wrong!")
+                    _suggestionsState.value = UiState.Error(message = ErrorMapper.mapMessage(result.error))
                 }
             } catch (j: SerializationException) {
-                _suggestionsState.value = UiState.Error(message = "Something went wrong: ${j.message}")
+                _suggestionsState.value = UiState.Error(message = ErrorMapper.map(j))
 
                 Log.e("VideoPlayer", "Error parsing data: ${j.localizedMessage}")
             } catch (e: Exception) {
-                _suggestionsState.value = UiState.Error(message = "Something went wrong: ${e.message}")
+                _suggestionsState.value = UiState.Error(message = ErrorMapper.map(e))
                 Log.e("VideoPlayer", "Something went wrong: ${e.message}")
             }
 
