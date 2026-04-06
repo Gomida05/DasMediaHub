@@ -2,7 +2,6 @@ package com.das.mediaHub.ui.players.videoPlayer
 
 import android.app.Activity
 import android.content.pm.ActivityInfo
-import androidx.activity.ComponentActivity
 import androidx.core.view.WindowCompat
 import androidx.core.view.WindowInsetsCompat
 import androidx.core.view.WindowInsetsControllerCompat

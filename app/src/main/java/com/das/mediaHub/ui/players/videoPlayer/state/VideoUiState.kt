@@ -21,5 +21,7 @@ data class VideoUiState(
                 channelThumbnail = channel?.thumbnails?.firstOrNull()?.url
             )
         }
+
+        val EMPTY = VideoUiState()
     }
 }

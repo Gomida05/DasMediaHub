@@ -276,7 +276,7 @@ fun VideoResultItem(
     val showDialog = remember { mutableStateOf(false) }
 
     Card(
-        onClick = { backStack.add(OnlineVideoPlayer(searchItem)) },
+        onClick = { backStack.add(OnlineVideoPlayer(videoId = videoId)) },
         shape = RoundedCornerShape(20.dp),
         colors = CardDefaults.cardColors(containerColor = Color.Transparent),
         modifier = Modifier

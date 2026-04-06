@@ -2,6 +2,8 @@ package com.das.mediaHub
 
 import android.app.Activity
 import android.app.PictureInPictureParams
+import android.content.Context
+import android.content.ContextWrapper
 import android.graphics.Rect
 import android.os.Build
 import android.util.Rational
@@ -17,35 +19,39 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.layout.boundsInWindow
 import androidx.compose.ui.layout.onGloballyPositioned
+import androidx.compose.ui.platform.LocalContext
 import androidx.core.app.PictureInPictureModeChangedInfo
 import androidx.core.util.Consumer
 
 internal object PIP {
-    internal val canEnterPipMode = mutableStateOf(value = false)
+    internal var canEnterPipMode by mutableStateOf(value = false)
 
     @Composable
-    internal fun ComponentActivity.rememberIsInPipMode(): Boolean {
-        var pipMode by remember { mutableStateOf(isInPictureInPictureMode) }
-        val activity by rememberUpdatedState(this)
+    internal fun rememberIsInPipMode(): Boolean {
+        val activity = LocalContext.current.findActivity()
+        var pipMode by remember { mutableStateOf(activity?.isInPictureInPictureMode) }
         val observer = Consumer<PictureInPictureModeChangedInfo> { info ->
             pipMode = info.isInPictureInPictureMode
         }
         DisposableEffect(activity) {
 
-            activity.addOnPictureInPictureModeChangedListener(observer)
+            activity?.addOnPictureInPictureModeChangedListener(observer)
             onDispose {
-                activity.removeOnPictureInPictureModeChangedListener(observer)
+                activity?.removeOnPictureInPictureModeChangedListener(observer)
             }
         }
 
-        return pipMode
+        return pipMode == true
     }
 
     @Composable
-    internal fun Modifier.rememberPipModifier(
-        activity: Activity
-    ): Modifier {
+    internal fun Modifier.rememberPipModifier(): Modifier {
+
+        val activity = LocalContext.current.findActivity()
+
         return onGloballyPositioned { coordinates ->
+
+
             val bounds = coordinates.boundsInWindow()
             val sourceRect = Rect(
                 bounds.left.toInt(),
@@ -66,7 +72,7 @@ internal object PIP {
             val height = bounds.height.toInt().coerceAtLeast(1)
             builder.setAspectRatio(Rational(width, height))
 
-            activity.setPictureInPictureParams(builder.build())
+            activity?.findActivity()?.setPictureInPictureParams(builder.build())
         }
     }
 
@@ -80,4 +86,33 @@ internal object PIP {
         }
     }
 
+    @Composable
+    fun HandlePip() {
+        val shouldEnterPip by rememberUpdatedState(canEnterPipMode)
+        val activity = LocalContext.current.findActivity()
+        DisposableEffect(activity) {
+            val onUserLeaveBehavior = Runnable {
+                if (shouldEnterPip) {
+                    activity?.enterPictureInPictureMode(PictureInPictureParams.Builder().build())
+                }
+            }
+            activity?.addOnUserLeaveHintListener(
+                onUserLeaveBehavior
+            )
+            onDispose {
+                activity?.removeOnUserLeaveHintListener(
+                    onUserLeaveBehavior
+                )
+            }
+        }
+    }
+
+    internal fun Context.findActivity(): ComponentActivity? {
+        var context = this
+        while (context is ContextWrapper) {
+            if (context is ComponentActivity) return context
+            context = context.baseContext
+        }
+        return null
+    }
 }

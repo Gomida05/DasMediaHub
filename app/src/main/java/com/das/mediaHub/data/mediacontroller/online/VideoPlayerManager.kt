@@ -44,7 +44,7 @@ internal class VideoPlayerManager(
 
     }
 
-    override val player by lazy<ExoPlayer> {
+    override val player by lazy {
         ExoPlayer.Builder(applicationContext)
             .setAudioAttributes(
                 AudioAttributes.Builder()
@@ -135,7 +135,7 @@ internal class VideoPlayerManager(
 
     override fun release() {
         player.release()
-        PIP.canEnterPipMode.value = false
+        PIP.canEnterPipMode = false
     }
 
     private fun updatePipActions() {

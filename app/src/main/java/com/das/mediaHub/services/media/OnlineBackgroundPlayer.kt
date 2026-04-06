@@ -1,6 +1,5 @@
 package com.das.mediaHub.services.media
 
-import android.annotation.SuppressLint
 import android.app.Notification
 import android.app.NotificationManager
 import android.app.PendingIntent
@@ -17,7 +16,6 @@ import android.support.v4.media.MediaMetadataCompat
 import android.support.v4.media.session.MediaSessionCompat
 import android.util.Log
 import android.view.KeyEvent
-import androidx.core.content.ContextCompat
 import androidx.core.content.getSystemService
 import androidx.core.net.toUri
 import androidx.media.app.NotificationCompat
@@ -45,14 +43,12 @@ import com.das.mediaHub.ui.players.videoPlayer.state.VideoUiState
 import com.das.python.data.model.ItemsStreamUrlsForMediaItemData
 import com.das.python.data.model.VideosListData
 
-@SuppressLint("UnsafeOptInUsageError")
 class OnlineBackgroundPlayer : Service() {
 
     private var currentPayload: PlaybackPayload? = null
 
     private val exoPlayer by lazy {
         ExoPlayer.Builder(this)
-            .setDeviceVolumeControlEnabled(true)
             .setAudioAttributes(
                 AudioAttributes.Builder()
                     .setUsage(C.USAGE_MEDIA)
@@ -516,7 +512,7 @@ class OnlineBackgroundPlayer : Service() {
                 putExtra(EXTRA_DATE, date)
                 putExtra(EXTRA_DURATION, duration)
             }
-            ContextCompat.startForegroundService(this, playIntent)
+            startService(playIntent)
         }
     }
 }

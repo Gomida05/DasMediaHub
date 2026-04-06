@@ -4,7 +4,6 @@ import java.io.FileInputStream
 
 plugins {
     alias(libs.plugins.android.application)
-//    alias(libs.plugins.kotlin.android)
     alias(libs.plugins.kotlin.compose)
     alias(libs.plugins.google.gms)
     alias(libs.plugins.kotlin.serialization)
@@ -31,12 +30,12 @@ android {
         applicationId = "com.das.mediaHub"
         compileSdk = 36
         minSdk = 26
-        targetSdk = 36
-        versionCode = 9
-        versionName = "1.29"
+        targetSdk = 37
+        versionCode = 10
+        versionName = "10.0"
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
-        flavorDimensions.add("pyVersion")
+
         ndk {
             abiFilters.addAll(listOf("arm64-v8a", "x86_64"))
         }
@@ -81,6 +80,8 @@ kotlin {
 
 
 dependencies {
+    //Alpha
+    implementation(libs.androidx.core.pip)
 
     // Python Integration: The app uses a dedicated :python module
     // for metadata scraping and extraction via Chaquopy.

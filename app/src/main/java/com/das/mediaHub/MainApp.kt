@@ -19,7 +19,6 @@ import com.das.mediaHub.ui.TopPopupNotification.Notification
 @Composable
 fun MainApp(
     pendingIntent: Intent?,
-    onIntentConsumed: () -> Unit,
     onHandleIntent: (Intent, NavBackStack<NavKey>) -> Unit
 ) {
     val backStack = rememberNavBackStack(Home)
@@ -27,7 +26,6 @@ fun MainApp(
     LaunchedEffect(pendingIntent) {
         pendingIntent?.let {
             onHandleIntent(it, backStack)
-            onIntentConsumed()
         }
     }
 

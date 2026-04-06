@@ -1,7 +1,6 @@
 package com.das.mediaHub.ui.players.videoPlayer
 
 import android.annotation.SuppressLint
-import android.app.Activity
 import android.content.Context
 import android.content.Intent
 import android.net.Uri
@@ -55,12 +54,12 @@ import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
-import androidx.compose.runtime.retain.RetainedEffect
 import androidx.compose.runtime.retain.retain
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
@@ -93,7 +92,7 @@ import androidx.media3.ui.PlayerView
 import androidx.navigation3.runtime.NavBackStack
 import androidx.navigation3.runtime.NavKey
 import coil.compose.AsyncImage
-import com.das.mediaHub.PIP
+import com.das.mediaHub.PIP.HandlePip
 import com.das.mediaHub.PIP.rememberIsInPipMode
 import com.das.mediaHub.PIP.rememberPipModifier
 import com.das.mediaHub.data.constants.GlobalVideoList
@@ -124,14 +123,13 @@ import kotlinx.coroutines.launch
 @Composable
 fun OnlineVideoPlayerScreen(
     backStack: NavBackStack<NavKey>,
-    data: Video
+    videoID: String
 ) {
     val activity = LocalActivity.current as ComponentActivity
     val context = LocalContext.current
-    val isInPipMode = activity.rememberIsInPipMode()
+    val isInPipMode = rememberIsInPipMode()
     val showAlertDialog = retain { mutableStateOf(false) }
 
-    val videoID = data.id
 
     val isInFullScreen = rememberSaveable(videoID) { mutableStateOf(false) }
 
@@ -157,6 +155,8 @@ fun OnlineVideoPlayerScreen(
             isInFullScreen.value = false
             activity.rotateScreen(false)
         } else {
+            activity.rotateScreen(fullScreen = false)
+            videoPlayerManager.release()
             backStack.removeLastOrNull()
         }
     }
@@ -174,8 +174,11 @@ fun OnlineVideoPlayerScreen(
     }
 
     val mExoPlayer = videoPlayerManager.player
+    val getVideoFromList = remember {
+        GlobalVideoList.getVideoById(videoId = videoID)
+    }
     var videoUiState by retain(videoID) {
-        mutableStateOf(data.toVideoUiState())
+        mutableStateOf(getVideoFromList?.toVideoUiState() ?: VideoUiState.EMPTY)
     }
     val suggestionsState by viewModel.suggestionsState.collectAsStateWithLifecycle()
     val currentVideoMeta by viewModel.currentVideoMeta.collectAsStateWithLifecycle()
@@ -202,14 +205,14 @@ fun OnlineVideoPlayerScreen(
         activity.rotateScreen(isInFullScreen.value)
     }
 
-    RetainedEffect (mExoPlayer) {
+    DisposableEffect(mExoPlayer) {
 
-        onRetire {
+        onDispose {
             activity.rotateScreen(fullScreen = false)
             videoPlayerManager.release()
-            PIP.canEnterPipMode.value = false
         }
     }
+    HandlePip()
 
     Scaffold(
         contentWindowInsets = WindowInsets.safeDrawing,
@@ -219,14 +222,13 @@ fun OnlineVideoPlayerScreen(
             Box(
                 modifier = Modifier
                     .fillMaxSize()
-                    .rememberPipModifier(activity),
+                    .rememberPipModifier(),
                 contentAlignment = Alignment.Center
             ) {
                 VideoScreen(
                     videoState = videoState, mExoPlayer = mExoPlayer,
                     isInFullScreen = isInFullScreen.value,
                     isInPipMode = isInPipMode,
-                    activity = activity,
                     fullScreen = {
                         isInFullScreen.value = it
                     }
@@ -244,7 +246,6 @@ fun OnlineVideoPlayerScreen(
                         videoState = videoState, mExoPlayer = mExoPlayer,
                         isInFullScreen = isInFullScreen.value,
                         isInPipMode = false,
-                        activity = activity,
                         fullScreen = {
                             isInFullScreen.value = it
                         }
@@ -388,12 +389,11 @@ private fun VideoScreen(
     mExoPlayer: ExoPlayer,
     isInFullScreen: Boolean,
     isInPipMode: Boolean,
-    activity: Activity,
     fullScreen: (Boolean) -> Unit
 ) {
 
     val playerModifier = when {
-        isInPipMode ->  Modifier.rememberPipModifier(activity)
+        isInPipMode ->  Modifier.rememberPipModifier()
         isInFullScreen -> Modifier.fillMaxSize()
         else -> Modifier
             .fillMaxWidth()
@@ -728,7 +728,7 @@ private fun VideoCard(
     Card(
         onClick = {
             backStack.removeLastOrNull()
-            backStack.add(NavScreens.OnlineVideoPlayer(searchItem))
+            backStack.add(NavScreens.OnlineVideoPlayer(videoId = videoId))
         },
         shape = RoundedCornerShape(20.dp),
         colors = CardDefaults.cardColors(containerColor = Color.Transparent),
@@ -993,7 +993,7 @@ fun playThisOne(
 ) {
     val videosListDataDetails = GlobalVideoList.getVideoAt(gotIndex) ?: return
     backStack.removeLastOrNull()
-    backStack.add(NavScreens.OnlineVideoPlayer(videosListDataDetails))
+    backStack.add(NavScreens.OnlineVideoPlayer(videoId = videosListDataDetails.id))
 
 
 }

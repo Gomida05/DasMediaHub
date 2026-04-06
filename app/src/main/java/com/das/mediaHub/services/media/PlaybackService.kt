@@ -26,12 +26,6 @@ class PlaybackService : MediaSessionService() {
         MediaSession.Builder(this, player).build()
     }
 
-    override fun onCreate() {
-        super.onCreate()
-
-
-    }
-
     override fun onGetSession(controllerInfo: MediaSession.ControllerInfo): MediaSession? {
         return mediaSession
     }

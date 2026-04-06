@@ -3,7 +3,6 @@ package com.das.mediaHub
 import android.Manifest.permission.POST_NOTIFICATIONS
 import android.Manifest.permission.READ_MEDIA_AUDIO
 import android.Manifest.permission.READ_MEDIA_VIDEO
-import android.app.PictureInPictureParams
 import android.content.Intent
 import android.content.Intent.EXTRA_STREAM
 import android.content.Intent.EXTRA_TEXT
@@ -12,7 +11,6 @@ import android.net.Uri
 import android.os.Build.VERSION.SDK_INT
 import android.os.Build.VERSION_CODES.TIRAMISU
 import android.os.Bundle
-import android.util.Rational
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
@@ -22,6 +20,7 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
 import androidx.core.content.FileProvider
+import androidx.core.content.IntentCompat.getParcelableExtra
 import androidx.navigation3.runtime.NavBackStack
 import androidx.navigation3.runtime.NavKey
 import com.das.mediaHub.data.constants.Action.ACTION_START
@@ -39,7 +38,6 @@ import com.das.python.YouTuber.extractPlaylistId
 import com.das.python.YouTuber.isValidYouTubePlaylistUrl
 import com.das.python.YouTuber.isValidYoutubeURL
 import com.das.python.YouTuber.youtubeExtractor
-import com.das.python.data.model.searcher.Video
 import java.io.File
 
 
@@ -56,9 +54,9 @@ class MainActivity : ComponentActivity() {
             DasMediaHubTheme {
                 MainApp(
                     pendingIntent = pendingIntent,
-                    onIntentConsumed = { pendingIntent = null },
                     onHandleIntent = { intent, backStack ->
                         backStack.handleNavIntent(intent)
+                        pendingIntent = null
                     }
                 )
             }
@@ -93,18 +91,7 @@ class MainActivity : ComponentActivity() {
         }
     }
 
-    override fun onUserLeaveHint() {
-        super.onUserLeaveHint()
 
-        if (PIP.canEnterPipMode.value) {
-            enterPictureInPictureMode(
-                PictureInPictureParams.Builder()
-                    .setAspectRatio(Rational(16, 9))
-                    .build()
-            )
-        }
-
-    }
 
     private fun NavBackStack<NavKey>.handleNavIntent(intent: Intent) {
         when (intent.action) {
@@ -164,19 +151,26 @@ class MainActivity : ComponentActivity() {
     ) {
         if (sharedText.isValidYoutubeURL()) {
             val videoId = sharedText.youtubeExtractor()
-            add(
-                OnlineVideoPlayer(
-                    Video(id = videoId.toString())
+            if (videoId != null) {
+                add(
+                    OnlineVideoPlayer(
+                        videoId = videoId
+                    )
                 )
-            )
+            } else {
+                add(Searcher(sharedText))
+            }
 
         } else if (sharedText.isValidYouTubePlaylistUrl()) {
 
-            add(
-                OnlineVideoPlayer(
-                    Video(id = extractPlaylistId(sharedText).toString())
+            val videoId = extractPlaylistId(sharedText)
+            if (videoId != null ) {
+                add(
+                    OnlineVideoPlayer(videoId = videoId)
                 )
-            )
+            } else {
+                add(Searcher(sharedText))
+            }
 
         } else if (sharedText.startsWith("DownloadsPageFr")) {
             add(Downloaded)
@@ -186,16 +180,16 @@ class MainActivity : ComponentActivity() {
     }
 
     private fun Intent.newReceivedMediaTypeVideo(backStack: NavBackStack<NavKey>) {
-        @Suppress("DEPRECATION")
-        val videoUri = if (SDK_INT >= TIRAMISU) {
-            getParcelableExtra(EXTRA_STREAM, Uri::class.java)
-        } else {
-            getParcelableExtra(EXTRA_STREAM)
-        }
 
-        videoUri?.let {
-            backStack.add(NavScreens.LocalVideoPlayer(it.toString()))
-        } ?: run {
+        val videoUri = getParcelableExtra(
+            this,
+            EXTRA_STREAM,
+            Uri::class.java
+        )
+
+        if (videoUri != null) {
+            backStack.add(NavScreens.LocalVideoPlayer(videoUri.toString()))
+        } else {
             showNotificationDialog = TopPopUp(
                 message = "Video not found",
                 icon = Icons.Default.Info
@@ -204,12 +198,11 @@ class MainActivity : ComponentActivity() {
     }
 
     private fun Intent.newReceivedMediaTypeAudio() {
-        @Suppress("DEPRECATION")
-        val audioUri = if (SDK_INT >= TIRAMISU) {
-            getParcelableExtra(EXTRA_STREAM, Uri::class.java)
-        } else {
-            getParcelableExtra(EXTRA_STREAM)
-        }
+        val audioUri = getParcelableExtra(
+            this,
+            EXTRA_STREAM,
+            Uri::class.java
+        )
 
         if (audioUri != null) {
             playAudio(audioUri)

@@ -1,7 +1,6 @@
 package com.das.mediaHub.navigation
 
 import androidx.navigation3.runtime.NavKey
-import com.das.python.data.model.searcher.Video
 import kotlinx.serialization.Serializable
 
 @Serializable
@@ -12,7 +11,7 @@ sealed interface NavScreens: NavKey {
     data class Searcher(val text: String) : NavScreens
 
     @Serializable
-    data class OnlineVideoPlayer(val data: Video) : NavScreens
+    data class OnlineVideoPlayer(val videoId: String) : NavScreens
     @Serializable
     data class ResultViewerPage(val value: String) : NavScreens
     @Serializable

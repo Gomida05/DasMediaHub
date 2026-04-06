@@ -7,6 +7,3 @@
 
 
 # Keep classes marked with PythonModule annotation
--keepclassmembers class * {
-    @com.das.python.data.annotation.PythonModule *;
-}

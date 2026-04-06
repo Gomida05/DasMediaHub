@@ -78,14 +78,13 @@ import androidx.lifecycle.viewmodel.viewModelFactory
 import androidx.navigation3.runtime.NavBackStack
 import androidx.navigation3.runtime.NavKey
 import coil.compose.AsyncImage
-import com.das.mediaHub.navigation.NavScreens
-import com.das.python.YouTuber.extractPlaylistId
-import com.das.mediaHub.navigation.NavScreens.ResultViewerPage
 import com.das.mediaHub.data.local.SearchHistoryDB
 import com.das.mediaHub.data.model.TopPopUp
-import com.das.python.data.model.searcher.Video
+import com.das.mediaHub.navigation.NavScreens
+import com.das.mediaHub.navigation.NavScreens.ResultViewerPage
 import com.das.mediaHub.ui.TopPopupNotification.showNotificationDialog
 import com.das.mediaHub.ui.players.videoPlayer.state.UiState
+import com.das.python.YouTuber.extractPlaylistId
 import com.das.python.YouTuber.isValidYouTubePlaylistUrl
 import com.das.python.YouTuber.isValidYoutubeURL
 import com.das.python.YouTuber.youtubeExtractor
@@ -449,7 +448,8 @@ private fun keyEvent(
         when {
             editTextText.isValidYoutubeURL() -> {
                 val videoId = editTextText.youtubeExtractor()
-                backStack.add(NavScreens.OnlineVideoPlayer(Video(id = videoId.toString())))
+                if (videoId.isNullOrEmpty()) return
+                backStack.add(NavScreens.OnlineVideoPlayer(videoId = videoId))
             }
             editTextText.isValidYouTubePlaylistUrl() -> {
                 isPlayList(editTextText)

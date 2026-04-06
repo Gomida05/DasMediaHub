@@ -82,4 +82,14 @@ object GlobalVideoList {
     fun getVideoAt(index: Int): Video? {
         return _videos.value.getOrNull(index)
     }
+
+    /**
+     * Returns the video by the given [videoId], or null if the id is out of bounds.
+     *
+     * @param videoId the id of the requested video
+     * @return the video by [videoId], or null when unavailable
+     */
+    fun getVideoById(videoId: String): Video? {
+        return _videos.value.find { it.id == videoId }
+    }
 }

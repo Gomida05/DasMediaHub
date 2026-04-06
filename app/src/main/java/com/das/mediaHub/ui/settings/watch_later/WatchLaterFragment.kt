@@ -67,17 +67,16 @@ import androidx.navigation3.runtime.NavBackStack
 import androidx.navigation3.runtime.NavKey
 import coil.compose.AsyncImage
 import coil.request.ImageRequest
-import com.das.mediaHub.navigation.NavScreens
-import com.das.mediaHub.services.media.OnlineBackgroundPlayer.Companion.playAudioFromUrl
 import com.das.mediaHub.R
 import com.das.mediaHub.data.local.DatabaseFavorite
 import com.das.mediaHub.data.model.SavedVideosListData
 import com.das.mediaHub.data.model.TopPopUp
+import com.das.mediaHub.navigation.NavScreens
+import com.das.mediaHub.services.media.OnlineBackgroundPlayer.Companion.playAudioFromUrl
 import com.das.mediaHub.ui.TopPopupNotification.showNotificationDialog
 import com.das.mediaHub.ui.players.videoPlayer.state.UiState
 import com.das.python.YouTuber.loadStreamUrl
 import com.das.python.data.model.VideosListData
-import com.das.python.data.model.searcher.Video
 import kotlinx.coroutines.launch
 
 @Composable
@@ -223,9 +222,8 @@ private fun WatchLaterItem(
     Card(
         onClick = {
             onClickListListener(
-                context,
-                item.watchUrl,
-                backStack
+                selectedId = item.watchUrl,
+                backStack = backStack
             )
         },
         shape = RoundedCornerShape(20.dp),
@@ -293,7 +291,7 @@ private fun WatchLaterItem(
                     )
                     Spacer(modifier = Modifier.height(4.dp))
                     Text(
-                        text = "${item.channelName} • ${item.viewer} • ${item.dateTime}",
+                        text = "${item.channelName} • ${item.views} • ${item.dateTime}",
                         style = MaterialTheme.typography.bodySmall,
                         color = MaterialTheme.colorScheme.onSurfaceVariant
                     )
@@ -362,7 +360,7 @@ private fun ManageSavedDialog(
             VideosListData(
                 selectedData.watchUrl,
                 selectedData.title,
-                selectedData.viewer,
+                selectedData.views,
                 selectedData.dateTime,
                 selectedData.duration,
                 selectedData.channelName,
@@ -463,14 +461,12 @@ private fun ManageSavedDialog(
 }
 
 private fun onClickListListener(
-    context: Context,
     selectedId: String,
     backStack: NavBackStack<NavKey>
 ) {
     try {
-        val dbHelper = DatabaseFavorite(context)
-        val title = dbHelper.getVideoTitle(selectedId)
-        backStack.add(NavScreens.OnlineVideoPlayer(Video(id = selectedId, title = title)))
+
+        backStack.add(NavScreens.OnlineVideoPlayer(videoId = selectedId))
     } catch (e: Exception) {
         showNotificationDialog = TopPopUp(
             message = "Error: ${e.message}",

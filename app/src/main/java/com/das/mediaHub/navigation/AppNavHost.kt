@@ -65,7 +65,7 @@ fun AppNavHost(
             }
 
             is OnlineVideoPlayer -> NavEntry(key = key) {
-                OnlineVideoPlayerScreen(backStack, key.data)
+                OnlineVideoPlayerScreen(backStack, key.videoId)
             }
 
             is NavScreens.ResultViewerPage -> NavEntry(key = key) {

@@ -24,7 +24,6 @@ import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.DeleteOutline
 import androidx.compose.material.icons.filled.Headphones
 import androidx.compose.material.icons.filled.History
@@ -91,14 +90,13 @@ import com.das.mediaHub.ui.TopPopupNotification.showNotificationDialog
 import com.das.mediaHub.ui.players.videoPlayer.state.UiState
 import com.das.python.YouTuber.loadStreamUrl
 import com.das.python.data.model.VideosListData
-import com.das.python.data.model.searcher.Video
 import kotlinx.coroutines.launch
 
 @Composable
 fun RecentlyWatchedVideosScreen(backStack: NavBackStack<NavKey>) {
     val context = LocalContext.current
-    val dbHelper = remember {
-        WatchHistory(context)
+    val dbHelper = retain {
+        WatchHistory(context.applicationContext)
     }
 
     val viewModel = viewModel(
@@ -236,10 +234,11 @@ fun RecentlyWatchedVideosScreen(backStack: NavBackStack<NavKey>) {
                         items(newState.data, key = { it.watchUrl }) { searchItem ->
                             WatchedMediaItem(
                                 backStack,
-                                dbHelper = dbHelper,
-                                selectedItem = searchItem,
-                                viewModel = viewModel
-                            )
+                                selectedItem = searchItem
+                            ) {
+                                dbHelper.deleteWatchUrl(searchItem.watchUrl)
+                                viewModel.removeSearchItem(searchItem)
+                            }
                         }
                     }
 
@@ -254,9 +253,8 @@ fun RecentlyWatchedVideosScreen(backStack: NavBackStack<NavKey>) {
 @Composable
 private fun WatchedMediaItem(
     backStack: NavBackStack<NavKey>,
-    dbHelper: WatchHistory,
     selectedItem: SavedVideosListData,
-    viewModel: WatchedVideosViewModel
+    onRemoveFromHistory: () -> Unit
 ) {
     val context = LocalContext.current
     val showMenu = remember { mutableStateOf(false) }
@@ -265,7 +263,6 @@ private fun WatchedMediaItem(
     Card(
         onClick = {
             onClickListListener(
-                dbHelper = dbHelper,
                 selectedId = selectedItem.watchUrl,
                 controller = backStack
             )
@@ -332,7 +329,7 @@ private fun WatchedMediaItem(
                     )
                     Spacer(modifier = Modifier.height(4.dp))
                     Text(
-                        text = "${selectedItem.channelName} • ${selectedItem.viewer} • ${selectedItem.dateTime}",
+                        text = "${selectedItem.channelName} • ${selectedItem.views} • ${selectedItem.dateTime}",
                         style = MaterialTheme.typography.bodySmall,
                         color = MaterialTheme.colorScheme.onSurfaceVariant
                     )
@@ -374,13 +371,9 @@ private fun WatchedMediaItem(
                         onDismissRequest = { showMenu.value = false },
                         context = context,
                         selectedData = selectedItem,
-                        onRemoveFromHistory = {
-                            dbHelper.deleteWatchUrl(selectedItem.watchUrl)
-                            viewModel.removeSearchItem(selectedItem)
-                        },
+                        onRemoveFromHistory = onRemoveFromHistory,
                         onOpenVideo = {
                             onClickListListener(
-                                dbHelper = dbHelper,
                                 selectedId = selectedItem.watchUrl,
                                 controller = backStack
                             )
@@ -499,7 +492,7 @@ private fun HistoryActionMenu(
             VideosListData(
                 selectedData.watchUrl,
                 selectedData.title,
-                selectedData.viewer,
+                selectedData.views,
                 selectedData.dateTime,
                 selectedData.duration,
                 selectedData.channelName,
@@ -755,13 +748,11 @@ private fun ActionMenuItem(
 
 
 private fun onClickListListener(
-    dbHelper: WatchHistory,
     selectedId: String,
     controller: NavBackStack<NavKey>
 ) {
     try {
-        val title = dbHelper.getVideoTitle(selectedId)
-        controller.add(OnlineVideoPlayer(Video(id = selectedId, title = title)))
+        controller.add(OnlineVideoPlayer(videoId = selectedId))
     } catch (e: Exception) {
         showNotificationDialog = TopPopUp(
             message = "Error: ${e.message}",

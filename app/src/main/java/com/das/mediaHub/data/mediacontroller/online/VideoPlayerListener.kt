@@ -19,14 +19,14 @@ internal class VideoPlayerListener(
     override fun onPlaybackStateChanged(state: Int) {
         super.onPlaybackStateChanged(state)
         if (state == Player.STATE_ENDED) {
-            canEnterPipMode.value = false
+            canEnterPipMode = false
             playThisOne(backStack,0)
         }
     }
 
     override fun onPlayerError(error: PlaybackException) {
         super.onPlayerError(error)
-        canEnterPipMode.value = false
+        canEnterPipMode = false
         showNotificationDialog = TopPopUp(
             message = "Something went wrong: ${error.message}",
             icon = Icons.Filled.Error
@@ -35,7 +35,7 @@ internal class VideoPlayerListener(
     }
 
     override fun onIsPlayingChanged(isPlaying: Boolean) {
-        canEnterPipMode.value = isPlaying
+        canEnterPipMode = isPlaying
     }
 
 }

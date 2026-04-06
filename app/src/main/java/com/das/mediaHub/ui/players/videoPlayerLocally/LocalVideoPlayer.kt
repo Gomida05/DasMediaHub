@@ -3,10 +3,11 @@ package com.das.mediaHub.ui.players.videoPlayerLocally
 import android.annotation.SuppressLint
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.LocalActivity
-import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.safeDrawing
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
@@ -20,9 +21,7 @@ import androidx.compose.runtime.retain.RetainedEffect
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
-import androidx.compose.ui.viewinterop.AndroidView
 import androidx.compose.ui.zIndex
 import androidx.core.net.toUri
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
@@ -32,8 +31,6 @@ import androidx.lifecycle.viewmodel.viewModelFactory
 import androidx.media3.common.MediaItem
 import androidx.media3.common.MediaMetadata
 import androidx.media3.session.MediaController
-import androidx.media3.ui.AspectRatioFrameLayout
-import androidx.media3.ui.PlayerView
 import com.das.mediaHub.ui.players.videoPlayer.CustomMethods.rotateScreen
 import com.das.mediaHub.ui.players.videoPlayer.state.UiState
 import java.io.File
@@ -44,7 +41,8 @@ fun LocalVideoPlayer(videoUri: String) {
     val context = LocalContext.current
     val activity = LocalActivity.current as ComponentActivity
 
-    val viewModel: LocalPlayerViewModel = viewModel(
+    val viewModel = viewModel(
+        modelClass = LocalPlayerViewModel::class.java.kotlin,
         factory = viewModelFactory {
             initializer {
                 LocalPlayerViewModel(context.contentResolver)
@@ -157,9 +155,18 @@ fun LocalVideoPlayer(videoUri: String) {
     val metadataError = metadataState as? UiState.Error
     val playlistError = playlistState as? UiState.Error
 
-    Scaffold { innerPadding ->
-        Box(modifier = Modifier.fillMaxSize()) {
-            AndroidView(
+    Scaffold(
+        modifier = Modifier
+            .fillMaxSize(),
+        contentWindowInsets = WindowInsets.safeDrawing
+    ) { innerPadding ->
+        Box(modifier = Modifier
+            .padding(innerPadding)
+            .fillMaxSize()) {
+            CustomPlayer(
+                controller
+            )
+/**            AndroidView(
                 modifier = Modifier
                     .padding(innerPadding)
                     .fillMaxSize()
@@ -176,7 +183,7 @@ fun LocalVideoPlayer(videoUri: String) {
                 update = { playerView ->
                     playerView.player = controller
                 }
-            )
+            )*/
             if (controller != null && controller?.isPlaying == true) {
                 when {
                     showMetadataLoading -> {

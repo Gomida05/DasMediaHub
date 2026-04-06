@@ -5,7 +5,7 @@ data class SavedVideosListData(
     val title: String,
     val watchUrl: String,
     val thumbnailUrl: String,
-    val viewer: String,
+    val views: String,
     val dateTime: String,
     val duration: String,
     val channelName: String,
