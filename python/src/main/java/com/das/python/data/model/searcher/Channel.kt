@@ -4,8 +4,8 @@ import kotlinx.serialization.Serializable
 
 @Serializable
 data class Channel(
-    val name: String,
-    val id: String,
+    val name: String? = null,
+    val id: String? = null,
     val thumbnails: List<Thumbnail>? = null,
-    val link: String
+    val link: String? = null
 )

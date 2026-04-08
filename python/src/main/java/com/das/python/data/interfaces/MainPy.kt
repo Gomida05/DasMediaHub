@@ -1,6 +1,6 @@
 package com.das.python.data.interfaces
 
-import com.das.python.data.StreamUrlRespond
+import com.das.python.data.model.StreamUrlRespond
 import com.das.python.data.annotation.PyFunction
 import com.das.python.data.annotation.PyModule
 import com.das.python.data.model.PlayListDataClass

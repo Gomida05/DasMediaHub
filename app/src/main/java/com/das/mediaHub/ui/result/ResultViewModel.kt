@@ -36,12 +36,13 @@ class ResultViewModel: ViewModel() {
         viewModelScope.launch {
             try {
                 val result = YouTuber.search(inputText)
-                val newResult = result.result?.result.orEmpty()
+                val newResult = result.result
+                val resultValue = newResult?.result
 
-                if (result.success) {
+                if (result.success && resultValue != null) {
                     _allResults.clear()
                     _allResults.addAll(
-                        elements = newResult
+                        elements = resultValue
                             .asSequence()
                             .distinctBy { it.id }
                             .toList()
@@ -60,6 +61,7 @@ class ResultViewModel: ViewModel() {
                     )
                 }
             } catch (e: Exception) {
+                e.printStackTrace()
                 _searchResults.value = UiState.Error(ErrorMapper.map(e))
             }
         }

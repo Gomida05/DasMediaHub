@@ -45,3 +45,7 @@
 
 # Silence warnings without keeping everything
 -dontwarn com.google.android.gms.auth.api.identity.**
+
+# Missing classes rules for downloader and python modules
+-dontwarn com.das.downloader.**
+-dontwarn com.das.python.**

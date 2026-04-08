@@ -32,7 +32,7 @@ android {
         minSdk = 26
         targetSdk = 37
         versionCode = 10
-        versionName = "10.0"
+        versionName = "10.2"
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
 
@@ -85,8 +85,9 @@ dependencies {
 
     // Python Integration: The app uses a dedicated :python module
     // for metadata scraping and extraction via Chaquopy.
-    // implementation(project(":python")) // Uncomment for development
-    implementation(files("libs/aar/python-release.aar"))
+//     implementation(project(":python")) // Uncomment for development
+     implementation(project("::downloader"))
+    implementation(files("../libs/aar/das-python.aar"))
 
 
     //Firebase dependencies

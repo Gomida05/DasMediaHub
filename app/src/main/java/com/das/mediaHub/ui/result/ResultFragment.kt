@@ -65,7 +65,7 @@ import androidx.navigation3.runtime.NavKey
 import coil.compose.AsyncImage
 import com.das.mediaHub.navigation.NavScreens.OnlineVideoPlayer
 import com.das.mediaHub.services.media.OnlineBackgroundPlayer.Companion.playAudioFromUrl
-import com.das.mediaHub.data.model.download.DownloadType
+import com.das.downloader.data.model.download.DownloadType
 import com.das.mediaHub.services.download.DownloadService
 import com.das.mediaHub.ui.players.videoPlayer.CustomLayouts.SkeletonSuggestionLoadingLayout
 import com.das.mediaHub.ui.players.videoPlayer.state.UiState

@@ -3,9 +3,9 @@ package com.das.mediaHub.ui.downloads
 import android.app.Application
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
-import com.das.mediaHub.data.model.download.DownloadStatus
-import com.das.mediaHub.data.model.download.DownloadingUiState
-import com.das.mediaHub.data.downloader.DownloadQueueManager
+import com.das.downloader.data.model.download.DownloadStatus
+import com.das.downloader.data.model.download.DownloadingUiState
+import com.das.downloader.data.downloader.DownloadQueueManager
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.collectLatest

@@ -36,12 +36,22 @@ class WatchedVideosViewModel(
         }
     }
 
-    fun removeSearchItem(searchItem: SavedVideosListData) {
+    fun deleteVideo(videoId: String) {
+        viewModelScope.launch {
+            withContext(Dispatchers.IO) {
+                dbHelper.deleteWatchUrl(videoId)
+            }
+            removeSearchItemFromState(videoId = videoId)
+        }
+    }
+
+    private fun removeSearchItemFromState(videoId: String) {
         val currentState = _savedListsState.value
 
         if (currentState is UiState.Success) {
-            val updatedList = currentState.data.filter { it != searchItem }
-            _savedListsState.value = if (updatedList.isEmpty()) UiState.Empty else UiState.Success(updatedList)
+            val updatedList = currentState.data.filter { it.watchUrl != videoId }
+            _savedListsState.value =
+                if (updatedList.isEmpty()) UiState.Empty else UiState.Success(updatedList)
         }
     }
 }

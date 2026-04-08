@@ -24,3 +24,4 @@ dependencyResolutionManagement {
 rootProject.name = "DasMediaHub"
 include(":app")
 //include(":python")
+include(":downloader")

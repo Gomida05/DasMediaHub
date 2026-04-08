@@ -5,7 +5,7 @@ from pytubefix.exceptions import (
     RegexMatchError,
     ExtractError
 )
-from youtubesearchpython import Video, VideosSearch
+from my_youtube_search_fix import Video, VideosSearch
 from requests import RequestException
 from typing import Any, Optional
 import json, traceback, socket, ssl, time
@@ -136,12 +136,9 @@ def getPlayListUrls(youtube_url):
 
 def Searcher(inputer):
     try:
-        # Guard: Kotlin might send null -> Python receives None
-        if inputer is None:
-            return make_response(success=False, error="Query is missing (null).", result=None)
 
         # Coerce to string + trim
-        query = str(inputer).strip()
+        query = str(inputer)
         if not query:
             return make_response(success=False, error="Query is empty.", result=None)
 
@@ -158,12 +155,15 @@ def Searcher(inputer):
     except PytubeFixError as e:
         err_msg = f"YouTube library error: {e}"
     except Exception as e:
+        traceback.print_exc()
         err_msg = f"Unexpected error during search: {e}"
 
     print(err_msg)
     traceback.print_exc()
     return make_response(success=False, error=err_msg, result=None)
 
+# vdv = Searcher("Eritrean")
+# print(vdv)
 
 def SearchWithLink(inputer):
     try:

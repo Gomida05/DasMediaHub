@@ -33,7 +33,7 @@ import com.das.mediaHub.ui.search.SearchPageCompose
 import com.das.mediaHub.ui.settings.AboutDasMediaHub
 import com.das.mediaHub.ui.settings.FeedbackComposable
 import com.das.mediaHub.ui.settings.SettingsComposable
-import com.das.mediaHub.ui.settings.watch_later.SavedVideosScreen
+import com.das.mediaHub.ui.watch_later.SavedVideosScreen
 import com.das.mediaHub.ui.tiktok.TikTokComposable
 import com.das.mediaHub.ui.watchedVideos.RecentlyWatchedVideosScreen
 

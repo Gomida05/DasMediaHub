@@ -6,6 +6,7 @@ import com.das.python.data.model.PlayListDataClass
 import com.das.python.data.model.responds.ResponseVideo
 import com.das.python.data.model.VideosListData
 import com.das.python.data.model.responds.RespondVideoDetails
+import com.das.python.exceptions.PyCallError
 import java.net.URL
 import java.text.SimpleDateFormat
 import java.time.Instant
@@ -239,22 +240,14 @@ object YouTuber {
      * @param onSuccess Called with direct stream URL.
      * @param onFailure Called if extraction fails.
      */
-    suspend fun getVideoStreamUrl(
-        videoId: String,
-        onSuccess: (streamUrl: String) -> Unit,
-        onFailure: (String) -> Unit
-    ) {
-        try {
-            val url = "https://www.youtube.com/watch?v=$videoId"
-            val result = py.getVideoStreamUrl(url)
+    suspend fun getVideoStreamUrl(videoId: String): String {
+        val url = "https://www.youtube.com/watch?v=$videoId"
+        val result = py.getVideoStreamUrl(url)
 
-            if (result.success && !result.result.isNullOrEmpty()) {
-                onSuccess(result.result)
-            } else {
-                onFailure(result.error.toString())
-            }
-        } catch (e: Exception) {
-            onFailure("Something went wrong with result: ${e.message}")
+        if (result.success && !result.result.isNullOrEmpty()) {
+            return result.result
+        } else {
+            throw PyCallError.PythonException(Throwable(result.error))
         }
     }
 
@@ -265,22 +258,15 @@ object YouTuber {
      *
      * @param mediaId YouTube video ID.
      */
-    suspend fun getAudioStreamUrl(
-        mediaId: String,
-        onSuccess: (streamUrl: String) -> Unit,
-        onFailure: (String) -> Unit
-    ) {
-        try {
-            val url = "https://www.youtube.com/watch?v=$mediaId"
-            val result = py.getAudioStreamUrl(url)
+    @Throws(PyCallError.PythonException::class)
+    suspend fun getAudioStreamUrl(mediaId: String): String {
+        val url = "https://www.youtube.com/watch?v=$mediaId"
+        val result = py.getAudioStreamUrl(url)
 
-            if (result.success && !result.result.isNullOrEmpty()) {
-                onSuccess(result.result)
-            } else {
-                onFailure(result.error.toString())
-            }
-        } catch (e: Exception) {
-            onFailure("Something went wrong with result: ${e.message}")
+        if (result.success && !result.result.isNullOrEmpty()) {
+            return result.result
+        } else {
+            throw PyCallError.PythonException(Throwable(result.error))
         }
     }
 

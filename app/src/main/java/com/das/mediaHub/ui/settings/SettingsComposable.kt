@@ -86,10 +86,10 @@ import androidx.core.content.pm.PackageInfoCompat
 import androidx.documentfile.provider.DocumentFile
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
-import com.das.mediaHub.data.local.PathPreferences
-import com.das.mediaHub.data.local.PathPreferences.saveAudioPath
-import com.das.mediaHub.data.local.PathPreferences.saveVideoPath
-import com.das.mediaHub.data.model.AppUpdateInfo
+import com.das.downloader.data.local.PathPreferences.saveAudioPath
+import com.das.downloader.data.local.PathPreferences.saveVideoPath
+import com.das.downloader.data.model.AppUpdateInfo
+import com.das.mediaHub.data.local.Preferences
 import com.das.mediaHub.data.model.TopPopUp
 import com.das.mediaHub.navigation.NavScreens
 import com.das.mediaHub.services.download.DownloadService
@@ -120,13 +120,8 @@ fun SettingsComposable(add: (NavScreens) -> Unit) {
     var storageExpanded by rememberSaveable { mutableStateOf(false) }
     var showFolderDialog by rememberSaveable { mutableStateOf(false) }
 
-    var audioPath by rememberSaveable { mutableStateOf("Not set") }
-    var videoPath by rememberSaveable { mutableStateOf("Not set") }
-
-    LaunchedEffect(Unit) {
-        audioPath = PathPreferences.getAudioPath(context)
-        videoPath = PathPreferences.getVideoPath(context)
-    }
+    val audioPath by Preferences.audioPathState()
+    val videoPath by Preferences.videoPathState()
 
 
     Box(
@@ -304,8 +299,8 @@ fun SettingsComposable(add: (NavScreens) -> Unit) {
                 showFolderDialog = false
 
                 when (type.lowercase()) {
-                    "audio" -> audioPath = savedPath
-                    "video" -> videoPath = savedPath
+                    "audio" -> saveAudioPath(context, savedPath)
+                    "video" -> saveVideoPath(context, savedPath)
                 }
             }
         )

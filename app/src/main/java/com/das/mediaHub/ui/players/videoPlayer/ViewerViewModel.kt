@@ -44,14 +44,9 @@ class ViewerViewModel : ViewModel() {
 
         viewModelScope.launch {
             try {
-                YouTuber.getVideoStreamUrl(videoId = videoId,
-                    onSuccess = { newResult->
-                        _videoState.value = UiState.Success(newResult)
-                    },
-                    onFailure = { error->
-                        _videoState.value = UiState.Error(ErrorMapper.mapMessage(error))
-                    }
-                )
+                val getStream = YouTuber.getVideoStreamUrl(videoId = videoId)
+                _videoState.value = if (getStream.isEmpty()) UiState.Empty
+                else UiState.Success(getStream)
             } catch (e: Exception) {
                 _videoState.value = UiState.Error(ErrorMapper.map(e))
             }

@@ -87,6 +87,14 @@ fun LocalVideoPlayer(videoUri: String) {
     LaunchedEffect(Unit) {
         PlayerControllerHolder.getOrCreate(context) { readyController ->
             controller = readyController
+
+            if (readyController.currentMediaItem?.mediaMetadata != currentItem.mediaMetadata) {
+                readyController.setMediaItem(currentItem)
+                readyController.prepare()
+                readyController.play()
+            } else {
+                readyController.play()
+            }
         }
     }
 
@@ -123,7 +131,8 @@ fun LocalVideoPlayer(videoUri: String) {
         if (isContentUri) return@LaunchedEffect
 
         val mediaController = controller ?: return@LaunchedEffect
-        val successState = playlistState as? UiState.Success<List<MediaItem>> ?: return@LaunchedEffect
+        val successState =
+            playlistState as? UiState.Success<List<MediaItem>> ?: return@LaunchedEffect
 
         val playlist = buildList {
             add(currentItem)
@@ -148,6 +157,7 @@ fun LocalVideoPlayer(videoUri: String) {
     RetainedEffect(Unit) {
         onRetire {
             activity.rotateScreen(fullScreen = false)
+            PlayerControllerHolder.release()
         }
     }
 
@@ -160,30 +170,18 @@ fun LocalVideoPlayer(videoUri: String) {
             .fillMaxSize(),
         contentWindowInsets = WindowInsets.safeDrawing
     ) { innerPadding ->
-        Box(modifier = Modifier
-            .padding(innerPadding)
-            .fillMaxSize()) {
-            CustomPlayer(
-                controller
-            )
-/**            AndroidView(
-                modifier = Modifier
-                    .padding(innerPadding)
-                    .fillMaxSize()
-                    .background(Color.Black)
-                    .zIndex(0f),
-                factory = {
-                    PlayerView(context).apply {
-                        keepScreenOn = true
-                        useController = true
-                        resizeMode = AspectRatioFrameLayout.RESIZE_MODE_ZOOM
-                        player = controller
-                    }
-                },
-                update = { playerView ->
-                    playerView.player = controller
-                }
-            )*/
+
+        Box(
+            modifier = Modifier
+                .padding(innerPadding)
+                .fillMaxSize()
+        ) {
+
+            controller?.let {
+                CustomPlayer(
+                    it
+                )
+            }
             if (controller != null && controller?.isPlaying == true) {
                 when {
                     showMetadataLoading -> {

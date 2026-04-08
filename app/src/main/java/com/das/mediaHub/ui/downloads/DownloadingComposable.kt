@@ -60,10 +60,10 @@ import androidx.lifecycle.viewmodel.viewModelFactory
 import androidx.navigation3.runtime.NavBackStack
 import androidx.navigation3.runtime.NavKey
 import com.das.mediaHub.navigation.NavScreens
-import com.das.mediaHub.data.model.download.DownloadInfo
-import com.das.mediaHub.data.model.download.DownloadState
-import com.das.mediaHub.data.model.download.DownloadStatus
-import com.das.mediaHub.data.model.download.DownloadingUiState
+import com.das.downloader.data.model.download.DownloadInfo
+import com.das.downloader.data.model.download.DownloadState
+import com.das.downloader.data.model.download.DownloadStatus
+import com.das.downloader.data.model.download.DownloadingUiState
 
 @Composable
 fun DownloadingComposable(backStack: NavBackStack<NavKey>) {

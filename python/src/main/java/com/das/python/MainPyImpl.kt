@@ -1,12 +1,12 @@
 package com.das.python
 
-import com.das.python.data.StreamUrlRespond
+import com.das.python.data.model.StreamUrlRespond
 import com.das.python.data.interfaces.MainPy
 import com.das.python.data.model.PlayListDataClass
 import com.das.python.data.model.responds.RespondVideoDetails
 import com.das.python.data.model.responds.ResponseVideo
 
-class MainPyImpl : MainPy {
+internal class MainPyImpl : MainPy {
     override suspend fun getAudioStreamUrl(videoUrl: String): StreamUrlRespond =
         PyRuntime.callJson("main", "get_audio_url", videoUrl)
 

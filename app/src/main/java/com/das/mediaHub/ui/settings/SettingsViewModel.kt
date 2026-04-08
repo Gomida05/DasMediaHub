@@ -4,7 +4,7 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.das.mediaHub.data.constants.UrlLists.APP_URL
 import com.das.mediaHub.data.error.ErrorMapper
-import com.das.mediaHub.data.model.AppUpdateInfo
+import com.das.downloader.data.model.AppUpdateInfo
 import com.das.mediaHub.ui.players.videoPlayer.state.UiState
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job

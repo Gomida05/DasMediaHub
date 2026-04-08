@@ -7,7 +7,7 @@ import androidx.media3.common.MediaItem
 import androidx.media3.common.MediaMetadata
 import com.das.mediaHub.data.error.ErrorMapper
 import com.das.mediaHub.data.mediacontroller.MediaStoreCache
-import com.das.mediaHub.data.model.download.DownloadType
+import com.das.downloader.data.model.download.DownloadType
 import com.das.mediaHub.ui.players.videoPlayer.state.UiState
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job

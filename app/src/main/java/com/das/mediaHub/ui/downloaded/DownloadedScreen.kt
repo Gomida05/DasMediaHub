@@ -84,8 +84,8 @@ import coil.ImageLoader
 import coil.compose.AsyncImage
 import coil.decode.VideoFrameDecoder
 import com.das.mediaHub.data.constants.Action.ACTION_START
-import com.das.mediaHub.data.local.PathPreferences.audioPathState
-import com.das.mediaHub.data.local.PathPreferences.videoPathState
+import com.das.mediaHub.data.local.Preferences.audioPathState
+import com.das.mediaHub.data.local.Preferences.videoPathState
 import com.das.mediaHub.navigation.NavScreens
 import com.das.mediaHub.services.media.LocalBackGroundPlayer
 import com.das.mediaHub.ui.players.videoPlayer.state.UiState

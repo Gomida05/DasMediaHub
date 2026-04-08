@@ -31,9 +31,8 @@ import kotlinx.coroutines.delay
 @SuppressLint("UnsafeOptInUsageError")
 @Composable
 fun CustomPlayer(
-    player: MediaController?
+    player: MediaController
 ) {
-    if (player == null) return
 
     var isPlayerUiVisible by retain { mutableStateOf(true) }
 

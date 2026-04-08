@@ -59,7 +59,7 @@ chaquopy {
         pip {
             install("yt-dlp")
             install("pytubefix==8.12.1")
-            install("youtube-search-python")
+//            install("youtube-search-python")
             install("httpx<0.28")
             install("requests")
         }

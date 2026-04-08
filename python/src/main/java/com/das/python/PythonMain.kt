@@ -5,12 +5,11 @@ import com.chaquo.python.Python
 import com.chaquo.python.android.AndroidPlatform
 import com.das.python.data.Names
 import com.das.python.data.model.PlayListDataClass
-import com.das.python.data.StreamUrlRespond
+import com.das.python.data.model.StreamUrlRespond
 import com.das.python.data.annotation.PythonModule
 import com.das.python.data.annotation.RequiresPythonInit
-import com.das.python.data.model.ensurePythonInitialized
+import com.das.python.data.ensurePythonInitialized
 import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.withContext
 import kotlinx.serialization.SerializationException
 import kotlinx.serialization.json.Json
 
@@ -132,7 +131,7 @@ object PythonMain {
         Exception::class
     )
     @RequiresPythonInit
-    suspend fun getStreamUrl(
+   fun getStreamUrl(
         type: Names,
         id: String,
         @PythonModule module: String = "main"
@@ -161,7 +160,7 @@ object PythonMain {
         SerializationException::class,
         Exception::class
     )
-    suspend fun getPlayListUrl(
+    fun getPlayListUrl(
         url: String
     ): List<PlayListDataClass> {
 

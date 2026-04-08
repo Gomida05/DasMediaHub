@@ -100,7 +100,7 @@ import com.das.mediaHub.data.local.DatabaseFavorite
 import com.das.mediaHub.data.local.WatchHistory
 import com.das.mediaHub.data.mediacontroller.online.VideoPlayerListener
 import com.das.mediaHub.data.mediacontroller.online.VideoPlayerManager
-import com.das.mediaHub.data.model.download.DownloadType
+import com.das.downloader.data.model.download.DownloadType
 import com.das.mediaHub.data.model.icons.filled.YouTubeIcon
 import com.das.mediaHub.navigation.NavScreens
 import com.das.mediaHub.services.download.DownloadService
@@ -174,7 +174,7 @@ fun OnlineVideoPlayerScreen(
     }
 
     val mExoPlayer = videoPlayerManager.player
-    val getVideoFromList = remember {
+    val getVideoFromList = retain(videoID) {
         GlobalVideoList.getVideoById(videoId = videoID)
     }
     var videoUiState by retain(videoID) {
@@ -491,8 +491,8 @@ private fun VideoDetailsComposable(
     val showDescriptionDialog = remember { mutableStateOf(false) }
     val detailsState by viewModel.detailsState.collectAsStateWithLifecycle()
 
-    val dbForFav = remember { DatabaseFavorite(mContext) }
-    val watchHistory = remember { WatchHistory(mContext) }
+    val dbForFav = retain { DatabaseFavorite(mContext) }
+    val watchHistory = retain { WatchHistory(mContext) }
 
 
     var isSaved by remember { mutableStateOf(dbForFav.isWatchUrlExist(videoId)) }
