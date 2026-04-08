@@ -32,6 +32,7 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowForwardIos
+import androidx.compose.material.icons.automirrored.filled.Help
 import androidx.compose.material.icons.filled.Android
 import androidx.compose.material.icons.filled.Check
 import androidx.compose.material.icons.filled.ColorLens
@@ -79,6 +80,7 @@ import androidx.compose.ui.input.nestedscroll.nestedScroll
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.window.Dialog
@@ -86,9 +88,9 @@ import androidx.core.content.pm.PackageInfoCompat
 import androidx.documentfile.provider.DocumentFile
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
-import com.das.downloader.data.local.PathPreferences.saveAudioPath
-import com.das.downloader.data.local.PathPreferences.saveVideoPath
+import com.das.downloader.data.local.PathPreferences.updatePath
 import com.das.downloader.data.model.AppUpdateInfo
+import com.das.downloader.data.model.PathType
 import com.das.mediaHub.data.local.Preferences
 import com.das.mediaHub.data.model.TopPopUp
 import com.das.mediaHub.navigation.NavScreens
@@ -243,6 +245,12 @@ fun SettingsComposable(add: (NavScreens) -> Unit) {
                             }
                         )
                         SettingsItem(
+                            icon = Icons.AutoMirrored.Default.Help,
+                            text = "Help",
+                            onClick = { add(NavScreens.Help) }
+                        )
+
+                        SettingsItem(
                             icon = Icons.Default.Feedback,
                             text = "Send Feedback",
                             onClick = { add(NavScreens.FeedbackScreen) }
@@ -294,14 +302,16 @@ fun SettingsComposable(add: (NavScreens) -> Unit) {
 
         FolderPickerDialog(
             showDialog = showFolderDialog,
+            audioPath = audioPath,
+            videoPath = videoPath,
             onDismiss = { showFolderDialog = false },
             onPathSaved = { type, savedPath ->
+                updatePath(
+                    context = context,
+                    pathType = type,
+                    newPath = savedPath
+                )
                 showFolderDialog = false
-
-                when (type.lowercase()) {
-                    "audio" -> saveAudioPath(context, savedPath)
-                    "video" -> saveVideoPath(context, savedPath)
-                }
             }
         )
 
@@ -753,8 +763,10 @@ fun SettingsSubItem(
                 Spacer(modifier = Modifier.height(2.dp))
                 Text(
                     text = subtitle,
-                    style = MaterialTheme.typography.bodySmall,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                    style = MaterialTheme.typography.bodySmall.copy(
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                    ),
+                    overflow = TextOverflow.Ellipsis
                 )
             }
         }
@@ -822,8 +834,10 @@ fun InlineThemeSelector(context: Context) {
 @Composable
 fun FolderPickerDialog(
     showDialog: Boolean,
+    audioPath: String,
+    videoPath: String,
     onDismiss: () -> Unit,
-    onPathSaved: (String, String) -> Unit
+    onPathSaved: (PathType, String) -> Unit
 ) {
     val context = LocalContext.current.applicationContext
 
@@ -832,9 +846,9 @@ fun FolderPickerDialog(
         onResult = { uri: Uri? ->
             uri?.let {
                 persistFolderPermission(context, it)
-                val savedPath = getFolderPathFromUri(context, it, "audio")
+                val savedPath = getFolderPathFromUri(context, it)
                 if (savedPath != null) {
-                    onPathSaved("Audio", savedPath)
+                    onPathSaved(PathType.AUDIO, savedPath)
                 }
             }
         }
@@ -845,9 +859,9 @@ fun FolderPickerDialog(
         onResult = { uri: Uri? ->
             uri?.let {
                 persistFolderPermission(context, it)
-                val savedPath = getFolderPathFromUri(context, it, "video")
+                val savedPath = getFolderPathFromUri(context, it)
                 if (savedPath != null) {
-                    onPathSaved("Video", savedPath)
+                    onPathSaved(PathType.VIDEO, savedPath)
                 }
             }
         }
@@ -855,6 +869,8 @@ fun FolderPickerDialog(
 
     if (showDialog) {
         StorageTypeDialog(
+            audioPath = audioPath,
+            videoPath = videoPath,
             onDismissRequest = onDismiss,
             onAudioSelect = {
                 audioPickerLauncher.launch(null)
@@ -868,6 +884,8 @@ fun FolderPickerDialog(
 
 @Composable
 fun StorageTypeDialog(
+    audioPath: String,
+    videoPath: String,
     onDismissRequest: () -> Unit,
     onAudioSelect: () -> Unit,
     onVideoSelect: () -> Unit
@@ -893,7 +911,7 @@ fun StorageTypeDialog(
                             )
                         )
                     )
-                    .padding(horizontal = 24.dp, vertical = 22.dp)
+                    .padding(horizontal = 20.dp, vertical = 22.dp)
             ) {
                 Surface(
                     shape = RoundedCornerShape(18.dp),
@@ -913,46 +931,148 @@ fun StorageTypeDialog(
                 Spacer(modifier = Modifier.height(18.dp))
 
                 Text(
-                    text = "Storage Location",
+                    text = "Choose save location",
                     style = MaterialTheme.typography.titleLarge.copy(
                         fontWeight = FontWeight.Bold
                     )
                 )
 
-                Spacer(modifier = Modifier.height(8.dp))
+                Spacer(modifier = Modifier.height(6.dp))
 
                 Text(
-                    text = "Choose which media type you want to change the download folder for.",
+                    text = "Select which folder you want to change. Your current save locations are shown below.",
                     style = MaterialTheme.typography.bodyMedium,
                     color = MaterialTheme.colorScheme.onSurfaceVariant
                 )
 
-                Spacer(modifier = Modifier.height(22.dp))
+                Spacer(modifier = Modifier.height(20.dp))
+
+                StorageOptionCard(
+                    title = "Audio downloads",
+                    subtitle = "Music, podcasts, voice files",
+                    currentPath = audioPath,
+                    onClick = {
+                        onAudioSelect()
+                        onDismissRequest()
+                    }
+                )
+
+                Spacer(modifier = Modifier.height(12.dp))
+
+                StorageOptionCard(
+                    title = "Video downloads",
+                    subtitle = "Movies, clips, reels, videos",
+                    currentPath = videoPath,
+                    onClick = {
+                        onVideoSelect()
+                        onDismissRequest()
+                    }
+                )
+
+                Spacer(modifier = Modifier.height(18.dp))
 
                 Row(
                     modifier = Modifier.fillMaxWidth(),
                     horizontalArrangement = Arrangement.End
                 ) {
                     TextButton(onClick = onDismissRequest) {
-                        Text("Cancel")
-                    }
-                    TextButton(
-                        onClick = {
-                            onAudioSelect()
-                            onDismissRequest()
-                        }
-                    ) {
-                        Text("Audio")
-                    }
-                    TextButton(
-                        onClick = {
-                            onVideoSelect()
-                            onDismissRequest()
-                        }
-                    ) {
-                        Text("Video")
+                        Text("Close")
                     }
                 }
+            }
+        }
+    }
+}
+
+@Composable
+fun StorageOptionCard(
+    title: String,
+    subtitle: String,
+    currentPath: String,
+    onClick: () -> Unit
+) {
+    Card(
+        modifier = Modifier
+            .fillMaxWidth()
+            .clip(RoundedCornerShape(22.dp))
+            .clickable(onClick = onClick),
+        shape = RoundedCornerShape(22.dp),
+        colors = CardDefaults.cardColors(
+            containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.55f)
+        ),
+        elevation = CardDefaults.cardElevation(defaultElevation = 0.dp)
+    ) {
+        Column(
+            modifier = Modifier.padding(16.dp)
+        ) {
+            Row(
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Surface(
+                    shape = RoundedCornerShape(14.dp),
+                    color = MaterialTheme.colorScheme.primary.copy(alpha = 0.10f),
+                    modifier = Modifier.size(42.dp)
+                ) {
+                    Box(contentAlignment = Alignment.Center) {
+                        Icon(
+                            imageVector = Icons.Default.Folder,
+                            contentDescription = null,
+                            tint = MaterialTheme.colorScheme.primary,
+                            modifier = Modifier.size(20.dp)
+                        )
+                    }
+                }
+
+                Spacer(modifier = Modifier.width(12.dp))
+
+                Column(modifier = Modifier.weight(1f)) {
+                    Text(
+                        text = title,
+                        style = MaterialTheme.typography.bodyLarge.copy(
+                            fontWeight = FontWeight.SemiBold
+                        )
+                    )
+
+                    Spacer(modifier = Modifier.height(2.dp))
+
+                    Text(
+                        text = subtitle,
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                }
+
+                Icon(
+                    imageVector = Icons.AutoMirrored.Default.ArrowForwardIos,
+                    contentDescription = null,
+                    tint = MaterialTheme.colorScheme.outline,
+                    modifier = Modifier.size(16.dp)
+                )
+            }
+
+            Spacer(modifier = Modifier.height(14.dp))
+
+            Text(
+                text = "Current folder",
+                style = MaterialTheme.typography.labelMedium,
+                color = MaterialTheme.colorScheme.primary,
+                fontWeight = FontWeight.Bold
+            )
+
+            Spacer(modifier = Modifier.height(6.dp))
+
+            Surface(
+                shape = RoundedCornerShape(14.dp),
+                color = MaterialTheme.colorScheme.background.copy(alpha = 0.7f)
+            ) {
+                Text(
+                    text = formatPathForDisplay(currentPath),
+                    modifier = Modifier.padding(horizontal = 12.dp, vertical = 10.dp),
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    maxLines = 3,
+                    overflow = TextOverflow.Ellipsis
+                )
             }
         }
     }
@@ -973,16 +1093,11 @@ private fun extractFolderPath(path: String): String {
     return path.removePrefix(prefix)
 }
 
-private fun getFolderPathFromUri(context: Context, uri: Uri, type: String): String? {
+private fun getFolderPathFromUri(context: Context, uri: Uri): String? {
     return try {
         val documentFile = DocumentFile.fromTreeUri(context, uri)
         if (documentFile != null && documentFile.isDirectory) {
-            val folderPath = "/storage/emulated/0/${extractFolderPath(uri.path.toString())}"
-            when (type) {
-                "video" -> saveVideoPath(context = context, path = folderPath)
-                "audio" -> saveAudioPath(context = context, path = folderPath)
-            }
-            folderPath
+            "/storage/emulated/0/${extractFolderPath(uri.path.toString())}"
         } else {
             null
         }
@@ -996,12 +1111,16 @@ private fun buildDownloadLocationSubtitle(
     audioPath: String,
     videoPath: String
 ): String {
-    fun shortPath(path: String): String {
-        if (path == "Not set") return path
-        return path
-            .removePrefix("/storage/emulated/0/")
-            .ifBlank { "Internal storage" }
-    }
+    val audioShortPath = formatPathForDisplay(path = audioPath)
+    val videoShortPath = formatPathForDisplay(path = videoPath)
 
-    return "Audio: ${shortPath(audioPath)}\nVideo: ${shortPath(videoPath)}"
+    return "Audio: $audioShortPath\nVideo: $videoShortPath"
+}
+
+private fun formatPathForDisplay(path: String): String {
+    if (path == "Not set") return "Not set yet"
+
+    return path
+        .replace("/storage/emulated/0/", "Internal storage/")
+        .ifBlank { "Internal storage" }
 }

@@ -31,8 +31,8 @@ android {
         compileSdk = 36
         minSdk = 26
         targetSdk = 37
-        versionCode = 12
-        versionName = "10.2"
+        versionCode = 13
+        versionName = "13.0"
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
 
@@ -86,7 +86,7 @@ dependencies {
     // Python Integration: The app uses a dedicated :python module
     // for metadata scraping and extraction via Chaquopy.
 //     implementation(project(":python")) // Uncomment for development
-     implementation(project("::downloader"))
+     implementation(project(":downloader"))
     implementation(files("../libs/aar/das-python.aar"))
 
 

@@ -9,6 +9,8 @@ import androidx.navigation3.runtime.NavKey
 import androidx.navigation3.runtime.rememberSaveableStateHolderNavEntryDecorator
 import androidx.navigation3.ui.NavDisplay
 import com.das.mediaHub.navigation.NavScreens.AboutDasMediaHub
+import com.das.mediaHub.navigation.NavScreens.PrivacyPolicy
+import com.das.mediaHub.navigation.NavScreens.Help
 import com.das.mediaHub.navigation.NavScreens.Downloaded
 import com.das.mediaHub.navigation.NavScreens.DownloadsPage
 import com.das.mediaHub.navigation.NavScreens.FeedbackScreen
@@ -32,6 +34,8 @@ import com.das.mediaHub.ui.result.ResultViewerPage
 import com.das.mediaHub.ui.search.SearchPageCompose
 import com.das.mediaHub.ui.settings.AboutDasMediaHub
 import com.das.mediaHub.ui.settings.FeedbackComposable
+import com.das.mediaHub.ui.settings.HelpScreen
+import com.das.mediaHub.ui.settings.PrivacyPolicyScreen
 import com.das.mediaHub.ui.settings.SettingsComposable
 import com.das.mediaHub.ui.watch_later.SavedVideosScreen
 import com.das.mediaHub.ui.tiktok.TikTokComposable
@@ -106,6 +110,14 @@ fun AppNavHost(
 
             is AboutDasMediaHub -> NavEntry(key = key) {
                 AboutDasMediaHub(backStack)
+            }
+
+            is PrivacyPolicy -> NavEntry(key = key) {
+                PrivacyPolicyScreen(backStack)
+            }
+
+            is Help -> NavEntry(key = key) {
+                HelpScreen(backStack)
             }
 
             else -> NavEntry(key = key) {

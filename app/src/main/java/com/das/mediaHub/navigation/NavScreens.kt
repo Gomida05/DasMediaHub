@@ -40,4 +40,10 @@ sealed interface NavScreens: NavKey {
 
     @Serializable
     data object AboutDasMediaHub: NavScreens
+
+    @Serializable
+    data object PrivacyPolicy: NavScreens
+
+    @Serializable
+    data object Help: NavScreens
 }

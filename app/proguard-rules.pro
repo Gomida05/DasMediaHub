@@ -48,4 +48,5 @@
 
 # Missing classes rules for downloader and python modules
 -dontwarn com.das.downloader.**
+-dontwarn com.das.downloader.data.local.PathPreferences
 -dontwarn com.das.python.**

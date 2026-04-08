@@ -31,7 +31,7 @@ class SettingsViewModel: ViewModel() {
         loadingJob = viewModelScope.launch {
             try {
                 val result = requestJson()
-                _apkInfoState.value = UiState.Success(result)
+                _apkInfoState.value = UiState.Success(data = result)
             } catch (e: Exception) {
                 _apkInfoState.value = UiState.Error(ErrorMapper.map(e))
             }

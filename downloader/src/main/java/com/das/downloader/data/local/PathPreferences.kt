@@ -2,6 +2,7 @@ package com.das.downloader.data.local
 
 import android.content.Context
 import androidx.core.content.edit
+import com.das.downloader.data.model.PathType
 
 object PathPreferences {
 
@@ -15,15 +16,14 @@ object PathPreferences {
 
     fun getPrefsName() = PREFS_NAME
 
-    fun saveAudioPath(context: Context, path: String) {
-        context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
-            .edit { putString(AUDIO_KEY, path) }
+    fun updatePath(context: Context, pathType: PathType, newPath: String) {
+        val prefs = context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
+        when (pathType) {
+            PathType.AUDIO -> prefs.edit { putString(AUDIO_KEY, newPath) }
+            PathType.VIDEO -> prefs.edit { putString(VIDEO_KEY, newPath) }
+        }
     }
 
-    fun saveVideoPath(context: Context, path: String) {
-        context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
-            .edit { putString(VIDEO_KEY, path) }
-    }
 
     fun getAudioPath(context: Context): String {
         val prefs = context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
@@ -35,8 +35,4 @@ object PathPreferences {
         return prefs.getString(VIDEO_KEY, DEFAULT_VIDEO_PATH) ?: DEFAULT_VIDEO_PATH
     }
 
-    enum class PathType(val label: String) {
-        AUDIO(label = "download_path1"),
-        VIDEO(label = "download_path2")
-    }
 }

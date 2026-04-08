@@ -10,6 +10,7 @@ import androidx.compose.runtime.retain.RetainedEffect
 import androidx.compose.ui.platform.LocalContext
 import com.das.downloader.data.local.PathPreferences
 import com.das.downloader.data.local.PathPreferences.getPrefsName
+import com.das.downloader.data.model.PathType
 
 internal object Preferences {
 
@@ -18,26 +19,26 @@ internal object Preferences {
     @Composable
     fun audioPathState(): MutableState<String> {
         return rememberPathState(
-            key = PathPreferences.PathType.AUDIO
+            key = PathType.AUDIO
         )
     }
 
     @Composable
     fun videoPathState(): MutableState<String> {
         return rememberPathState(
-            key = PathPreferences.PathType.VIDEO
+            key = PathType.VIDEO
         )
     }
 
     @Composable
     private fun rememberPathState(
-        key: PathPreferences.PathType
+        key: PathType
     ): MutableState<String> {
 
         val context = LocalContext.current
 
         val path = remember {
-            if (key == PathPreferences.PathType.AUDIO) {
+            if (key == PathType.AUDIO) {
                 PathPreferences.getAudioPath(context)
             } else {
                 PathPreferences.getVideoPath(context)
