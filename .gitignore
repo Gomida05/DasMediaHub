@@ -2,8 +2,7 @@
 .gradle
 /local.properties
 /.idea/
-/.kotlin
-.kotlin
+/.kotlin/errors
 .DS_Store
 /build
 /captures
