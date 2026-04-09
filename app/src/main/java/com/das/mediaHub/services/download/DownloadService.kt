@@ -22,19 +22,23 @@ class DownloadService : Service() {
 
     private val scope = CoroutineScope(SupervisorJob() + Dispatchers.Main.immediate)
 
-    private lateinit var queue: DownloadQueueManager
-    private lateinit var notifier: DownloadNotifier
-    private lateinit var coordinator: DownloadCoordinator
+    private val queue by lazy {
+        DownloadQueueManager.get(this)
+    }
+    private val notifier by lazy {
+        DownloadNotifier(this)
+    }
+    private val coordinator by lazy {
+        DownloadCoordinator(DownloaderRepo(this))
+    }
 
     override fun onCreate() {
         super.onCreate()
-        queue = DownloadQueueManager.get(this)
-        notifier = DownloadNotifier(this)
-        coordinator = DownloadCoordinator(DownloaderRepo(this))
+
 
         startForeground(FOREGROUND_NOTIFICATION_ID, notifier.foregroundNotification())
 
-        scope.launch {
+        scope.launch(Dispatchers.IO) {
             queue.restore()
         }
 

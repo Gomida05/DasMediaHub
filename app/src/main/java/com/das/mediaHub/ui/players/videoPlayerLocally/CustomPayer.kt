@@ -23,6 +23,7 @@ import androidx.compose.ui.unit.dp
 import androidx.media3.common.Player
 import androidx.media3.session.MediaController
 import androidx.media3.ui.compose.ContentFrame
+import androidx.media3.ui.compose.material3.Player
 import androidx.media3.ui.compose.state.rememberNextButtonState
 import androidx.media3.ui.compose.state.rememberPlayPauseButtonState
 import androidx.media3.ui.compose.state.rememberPreviousButtonState
@@ -41,6 +42,7 @@ fun CustomPlayer(
     var isBuffering by retain { mutableStateOf(false) }
     var currentPosition by retain { mutableLongStateOf(0L) }
     var duration by retain { mutableLongStateOf(0L) }
+
 
     val playPauseButtonState = rememberPlayPauseButtonState(player)
     val previousButtonState = rememberPreviousButtonState(player)

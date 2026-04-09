@@ -64,18 +64,6 @@ fun HomePageScreen(navigate: (NavKey) -> Unit) {
                         textAlign = TextAlign.Center
                     )
                 },
-                navigationIcon = {
-                    IconButton(
-                        onClick = {
-                        }
-                    ) {
-                        Icon(
-                            imageVector = Icons.Default.AccountCircle,
-                            contentDescription = "User account",
-                            modifier = Modifier.size(28.dp)
-                        )
-                    }
-                },
                 actions = {
                     IconButton(onClick = { navigate(NavScreens.DownloadsPage) }) {
                         Icon(

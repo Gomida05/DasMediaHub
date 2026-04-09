@@ -14,6 +14,7 @@ import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
+import androidx.annotation.RequiresApi
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Info
 import androidx.compose.runtime.getValue
@@ -73,22 +74,7 @@ class MainActivity : ComponentActivity() {
 
     override fun onStart() {
         super.onStart()
-
-        if (SDK_INT >= TIRAMISU) {
-            val permissions = arrayOf(
-                POST_NOTIFICATIONS,
-                READ_MEDIA_VIDEO,
-                READ_MEDIA_AUDIO
-            )
-
-            val hasAllPermissions = permissions.all {
-                checkSelfPermission(it) == PackageManager.PERMISSION_GRANTED
-            }
-
-            if (!hasAllPermissions) {
-                requestPermissions(permissions, 1)
-            }
-        }
+        permissionsGranted()
     }
 
 
@@ -237,6 +223,25 @@ class MainActivity : ComponentActivity() {
             putExtra("title", title)
         }
         startService(playIntent)
+    }
+
+
+    private fun permissionsGranted() {
+        if (SDK_INT >= TIRAMISU) {
+
+            val permissions = arrayOf(
+                POST_NOTIFICATIONS,
+                READ_MEDIA_VIDEO,
+                READ_MEDIA_AUDIO
+            )
+
+            val hasAllPermissions = permissions.all {
+                checkSelfPermission(it) == PackageManager.PERMISSION_GRANTED
+            }
+            if (!hasAllPermissions) {
+                requestPermissions(permissions, 1)
+            }
+        }
     }
 
 

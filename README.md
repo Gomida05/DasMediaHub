@@ -14,17 +14,23 @@ DasMediaHub is a cutting-edge Android application engineered with **Jetpack Comp
 
 ## 🌟 Key Highlights
 
-- **🚀 Performance-First Architecture:** Built using the latest Android standards (Compile/Target SDK 36, Kotlin 2.x).
-- **🎞️ Premium Playback:** Seamless media experience powered by **AndroidX Media3 (ExoPlayer)** with background playback and PiP support.
+- **🚀 Performance-First Architecture:** Built using the latest Android standards (Target SDK 37, Kotlin 2.x).
+- **🎞️ Premium Playback:** Seamless media experience powered by **AndroidX Media3 (ExoPlayer)** with background playback, dedicated media notifications, and PiP support.
 - **📥 Smart Downloads:** A robust, background-resilient download manager with real-time status notifications.
 - **🐍 Python-Powered Intelligence:** Leverages **Chaquopy** to execute Python scripts for advanced metadata extraction and content scraping.
 - **☁️ Firebase Integration:** Real-time data persistence and analytics via Firestore.
 
 ---
 
+## ⚙️ Core Initialization
+
+DasMediaHub centralizes its core service initialization in `MainApplication` to ensure a seamless experience:
+- **Python Engine:** Automatically starts the Python environment via Chaquopy for instant metadata extraction.
+- **Notification Channels:** Pre-configures dedicated channels for Downloads, Media Playback (Local & Remote), and Error Reporting.
+
 ## 🐍 Python Engine (`:python` module)
 
-The heart of DasMediaHub's extraction logic lies in a dedicated Python module powered by **Chaquopy**. This allows the app to leverage powerful Python libraries for media scraping that are not natively available in Kotlin.
+The heart of DasMediaHub's extraction logic lies in a dedicated Python module powered by **Chaquopy** (integrated via AAR for optimized distribution). This allows the app to leverage powerful Python libraries for media scraping that are not natively available in Kotlin.
 
 ### 🛠 Core Python Libraries Used:
 - **`yt-dlp`**: High-performance extraction of video/audio URLs and metadata from 1000+ sites.
@@ -73,8 +79,8 @@ The heart of DasMediaHub's extraction logic lies in a dedicated Python module po
 
 ### 📋 Prerequisites
 - **Android Studio Ladybug** (or later)
-- **Android SDK 36**
-- **JDK 17**
+- **Android SDK 37**
+- **JDK 18**
 - **Local Python Interpreter** (for build-time compilation)
 
 ### 🔨 Installation & Build

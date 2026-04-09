@@ -5,10 +5,13 @@ import com.das.python.PythonMain.startPython
 
 class MainApplication: Application() {
 
+    private val notificationChannels by lazy {
+        NotificationChannels(this)
+    }
 
     override fun onCreate() {
         super.onCreate()
         startPython()
-        NotificationChannels(this).createAllNotificationChannels()
+        notificationChannels.createAllNotificationChannels()
     }
 }

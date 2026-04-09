@@ -18,11 +18,8 @@ import com.das.mediaHub.data.mediacontroller.local.DescriptionAdapter
 class LocalBackGroundPlayer: MediaSessionService() {
 
 
-    private val mediaSession by lazy {
-        MediaSession.Builder(this, player)
-            .build()
-    }
-    private val player: ExoPlayer by lazy {
+
+    private val player by lazy {
         ExoPlayer.Builder(this)
             .setAudioAttributes(
                 AudioAttributes.Builder()
@@ -32,6 +29,10 @@ class LocalBackGroundPlayer: MediaSessionService() {
                 true
             )
             .setHandleAudioBecomingNoisy(true)
+            .build()
+    }
+    private val mediaSession by lazy {
+        MediaSession.Builder(this, player)
             .build()
     }
 
