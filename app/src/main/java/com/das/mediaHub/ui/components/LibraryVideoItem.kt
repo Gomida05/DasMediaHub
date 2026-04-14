@@ -37,13 +37,13 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import coil.compose.AsyncImage
 import com.das.mediaHub.R
-import com.das.mediaHub.data.model.SavedVideosListData
+import com.das.mediaHub.data.model.VideoItem
 import com.das.mediaHub.ui.components.dialogs.DevelopmentInfoDialog
 import com.das.mediaHub.ui.components.dialogs.LibraryVideoActionMenu
 
 @Composable
 fun LibraryVideoItem(
-    selectedItem: SavedVideosListData,
+    selectedItem: VideoItem,
     onRemoveFromHistory: () -> Unit,
     onClickListListener: () -> Unit
 ) {

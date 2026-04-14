@@ -17,10 +17,12 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.itemsIndexed
+import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.MoreVert
+import androidx.compose.material.icons.outlined.ErrorOutline
 import androidx.compose.material.icons.outlined.Search
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
@@ -50,6 +52,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.input.nestedscroll.nestedScroll
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
@@ -67,8 +70,8 @@ import com.das.mediaHub.navigation.NavScreens.OnlineVideoPlayer
 import com.das.mediaHub.services.media.OnlineBackgroundPlayer.Companion.playAudioFromUrl
 import com.das.downloader.data.model.download.DownloadType
 import com.das.mediaHub.services.download.DownloadService
-import com.das.mediaHub.ui.players.videoPlayer.CustomLayouts.SkeletonSuggestionLoadingLayout
-import com.das.mediaHub.ui.players.videoPlayer.state.UiState
+import com.das.mediaHub.ui.players.videoPlayer.components.CustomLayouts.SkeletonSuggestionLoadingLayout
+import com.das.mediaHub.data.model.state.UiState
 import com.das.python.YouTuber.loadStreamUrl
 import com.das.python.data.model.VideosListData
 import com.das.python.data.model.searcher.Video
@@ -87,10 +90,11 @@ fun ResultViewerPage(backStack: NavBackStack<NavKey>, data: String) {
     val snackBar = remember { SnackbarHostState() }
 
     val scope = rememberCoroutineScope()
+    val lazyState = rememberLazyListState()
 
 
     LaunchedEffect(data) {
-        viewModel.fetchSuggestions(data)
+        viewModel.loadInitialIfNeeded(data)
     }
 
 
@@ -125,7 +129,9 @@ fun ResultViewerPage(backStack: NavBackStack<NavKey>, data: String) {
                     title = {},
                     actions = {
                         Surface(
-                            onClick = { backStack.removeLastOrNull() },
+                            onClick = {
+                                backStack.removeLastOrNull()
+                            },
                             shape = RoundedCornerShape(28.dp),
                             color = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f),
                             modifier = Modifier
@@ -158,6 +164,7 @@ fun ResultViewerPage(backStack: NavBackStack<NavKey>, data: String) {
         )
         { paddingValues ->
             LazyColumn(
+                state = lazyState,
                 contentPadding = paddingValues,
                 modifier = Modifier.fillMaxSize(),
                 verticalArrangement = Arrangement.spacedBy(4.dp)
@@ -178,37 +185,26 @@ fun ResultViewerPage(backStack: NavBackStack<NavKey>, data: String) {
 
                     UiState.Empty -> {
                         item {
-                            Box(
-                                modifier = Modifier
-                                    .fillMaxWidth()
-                                    .padding(32.dp),
-                                contentAlignment = Alignment.Center
-                            ) {
-                                Text(
-                                    text = "No results found for \"$data\"",
-                                    style = MaterialTheme.typography.bodyLarge,
-                                    textAlign = TextAlign.Center,
-                                    color = MaterialTheme.colorScheme.onSurfaceVariant
-                                )
-                            }
+                            ResultStateCard(
+                                title = "No results found",
+                                message = "We couldn’t find anything for \"$data\". Try another keyword or a simpler search.",
+                                icon = Icons.Outlined.Search
+                            )
                         }
                     }
 
                     is UiState.Error -> {
                         item {
-                            Box(
-                                modifier = Modifier
-                                    .fillMaxWidth()
-                                    .padding(32.dp),
-                                contentAlignment = Alignment.Center
-                            ) {
-                                Text(
-                                    text = state.message,
-                                    style = MaterialTheme.typography.bodyLarge,
-                                    textAlign = TextAlign.Center,
-                                    color = MaterialTheme.colorScheme.error
-                                )
-                            }
+                            ResultStateCard(
+                                title = "Something went wrong",
+                                message = state.message,
+                                actionLabel = "Retry",
+                                onActionClick = {
+                                    viewModel.retry(data)
+                                },
+                                icon = Icons.Outlined.ErrorOutline,
+                                isError = true
+                            )
                         }
                     }
 
@@ -528,3 +524,88 @@ private fun ShowResultDialog(
     }
 }
 
+
+@Composable
+fun ResultStateCard(
+    title: String,
+    message: String,
+    actionLabel: String? = null,
+    onActionClick: (() -> Unit)? = null,
+    icon: ImageVector = Icons.Outlined.Search,
+    isError: Boolean = false
+) {
+    Card(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(horizontal = 20.dp, vertical = 24.dp),
+        shape = RoundedCornerShape(28.dp),
+        colors = CardDefaults.cardColors(
+            containerColor = if (isError) {
+                MaterialTheme.colorScheme.errorContainer.copy(alpha = 0.55f)
+            } else {
+                MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.55f)
+            }
+        ),
+        elevation = CardDefaults.cardElevation(defaultElevation = 0.dp)
+    ) {
+        Column(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(horizontal = 24.dp, vertical = 28.dp),
+            horizontalAlignment = Alignment.CenterHorizontally
+        ) {
+            Surface(
+                shape = CircleShape,
+                color = if (isError) {
+                    MaterialTheme.colorScheme.error.copy(alpha = 0.12f)
+                } else {
+                    MaterialTheme.colorScheme.primary.copy(alpha = 0.10f)
+                },
+                modifier = Modifier.size(68.dp)
+            ) {
+                Box(contentAlignment = Alignment.Center) {
+                    Icon(
+                        imageVector = icon,
+                        contentDescription = null,
+                        tint = if (isError) {
+                            MaterialTheme.colorScheme.error
+                        } else {
+                            MaterialTheme.colorScheme.primary
+                        },
+                        modifier = Modifier.size(30.dp)
+                    )
+                }
+            }
+
+            Spacer(modifier = Modifier.height(18.dp))
+
+            Text(
+                text = title,
+                style = MaterialTheme.typography.titleLarge.copy(
+                    fontWeight = FontWeight.Bold
+                ),
+                textAlign = TextAlign.Center
+            )
+
+            Spacer(modifier = Modifier.height(8.dp))
+
+            Text(
+                text = message,
+                style = MaterialTheme.typography.bodyMedium,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                textAlign = TextAlign.Center
+            )
+
+            if (actionLabel != null && onActionClick != null) {
+                Spacer(modifier = Modifier.height(20.dp))
+
+                Button(
+                    onClick = onActionClick,
+                    shape = RoundedCornerShape(18.dp)
+                ) {
+                    Text(actionLabel)
+                }
+            }
+        }
+    }
+}

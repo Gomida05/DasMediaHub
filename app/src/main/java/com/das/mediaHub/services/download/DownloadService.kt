@@ -4,12 +4,11 @@ import android.app.Service
 import android.content.Context
 import android.content.Intent
 import android.os.IBinder
-import androidx.core.content.ContextCompat
-import com.das.downloader.data.model.AppUpdateInfo
 import com.das.downloader.data.downloader.DownloadCoordinator
 import com.das.downloader.data.downloader.DownloadNotifier
 import com.das.downloader.data.downloader.DownloadQueueManager
 import com.das.downloader.data.downloader.DownloaderRepo
+import com.das.downloader.data.model.AppUpdateInfo
 import com.das.downloader.data.model.download.DownloadType
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
@@ -160,7 +159,7 @@ class DownloadService : Service() {
                 putExtra(EXTRA_TITLE, title)
                 putExtra(EXTRA_TYPE, type.name)
             }
-            ContextCompat.startForegroundService(context, intent)
+            context.startService(intent)
         }
 
         fun pause(context: Context, taskId: String) {
@@ -168,7 +167,7 @@ class DownloadService : Service() {
                 action = ACTION_PAUSE
                 putExtra(EXTRA_TASK_ID, taskId)
             }
-            ContextCompat.startForegroundService(context, intent)
+            context.startService(intent)
         }
 
         fun resume(context: Context, taskId: String) {
@@ -176,7 +175,7 @@ class DownloadService : Service() {
                 action = ACTION_RESUME
                 putExtra(EXTRA_TASK_ID, taskId)
             }
-            ContextCompat.startForegroundService(context, intent)
+            context.startService(intent)
         }
 
         fun cancel(context: Context, taskId: String) {
@@ -184,7 +183,7 @@ class DownloadService : Service() {
                 action = ACTION_CANCEL
                 putExtra(EXTRA_TASK_ID, taskId)
             }
-            ContextCompat.startForegroundService(context, intent)
+            context.startService(intent)
         }
 
         fun startForApk(context: Context, appInfo: AppUpdateInfo) {
@@ -196,7 +195,7 @@ class DownloadService : Service() {
                 putExtra(EXTRA_WHATS_NEW, appInfo.whatsNew)
                 putExtra(EXTRA_TYPE, "apk") // or "music"
             }
-            ContextCompat.startForegroundService(context, intent)
+            context.startService(intent)
         }
 
 

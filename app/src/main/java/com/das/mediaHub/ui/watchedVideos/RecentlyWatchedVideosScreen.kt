@@ -39,8 +39,10 @@ import androidx.lifecycle.viewmodel.initializer
 import androidx.lifecycle.viewmodel.viewModelFactory
 import androidx.navigation3.runtime.NavBackStack
 import androidx.navigation3.runtime.NavKey
-import com.das.mediaHub.data.local.WatchHistory
+import com.das.mediaHub.MainApplication
 import com.das.mediaHub.data.model.TopPopUp
+import com.das.mediaHub.data.model.state.UiState
+import com.das.mediaHub.data.repository.WatchHistoryRepository
 import com.das.mediaHub.navigation.NavScreens.OnlineVideoPlayer
 import com.das.mediaHub.navigation.NavScreens.Saved
 import com.das.mediaHub.ui.TopPopupNotification.showNotificationDialog
@@ -48,13 +50,13 @@ import com.das.mediaHub.ui.components.EmptyStateView
 import com.das.mediaHub.ui.components.ErrorStateView
 import com.das.mediaHub.ui.components.LibraryVideoItem
 import com.das.mediaHub.ui.components.LoadingStateView
-import com.das.mediaHub.ui.players.videoPlayer.state.UiState
 
 @Composable
 fun RecentlyWatchedVideosScreen(backStack: NavBackStack<NavKey>) {
     val context = LocalContext.current
+    val app = context.applicationContext as MainApplication
     val dbHelper = retain {
-        WatchHistory(context.applicationContext)
+        WatchHistoryRepository(app.appDatabase.historyDatabase.watchHistoryDao())
     }
 
     val viewModel = viewModel(

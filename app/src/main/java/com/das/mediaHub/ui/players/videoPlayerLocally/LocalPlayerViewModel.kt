@@ -11,7 +11,7 @@ import androidx.lifecycle.viewModelScope
 import androidx.media3.common.MediaItem
 import androidx.media3.common.MediaMetadata
 import com.das.mediaHub.data.error.ErrorMapper
-import com.das.mediaHub.ui.players.videoPlayer.state.UiState
+import com.das.mediaHub.data.model.state.UiState
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.delay
@@ -34,10 +34,20 @@ class LocalPlayerViewModel(
     private var lastScanPath: String? = null
     private var scanJob: Job? = null
 
-    fun loadItemsDebounced(
-        currentMediaTitle: String,
-        pathLocation: String
-    ) {
+    fun init(videoUri: String) {
+        loadCurrentMediaInfo(videoUri.toUri())
+        loadItemsDebounced(videoUri = videoUri)
+    }
+
+    private fun loadItemsDebounced(videoUri: String) {
+        val parsedUri = videoUri.toUri()
+        val pathLocation = resolveFolderPath(parsedUri, videoUri)
+
+        if (pathLocation.isBlank()) {
+            _uiState.value = UiState.Empty
+            return
+        }
+
         if (pathLocation == lastScanPath && _uiState.value is UiState.Success) return
 
         scanJob?.cancel()
@@ -47,7 +57,7 @@ class LocalPlayerViewModel(
 
             try {
                 val items = withContext(Dispatchers.IO) {
-                    scanFolder(currentMediaTitle, pathLocation)
+                    scanFolder(videoUri, pathLocation)
                 }
 
                 lastScanPath = pathLocation
@@ -57,13 +67,21 @@ class LocalPlayerViewModel(
                 }
             } catch (e: Exception) {
                 _uiState.value = UiState.Error(ErrorMapper.map(e))
-                Log.d(
-                    "LocalPlayerViewModel",
-                    "loadItemsDebounced: ${e.message}"
-                )
-                e.printStackTrace()
+                Log.d("LocalPlayerViewModel", "loadItemsDebounced: ${e.message}", e)
             }
         }
+    }
+
+    private fun resolveFolderPath(uri: Uri, rawValue: String): String {
+        if (uri.scheme == "content") return ""
+
+        val actualPath = when (uri.scheme) {
+            "file" -> uri.path
+            null, "" -> rawValue
+            else -> uri.path
+        }.orEmpty()
+
+        return File(actualPath).parent.orEmpty()
     }
 
     private val cache = mutableMapOf<String, List<MediaItem>>()
@@ -71,21 +89,26 @@ class LocalPlayerViewModel(
 
 
     private fun scanFolder(
-        currentMediaTitle: String,
+        currentMediaId: String,
         pathLocation: String
     ): List<MediaItem> {
-
         cache[pathLocation]?.let { return it }
 
         val dir = File(pathLocation)
-        if (!dir.exists() || !dir.isDirectory) {
-            throw IllegalArgumentException("Invalid folder path")
+        if (pathLocation.isBlank() || !dir.exists() || !dir.isDirectory) {
+            Log.d("LocalPlayerViewModel", "scanFolder: invalid path = $pathLocation")
+            return emptyList()
         }
 
         val items = dir.listFiles()
-            ?.filter { it.isFile && it.name != currentMediaTitle }
+            ?.filter { file ->
+                file.isFile && file.toUri().toString() != currentMediaId
+            }
             ?.map { file ->
-                MediaItem.fromUri(file.toUri())
+                MediaItem.Builder()
+                    .setMediaId(file.toUri().toString())
+                    .setUri(file.toUri())
+                    .build()
             }
             ?: emptyList()
 
@@ -93,7 +116,7 @@ class LocalPlayerViewModel(
         return items
     }
 
-    fun loadCurrentMediaInfo(uri: Uri) {
+    private fun loadCurrentMediaInfo(uri: Uri) {
         viewModelScope.launch {
             _currentMediaMetadata.value = UiState.Loading
 

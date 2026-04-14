@@ -6,7 +6,8 @@ DasMediaHub is a cutting-edge Android application engineered with **Jetpack Comp
 
 > ⚠️ This project is intended for educational purposes. Users are responsible for complying with all applicable laws and platform terms.
 
-[![Kotlin Version](https://img.shields.io/badge/Kotlin-2.x-purple.svg)](https://kotlinlang.org/)
+[![App Version](https://img.shields.io/badge/Version-14.0-blue.svg)](https://github.com/Gomida05/DasMediaHub/releases)
+[![Kotlin Version](https://img.shields.io/badge/Kotlin-2.3.20-purple.svg)](https://kotlinlang.org/)
 [![Compose](https://img.shields.io/badge/UI-Jetpack_Compose-green.svg)](https://developer.android.com/jetpack/compose)
 [![Material 3](https://img.shields.io/badge/Design-Material_3-blue.svg)](https://m3.material.io/)
 [![License](https://img.shields.io/badge/License-Apache%202.0-blue.svg)](LICENSE)
@@ -14,7 +15,7 @@ DasMediaHub is a cutting-edge Android application engineered with **Jetpack Comp
 
 ## 🌟 Key Highlights
 
-- **🚀 Performance-First Architecture:** Built using the latest Android standards (Target SDK 37, Kotlin 2.x).
+- **🚀 Performance-First Architecture:** Built using the latest Android standards (Target SDK 37, Kotlin 2.3.20).
 - **🎞️ Premium Playback:** Seamless media experience powered by **AndroidX Media3 (ExoPlayer)** with background playback, dedicated media notifications, and PiP support.
 - **📥 Smart Downloads:** A robust, background-resilient download manager with real-time status notifications.
 - **🐍 Python-Powered Intelligence:** Leverages **Chaquopy** to execute Python scripts for advanced metadata extraction and content scraping.
@@ -66,7 +67,7 @@ The heart of DasMediaHub's extraction logic lies in a dedicated Python module po
 
 | Category       | Technology                                        |
 |:---------------|:--------------------------------------------------|
-| **Language**   | Kotlin 2.x, Python (via Chaquopy)                 |
+| **Language**   | Kotlin 2.3.20, Python (via Chaquopy 17.0.0)       |
 | **UI**         | Jetpack Compose, Material 3, Navigation 3         |
 | **Networking** | OkHttp 5, Kotlin Serialization                    |
 | **Media**      | AndroidX Media3 (ExoPlayer, Session), Coil, Glide |

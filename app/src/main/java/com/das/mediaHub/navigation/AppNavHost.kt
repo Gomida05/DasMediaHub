@@ -1,5 +1,6 @@
 package com.das.mediaHub.navigation
 
+import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.lifecycle.viewmodel.navigation3.rememberViewModelStoreNavEntryDecorator
@@ -33,10 +34,10 @@ import com.das.mediaHub.ui.players.videoPlayerLocally.LocalVideoPlayer
 import com.das.mediaHub.ui.result.ResultViewerPage
 import com.das.mediaHub.ui.search.SearchPageCompose
 import com.das.mediaHub.ui.settings.AboutDasMediaHub
-import com.das.mediaHub.ui.settings.FeedbackComposable
+import com.das.mediaHub.ui.settings.report.UserFeedbackScreen
 import com.das.mediaHub.ui.settings.HelpScreen
 import com.das.mediaHub.ui.settings.PrivacyPolicyScreen
-import com.das.mediaHub.ui.settings.SettingsComposable
+import com.das.mediaHub.ui.settings.SettingsScreen
 import com.das.mediaHub.ui.watch_later.SavedVideosScreen
 import com.das.mediaHub.ui.tiktok.TikTokComposable
 import com.das.mediaHub.ui.watchedVideos.RecentlyWatchedVideosScreen
@@ -52,7 +53,7 @@ fun AppNavHost(
             rememberSaveableStateHolderNavEntryDecorator(),
             rememberViewModelStoreNavEntryDecorator()
         ),
-        modifier = modifier
+        modifier = modifier.fillMaxSize()
     ) { key ->
 
         when (key) {
@@ -65,7 +66,7 @@ fun AppNavHost(
             }
 
             is Setting -> NavEntry(key = key) {
-                SettingsComposable { backStack.add(it) }
+                SettingsScreen { backStack.add(it) }
             }
 
             is OnlineVideoPlayer -> NavEntry(key = key) {
@@ -105,7 +106,7 @@ fun AppNavHost(
             }
 
             is FeedbackScreen -> NavEntry(key = key) {
-                FeedbackComposable(backStack)
+                UserFeedbackScreen()
             }
 
             is AboutDasMediaHub -> NavEntry(key = key) {

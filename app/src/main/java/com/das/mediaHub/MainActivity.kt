@@ -14,7 +14,6 @@ import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
-import androidx.annotation.RequiresApi
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Info
 import androidx.compose.runtime.getValue
@@ -54,12 +53,11 @@ class MainActivity : ComponentActivity() {
         setContent {
             DasMediaHubTheme {
                 MainApp(
-                    pendingIntent = pendingIntent,
-                    onHandleIntent = { intent, backStack ->
-                        backStack.handleNavIntent(intent)
-                        pendingIntent = null
-                    }
-                )
+                    pendingIntent = pendingIntent
+                ) { intent, backStack ->
+                    handleNavIntent(intent = intent, backStack = backStack)
+                    pendingIntent = null
+                }
             }
         }
     }
@@ -74,51 +72,116 @@ class MainActivity : ComponentActivity() {
 
     override fun onStart() {
         super.onStart()
-        permissionsGranted()
+        requestMediaPermissionsIfNeeded()
     }
 
 
 
-    private fun NavBackStack<NavKey>.handleNavIntent(intent: Intent) {
+    private fun handleNavIntent(intent: Intent, backStack: NavBackStack<NavKey>) {
         when (intent.action) {
-
-            Intent.ACTION_SEND -> {
-                val type = intent.type ?: return
-                when {
-                    type.startsWith("text/") ->
-                        newTextIntent(intent.getStringExtra(EXTRA_TEXT).orEmpty())
-
-                    type.startsWith("video/") ->
-                        intent.newReceivedMediaTypeVideo(this)
-
-                    type.startsWith("audio/") ->
-                        intent.newReceivedMediaTypeAudio()
-                }
-            }
-
-            Intent.ACTION_VIEW -> {
-                intent.data?.newMediaIntent(this)
-            }
-
-            DOWNLOAD_FINISHED -> {
-                intent.getStringExtra("apk_path")?.let {
-                    File(it).requestToInstall()
-                }
-            }
-
-            Intent.ACTION_APPLICATION_PREFERENCES -> {
-                add(Setting)
-            }
+            Intent.ACTION_SEND -> handleSendIntent(intent, backStack)
+            Intent.ACTION_VIEW -> handleViewIntent(intent, backStack)
+            DOWNLOAD_FINISHED -> handleDownloadFinished(intent)
+            Intent.ACTION_APPLICATION_PREFERENCES -> backStack.add(Setting)
         }
     }
 
 
-    private fun File.requestToInstall() {
+    private fun handleSendIntent(
+        intent: Intent,
+        backStack: NavBackStack<NavKey>
+    ) {
+        val type = intent.type.orEmpty()
+
+        when {
+            type.startsWith("text/") -> {
+                val sharedText = intent.getStringExtra(EXTRA_TEXT).orEmpty()
+                handleSharedText(sharedText, backStack)
+            }
+
+            type.startsWith("video/") -> {
+                val uri = intent.getSharedUri()
+                if (uri != null) {
+                    backStack.add(NavScreens.LocalVideoPlayer(uri.toString()))
+                } else {
+                    showInfoMessage("Video not found")
+                }
+            }
+
+            type.startsWith("audio/") -> {
+                val uri = intent.getSharedUri()
+                if (uri != null) {
+                    playAudio(uri)
+                } else {
+                    showInfoMessage("Audio not found")
+                }
+            }
+
+            else -> showInfoMessage("Unsupported shared content")
+        }
+    }
+
+    private fun handleViewIntent(
+        intent: Intent,
+        backStack: NavBackStack<NavKey>
+    ) {
+        val uri = intent.data
+        if (uri == null) {
+            showInfoMessage("Media not found")
+            return
+        }
+
+        when {
+            isVideoUri(uri) -> backStack.add(NavScreens.LocalVideoPlayer(uri.toString()))
+            isAudioUri(uri) -> playAudio(uri)
+            else -> showInfoMessage("Unsupported media type")
+        }
+    }
+
+    private fun handleSharedText(
+        sharedText: String,
+        backStack: NavBackStack<NavKey>
+    ) {
+        when {
+            sharedText.startsWith("DownloadsPageFr") -> {
+                backStack.add(Downloaded)
+            }
+
+            sharedText.isValidYoutubeURL() -> {
+                val videoId = sharedText.youtubeExtractor()
+                if (videoId != null) {
+                    backStack.add(OnlineVideoPlayer(videoId))
+                } else {
+                    backStack.add(Searcher(sharedText))
+                }
+            }
+
+            sharedText.isValidYouTubePlaylistUrl() -> {
+                val playlistId = extractPlaylistId(sharedText)
+                if (playlistId != null) {
+                    backStack.add(OnlineVideoPlayer(playlistId))
+                } else {
+                    backStack.add(Searcher(sharedText))
+                }
+            }
+
+            else -> {
+                backStack.add(Searcher(sharedText))
+            }
+        }
+    }
+
+    private fun handleDownloadFinished(intent: Intent) {
+        val apkPath = intent.getStringExtra("apk_path") ?: return
+        installApk(File(apkPath))
+    }
+
+    private fun installApk(file: File) {
 
         val apkUri = FileProvider.getUriForFile(
             this@MainActivity,
             "${this@MainActivity.packageName}.file-provider",
-            this
+            file
         )
 
         val installIntent = Intent(Intent.ACTION_VIEW).apply {
@@ -130,91 +193,24 @@ class MainActivity : ComponentActivity() {
     }
 
 
-
-
-    private fun NavBackStack<NavKey>.newTextIntent(
-        sharedText: String
-    ) {
-        if (sharedText.isValidYoutubeURL()) {
-            val videoId = sharedText.youtubeExtractor()
-            if (videoId != null) {
-                add(
-                    OnlineVideoPlayer(
-                        videoId = videoId
-                    )
-                )
-            } else {
-                add(Searcher(sharedText))
-            }
-
-        } else if (sharedText.isValidYouTubePlaylistUrl()) {
-
-            val videoId = extractPlaylistId(sharedText)
-            if (videoId != null ) {
-                add(
-                    OnlineVideoPlayer(videoId = videoId)
-                )
-            } else {
-                add(Searcher(sharedText))
-            }
-
-        } else if (sharedText.startsWith("DownloadsPageFr")) {
-            add(Downloaded)
-        } else {
-            add(Searcher(sharedText))
-        }
+    private fun Intent.getSharedUri(): Uri? {
+        return getParcelableExtra(this, EXTRA_STREAM, Uri::class.java)
     }
 
-    private fun Intent.newReceivedMediaTypeVideo(backStack: NavBackStack<NavKey>) {
+    private fun isVideoUri(uri: Uri): Boolean {
+        return contentResolver.getType(uri).orEmpty().startsWith("video/")
+    }
 
-        val videoUri = getParcelableExtra(
-            this,
-            EXTRA_STREAM,
-            Uri::class.java
+    private fun isAudioUri(uri: Uri): Boolean {
+        return contentResolver.getType(uri).orEmpty().startsWith("audio/")
+    }
+
+    private fun showInfoMessage(message: String) {
+        showNotificationDialog = TopPopUp(
+            message = message,
+            icon = Icons.Default.Info
         )
-
-        if (videoUri != null) {
-            backStack.add(NavScreens.LocalVideoPlayer(videoUri.toString()))
-        } else {
-            showNotificationDialog = TopPopUp(
-                message = "Video not found",
-                icon = Icons.Default.Info
-            )
-        }
     }
-
-    private fun Intent.newReceivedMediaTypeAudio() {
-        val audioUri = getParcelableExtra(
-            this,
-            EXTRA_STREAM,
-            Uri::class.java
-        )
-
-        if (audioUri != null) {
-            playAudio(audioUri)
-        } else {
-            showNotificationDialog = TopPopUp(
-                message = "Audio not found",
-                icon = Icons.Default.Info
-            )
-        }
-    }
-
-    private fun Uri.newMediaIntent(backStack: NavBackStack<NavKey>) {
-        val mimeType = contentResolver.getType(this) ?: ""
-
-        if (mimeType.startsWith("video/")) {
-            backStack.add(NavScreens.LocalVideoPlayer(toString()))
-        } else if (mimeType.startsWith("audio/")) {
-            playAudio(this)
-        } else {
-            showNotificationDialog = TopPopUp(
-                message = "Unsupported media type",
-                icon = Icons.Default.Info
-            )
-        }
-    }
-
     private fun playAudio(uri: Uri?) {
         val playIntent = Intent(this, LocalBackGroundPlayer::class.java).apply {
             action = ACTION_START
@@ -226,21 +222,21 @@ class MainActivity : ComponentActivity() {
     }
 
 
-    private fun permissionsGranted() {
-        if (SDK_INT >= TIRAMISU) {
+    private fun requestMediaPermissionsIfNeeded() {
+        if (SDK_INT < TIRAMISU) return
 
-            val permissions = arrayOf(
-                POST_NOTIFICATIONS,
-                READ_MEDIA_VIDEO,
-                READ_MEDIA_AUDIO
-            )
+        val permissions = arrayOf(
+            POST_NOTIFICATIONS,
+            READ_MEDIA_VIDEO,
+            READ_MEDIA_AUDIO
+        )
 
-            val hasAllPermissions = permissions.all {
-                checkSelfPermission(it) == PackageManager.PERMISSION_GRANTED
-            }
-            if (!hasAllPermissions) {
-                requestPermissions(permissions, 1)
-            }
+        val missingPermissions = permissions.filter {
+            checkSelfPermission(it) != PackageManager.PERMISSION_GRANTED
+        }
+
+        if (missingPermissions.isNotEmpty()) {
+            requestPermissions(missingPermissions.toTypedArray(), 1)
         }
     }
 

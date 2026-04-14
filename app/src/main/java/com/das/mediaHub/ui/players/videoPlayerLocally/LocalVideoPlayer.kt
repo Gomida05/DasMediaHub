@@ -1,28 +1,36 @@
 package com.das.mediaHub.ui.players.videoPlayerLocally
 
-import android.annotation.SuppressLint
-import androidx.activity.ComponentActivity
-import androidx.activity.compose.LocalActivity
+import android.view.WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON
+import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.safeDrawing
+import androidx.compose.foundation.layout.wrapContentSize
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
+import androidx.compose.material3.SnackbarDuration
+import androidx.compose.material3.SnackbarHost
+import androidx.compose.material3.SnackbarHostState
+import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
-import androidx.compose.runtime.retain.RetainedEffect
+import androidx.compose.runtime.retain.retain
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
-import androidx.compose.ui.zIndex
+import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.unit.dp
 import androidx.core.net.toUri
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
@@ -31,21 +39,27 @@ import androidx.lifecycle.viewmodel.viewModelFactory
 import androidx.media3.common.MediaItem
 import androidx.media3.common.MediaMetadata
 import androidx.media3.session.MediaController
-import com.das.mediaHub.ui.players.videoPlayer.CustomMethods.rotateScreen
-import com.das.mediaHub.ui.players.videoPlayer.state.UiState
-import java.io.File
+import com.das.mediaHub.PIP
+import com.das.mediaHub.PIP.HandlePip
+import com.das.mediaHub.PIP.findActivity
+import com.das.mediaHub.data.mediacontroller.online.VideoPlayerListener
+import com.das.mediaHub.data.model.state.UiState
+import com.das.mediaHub.ui.players.videoPlayer.components.CustomMethods.rotateScreen
 
-@SuppressLint("UnsafeOptInUsageError")
+
 @Composable
 fun LocalVideoPlayer(videoUri: String) {
     val context = LocalContext.current
-    val activity = LocalActivity.current as ComponentActivity
+    val activity = context.findActivity()
+
+    PIP.BindPip(activity = activity)
+    HandlePip(activity = activity)
 
     val viewModel = viewModel(
         modelClass = LocalPlayerViewModel::class.java.kotlin,
         factory = viewModelFactory {
             initializer {
-                LocalPlayerViewModel(context.contentResolver)
+                LocalPlayerViewModel(context.applicationContext.contentResolver)
             }
         }
     )
@@ -53,17 +67,10 @@ fun LocalVideoPlayer(videoUri: String) {
     val metadataState by viewModel.currentMediaMetadata.collectAsStateWithLifecycle()
     val playlistState by viewModel.uiState.collectAsStateWithLifecycle()
 
-    var controller by remember { mutableStateOf<MediaController?>(null) }
+    var controller by retain { mutableStateOf<MediaController?>(null) }
+    val snackBarHostState = remember { SnackbarHostState() }
 
-    val isContentUri = remember(videoUri) {
-        videoUri.startsWith("content://")
-    }
-
-    val folderPath = remember(videoUri, isContentUri) {
-        if (isContentUri) "" else File(videoUri).parent.orEmpty()
-    }
-
-    val fallbackMetadata = remember(videoUri) {
+    val fallbackMetadata = retain (videoUri) {
         MediaMetadata.Builder()
             .setTitle(videoUri.substringAfterLast("/"))
             .setMediaType(MediaMetadata.MEDIA_TYPE_VIDEO)
@@ -72,8 +79,7 @@ fun LocalVideoPlayer(videoUri: String) {
 
     val resolvedMetadata = when (val state = metadataState) {
         is UiState.Success -> state.data
-        is UiState.Error -> fallbackMetadata
-        UiState.Empty, UiState.Idle, UiState.Loading -> fallbackMetadata
+        else -> fallbackMetadata
     }
 
     val currentItem = remember(videoUri, resolvedMetadata) {
@@ -84,30 +90,46 @@ fun LocalVideoPlayer(videoUri: String) {
             .build()
     }
 
+    LaunchedEffect(videoUri) {
+        viewModel.init(videoUri = videoUri)
+    }
+
     LaunchedEffect(Unit) {
         PlayerControllerHolder.getOrCreate(context) { readyController ->
             controller = readyController
 
-            if (readyController.currentMediaItem?.mediaMetadata != currentItem.mediaMetadata) {
+
+            if (readyController.currentMediaItem?.mediaId != currentItem.mediaId) {
                 readyController.setMediaItem(currentItem)
                 readyController.prepare()
                 readyController.play()
             } else {
                 readyController.play()
             }
+            readyController.addListener(
+                VideoPlayerListener {
+                    readyController.seekToNext()
+                }
+            )
         }
     }
 
-    LaunchedEffect(videoUri) {
-        activity.rotateScreen(fullScreen = true)
-        viewModel.loadCurrentMediaInfo(videoUri.toUri())
+    DisposableEffect(Unit) {
+        activity?.let {
+            it.rotateScreen(fullScreen = true)
+            it.window.setFlags(FLAG_KEEP_SCREEN_ON, FLAG_KEEP_SCREEN_ON)
+        }
+
+        onDispose {
+            PIP.disablePipAndScreenLock(activity = activity)
+            PlayerControllerHolder.release(context.applicationContext)
+        }
     }
 
-    // Play current item as soon as controller exists.
     LaunchedEffect(controller, currentItem) {
         val mediaController = controller ?: return@LaunchedEffect
 
-        if (mediaController.currentMediaItem?.mediaMetadata != currentItem.mediaMetadata) {
+        if (mediaController.currentMediaItem?.mediaId != currentItem.mediaId) {
             mediaController.setMediaItem(currentItem)
             mediaController.prepare()
             mediaController.play()
@@ -116,23 +138,9 @@ fun LocalVideoPlayer(videoUri: String) {
         }
     }
 
-    // Load folder playlist only for file paths.
-    LaunchedEffect(folderPath, isContentUri, currentItem) {
-        if (!isContentUri && folderPath.isNotBlank()) {
-            viewModel.loadItemsDebounced(
-                currentMediaTitle = currentItem.mediaMetadata.title?.toString().orEmpty(),
-                pathLocation = folderPath
-            )
-        }
-    }
-
-    // Upgrade from single item to playlist after folder scan succeeds.
-    LaunchedEffect(playlistState, controller, currentItem, isContentUri) {
-        if (isContentUri) return@LaunchedEffect
-
+    LaunchedEffect(playlistState, controller, currentItem) {
         val mediaController = controller ?: return@LaunchedEffect
-        val successState =
-            playlistState as? UiState.Success<List<MediaItem>> ?: return@LaunchedEffect
+        val successState = playlistState as? UiState.Success<List<MediaItem>> ?: return@LaunchedEffect
 
         val playlist = buildList {
             add(currentItem)
@@ -154,101 +162,141 @@ fun LocalVideoPlayer(videoUri: String) {
         }
     }
 
-    RetainedEffect(Unit) {
-        onRetire {
-            activity.rotateScreen(fullScreen = false)
-            PlayerControllerHolder.release()
+    LaunchedEffect(playlistState, controller) {
+        if (controller == null) return@LaunchedEffect
+
+        when (val state = playlistState) {
+            is UiState.Empty -> {
+                snackBarHostState.showSnackbar(
+                    message = "No more videos found in this folder",
+                    duration = SnackbarDuration.Short
+                )
+            }
+
+            is UiState.Error -> {
+                snackBarHostState.showSnackbar(
+                    message = state.message,
+                    duration = SnackbarDuration.Long
+                )
+            }
+
+            else -> Unit
         }
     }
 
-    val showMetadataLoading = metadataState is UiState.Loading && controller == null
     val metadataError = metadataState as? UiState.Error
-    val playlistError = playlistState as? UiState.Error
+    val showFullScreenLoading = controller == null
+    val showFullScreenError = controller == null && metadataError != null
+    val showPlaylistLoadingOverlay = controller != null && playlistState is UiState.Loading
+    val isInPipMode = PIP.rememberIsInPipMode()
+
 
     Scaffold(
-        modifier = Modifier
-            .fillMaxSize(),
-        contentWindowInsets = WindowInsets.safeDrawing
+        modifier = Modifier.fillMaxSize(),
+        contentWindowInsets = WindowInsets.safeDrawing,
+        snackbarHost = {
+            SnackbarHost(hostState = snackBarHostState)
+        }
     ) { innerPadding ->
-
         Box(
             modifier = Modifier
                 .padding(innerPadding)
                 .fillMaxSize()
         ) {
-
             controller?.let {
                 CustomPlayer(
-                    it
+                    player = it,
+                    isFullScreen = null,
+                    onFullScreenChanged = { isFullScreen ->
+                        activity?.rotateScreen(fullScreen = isFullScreen)
+                    },
+                    showControls = !isInPipMode
                 )
             }
-            if (controller != null && controller?.isPlaying == true) {
-                when {
-                    showMetadataLoading -> {
-                        Box(
-                            modifier = Modifier
-                                .fillMaxSize()
-                                .zIndex(1f),
-                            contentAlignment = Alignment.Center
-                        ) {
-                            CircularProgressIndicator()
-                        }
-                    }
 
-                    metadataError != null && controller == null -> {
-                        Box(
-                            modifier = Modifier
-                                .fillMaxSize()
-                                .zIndex(1f),
-                            contentAlignment = Alignment.Center
-                        ) {
-                            Text(
-                                text = metadataError.message,
-                                color = MaterialTheme.colorScheme.error
-                            )
-                        }
-                    }
+            when {
+                showFullScreenLoading -> {
+                    PlayerStateView(
+                        title = "Loading video",
+                        message = "Preparing your player..."
+                    )
+                }
 
-                    playlistState is UiState.Loading && !isContentUri -> {
-                        Box(
-                            modifier = Modifier
-                                .fillMaxSize()
-                                .zIndex(1f),
-                            contentAlignment = Alignment.Center
-                        ) {
-                            CircularProgressIndicator()
-                        }
-                    }
-
-                    playlistState is UiState.Empty && !isContentUri -> {
-                        Box(
-                            modifier = Modifier
-                                .fillMaxSize()
-                                .zIndex(1f),
-                            contentAlignment = Alignment.Center
-                        ) {
-                            Text(
-                                text = "No videos found",
-                                color = MaterialTheme.colorScheme.onBackground
-                            )
-                        }
-                    }
-
-                    playlistError != null && !isContentUri -> {
-                        Box(
-                            modifier = Modifier
-                                .fillMaxSize()
-                                .zIndex(1f),
-                            contentAlignment = Alignment.Center
-                        ) {
-                            Text(
-                                text = playlistError.message,
-                                color = MaterialTheme.colorScheme.error
-                            )
-                        }
-                    }
+                showFullScreenError -> {
+                    PlayerStateView(
+                        title = "Couldn’t open video",
+                        message = metadataError.message,
+                        showProgress = false
+                    )
                 }
             }
+
+            if (showPlaylistLoadingOverlay) {
+                LoadingHint()
+            }
+        }
+    }
+}
+
+@Composable
+private fun PlayerStateView(
+    title: String,
+    message: String,
+    showProgress: Boolean = true
+) {
+    Box(
+        modifier = Modifier.fillMaxSize(),
+        contentAlignment = Alignment.Center
+    ) {
+        Surface(
+            shape = RoundedCornerShape(20.dp),
+            tonalElevation = 6.dp
+        ) {
+            Column(
+                modifier = Modifier
+                    .wrapContentSize()
+                    .padding(horizontal = 24.dp, vertical = 20.dp),
+                horizontalAlignment = Alignment.CenterHorizontally,
+                verticalArrangement = Arrangement.spacedBy(12.dp)
+            ) {
+                if (showProgress) {
+                    CircularProgressIndicator()
+                }
+
+                Text(
+                    text = title,
+                    style = MaterialTheme.typography.titleMedium,
+                    textAlign = TextAlign.Center
+                )
+
+                Text(
+                    text = message,
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    textAlign = TextAlign.Center
+                )
+            }
+        }
+    }
+}
+
+@Composable
+private fun LoadingHint() {
+    Box(
+        modifier = Modifier
+            .fillMaxSize()
+            .padding(top = 16.dp),
+        contentAlignment = Alignment.TopCenter
+    ) {
+        Surface(
+            shape = RoundedCornerShape(14.dp),
+            tonalElevation = 4.dp
+        ) {
+            Text(
+                text = "Scanning folder videos...",
+                modifier = Modifier.padding(horizontal = 14.dp, vertical = 10.dp),
+                style = MaterialTheme.typography.bodyMedium
+            )
         }
     }
 }

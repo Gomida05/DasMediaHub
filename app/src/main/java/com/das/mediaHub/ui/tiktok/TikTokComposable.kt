@@ -67,7 +67,7 @@ import androidx.lifecycle.viewmodel.compose.viewModel
 import coil.compose.AsyncImage
 import com.das.mediaHub.data.model.icons.filled.TikTokIcon
 import com.das.mediaHub.data.model.tiktok.TikTokInfo
-import com.das.mediaHub.ui.players.videoPlayer.state.UiState
+import com.das.mediaHub.data.model.state.UiState
 import kotlinx.coroutines.launch
 
 @Composable

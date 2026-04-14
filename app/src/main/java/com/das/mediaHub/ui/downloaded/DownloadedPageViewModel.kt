@@ -7,8 +7,8 @@ import androidx.media3.common.MediaItem
 import androidx.media3.common.MediaMetadata
 import com.das.mediaHub.data.error.ErrorMapper
 import com.das.mediaHub.data.mediacontroller.MediaStoreCache
-import com.das.downloader.data.model.download.DownloadType
-import com.das.mediaHub.ui.players.videoPlayer.state.UiState
+import com.das.mediaHub.data.model.ContentType
+import com.das.mediaHub.data.model.state.UiState
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -33,55 +33,58 @@ class DownloadedPageViewModel : ViewModel() {
     private var videoJob: Job? = null
     private var musicJob: Job? = null
 
+    fun initialize(videoPath: String, audioPath: String) {
+        fetchVideoFiles(pathLocation = videoPath)
+        fetchMusicFiles(pathLocation = audioPath)
+    }
 
-    fun fetchVideoFiles(pathLocation: String) {
 
-        startLoading(type = DownloadType.VIDEO) {
-            val result = loadMediaFiles(pathLocation, ".mp4", MediaMetadata.MEDIA_TYPE_VIDEO)
+    private fun fetchVideoFiles(pathLocation: String) {
+
+        startLoading(type = ContentType.VIDEO) {
+            val result = loadMediaFiles(pathLocation, it.extension, MediaMetadata.MEDIA_TYPE_VIDEO)
 
             _videoUiState.value = if (result.isEmpty()) UiState.Empty else UiState.Success(data = result)
-            MediaStoreCache.updateMusicFiles(result)
+            MediaStoreCache.updateVideosFiles(result)
 
         }
     }
 
-    fun fetchMusicFiles(pathLocation: String) {
+    private fun fetchMusicFiles(pathLocation: String) {
 
-        startLoading(type = DownloadType.MUSIC) {
-            val result = loadMediaFiles(pathLocation, ".mp3", MediaMetadata.MEDIA_TYPE_MUSIC)
+        startLoading(type = ContentType.MUSIC) {
+            val result = loadMediaFiles(pathLocation, it.extension, MediaMetadata.MEDIA_TYPE_MUSIC)
             _musicUiState.value =
                 if (result.isEmpty()) UiState.Empty else UiState.Success(data = result)
             MediaStoreCache.updateMusicFiles(result)
         }
     }
 
-    private fun startLoading(type: DownloadType, block: suspend () -> Unit) {
+    private fun startLoading(type: ContentType, block: suspend (ContentType) -> Unit) {
         when (type) {
-            DownloadType.VIDEO -> {
+            ContentType.VIDEO -> {
                 videoJob?.cancel()
                 _videoUiState.value = UiState.Loading
                 videoJob = viewModelScope.launch(Dispatchers.IO) {
                     try {
-                        block()
+                        block(type)
                     } catch (e: Exception) {
                         _videoUiState.value = UiState.Error(ErrorMapper.map(e))
                     }
                 }
             }
 
-            DownloadType.MUSIC -> {
+            ContentType.MUSIC -> {
                 musicJob?.cancel()
                 _musicUiState.value = UiState.Loading
                 musicJob = viewModelScope.launch(Dispatchers.IO) {
                     try {
-                        block()
+                        block(type)
                     } catch (e: Exception) {
                         _musicUiState.value = UiState.Error(ErrorMapper.map(e))
                     }
                 }
             }
-
-            else -> {}
         }
     }
 

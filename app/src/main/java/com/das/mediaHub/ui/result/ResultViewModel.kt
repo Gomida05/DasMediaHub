@@ -3,7 +3,7 @@ package com.das.mediaHub.ui.result
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.das.mediaHub.data.error.ErrorMapper
-import com.das.mediaHub.ui.players.videoPlayer.state.UiState
+import com.das.mediaHub.data.model.state.UiState
 import com.das.python.YouTuber
 import com.das.python.data.model.searcher.Video
 import kotlinx.coroutines.delay
@@ -28,14 +28,32 @@ class ResultViewModel: ViewModel() {
     private var currentBatch = 0
     private val batchSize = 20
 
+    private var currentQuery: String? = null
+    private var nextPageToken: String? = null
 
+    fun loadInitialIfNeeded(query: String) {
+        val state = _searchResults.value
 
-    fun fetchSuggestions(inputText: String) {
+        if (currentQuery == query && state is UiState.Success && state.data.isNotEmpty()) return
+        if (currentQuery == query && state is UiState.Loading) return
+
+        currentQuery = query
+        fetchSuggestions(query)
+    }
+
+    fun retry(query: String) {
+        currentQuery = query
+        fetchSuggestions(query)
+    }
+
+    fun fetchSuggestions(query: String) {
+        currentQuery = query
+        nextPageToken = null
         _searchResults.value = UiState.Loading
 
         viewModelScope.launch {
             try {
-                val result = YouTuber.search(inputText)
+                val result = YouTuber.search(query)
                 val newResult = result.result
                 val resultValue = newResult?.result
 
@@ -68,8 +86,10 @@ class ResultViewModel: ViewModel() {
     }
 
     fun loadMore() {
-        val currentState = _searchResults.value
-        if (_isLoadingMore.value || _allResults.isEmpty() || currentState !is UiState.Success) return
+        val query = currentQuery ?: return
+        val currentState = _searchResults.value as? UiState.Success ?: return
+        if (nextPageToken.isNullOrBlank()) return
+        if (_isLoadingMore.value || _allResults.isEmpty()) return
 
         _isLoadingMore.value = true
 

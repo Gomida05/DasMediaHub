@@ -43,10 +43,11 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.DpOffset
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.window.Dialog
-import com.das.mediaHub.data.model.SavedVideosListData
 import com.das.mediaHub.data.model.TopPopUp
+import com.das.mediaHub.data.model.VideoItem
 import com.das.mediaHub.services.media.OnlineBackgroundPlayer.Companion.playAudioFromUrl
 import com.das.mediaHub.ui.TopPopupNotification.showNotificationDialog
+import com.das.mediaHub.ui.downloaded.ActionMenuItem
 import com.das.python.YouTuber.loadStreamUrl
 import com.das.python.data.model.VideosListData
 import kotlinx.coroutines.launch
@@ -56,7 +57,7 @@ fun LibraryVideoActionMenu(
     context: Context,
     expanded: Boolean,
     onDismissRequest: () -> Unit,
-    selectedData: SavedVideosListData,
+    selectedData: VideoItem,
     onRemoveFromHistory: () -> Unit,
     onOpenVideo: () -> Unit
 ) {

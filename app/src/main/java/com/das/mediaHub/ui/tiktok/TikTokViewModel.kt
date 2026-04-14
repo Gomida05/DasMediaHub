@@ -4,7 +4,7 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.das.mediaHub.data.error.ErrorMapper
 import com.das.mediaHub.data.model.tiktok.TikTokInfo
-import com.das.mediaHub.ui.players.videoPlayer.state.UiState
+import com.das.mediaHub.data.model.state.UiState
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch

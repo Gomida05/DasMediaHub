@@ -31,15 +31,16 @@ import com.bumptech.glide.Glide
 import com.bumptech.glide.request.target.CustomTarget
 import com.bumptech.glide.request.transition.Transition
 import com.das.mediaHub.MainActivity
+import com.das.mediaHub.MainApplication
 import com.das.mediaHub.R
 import com.das.mediaHub.Receiver
 import com.das.mediaHub.data.constants.Action
 import com.das.mediaHub.data.constants.Action.ACTION_KILL
 import com.das.mediaHub.data.constants.Action.ACTION_START
 import com.das.mediaHub.data.constants.Notifications
-import com.das.mediaHub.data.local.DatabaseFavorite
 import com.das.mediaHub.data.mediacontroller.online.MediaSessionPlaybackState
-import com.das.mediaHub.ui.players.videoPlayer.state.VideoUiState
+import com.das.mediaHub.data.model.state.VideoUiState
+import com.das.mediaHub.data.repository.FavoritesRepository
 import com.das.python.data.model.ItemsStreamUrlsForMediaItemData
 import com.das.python.data.model.VideosListData
 
@@ -64,8 +65,15 @@ class OnlineBackgroundPlayer : Service() {
         getSystemService<NotificationManager>()
     }
 
+    private val favoritesDao by lazy {
+        (this.applicationContext as MainApplication)
+            .appDatabase
+            .favoritesDatabase
+            .favoritesDao()
+    }
+
     private val db by lazy {
-        DatabaseFavorite(this)
+        FavoritesRepository(favoritesDao)
     }
 
     private val mediaSessionState by lazy {

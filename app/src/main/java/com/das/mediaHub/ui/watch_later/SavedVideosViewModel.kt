@@ -3,32 +3,32 @@ package com.das.mediaHub.ui.watch_later
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.das.mediaHub.data.error.ErrorMapper
-import com.das.mediaHub.data.local.DatabaseFavorite
-import com.das.mediaHub.data.model.SavedVideosListData
-import com.das.mediaHub.ui.players.videoPlayer.state.UiState
+import com.das.mediaHub.data.model.VideoItem
+import com.das.mediaHub.data.model.VideoItem.Companion.toVideoItem
+import com.das.mediaHub.data.model.state.UiState
+import com.das.mediaHub.data.repository.FavoritesRepository
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 
-class SavedVideosViewModel(private val dbHelper: DatabaseFavorite) : ViewModel() {
+class SavedVideosViewModel(private val dbHelper: FavoritesRepository) : ViewModel() {
 
-    private val _searchResults = MutableStateFlow<UiState<List<SavedVideosListData>>>(UiState.Idle)
+    private val _searchResults = MutableStateFlow<UiState<List<VideoItem>>>(UiState.Idle)
     val searchResults = _searchResults.asStateFlow()
 
     fun fetchData() {
         _searchResults.value = UiState.Loading
         viewModelScope.launch {
             try {
-
-                val savedVideosListData = withContext(Dispatchers.IO) {
+                val result = withContext(Dispatchers.IO) {
                     dbHelper.getAllSavedVideos()
                 }
-                if (savedVideosListData.isEmpty()) {
-                    _searchResults.value = UiState.Empty
+                _searchResults.value = if (result.isEmpty()) {
+                    UiState.Empty
                 } else {
-                    _searchResults.value = UiState.Success(savedVideosListData)
+                    UiState.Success(result.map { it.toVideoItem() })
                 }
 
             } catch (e: Exception) {

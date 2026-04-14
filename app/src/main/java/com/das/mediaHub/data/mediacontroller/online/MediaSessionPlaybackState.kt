@@ -2,13 +2,21 @@ package com.das.mediaHub.data.mediacontroller.online
 
 import android.support.v4.media.session.PlaybackStateCompat
 import com.das.mediaHub.R
-import com.das.mediaHub.data.local.DatabaseFavorite
 import com.das.mediaHub.data.constants.Action.ACTION_ADD_TO_WATCH_LATER
 import com.das.mediaHub.data.constants.Action.ACTION_KILL
+import com.das.mediaHub.data.repository.FavoritesRepository
 import com.das.python.data.model.VideosListData
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.SupervisorJob
+import kotlinx.coroutines.flow.SharingStarted
+import kotlinx.coroutines.flow.stateIn
+import kotlinx.coroutines.launch
 
 
-class MediaSessionPlaybackState(private val db: DatabaseFavorite) {
+class MediaSessionPlaybackState(private val db: FavoritesRepository) {
+
+    private val scope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
 
     fun setStateToPlaying(currentPosition: Long, videoId: String): PlaybackStateCompat {
         val playbackState = PlaybackStateCompat.Builder()
@@ -77,7 +85,9 @@ class MediaSessionPlaybackState(private val db: DatabaseFavorite) {
         return playbackState
     }
 
-    fun addItOrRemoveFromDB(currentPosition: Long, videosListData: VideosListData): PlaybackStateCompat{
+    fun addItOrRemoveFromDB(
+        currentPosition: Long, videosListData: VideosListData
+    ): PlaybackStateCompat{
         val playbackSate = PlaybackStateCompat.Builder()
             .setState(PlaybackStateCompat.STATE_PLAYING, currentPosition,
                 1F
@@ -90,17 +100,22 @@ class MediaSessionPlaybackState(private val db: DatabaseFavorite) {
             )
             .setBufferedPosition(currentPosition)
         if (isAddedToTheDataBased(videosListData.videoId)){
-            db.deleteWatchUrl(videosListData.videoId)
+
+            scope.launch {
+                db.deleteWatchUrl(videosListData.videoId)
+            }
             playbackSate
                 .addCustomAction(ACTION_ADD_TO_WATCH_LATER, "myFavButton", R.drawable.un_favorite_icon)
                 .addCustomAction(ACTION_KILL, "myStopButton", R.drawable.stop_circle_24dp)
 
         }
         else{
-            db.insertData(
-                videosListData.videoId, videosListData.title, videosListData.dateOfVideo,
-                videosListData.views, videosListData.channelName, videosListData.duration,
-                videosListData.channelThumbnailsUrl)
+            scope.launch {
+                db.insertData(
+                    videosListData.videoId, videosListData.title, videosListData.dateOfVideo,
+                    videosListData.views, videosListData.channelName, videosListData.duration,
+                    videosListData.channelThumbnailsUrl)
+            }
             playbackSate
                 .addCustomAction(ACTION_ADD_TO_WATCH_LATER, "myFavButton", R.drawable.favorite)
                 .addCustomAction(ACTION_KILL, "myStopButton", R.drawable.stop_circle_24dp)
@@ -111,8 +126,10 @@ class MediaSessionPlaybackState(private val db: DatabaseFavorite) {
     }
 
 
-    private fun isAddedToTheDataBased(videoId: String): Boolean{
+    private fun isAddedToTheDataBased(videoId: String): Boolean {
         return db.isWatchUrlExist(videoId)
+            .stateIn(scope, started = SharingStarted.WhileSubscribed(300), initialValue = false)
+            .value
     }
 
 }

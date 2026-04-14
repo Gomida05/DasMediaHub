@@ -7,6 +7,7 @@ plugins {
     alias(libs.plugins.kotlin.compose)
     alias(libs.plugins.google.gms)
     alias(libs.plugins.kotlin.serialization)
+    alias(libs.plugins.kotlin.ksp)
 
     id("kotlin-parcelize")
 }
@@ -31,8 +32,8 @@ android {
         compileSdk = 36
         minSdk = 26
         targetSdk = 37
-        versionCode = 13
-        versionName = "13.0"
+        versionCode = 14
+        versionName = "14.0"
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
 
@@ -74,10 +75,16 @@ android {
 kotlin {
     compilerOptions {
         jvmTarget.set(JvmTarget.JVM_18)
+        allWarningsAsErrors.set(false)
         freeCompilerArgs.add("-opt-in=androidx.compose.material3.ExperimentalMaterial3Api")
     }
 }
 
+ksp {
+    //Set room
+    arg("room.schemaLocation", "$projectDir/schemas")
+
+}
 
 dependencies {
     //Alpha
@@ -108,9 +115,12 @@ dependencies {
     //Material 3
     implementation(platform(libs.compose.bom))
     implementation(libs.material3)
-
-
     implementation(libs.activity.compose)
+
+    //Room DB
+    implementation(libs.androidx.room.runtime)
+    implementation(libs.androidx.room.ktx)
+    ksp(libs.androidx.room.compiler)
 
     //preview
     implementation(libs.ui.tooling.preview)
