@@ -1,4 +1,5 @@
 /build
 /release
+src/main/assets
 /google-services.json
 /releaseKeyStore.jks
