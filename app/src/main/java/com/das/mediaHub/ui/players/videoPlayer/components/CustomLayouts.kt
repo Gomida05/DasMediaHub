@@ -282,7 +282,11 @@ object CustomLayouts {
 
     @Composable
     private fun SuggestionItemSkeleton() {
-        Column(modifier = Modifier.fillMaxWidth()) {
+        Column(
+            modifier = Modifier
+                .fillMaxWidth()
+                .clip(RoundedCornerShape(20.dp))
+        ) {
             // Video Thumbnail with refined corners
             Box(
                 modifier = Modifier

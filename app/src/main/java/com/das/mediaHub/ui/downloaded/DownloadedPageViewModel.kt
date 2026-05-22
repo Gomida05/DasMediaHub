@@ -5,10 +5,12 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import androidx.media3.common.MediaItem
 import androidx.media3.common.MediaMetadata
+import androidx.media3.exoplayer.ExoPlayer
 import com.das.mediaHub.data.error.ErrorMapper
 import com.das.mediaHub.data.mediacontroller.MediaStoreCache
 import com.das.mediaHub.data.model.ContentType
 import com.das.mediaHub.data.model.state.UiState
+import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -18,9 +20,12 @@ import java.io.File
 import java.text.SimpleDateFormat
 import java.util.Date
 import java.util.Locale
+import javax.inject.Inject
 
-
-class DownloadedPageViewModel : ViewModel() {
+@HiltViewModel
+class DownloadedPageViewModel @Inject constructor(
+    val justExoPlayer: ExoPlayer
+) : ViewModel() {
 
     private val dateFormat = SimpleDateFormat("dd/MM/yyyy", Locale.getDefault())
 

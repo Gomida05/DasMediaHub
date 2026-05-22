@@ -1,39 +1,28 @@
 package com.das.mediaHub.services.media
 
 import android.content.Intent
-import androidx.media3.common.MediaItem
 import androidx.media3.session.MediaSession
 import androidx.media3.session.MediaSessionService
-import com.das.mediaHub.MainApplication
+import com.das.mediaHub.data.mediacontroller.online.VideoPlayerManager
+import dagger.hilt.android.AndroidEntryPoint
+import javax.inject.Inject
 
+@AndroidEntryPoint
 class PlaybackService : MediaSessionService() {
 
-    private val app by lazy {
-        this.application as MainApplication
-    }
-    private val player by lazy {
-        app.videoPlayerMainApplication
-    }
-    private val mediaSession by lazy {
-        MediaSession.Builder(this, player.player).build()
+    @Inject
+    lateinit var player: VideoPlayerManager
+
+    @Inject
+    lateinit var mediaSession : MediaSession
+
+    override fun onCreate() {
+        super.onCreate()
     }
 
-    override fun onGetSession(controllerInfo: MediaSession.ControllerInfo): MediaSession? {
+
+    override fun onGetSession(controllerInfo: MediaSession.ControllerInfo): MediaSession {
         return mediaSession
-    }
-
-    fun setPlaylist(items: List<MediaItem>, startIndex: Int = 0, playWhenReady: Boolean = true) {
-        val exoPlayer = player.player
-        exoPlayer.setMediaItems(items, startIndex, 0L)
-        exoPlayer.prepare()
-        exoPlayer.playWhenReady = playWhenReady
-    }
-
-    fun playSingle(item: MediaItem) {
-        val exoPlayer = player.player
-        exoPlayer.setMediaItem(item)
-        exoPlayer.prepare()
-        exoPlayer.play()
     }
 
     override fun onTaskRemoved(rootIntent: Intent?) {
@@ -46,7 +35,7 @@ class PlaybackService : MediaSessionService() {
 
     override fun onDestroy() {
         mediaSession.release()
-        player.release()
+        player.closeCurrentlyMedia()
         super.onDestroy()
     }
 }

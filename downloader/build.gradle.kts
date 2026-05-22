@@ -3,6 +3,7 @@ import org.jetbrains.kotlin.gradle.dsl.JvmTarget
 plugins {
     alias(libs.plugins.android.library)
     alias(libs.plugins.kotlin.serialization)
+    id("maven-publish")
 }
 
 android {
@@ -10,7 +11,7 @@ android {
 
     defaultConfig {
         namespace = "com.das.downloader"
-        compileSdk = 36
+        compileSdk = 37
         minSdk = 26
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
         consumerProguardFiles("consumer-rules.pro")
@@ -25,36 +26,58 @@ android {
             )
         }
     }
+
+    publishing {
+        singleVariant("release") {
+            withSourcesJar()
+        }
+    }
+
     compileOptions {
-        sourceCompatibility = JavaVersion.VERSION_18
-        targetCompatibility = JavaVersion.VERSION_18
+        sourceCompatibility = JavaVersion.VERSION_21
+        targetCompatibility = JavaVersion.VERSION_21
     }
 }
 kotlin {
-    jvmToolchain(18)
+    jvmToolchain(21)
 
     compilerOptions {
         jvmTarget.set(
-            JvmTarget.JVM_18
+            JvmTarget.JVM_21
         )
     }
 }
 
+publishing {
+    publications {
+        create<MavenPublication>("release") {
+            groupId = "com.das"
+            artifactId = "downloader"
+            version = "1.0.5"
+
+            afterEvaluate {
+                from(components["release"])
+            }
+        }
+    }
+}
+
+
+
 dependencies {
 
-    implementation(files("../libs/aar/das-python.aar"))
-//    implementation(project(":python"))
+    implementation(libs.com.das.python)
 
-    //okhttp
-    implementation(libs.okhttp)
+    //Ktor
+    implementation(libs.ktor.client.core)
+    implementation(libs.ktor.client.cio)
+    implementation(libs.ktor.client.content.negotiation)
+    implementation(libs.ktor.serialization.kotlinx.json)
 
     //serialization JSON
     implementation(libs.kotlinx.serialization.json)
 
     implementation(libs.core.ktx)
     implementation(libs.appcompat)
-    implementation(libs.material)
-    testImplementation(libs.junit)
-    androidTestImplementation(libs.androidx.junit)
-    androidTestImplementation(libs.androidx.espresso.core)
+
 }

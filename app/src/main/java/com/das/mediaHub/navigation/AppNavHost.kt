@@ -9,42 +9,45 @@ import androidx.navigation3.runtime.NavEntry
 import androidx.navigation3.runtime.NavKey
 import androidx.navigation3.runtime.rememberSaveableStateHolderNavEntryDecorator
 import androidx.navigation3.ui.NavDisplay
-import com.das.mediaHub.navigation.NavScreens.AboutDasMediaHub
-import com.das.mediaHub.navigation.NavScreens.PrivacyPolicy
-import com.das.mediaHub.navigation.NavScreens.Help
-import com.das.mediaHub.navigation.NavScreens.Downloaded
-import com.das.mediaHub.navigation.NavScreens.DownloadsPage
-import com.das.mediaHub.navigation.NavScreens.FeedbackScreen
-import com.das.mediaHub.navigation.NavScreens.Home
-import com.das.mediaHub.navigation.NavScreens.Instagram
-import com.das.mediaHub.navigation.NavScreens.LocalVideoPlayer
-import com.das.mediaHub.navigation.NavScreens.OnlineVideoPlayer
-import com.das.mediaHub.navigation.NavScreens.RecentlyWatched
-import com.das.mediaHub.navigation.NavScreens.Saved
-import com.das.mediaHub.navigation.NavScreens.Searcher
-import com.das.mediaHub.navigation.NavScreens.Setting
-import com.das.mediaHub.navigation.NavScreens.TikTok
+import com.das.mediaHub.navigation.Destination.AboutDasMediaHub
+import com.das.mediaHub.navigation.Destination.Downloaded
+import com.das.mediaHub.navigation.Destination.DownloadsPage
+import com.das.mediaHub.navigation.Destination.FeedbackScreen
+import com.das.mediaHub.navigation.Destination.Help
+import com.das.mediaHub.navigation.Destination.Home
+import com.das.mediaHub.navigation.Destination.Instagram
+import com.das.mediaHub.navigation.Destination.LocalVideoPlayer
+import com.das.mediaHub.navigation.Destination.OnlineVideoPlayer
+import com.das.mediaHub.navigation.Destination.PrivacyPolicy
+import com.das.mediaHub.navigation.Destination.RecentlyWatched
+import com.das.mediaHub.navigation.Destination.Saved
+import com.das.mediaHub.navigation.Destination.Searcher
+import com.das.mediaHub.navigation.Destination.Setting
+import com.das.mediaHub.navigation.Destination.TikTok
 import com.das.mediaHub.ui.downloaded.DownloadedScreen
-import com.das.mediaHub.ui.downloads.DownloadingComposable
+import com.das.mediaHub.ui.downloads.DownloadingScreen
 import com.das.mediaHub.ui.home.HomePageScreen
 import com.das.mediaHub.ui.home.PageNotFound
 import com.das.mediaHub.ui.instagram.InstagramScreen
-import com.das.mediaHub.ui.players.videoPlayer.OnlineVideoPlayerScreen
+import com.das.mediaHub.ui.players.videoPlayer.VideoPlayerScreen
 import com.das.mediaHub.ui.players.videoPlayerLocally.LocalVideoPlayer
-import com.das.mediaHub.ui.result.ResultViewerPage
-import com.das.mediaHub.ui.search.SearchPageCompose
+import com.das.mediaHub.ui.result.ResultScreen
+import com.das.mediaHub.ui.search.SearchScreen
 import com.das.mediaHub.ui.settings.AboutDasMediaHub
-import com.das.mediaHub.ui.settings.report.UserFeedbackScreen
 import com.das.mediaHub.ui.settings.HelpScreen
 import com.das.mediaHub.ui.settings.PrivacyPolicyScreen
 import com.das.mediaHub.ui.settings.SettingsScreen
-import com.das.mediaHub.ui.watch_later.SavedVideosScreen
+import com.das.mediaHub.ui.settings.download.DownloadSettingScreen
+import com.das.mediaHub.ui.settings.report.UserFeedbackScreen
 import com.das.mediaHub.ui.tiktok.TikTokComposable
+import com.das.mediaHub.ui.watch_later.SavedVideosScreen
 import com.das.mediaHub.ui.watchedVideos.RecentlyWatchedVideosScreen
+
+typealias AppBackStack = NavBackStack<NavKey>
 
 @Composable
 fun AppNavHost(
-    backStack: NavBackStack<NavKey>,
+    backStack: AppBackStack,
     modifier: Modifier = Modifier
 ) {
     NavDisplay(
@@ -70,15 +73,17 @@ fun AppNavHost(
             }
 
             is OnlineVideoPlayer -> NavEntry(key = key) {
-                OnlineVideoPlayerScreen(backStack, key.videoId)
+                VideoPlayerScreen(videoID = key.videoId) {
+                    backStack.removeLastOrNull()
+                }
             }
 
-            is NavScreens.ResultViewerPage -> NavEntry(key = key) {
-                ResultViewerPage(backStack, key.value)
+            is Destination.ResultViewerPage -> NavEntry(key = key) {
+                ResultScreen(backStack, key.value)
             }
 
             is DownloadsPage -> NavEntry(key = key) {
-                DownloadingComposable(backStack)
+                DownloadingScreen(backStack)
             }
 
             is Downloaded -> NavEntry(key = key) {
@@ -86,7 +91,7 @@ fun AppNavHost(
             }
 
             is Searcher -> NavEntry(key = key) {
-                SearchPageCompose(backStack, key.text)
+                SearchScreen(backStack, key.text)
             }
 
             is LocalVideoPlayer -> NavEntry(key = key) {
@@ -119,6 +124,12 @@ fun AppNavHost(
 
             is Help -> NavEntry(key = key) {
                 HelpScreen(backStack)
+            }
+
+            Destination.DownloadSetting -> NavEntry(key = key) {
+                DownloadSettingScreen {
+                    backStack.removeLastOrNull()
+                }
             }
 
             else -> NavEntry(key = key) {

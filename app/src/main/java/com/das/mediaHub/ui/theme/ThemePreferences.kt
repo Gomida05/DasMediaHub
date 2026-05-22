@@ -2,6 +2,7 @@ package com.das.mediaHub.ui.theme
 
 import android.content.Context
 import android.content.SharedPreferences
+import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.MutableState
@@ -18,21 +19,28 @@ internal object ThemePreferences {
         val prefs = context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
         prefs.edit { putString(THEME_KEY, theme.name) }
     }
+
     @Composable
-    fun loadDarkModeState(): MutableState<AppTheme> {
+    fun isDarkMode(): Boolean {
+        val themeState = loadThemeState()
+        val isDarkModeNow = isSystemInDarkTheme()
+        if (themeState.value == AppTheme.SYSTEM) {
+            return isDarkModeNow
+        }
+        return themeState.value == AppTheme.DARK
+    }
+
+    @Composable
+    fun loadThemeState(): MutableState<AppTheme> {
         val context = LocalContext.current
         val prefs = remember {
-            context.getSharedPreferences(
-                PREFS_NAME,
-                Context.MODE_PRIVATE
-            )
+            context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
         }
-        val savedTheme = prefs.getString(
-            THEME_KEY,
-            AppTheme.SYSTEM.name
-        )
+        val savedTheme = prefs.getString(THEME_KEY, AppTheme.SYSTEM.name)
 
-        val themeState = remember { mutableStateOf(safeTheme(savedTheme)) }
+        val themeState = remember { mutableStateOf(
+            safeTheme(savedTheme)
+        ) }
 
         DisposableEffect(Unit) {
             val listener = SharedPreferences.OnSharedPreferenceChangeListener { _, key ->

@@ -8,11 +8,28 @@ import com.das.downloader.R
 import com.das.downloader.data.model.download.DownloadState
 import com.das.downloader.data.model.download.DownloadStatus
 
+/**
+ * Utility for creating and updating system notifications related to downloads.
+ * 
+ * It manages the [DOWNLOADER_NOTIFICATION_CHANNEL] and updates notification
+ * content based on the [DownloadState] of active tasks.
+ * 
+ * Example usage:
+ * ```kotlin
+ * val notifier = DownloadNotifier(context)
+ * notifier.notifyState(activeDownloadState)
+ * ```
+ */
 class DownloadNotifier(
     private val context: Context
 ) {
     private val manager = context.getSystemService(NotificationManager::class.java)
 
+    /**
+     * Creates a static notification used for Foreground Services.
+     * 
+     * @return A low-priority ongoing notification.
+     */
     fun foregroundNotification(): Notification {
         return NotificationCompat.Builder(context, DOWNLOADER_NOTIFICATION_CHANNEL)
             .setSmallIcon(R.drawable.download)
@@ -23,6 +40,14 @@ class DownloadNotifier(
             .build()
     }
 
+    /**
+     * Updates or creates a notification for a specific download state.
+     * 
+     * The notification content and progress bar are updated according
+     * to the [DownloadStatus] of the task.
+     * 
+     * @param state The current state of the download task.
+     */
     fun notifyState(state: DownloadState) {
         val builder = NotificationCompat.Builder(context, DOWNLOADER_NOTIFICATION_CHANNEL)
             .setSmallIcon(R.drawable.download)
@@ -71,11 +96,16 @@ class DownloadNotifier(
         manager.notify(state.id.hashCode(), builder.build())
     }
 
+    /**
+     * Removes a specific notification from the status bar.
+     * @param id The unique task ID whose notification should be canceled.
+     */
     fun cancelNotification(id: String) {
         manager.cancel(id.hashCode())
     }
 
     companion object {
+        /** The ID of the notification channel used for download updates. */
         const val DOWNLOADER_NOTIFICATION_CHANNEL = "com.das.downloader.DOWNLOADER_NOTIFICATION_CHANNEL"
     }
 }

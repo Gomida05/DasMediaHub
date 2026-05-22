@@ -28,23 +28,20 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
-import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
-import androidx.navigation3.runtime.NavBackStack
-import androidx.navigation3.runtime.NavKey
 import coil.compose.AsyncImage
-import com.das.downloader.data.model.download.DownloadType
-import com.das.mediaHub.navigation.NavScreens
-import com.das.python.data.model.VideosListData
+import com.das.mediaHub.data.model.VideoAction
+import com.das.mediaHub.ui.result.DownloadTypeDialog
+import com.das.mediaHub.ui.result.ResultScreenActionItems
 import com.das.python.data.model.searcher.Video
 
 @Composable
 fun VideoCard(
     searchItem: Video,
     onPlayThis: () -> Unit,
-    downloadNow: (DownloadType) -> Unit
+    onVideoAction: (VideoAction) -> Unit,
 ) {
     val videoId = searchItem.id
     val title = searchItem.title ?: ""
@@ -52,9 +49,9 @@ fun VideoCard(
     val dateOfVideo = searchItem.publishedTime ?: ""
     val channelName = searchItem.channel?.name ?: ""
     val duration = searchItem.duration ?: "0:00"
-    val channelThumbnails = searchItem.channel?.thumbnails?.firstOrNull()?.url ?: ""
 
-    val showDialog = remember { mutableStateOf(false) }
+    val showMenu = remember { mutableStateOf(false) }
+    val showDownloadType = remember { mutableStateOf(false) }
 
     Card(
         onClick = onPlayThis,
@@ -111,22 +108,52 @@ fun VideoCard(
                     color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.7f)
                 )
             }
+            Box {
+                IconButton(onClick = { showMenu.value = true }) {
+                    Icon(Icons.Default.MoreVert, contentDescription = null, modifier = Modifier.size(20.dp))
+                }
 
-            IconButton(onClick = { showDialog.value = true }) {
-                Icon(Icons.Default.MoreVert, contentDescription = null, modifier = Modifier.size(20.dp))
+                VideoActionMenu(
+                    title = title,
+                    expanded = showMenu.value,
+                    onDismissRequest = { showMenu.value = false }
+                ) { _, _ ->
+
+                    ResultScreenActionItems(
+                        channelName = channelName,
+                        title = title,
+                        playItHere = {
+                            onPlayThis()
+                        },
+                        playItInYouTube = {
+                            onVideoAction(VideoAction.PlayInYoutube)
+                        },
+                        showDownloadType = {
+                            showDownloadType.value = true
+                        },
+                        playItInBackground = {
+                            onVideoAction(VideoAction.PlayBackground)
+                        }
+                    ) { showMenu.value = false }
+                }
             }
         }
     }
 
-    if (showDialog.value) {
-        ShowAlertDialog(
-            selectedItem = VideosListData(
-                videoId, title, viewsNumber, dateOfVideo,
-                duration, channelName, channelThumbnails
-            ),
-            onDismissRequest = {
-                showDialog.value = false
-                if (it != null) downloadNow(it)
+    if (showDownloadType.value) {
+        DownloadTypeDialog(
+            mediaTitle = title,
+            onDismiss = { type->
+                showDownloadType.value = false
+                type?.let {
+                    onVideoAction(
+                        VideoAction.Download(
+                            id = videoId,
+                            title = title,
+                            it
+                        )
+                    )
+                }
             }
         )
     }

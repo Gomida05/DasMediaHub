@@ -9,7 +9,20 @@ import kotlinx.coroutines.flow.asStateFlow
  * Global in-memory store for video items that can be shared across screens.
  *
  * This object exposes a read-only [StateFlow] to observers and provides helper
- * methods to update the list safely while preventing duplicate videos by id.
+ * methods to update the list safely while preventing duplicate videos by ID.
+ * It is commonly used to store search results or playlist items that need to 
+ * be accessible from multiple UI components without re-fetching.
+ *
+ * Example usage:
+ * ```kotlin
+ * // In a Composable or ViewModel
+ * GlobalVideoList.videos.collect { currentList ->
+ *     // Update UI with the shared list
+ * }
+ * 
+ * // Adding new results
+ * GlobalVideoList.addVideos(newSearchResults)
+ * ```
  */
 object GlobalVideoList {
 
@@ -58,9 +71,9 @@ object GlobalVideoList {
     }
 
     /**
-     * Removes a video from the current list by its id.
+     * Removes a video from the current list by its ID.
      *
-     * @param videoId the id of the video to remove
+     * @param videoId the ID of the video to remove
      */
     fun removeVideo(videoId: String) {
         _videos.value = _videos.value.filterNot { it.id == videoId }
@@ -84,9 +97,9 @@ object GlobalVideoList {
     }
 
     /**
-     * Returns the video by the given [videoId], or null if the id is out of bounds.
+     * Returns the video by the given [videoId], or null if the ID is out of bounds.
      *
-     * @param videoId the id of the requested video
+     * @param videoId the ID of the requested video
      * @return the video by [videoId], or null when unavailable
      */
     fun getVideoById(videoId: String): Video? {

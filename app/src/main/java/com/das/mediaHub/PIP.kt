@@ -76,6 +76,7 @@ internal object PIP {
     @Composable
     fun rememberIsInPipMode(): Boolean {
         val activity = LocalContext.current.findActivity()
+
         var pipMode by remember { mutableStateOf(activity?.isInPictureInPictureMode) }
         val observer = Consumer<PictureInPictureModeChangedInfo> { info ->
             pipMode = info.isInPictureInPictureMode

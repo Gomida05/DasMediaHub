@@ -1,173 +1,268 @@
 package com.das.mediaHub.ui.watch_later
 
+import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
+import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
-import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.safeContent
-import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.lazy.grid.GridCells
+import androidx.compose.foundation.lazy.grid.GridItemSpan
+import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
+import androidx.compose.foundation.lazy.grid.items
+import androidx.compose.foundation.lazy.grid.rememberLazyGridState
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.Bookmark
-import androidx.compose.material3.Icon
-import androidx.compose.material3.IconButton
+import androidx.compose.material.icons.filled.Delete
+import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
-import androidx.compose.material3.Text
-import androidx.compose.material3.TopAppBar
+import androidx.compose.material3.SnackbarHost
+import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.retain.retain
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.input.nestedscroll.nestedScroll
 import androidx.compose.ui.platform.LocalContext
-import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.unit.DpOffset
 import androidx.compose.ui.unit.dp
+import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
-import androidx.lifecycle.viewmodel.compose.viewModel
-import androidx.lifecycle.viewmodel.initializer
-import androidx.lifecycle.viewmodel.viewModelFactory
-import androidx.navigation3.runtime.NavBackStack
-import androidx.navigation3.runtime.NavKey
-import com.das.mediaHub.MainApplication
 import com.das.mediaHub.data.model.TopPopUp
 import com.das.mediaHub.data.model.state.UiState
-import com.das.mediaHub.data.repository.FavoritesRepository
-import com.das.mediaHub.navigation.NavScreens
-import com.das.mediaHub.ui.TopPopupNotification.showNotificationDialog
+import com.das.mediaHub.navigation.AppBackStack
+import com.das.mediaHub.navigation.Destination
+import com.das.mediaHub.services.media.online.OnlineBackgroundPlayer.Companion.playAudioFromUrl
+import com.das.mediaHub.ui.components.CustomTopAppBar
 import com.das.mediaHub.ui.components.EmptyStateView
 import com.das.mediaHub.ui.components.ErrorStateView
 import com.das.mediaHub.ui.components.LibraryVideoItem
-import com.das.mediaHub.ui.components.LoadingStateView
+import com.das.mediaHub.ui.components.dialogs.ActionMenuItem
+import com.das.mediaHub.ui.notification.TopPopupNotification.showNotificationDialog
+import com.das.mediaHub.ui.players.videoPlayer.ActionDialogState
+import com.das.mediaHub.ui.players.videoPlayer.ActionStatusDialog
+import com.das.mediaHub.ui.players.videoPlayer.components.CustomLayouts.SkeletonSuggestionLoadingLayout
 
 @Composable
-fun SavedVideosScreen(backStack: NavBackStack<NavKey>) {
+fun SavedVideosScreen(backStack: AppBackStack) {
+    val viewModel = hiltViewModel<SavedVideosViewModel>()
     val context = LocalContext.current
-    val app = context.applicationContext as MainApplication
-
-    val dbHelper = retain {
-        FavoritesRepository(app.appDatabase.favoritesDatabase.favoritesDao())
-    }
-    val viewModel = viewModel(
-        modelClass = SavedVideosViewModel::class.java.kotlin,
-        factory = viewModelFactory {
-            initializer {
-                SavedVideosViewModel(dbHelper)
-            }
-        }
-    )
 
     val scrollBehavior = TopAppBarDefaults.enterAlwaysScrollBehavior()
-    val videos by viewModel.searchResults.collectAsStateWithLifecycle()
+    val videos by viewModel.uiState.collectAsStateWithLifecycle()
+    val searchQuery by viewModel.searchQuery.collectAsStateWithLifecycle()
+    val isSearching = remember { mutableStateOf(false) }
+    val showMenu = remember { mutableStateOf(false) }
+    val snackBarHostState = remember { SnackbarHostState() }
+
+    val lazyGridState = rememberLazyGridState()
+    val focusRequester = remember { FocusRequester() }
+    var dialogState by remember { mutableStateOf<ActionDialogState>(ActionDialogState.Idle) }
 
     LaunchedEffect(Unit) {
-        viewModel.fetchData()
+        viewModel.errorFlow.collect { errorMessage ->
+            snackBarHostState.showSnackbar(
+                message = errorMessage,
+                actionLabel = "Dismiss"
+            )
+        }
     }
 
-    Box(
-        modifier = Modifier
-            .fillMaxSize()
-            .background(
-                Brush.verticalGradient(
-                    listOf(
-                        MaterialTheme.colorScheme.surface,
-                        MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.05f)
-                    )
-                )
-            )
-    ) {
-        Scaffold(
-            modifier = Modifier.nestedScroll(scrollBehavior.nestedScrollConnection),
-            containerColor = Color.Transparent,
-            topBar = {
-                TopAppBar(
-                    scrollBehavior = scrollBehavior,
-                    title = {
-                        Text(
-                            "Watch Later",
-                            style = MaterialTheme.typography.titleLarge.copy(fontWeight = FontWeight.Bold)
-                        )
-                    },
-                    navigationIcon = {
-                        IconButton(onClick = { backStack.removeLastOrNull() }) {
-                            Icon(Icons.AutoMirrored.Default.ArrowBack, contentDescription = "Back")
-                        }
-                    },
-                    colors = TopAppBarDefaults.topAppBarColors(
-                        containerColor = Color.Transparent,
-                        scrolledContainerColor = MaterialTheme.colorScheme.surface.copy(alpha = 0.9f)
-                    )
-                )
-            },
-            contentWindowInsets = WindowInsets.safeContent
-        ) { paddingValues ->
-            LazyColumn(
-                contentPadding = paddingValues,
-                modifier = Modifier.fillMaxSize(),
-                verticalArrangement = Arrangement.spacedBy(4.dp)
+    LaunchedEffect(isSearching.value) {
+        if (isSearching.value) {
+            focusRequester.requestFocus()
+        }
+    }
+
+
+
+
+    Scaffold(
+        modifier = Modifier.nestedScroll(scrollBehavior.nestedScrollConnection),
+        containerColor = Color.Transparent,
+        snackbarHost = {
+            SnackbarHost(snackBarHostState)
+        },
+        topBar = {
+            CustomTopAppBar(
+                title = "Watch Later",
+                isSearching = isSearching.value,
+                searchQuery = searchQuery,
+                focusRequester = focusRequester,
+                scrollBehavior = scrollBehavior,
+                onSearchModeChange = {
+                    isSearching.value = it
+                },
+                onSearchVideos = viewModel::searchVideos,
+                onOpenMenu = {
+                    showMenu.value = it
+                }
             ) {
-                when (val newState = videos) {
-                    UiState.Idle -> Unit
-                    UiState.Loading -> {
-                        item {
-                            LoadingStateView(
-                                title = "Loading saved videos",
-                                message = "Your saved videos will appear in a moment."
-                            )
-                        }
-                    }
+                DropdownMenu(
+                    expanded = showMenu.value,
+                    onDismissRequest = { showMenu.value = false },
+                    offset = DpOffset(x = 0.dp, y = 8.dp),
+                    border = BorderStroke(
+                        1.dp,
+                        MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.35f)
+                    ),
+                    shape = RoundedCornerShape(24.dp),
+                    containerColor = MaterialTheme.colorScheme.surface,
+                    tonalElevation = 12.dp,
+                    shadowElevation = 18.dp,
+                    modifier = Modifier
+                        .background(
+                            MaterialTheme.colorScheme.surface,
+                            RoundedCornerShape(24.dp)
+                        )
+                        .border(
+                            BorderStroke(
+                                1.dp,
+                                MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.35f)
+                            ),
+                            RoundedCornerShape(24.dp)
+                        )
+                ) {
+                    Column(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(horizontal = 8.dp, vertical = 10.dp)
+                    ) {
 
-                    is UiState.Error -> {
-                        item {
-                            ErrorStateView(
-                                message = newState.message,
-                                title = "Couldn't load the saved videos",
-                                buttonText = "Reload",
-                                onRetry = {
-                                    viewModel.fetchData()
-                                }
-                            )
-                        }
-                    }
+                        ActionMenuItem(
+                            Icons.Default.Delete,
+                            title = "Clear all",
+                            subtitle = "delete all videos",
+                            onClick = {
+                                showMenu.value = false
+                                viewModel.clearAllVideos()
+                            }
+                        )
 
-                    UiState.Empty -> {
-                        item {
-                            EmptyStateView(
-                                icon = Icons.Default.Bookmark,
-                                title = "No saved videos",
-                                message = "Save videos to watch them later."
-                            )
-                        }
-                    }
 
-                    is UiState.Success -> {
-                        item { Spacer(modifier = Modifier.height(8.dp)) }
-                        items(newState.data, key = { it.watchUrl }) { video ->
-                            LibraryVideoItem(
-                                selectedItem = video,
-                                onRemoveFromHistory = {
-                                    viewModel.deleteVideo(video.watchUrl)
-                                },
-                                onClickListListener = {
-                                    onClickListListener(
-                                        selectedId = video.watchUrl,
-                                        backStack = backStack
-                                    )
-                                }
-                            )
-                        }
-                        item { Spacer(modifier = Modifier.height(16.dp)) }
                     }
                 }
             }
+
+        },
+        contentWindowInsets = WindowInsets.safeContent
+    ) { paddingValues ->
+        LazyVerticalGrid(
+            columns = GridCells.Adaptive(minSize = 320.dp),
+            state = lazyGridState,
+            contentPadding = paddingValues,
+            modifier = Modifier
+                .fillMaxSize()
+                .background(
+                    Brush.verticalGradient(
+                        listOf(
+                            MaterialTheme.colorScheme.surface,
+                            MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.05f)
+                        )
+                    )
+                ),
+            horizontalArrangement = Arrangement.spacedBy(8.dp),
+            verticalArrangement = Arrangement.spacedBy(8.dp)
+        ) {
+            when (val newState = videos) {
+                UiState.Idle -> Unit
+                UiState.Loading -> {
+                    item(span = { GridItemSpan(maxLineSpan) }) {
+                        Box(
+                            modifier = Modifier.fillMaxWidth(),
+                            contentAlignment = Alignment.Center
+                        ) {
+                            SkeletonSuggestionLoadingLayout(true)
+                        }
+                    }
+                }
+
+                is UiState.Error -> {
+                    item(span = { GridItemSpan(maxLineSpan) }) {
+                        ErrorStateView(
+                            message = newState.message,
+                            title = "Couldn't find any saved videos"
+                        )
+                    }
+                }
+
+                UiState.Empty -> {
+                    item(span = { GridItemSpan(maxLineSpan) }) {
+                        EmptyStateView(
+                            icon = Icons.Default.Bookmark,
+                            title = "No saved videos",
+                            message = if (searchQuery.isBlank()) {
+                                "Save videos to watch them later."
+                            } else {
+                                "No results found for \"${searchQuery}\""
+                            }
+                        )
+                    }
+                }
+
+                is UiState.Success -> {
+                    items(newState.data, key = { it.videoId }) { video ->
+                        LibraryVideoItem(
+                            selectedItem = video,
+                            onRemoveFromHistory = {
+                                viewModel.deleteVideo(video.videoId)
+                            },
+                            onPlayItBackground = {
+                                viewModel.loadStreamUrl(
+                                    video,
+                                    onStart = {
+                                        dialogState = ActionDialogState.Loading
+                                    },
+                                    onSuccess = { streamResult ->
+                                        dialogState = ActionDialogState.Idle
+
+                                        if (streamResult.audioUrl.isBlank()) {
+                                            dialogState = ActionDialogState.Error("This video can’t be played in the background right now.")
+                                            return@loadStreamUrl
+                                        }
+
+                                        context.playAudioFromUrl(
+                                            audioUrl = streamResult.audioUrl,
+                                            selectedItem = streamResult
+                                        )
+                                    },
+                                    onFailure = {
+                                        dialogState = ActionDialogState.Error(
+                                            it.message ?:""
+                                        )
+
+                                    }
+                                )
+                            }
+                        ) {
+                            onClickListListener(
+                                selectedId = video.videoId,
+                                backStack = backStack
+                            )
+                        }
+                    }
+                }
+            }
+
+        }
+
+        ActionStatusDialog(dialogState) {
+            dialogState = ActionDialogState.Idle
         }
     }
 }
@@ -176,11 +271,11 @@ fun SavedVideosScreen(backStack: NavBackStack<NavKey>) {
 
 private fun onClickListListener(
     selectedId: String,
-    backStack: NavBackStack<NavKey>
+    backStack: AppBackStack
 ) {
     try {
 
-        backStack.add(NavScreens.OnlineVideoPlayer(videoId = selectedId))
+        backStack.add(Destination.OnlineVideoPlayer(videoId = selectedId))
     } catch (e: Exception) {
         showNotificationDialog = TopPopUp(
             message = "Error: ${e.message}",

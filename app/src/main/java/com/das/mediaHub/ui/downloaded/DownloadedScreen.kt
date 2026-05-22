@@ -4,32 +4,30 @@ import android.content.Context
 import android.content.Intent
 import android.util.Xml
 import androidx.compose.animation.animateColorAsState
-import androidx.compose.animation.core.animateDpAsState
-import androidx.compose.animation.core.spring
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
-import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
-import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.RowScope
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.WindowInsets
-import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
-import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.safeDrawing
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
-import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.foundation.lazy.itemsIndexed
+import androidx.compose.foundation.layout.widthIn
+import androidx.compose.foundation.lazy.grid.GridCells
+import androidx.compose.foundation.lazy.grid.GridItemSpan
+import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
+import androidx.compose.foundation.lazy.grid.itemsIndexed
 import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.foundation.shape.CornerSize
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
@@ -59,60 +57,86 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableIntStateOf
-import androidx.compose.runtime.mutableStateMapOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.retain.retain
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
-import androidx.compose.ui.graphics.vector.rememberVectorPainter
 import androidx.compose.ui.hapticfeedback.HapticFeedbackType
 import androidx.compose.ui.layout.ContentScale
-import androidx.compose.ui.layout.onGloballyPositioned
 import androidx.compose.ui.platform.LocalContext
-import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.LocalHapticFeedback
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.window.Dialog
-import androidx.compose.ui.zIndex
-import androidx.core.content.ContextCompat
 import androidx.core.content.FileProvider
 import androidx.core.net.toUri
+import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
-import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.media3.common.MediaItem
-import androidx.navigation3.runtime.NavBackStack
-import androidx.navigation3.runtime.NavKey
+import androidx.media3.common.Player
 import coil.ImageLoader
 import coil.compose.AsyncImage
-import coil.decode.VideoFrameDecoder
+import com.das.mediaHub.core.LocalImageLoader
 import com.das.mediaHub.data.constants.Action.ACTION_START
-import com.das.mediaHub.data.local.Preferences.audioPathState
-import com.das.mediaHub.data.local.Preferences.videoPathState
+import com.das.mediaHub.data.local.ThemePreferences.audioPathState
+import com.das.mediaHub.data.local.ThemePreferences.videoPathState
 import com.das.mediaHub.data.model.state.UiState
-import com.das.mediaHub.navigation.NavScreens
-import com.das.mediaHub.services.media.LocalBackGroundPlayer
+import com.das.mediaHub.navigation.AppBackStack
+import com.das.mediaHub.navigation.Destination
+import com.das.mediaHub.services.media.local.LocalBackGroundPlayer
 import java.io.File
 import java.net.URLDecoder
 
+/**
+ * Downloaded media screen for displaying locally stored audio and video content.
+ *
+ * This screen provides a unified library-style interface where users can:
+ * - Browse downloaded videos and audio via tab selection.
+ * - View metadata such as title, description, artist, and file location.
+ * - Play media using the integrated local player.
+ * - Open files in an external file manager.
+ * - View detailed media information.
+ * - Delete downloaded files with confirmation.
+ *
+ * The UI reacts to state changes from [DownloadedPageViewModel] and supports:
+ * - Loading, empty, success, and error states.
+ * - Dynamic content switching between video and audio sources.
+ *
+ * Key features:
+ * - Sticky header with navigation and tab controls.
+ * - Lazy-loaded list of downloaded items.
+ * - Media playback integration (foreground for video, background for audio).
+ * - File system interaction via [FileProvider].
+ * - Material 3 theming with adaptive components.
+ *
+ * @param backStack Navigation back stack used for handling screen transitions.
+ * @param tabIndex Initial tab index (0 = videos, 1 = audio).
+ *
+ * @see DownloadedPageViewModel
+ * @see LocalBackGroundPlayer
+ * @see Destination
+ */
 @Composable
 fun DownloadedScreen(
-    backStack: NavBackStack<NavKey>,
+    backStack: AppBackStack,
     tabIndex: Int = 0
 ) {
     val context = LocalContext.current
+
     val selectedTabIndex = retain { mutableIntStateOf(tabIndex) }
-    val viewModel = viewModel(modelClass = DownloadedPageViewModel::class.java)
+    val viewModel = hiltViewModel<DownloadedPageViewModel>()
     val videoState by viewModel.videoUiState.collectAsStateWithLifecycle()
     val musicState by viewModel.musicUiState.collectAsStateWithLifecycle()
+
+    val player = viewModel.justExoPlayer
 
     val videoPath by videoPathState()
     val audioPath by audioPathState()
@@ -126,12 +150,25 @@ fun DownloadedScreen(
     val currentState = if (isVideo) videoState else musicState
     val currentPath = if (isVideo) videoPath else audioPath
 
+
     Scaffold(
-        containerColor = MaterialTheme.colorScheme.surface,
-        contentWindowInsets = WindowInsets.safeDrawing
+        topBar = {
+            DownloadedHeader(
+                isVideo = isVideo,
+                selectedTabIndex = selectedTabIndex.intValue,
+                onTabSelected = { selectedTabIndex.intValue = it },
+                tabs = tabs,
+                onBack = { backStack.removeLastOrNull() }
+            )
+        },
+        containerColor = Color.Transparent,
+        contentWindowInsets = WindowInsets.safeDrawing,
+        modifier = Modifier
+            .fillMaxSize()
     ) { paddingValues ->
 
-        LazyColumn(
+        LazyVerticalGrid(
+            columns = GridCells.Adaptive(minSize = 340.dp), // Fits 1 item on phones, 2+ on tablets
             modifier = Modifier
                 .fillMaxSize()
                 .background(
@@ -143,34 +180,14 @@ fun DownloadedScreen(
                         )
                     )
                 ),
-            contentPadding = PaddingValues(
-                start = 12.dp,
-                end = 12.dp,
-                top = paddingValues.calculateTopPadding(),
-                bottom = paddingValues.calculateBottomPadding()
-            ),
+            contentPadding = paddingValues,
+            horizontalArrangement = Arrangement.spacedBy(14.dp),
             verticalArrangement = Arrangement.spacedBy(14.dp)
         ) {
-            stickyHeader {
-                Box(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .background(MaterialTheme.colorScheme.surface, RoundedCornerShape(13))
-                ) {
-                    DownloadedHeader(
-                        isVideo = isVideo,
-                        selectedTabIndex = selectedTabIndex.intValue,
-                        onTabSelected = { selectedTabIndex.intValue = it },
-                        tabs = tabs,
-                        onBack = { backStack.removeLastOrNull() }
-                    )
-                }
-            }
-
             when (currentState) {
                 UiState.Idle,
                 UiState.Loading -> {
-                    item {
+                    item(span = { GridItemSpan(maxLineSpan) }) {
                         Box(
                             modifier = Modifier.fillMaxSize(),
                             contentAlignment = Alignment.Center
@@ -181,9 +198,8 @@ fun DownloadedScreen(
                 }
 
                 is UiState.Error -> {
-                    item {
+                    item(span = { GridItemSpan(maxLineSpan) }) {
                         MessageState(
-                            title = "Couldn’t load media",
                             message = currentState.message,
                             modifier = Modifier.fillMaxSize()
                         )
@@ -191,7 +207,7 @@ fun DownloadedScreen(
                 }
 
                 UiState.Empty -> {
-                    item {
+                    item(span = { GridItemSpan(maxLineSpan) }) {
                         EmptyDownloadsState(isVideo = isVideo)
                     }
                 }
@@ -200,12 +216,11 @@ fun DownloadedScreen(
                     val currentList = currentState.data
 
                     if (currentList.isEmpty()) {
-                        item {
+                        item(span = { GridItemSpan(maxLineSpan) }) {
                             EmptyDownloadsState(isVideo = isVideo)
                         }
                     } else {
-
-                        item {
+                        item(span = { GridItemSpan(maxLineSpan) }) {
                             DownloadedSummaryCard(
                                 isVideo = isVideo,
                                 count = currentList.size
@@ -217,13 +232,15 @@ fun DownloadedScreen(
                             key = { _, item -> item.mediaId }
                         ) { index, item ->
                             DownloadItem(
+                                context = context,
                                 itemDetails = item,
                                 isVideo = isVideo,
-                                mContext = context,
                                 onClick = {
                                     itemClicked(
+                                        player = player,
                                         index = index,
-                                        selectedFilePath = item.mediaId,
+                                        currentList = currentList,
+                                        selectedItem = item.mediaId,
                                         isVideo = isVideo,
                                         context = context,
                                         backStack = backStack
@@ -253,74 +270,171 @@ private fun DownloadedHeader(
     tabs: List<PageEnum>,
     onBack: () -> Unit
 ) {
-    Column(
+    Card(
+        shape = MaterialTheme.shapes.extraLarge.copy(
+            topStart = CornerSize(0.dp),
+            topEnd = CornerSize(0.dp)
+        ),
+        colors = CardDefaults.cardColors(
+            containerColor = MaterialTheme.colorScheme.surface
+        ),
         modifier = Modifier
-            .padding(top = 28.dp)
             .fillMaxWidth()
-            .background(MaterialTheme.colorScheme.surface, RoundedCornerShape(13)),
-        verticalArrangement = Arrangement.spacedBy(14.dp)
     ) {
-        Row(
-            modifier = Modifier.fillMaxWidth(),
-            verticalAlignment = Alignment.CenterVertically
+        Column(
+            modifier = Modifier
+                .padding(top = 24.dp, bottom = 12.dp)
+                .fillMaxWidth()
+                .background(MaterialTheme.colorScheme.surface),
+            verticalArrangement = Arrangement.spacedBy(16.dp)
         ) {
-            FilledTonalIconButton(onClick = onBack) {
-                Icon(
-                    imageVector = Icons.AutoMirrored.Filled.ArrowBack,
-                    contentDescription = "Back"
-                )
-            }
-
-            Spacer(modifier = Modifier.width(12.dp))
-
-            Column(modifier = Modifier.weight(1f)) {
-                Text(
-                    text = "Library",
-                    style = MaterialTheme.typography.headlineSmall,
-                    fontWeight = FontWeight.ExtraBold
-                )
-
-                Text(
-                    text = if (isVideo) {
-                        "Your downloaded videos"
-                    } else {
-                        "Your downloaded audio"
-                    },
-                    style = MaterialTheme.typography.bodyMedium,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant
-                )
-            }
-
-            Surface(
-                shape = RoundedCornerShape(18.dp),
-                color = MaterialTheme.colorScheme.primary.copy(alpha = 0.10f)
-            ) {
-                Row(
-                    modifier = Modifier.padding(horizontal = 12.dp, vertical = 8.dp),
-                    verticalAlignment = Alignment.CenterVertically,
-                    horizontalArrangement = Arrangement.spacedBy(6.dp)
-                ) {
-                    Icon(
-                        imageVector = if (isVideo) Icons.Default.VideoLibrary else Icons.Default.LibraryMusic,
-                        contentDescription = null,
-                        tint = MaterialTheme.colorScheme.primary,
-                        modifier = Modifier.size(18.dp)
-                    )
-                    Text(
-                        text = if (isVideo) "Videos" else "Audio",
-                        color = MaterialTheme.colorScheme.primary,
-                        style = MaterialTheme.typography.labelLarge,
-                        fontWeight = FontWeight.Bold
-                    )
-                }
-            }
+            HeaderTopRow(
+                isVideo = isVideo,
+                onBack = onBack
+            )
         }
 
-        CustomTabRow(
+        SimpleTabRow(
             selectedTabIndex = selectedTabIndex,
             onTabSelected = onTabSelected,
             tabs = tabs
         )
+    }
+}
+
+@Composable
+private fun HeaderTopRow(
+    isVideo: Boolean,
+    onBack: () -> Unit
+) {
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(horizontal = 16.dp),
+        verticalAlignment = Alignment.CenterVertically
+    ) {
+        FilledTonalIconButton(onClick = onBack) {
+            Icon(
+                imageVector = Icons.AutoMirrored.Filled.ArrowBack,
+                contentDescription = "Back"
+            )
+        }
+
+        Spacer(modifier = Modifier.width(12.dp))
+
+        Column(modifier = Modifier.weight(1f)) {
+            Text(
+                text = "Library",
+                style = MaterialTheme.typography.headlineSmall,
+                fontWeight = FontWeight.Bold
+            )
+
+            Text(
+                text = if (isVideo) "Your downloaded videos" else "Your downloaded audio",
+                style = MaterialTheme.typography.bodyMedium,
+                color = MaterialTheme.colorScheme.onSurfaceVariant
+            )
+        }
+
+        MediaTypeChip(isVideo = isVideo)
+    }
+}
+
+@Composable
+private fun MediaTypeChip(isVideo: Boolean) {
+    Surface(
+        shape = RoundedCornerShape(16.dp),
+        color = MaterialTheme.colorScheme.primary.copy(alpha = 0.12f)
+    ) {
+        Row(
+            modifier = Modifier.padding(horizontal = 10.dp, vertical = 6.dp),
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.spacedBy(6.dp)
+        ) {
+            Icon(
+                imageVector = if (isVideo) Icons.Default.VideoLibrary else Icons.Default.LibraryMusic,
+                contentDescription = null,
+                tint = MaterialTheme.colorScheme.primary,
+                modifier = Modifier.size(16.dp)
+            )
+            Text(
+                text = if (isVideo) "Videos" else "Audio",
+                style = MaterialTheme.typography.labelMedium,
+                fontWeight = FontWeight.SemiBold,
+                color = MaterialTheme.colorScheme.primary
+            )
+        }
+    }
+}
+
+@Composable
+private fun SimpleTabRow(
+    selectedTabIndex: Int,
+    onTabSelected: (Int) -> Unit,
+    tabs: List<PageEnum>
+) {
+    val haptic = LocalHapticFeedback.current
+
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(horizontal = 16.dp)
+            .clip(RoundedCornerShape(24.dp))
+            .background(MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.3f))
+            .padding(4.dp)
+    ) {
+        tabs.forEachIndexed { index, tab ->
+            val isSelected = index == selectedTabIndex
+
+            val background by animateColorAsState(
+                if (isSelected)
+                    MaterialTheme.colorScheme.primary.copy(alpha = 0.15f)
+                else
+                    Color.Transparent,
+                label = "tabBg"
+            )
+
+            val contentColor by animateColorAsState(
+                if (isSelected)
+                    MaterialTheme.colorScheme.primary
+                else
+                    MaterialTheme.colorScheme.onSurfaceVariant,
+                label = "tabColor"
+            )
+
+            Row(
+                modifier = Modifier
+                    .weight(1f)
+                    .clip(RoundedCornerShape(20.dp))
+                    .background(background)
+                    .clickable {
+                        haptic.performHapticFeedback(HapticFeedbackType.TextHandleMove)
+                        onTabSelected(index)
+                    }
+                    .padding(vertical = 10.dp),
+                horizontalArrangement = Arrangement.Center,
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Icon(
+                    imageVector = when (tab) {
+                        PageEnum.VIDEOS -> Icons.Default.VideoLibrary
+                        PageEnum.AUDIOS -> Icons.Default.LibraryMusic
+                    },
+                    contentDescription = null,
+                    tint = contentColor,
+                    modifier = Modifier.size(16.dp)
+                )
+
+                Spacer(modifier = Modifier.width(6.dp))
+
+                Text(
+                    text = tab.title,
+                    color = contentColor,
+                    style = MaterialTheme.typography.labelLarge,
+                    fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Medium
+                )
+            }
+        }
     }
 }
 
@@ -382,193 +496,231 @@ private fun DownloadedSummaryCard(
 
 @Composable
 private fun DownloadItem(
+    context: Context,
     itemDetails: MediaItem,
     isVideo: Boolean,
-    mContext: Context,
     onClick: () -> Unit,
     onDelete: () -> Unit
 ) {
-    val showMenu = remember { mutableStateOf(false) }
-    val showAlertDialog = remember { mutableStateOf(false) }
-    val showInfoDialog = remember { mutableStateOf(false) }
 
-    val imageLoader = retain(itemDetails.mediaId) {
-        ImageLoader.Builder(mContext)
-            .components { add(VideoFrameDecoder.Factory()) }
-            .build()
-    }
+    val imageLoaderLocal = LocalImageLoader.current
+
+    var showMenu by remember { mutableStateOf(false) }
+    var showDelete by remember { mutableStateOf(false) }
+    var showInfo by remember { mutableStateOf(false) }
 
     val title = itemDetails.mediaMetadata.title?.toString().orEmpty().ifBlank { "Unknown title" }
-    val secondary = itemDetails.mediaMetadata.description?.toString().orEmpty()
-    val fileSize = itemDetails.mediaMetadata.artist?.toString().orEmpty()
+    val description = itemDetails.mediaMetadata.description?.toString().orEmpty()
+    val meta = itemDetails.mediaMetadata.artist?.toString().orEmpty()
 
     Card(
         onClick = onClick,
-        shape = RoundedCornerShape(28.dp),
+        shape = RoundedCornerShape(24.dp),
         colors = CardDefaults.cardColors(
-            containerColor = MaterialTheme.colorScheme.surface.copy(alpha = 0.94f)
+            containerColor = MaterialTheme.colorScheme.surface
         ),
         border = BorderStroke(
             1.dp,
-            MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.16f)
+            MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.2f)
         ),
-        elevation = CardDefaults.cardElevation(
-            defaultElevation = 2.dp,
-            pressedElevation = 4.dp
-        ),
-        modifier = Modifier.fillMaxWidth()
+        elevation = CardDefaults.cardElevation(2.dp),
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(horizontal = 8.dp, vertical = 4.dp)
     ) {
         Row(
             modifier = Modifier
                 .fillMaxWidth()
-                .padding(horizontal = 14.dp, vertical = 14.dp),
+                .padding(16.dp),
             verticalAlignment = Alignment.CenterVertically
         ) {
-            Box(
-                modifier = Modifier
-                    .size(width = 96.dp, height = 84.dp)
-                    .clip(RoundedCornerShape(22.dp))
-                    .background(MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.45f)),
-                contentAlignment = Alignment.Center
-            ) {
-                if (isVideo) {
-                    AsyncImage(
-                        model = itemDetails.mediaId.toUri(),
-                        imageLoader = imageLoader,
-                        error = rememberVectorPainter(Icons.Default.Movie),
-                        contentDescription = null,
-                        modifier = Modifier.fillMaxSize(),
-                        contentScale = ContentScale.Crop
-                    )
 
-                    Surface(
-                        shape = CircleShape,
-                        color = Color.Black.copy(alpha = 0.35f),
-                        modifier = Modifier.align(Alignment.Center)
-                    ) {
-                        Icon(
-                            imageVector = Icons.Default.PlayArrow,
-                            contentDescription = null,
-                            tint = Color.White,
-                            modifier = Modifier
-                                .padding(8.dp)
-                                .size(20.dp)
-                        )
-                    }
-                } else {
-                    Surface(
-                        shape = RoundedCornerShape(20.dp),
-                        color = MaterialTheme.colorScheme.primary.copy(alpha = 0.12f),
-                        modifier = Modifier.size(54.dp)
-                    ) {
-                        Box(contentAlignment = Alignment.Center) {
-                            Icon(
-                                imageVector = Icons.Default.MusicNote,
-                                contentDescription = null,
-                                tint = MaterialTheme.colorScheme.primary,
-                                modifier = Modifier.size(28.dp)
-                            )
-                        }
-                    }
-                }
-            }
+            DownloadThumbnail(
+                isVideo = isVideo,
+                mediaId = itemDetails.mediaId,
+                imageLoaderLocal = imageLoaderLocal
+            )
 
-            Spacer(modifier = Modifier.width(14.dp))
+            Spacer(modifier = Modifier.width(12.dp))
 
-            Column(
-                modifier = Modifier.weight(1f),
-                verticalArrangement = Arrangement.spacedBy(10.dp)
-            ) {
-                Text(
-                    text = title,
-                    style = MaterialTheme.typography.titleMedium,
-                    fontWeight = FontWeight.Bold,
-                    maxLines = 2,
-                    overflow = TextOverflow.Ellipsis
-                )
+            DownloadInfo(
+                title = title,
+                description = description,
+                meta = meta,
+                isVideo = isVideo
+            )
 
-                Row(
-                    horizontalArrangement = Arrangement.spacedBy(8.dp)
-                ) {
-                    LibraryMetaChip(
-                        icon = if (isVideo) Icons.Default.VideoLibrary else Icons.Default.LibraryMusic,
-                        text = if (isVideo) "Video" else "Audio"
-                    )
+            DownloadActions(
+                onOpenMenu = { showMenu = true }
+            )
 
-                    if (fileSize.isNotBlank()) {
-                        LibraryMetaChip(
-                            icon = Icons.Default.Info,
-                            text = fileSize
-                        )
-                    }
-                }
-
-                if (secondary.isNotBlank()) {
-                    Text(
-                        text = secondary,
-                        style = MaterialTheme.typography.bodySmall,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant,
-                        maxLines = 1,
-                        overflow = TextOverflow.Ellipsis
-                    )
-                }
-            }
-
-            Box {
-                FilledTonalIconButton(
-                    onClick = { showMenu.value = true },
-                    modifier = Modifier.size(40.dp)
-                ) {
-                    Icon(
-                        imageVector = Icons.Default.MoreVert,
-                        contentDescription = "More actions",
-                        modifier = Modifier.size(18.dp)
-                    )
-                }
-
-                LocalMediaActionMenu(
-                    expanded = showMenu.value,
-                    onDismissRequest = { showMenu.value = false },
-                    selectedData = itemDetails,
-                    isVideo = isVideo,
-                    onPlay = onClick,
-                    onShowInfo = {
-                        showInfoDialog.value = true
-                    },
-                    onOpenFolder = {
-                        showInFileManager(
-                            mContext,
-                            itemDetails.mediaId
-                        )
-                    },
-                    onRemoveDownload = {
-                        showAlertDialog.value = true
-                    }
-                )
-            }
+            DownloadMenu(
+                expanded = showMenu,
+                onDismiss = { showMenu = false },
+                item = itemDetails,
+                isVideo = isVideo,
+                onPlay = onClick,
+                onInfo = { showInfo = true },
+                onDelete = { showDelete = true },
+                context = context
+            )
         }
     }
 
-    if (showInfoDialog.value) {
+    if (showInfo) {
         LocalMediaInfoDialog(
             itemDetails = itemDetails,
             isVideo = isVideo,
-            onDismiss = { showInfoDialog.value = false }
+            onDismiss = {
+                showInfo = false
+            }
         )
     }
 
-    if (showAlertDialog.value) {
+    if (showDelete) {
         DeleteFileDialog(
-            fileName = itemDetails.mediaMetadata.title?.toString().orEmpty(),
-            onDismiss = { showAlertDialog.value = false },
-            onDelete = {
+            fileName = title
+        ) {
+            showDelete = false
+            it?.let {
                 onDelete()
-                showAlertDialog.value = false
             }
+        }
+    }
+}
+
+
+@Composable
+private fun DownloadThumbnail(
+    isVideo: Boolean,
+    mediaId: String,
+    imageLoaderLocal: ImageLoader
+) {
+
+
+    Box(
+        modifier = Modifier
+            .size(width = 92.dp, height = 80.dp)
+            .clip(RoundedCornerShape(20.dp))
+            .background(MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.3f)),
+        contentAlignment = Alignment.Center
+    ) {
+        if (isVideo) {
+            AsyncImage(
+                model = mediaId.toUri(),
+                imageLoader = imageLoaderLocal,
+                contentDescription = null,
+                modifier = Modifier.fillMaxSize(),
+                contentScale = ContentScale.Crop
+            )
+
+            Icon(
+                imageVector = Icons.Default.PlayArrow,
+                contentDescription = null,
+                tint = Color.White,
+                modifier = Modifier
+                    .background(Color.Black.copy(alpha = 0.4f), CircleShape)
+                    .padding(6.dp)
+            )
+        } else {
+            Icon(
+                imageVector = Icons.Default.MusicNote,
+                contentDescription = null,
+                tint = MaterialTheme.colorScheme.primary,
+                modifier = Modifier.size(28.dp)
+            )
+        }
+    }
+}
+
+@Composable
+private fun RowScope.DownloadInfo(
+    title: String,
+    description: String,
+    meta: String,
+    isVideo: Boolean
+) {
+    Column(
+        modifier = Modifier.weight(1f),
+        verticalArrangement = Arrangement.spacedBy(8.dp)
+    ) {
+        Text(
+            text = title,
+            style = MaterialTheme.typography.titleMedium,
+            fontWeight = FontWeight.Bold,
+            maxLines = 2,
+            overflow = TextOverflow.Ellipsis
+        )
+
+        Row(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
+            LibraryMetaChip(
+                icon = if (isVideo) Icons.Default.VideoLibrary else Icons.Default.LibraryMusic,
+                text = if (isVideo) "Video" else "Audio"
+            )
+
+            if (meta.isNotBlank()) {
+                LibraryMetaChip(
+                    icon = Icons.Default.Info,
+                    text = meta
+                )
+            }
+        }
+
+        if (description.isNotBlank()) {
+            Text(
+                text = description,
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                maxLines = 1,
+                overflow = TextOverflow.Ellipsis
+            )
+        }
+    }
+}
+
+
+@Composable
+private fun DownloadActions(
+    onOpenMenu: () -> Unit
+) {
+    FilledTonalIconButton(
+        onClick = onOpenMenu,
+        modifier = Modifier.size(40.dp)
+    ) {
+        Icon(
+            imageVector = Icons.Default.MoreVert,
+            contentDescription = null,
+            modifier = Modifier.size(18.dp)
         )
     }
 }
 
+
+
+@Composable
+private fun DownloadMenu(
+    expanded: Boolean,
+    onDismiss: () -> Unit,
+    item: MediaItem,
+    isVideo: Boolean,
+    onPlay: () -> Unit,
+    onInfo: () -> Unit,
+    onDelete: () -> Unit,
+    context: Context
+) {
+    LocalMediaActionMenu(
+        expanded = expanded,
+        onDismissRequest = onDismiss,
+        selectedData = item,
+        isVideo = isVideo,
+        onPlay = onPlay,
+        onShowInfo = onInfo,
+        onOpenFolder = {
+            showInFileManager(context, item.mediaId)
+        },
+        onRemoveDownload = onDelete
+    )
+}
 
 @Composable
 private fun LibraryMetaChip(
@@ -577,26 +729,24 @@ private fun LibraryMetaChip(
 ) {
     Surface(
         shape = RoundedCornerShape(50),
-        color = MaterialTheme.colorScheme.primary.copy(alpha = 0.10f)
+        color = MaterialTheme.colorScheme.primary.copy(alpha = 0.12f)
     ) {
         Row(
-            modifier = Modifier.padding(horizontal = 10.dp, vertical = 6.dp),
+            modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp),
             verticalAlignment = Alignment.CenterVertically,
-            horizontalArrangement = Arrangement.spacedBy(6.dp)
+            horizontalArrangement = Arrangement.spacedBy(4.dp)
         ) {
             Icon(
                 imageVector = icon,
                 contentDescription = null,
                 tint = MaterialTheme.colorScheme.primary,
-                modifier = Modifier.size(14.dp)
+                modifier = Modifier.size(12.dp)
             )
             Text(
                 text = text,
-                style = MaterialTheme.typography.labelMedium,
-                fontWeight = FontWeight.SemiBold,
-                color = MaterialTheme.colorScheme.primary,
-                maxLines = 1,
-                overflow = TextOverflow.Ellipsis
+                style = MaterialTheme.typography.labelSmall,
+                fontWeight = FontWeight.Medium,
+                color = MaterialTheme.colorScheme.primary
             )
         }
     }
@@ -654,14 +804,27 @@ private fun EmptyDownloadsState(
     }
 }
 
+/**
+ * Displays a confirmation dialog for deleting a downloaded file.
+ *
+ * This dialog presents the user with the selected file name (if available)
+ * and warns that the deletion action is permanent and cannot be undone.
+ *
+ * @param fileName The name of the file to be displayed in the dialog.
+ * If blank, the file name section will be omitted.
+ * @param onDismiss Callback invoked when the dialog is dismissed.
+ * - Returns `true` if the user confirms deletion.
+ * - Returns `null` if the dialog is dismissed or the user cancels the action.
+ */
 @Composable
 private fun DeleteFileDialog(
     fileName: String,
-    onDismiss: () -> Unit,
-    onDelete: () -> Unit
+    onDismiss: (Boolean?) -> Unit
 ) {
     AlertDialog(
-        onDismissRequest = onDismiss,
+        onDismissRequest = {
+            onDismiss(null)
+        },
         shape = RoundedCornerShape(28.dp),
         icon = {
             Surface(
@@ -705,7 +868,11 @@ private fun DeleteFileDialog(
             }
         },
         confirmButton = {
-            TextButton(onClick = onDelete) {
+            TextButton(
+                onClick = {
+                    onDismiss(true)
+                }
+            ) {
                 Text(
                     text = "Remove",
                     color = MaterialTheme.colorScheme.error,
@@ -714,7 +881,11 @@ private fun DeleteFileDialog(
             }
         },
         dismissButton = {
-            TextButton(onClick = onDismiss) {
+            TextButton(
+                onClick = {
+                    onDismiss(null)
+                }
+            ) {
                 Text("Keep")
             }
         }
@@ -723,7 +894,6 @@ private fun DeleteFileDialog(
 
 @Composable
 private fun MessageState(
-    title: String,
     message: String,
     modifier: Modifier = Modifier
 ) {
@@ -753,7 +923,7 @@ private fun MessageState(
             Spacer(modifier = Modifier.height(18.dp))
 
             Text(
-                text = title,
+                text = "Couldn’t load media",
                 style = MaterialTheme.typography.headlineSmall,
                 fontWeight = FontWeight.Bold
             )
@@ -770,116 +940,6 @@ private fun MessageState(
     }
 }
 
-@Composable
-private fun CustomTabRow(
-    selectedTabIndex: Int,
-    onTabSelected: (Int) -> Unit,
-    tabs: List<PageEnum>
-) {
-    val haptic = LocalHapticFeedback.current
-    val tabWidths = remember { mutableStateMapOf<Int, Float>() }
-    val density = LocalDensity.current
-
-    val indicatorOffset by animateDpAsState(
-        targetValue = tabWidths.entries
-            .sortedBy { it.key }
-            .take(selectedTabIndex)
-            .sumOf { it.value.toDouble() }.dp,
-        animationSpec = spring(dampingRatio = 0.8f, stiffness = 220f),
-        label = "indicatorOffset"
-    )
-
-    val indicatorWidth by animateDpAsState(
-        targetValue = tabWidths[selectedTabIndex]?.dp ?: 0.dp,
-        animationSpec = spring(dampingRatio = 0.8f, stiffness = 220f),
-        label = "indicatorWidth"
-    )
-
-    BoxWithConstraints(
-        modifier = Modifier.fillMaxWidth()
-    ) {
-        val controlWidth = maxWidth
-
-        Box(
-            modifier = Modifier
-                .width(controlWidth)
-                .height(52.dp)
-                .clip(RoundedCornerShape(26.dp))
-                .background(MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.35f))
-        ) {
-            Box(
-                modifier = Modifier
-                    .offset(x = indicatorOffset)
-                    .width(indicatorWidth)
-                    .fillMaxHeight()
-                    .padding(4.dp)
-                    .background(
-                        color = MaterialTheme.colorScheme.surface,
-                        shape = RoundedCornerShape(22.dp)
-                    )
-                    .shadow(2.dp, RoundedCornerShape(22.dp))
-                    .zIndex(1f)
-            )
-
-            Row(
-                modifier = Modifier.fillMaxSize(),
-                horizontalArrangement = Arrangement.SpaceEvenly
-            ) {
-                tabs.forEachIndexed { index, mode ->
-                    val isSelected = selectedTabIndex == index
-                    val textColor by animateColorAsState(
-                        targetValue = if (isSelected) {
-                            MaterialTheme.colorScheme.primary
-                        } else {
-                            MaterialTheme.colorScheme.onSurface.copy(alpha = 0.65f)
-                        },
-                        animationSpec = spring(dampingRatio = 0.8f),
-                        label = "tabTextColor"
-                    )
-
-                    Box(
-                        modifier = Modifier
-                            .weight(1f)
-                            .fillMaxHeight()
-                            .clickable(
-                                interactionSource = remember { MutableInteractionSource() },
-                                indication = null
-                            ) {
-                                haptic.performHapticFeedback(HapticFeedbackType.TextHandleMove)
-                                onTabSelected(index)
-                            }
-                            .onGloballyPositioned {
-                                tabWidths[index] = it.size.width.toFloat() / density.density
-                            }
-                            .zIndex(2f),
-                        contentAlignment = Alignment.Center
-                    ) {
-                        Row(
-                            verticalAlignment = Alignment.CenterVertically,
-                            horizontalArrangement = Arrangement.spacedBy(8.dp)
-                        ) {
-                            Icon(
-                                imageVector = when (mode) {
-                                    PageEnum.VIDEOS -> Icons.Filled.VideoLibrary
-                                    PageEnum.AUDIOS -> Icons.Filled.LibraryMusic
-                                },
-                                contentDescription = null,
-                                tint = textColor,
-                                modifier = Modifier.size(18.dp)
-                            )
-                            Text(
-                                text = mode.title,
-                                color = textColor,
-                                style = MaterialTheme.typography.labelLarge,
-                                fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Medium
-                            )
-                        }
-                    }
-                }
-            }
-        }
-    }
-}
 
 @Composable
 private fun LocalMediaInfoDialog(
@@ -902,7 +962,9 @@ private fun LocalMediaInfoDialog(
             color = MaterialTheme.colorScheme.surface,
             tonalElevation = 10.dp,
             shadowElevation = 18.dp,
-            modifier = Modifier.fillMaxWidth()
+            modifier = Modifier
+                .widthIn(max = 400.dp)
+                .fillMaxWidth()
         ) {
             Column(
                 modifier = Modifier.padding(20.dp),
@@ -1089,20 +1151,40 @@ private fun DetailSection(
 }
 
 private fun itemClicked(
+    player: Player,
     index: Int,
-    selectedFilePath: String,
+    currentList: List<MediaItem>,
     isVideo: Boolean,
     context: Context,
-    backStack: NavBackStack<NavKey>
+    backStack: AppBackStack,
+    selectedItem: String
 ) {
     if (isVideo) {
-        backStack.add(NavScreens.LocalVideoPlayer(selectedFilePath))
+        backStack.add(Destination.LocalVideoPlayer(selectedItem))
     } else {
-        val playIntent = Intent(context, LocalBackGroundPlayer::class.java).apply {
-            action = ACTION_START
-            putExtra("media_id", index)
+
+
+        val isSamePlaylist = player.mediaItemCount == currentList.size &&
+                player.currentMediaItemIndex in currentList.indices &&
+                currentList.indices.all { i ->
+                    player.getMediaItemAt(i).mediaId == currentList[i].mediaId
+                }
+        if (isSamePlaylist) {
+            // Only move to the selected item
+            if (player.currentMediaItemIndex != index) {
+                player.seekTo(index, 0)
+            }
+            if (!player.isPlaying) player.play()
+        } else {
+            // New playlist → set once
+            player.setMediaItems(currentList, index, 0)
+            player.prepare()
+            val playIntent = Intent(context, LocalBackGroundPlayer::class.java).apply {
+                action = ACTION_START
+                putExtra("media_id", index)
+            }
+            context.startService(playIntent)
         }
-        ContextCompat.startForegroundService(context, playIntent)
     }
 }
 

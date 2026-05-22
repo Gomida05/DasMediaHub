@@ -7,4 +7,8 @@ plugins {
     alias(libs.plugins.kotlin.serialization) apply false
     alias(libs.plugins.android.library) apply false
     alias(libs.plugins.kotlin.ksp) apply false
+    alias(libs.plugins.room3) apply false
+    alias(libs.plugins.dagger.hilt) apply false
+    id("maven-publish")
 }
+

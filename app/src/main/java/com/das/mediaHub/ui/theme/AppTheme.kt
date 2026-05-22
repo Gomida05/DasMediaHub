@@ -1,5 +1,9 @@
 package com.das.mediaHub.ui.theme
 
-internal enum class AppTheme {
-    LIGHT, DARK, SYSTEM
+enum class AppTheme(
+    val label: String
+) {
+    LIGHT("Light"),
+    DARK("Dark"),
+    SYSTEM("System"),
 }

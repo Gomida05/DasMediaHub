@@ -1,48 +1,59 @@
 package com.das.mediaHub.ui.settings
 
-import android.content.pm.PackageInfo
-import androidx.activity.compose.rememberLauncherForActivityResult
-import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.animation.core.tween
 import androidx.compose.animation.expandVertically
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
 import androidx.compose.animation.shrinkVertically
+import androidx.compose.animation.slideInVertically
+import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
+import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.ColumnScope
+import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.safeDrawing
+import androidx.compose.foundation.layout.safeContent
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
-import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.grid.GridCells
+import androidx.compose.foundation.lazy.grid.GridItemSpan
+import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
+import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowForwardIos
 import androidx.compose.material.icons.automirrored.filled.Help
+import androidx.compose.material.icons.automirrored.rounded.ArrowForward
 import androidx.compose.material.icons.filled.Check
 import androidx.compose.material.icons.filled.ColorLens
 import androidx.compose.material.icons.filled.Contrast
 import androidx.compose.material.icons.filled.DarkMode
+import androidx.compose.material.icons.filled.Download
 import androidx.compose.material.icons.filled.ErrorOutline
 import androidx.compose.material.icons.filled.ExpandLess
 import androidx.compose.material.icons.filled.ExpandMore
 import androidx.compose.material.icons.filled.Feedback
-import androidx.compose.material.icons.filled.Folder
 import androidx.compose.material.icons.filled.Info
 import androidx.compose.material.icons.filled.LightMode
-import androidx.compose.material.icons.filled.SystemUpdateAlt
 import androidx.compose.material.icons.filled.Update
+import androidx.compose.material.icons.rounded.Download
+import androidx.compose.material.icons.rounded.SystemUpdateAlt
+import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.BasicAlertDialog
+import androidx.compose.material3.Button
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.CircularProgressIndicator
@@ -54,6 +65,7 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.RadioButton
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.SnackbarHost
+import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
@@ -70,78 +82,41 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
-import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.window.Dialog
+import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
-import androidx.lifecycle.viewmodel.compose.viewModel
 import com.das.downloader.data.model.AppUpdateInfo
-import com.das.downloader.data.model.PathType
-import com.das.mediaHub.data.local.Preferences
 import com.das.mediaHub.data.model.state.UiState
-import com.das.mediaHub.navigation.NavScreens
-import com.das.mediaHub.services.download.DownloadService
+import com.das.mediaHub.navigation.Destination
 import com.das.mediaHub.ui.theme.AppTheme
-import com.das.mediaHub.ui.theme.ThemePreferences.loadDarkModeState
+import com.das.mediaHub.ui.theme.ThemePreferences.loadThemeState
 import kotlinx.coroutines.delay
 
 @Composable
 fun SettingsScreen(
-    add: (NavScreens) -> Unit,
+    add: (Destination) -> Unit,
 ) {
-    val context = LocalContext.current
-    val viewModel = viewModel(modelClass = SettingsViewModel::class.java)
+
+    val viewModel = hiltViewModel<SettingsViewModel>()
+
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
 
-    val snackBarHostState = remember { androidx.compose.material3.SnackbarHostState() }
+    val snackBarHostState = remember { SnackbarHostState() }
 
 
-    val selectedTheme by loadDarkModeState()
-    val audioPath by Preferences.audioPathState()
-    val videoPath by Preferences.videoPathState()
+    val selectedTheme by loadThemeState()
 
-    val packageInfo = remember {
-        context.packageManager.getPackageInfo(context.packageName, 0)
-    }
 
-    LaunchedEffect(packageInfo) {
-        viewModel.initialize(packageInfo)
-    }
-
-    val audioPickerLauncher = rememberLauncherForActivityResult(
-        contract = ActivityResultContracts.OpenDocumentTree()
-    ) { uri ->
-        viewModel.onFolderPicked(context.applicationContext, PathType.AUDIO, uri)
-    }
-
-    val videoPickerLauncher = rememberLauncherForActivityResult(
-        contract = ActivityResultContracts.OpenDocumentTree()
-    ) { uri ->
-        viewModel.onFolderPicked(context.applicationContext, PathType.VIDEO, uri)
-    }
 
     LaunchedEffect(Unit) {
         viewModel.effects.collect { effect ->
-            when (effect) {
-                is SettingsEffect.ShowMessage -> {
-                    snackBarHostState.showSnackbar(effect.message)
-                }
-
-                is SettingsEffect.LaunchFolderPicker -> {
-                    when (effect.pathType) {
-                        PathType.AUDIO -> audioPickerLauncher.launch(null)
-                        PathType.VIDEO -> videoPickerLauncher.launch(null)
-                    }
-                }
-
-                is SettingsEffect.StartApkDownload -> {
-                    DownloadService.startForApk(context, effect.appInfo)
-                }
-            }
+            snackBarHostState.showSnackbar(effect)
         }
+
     }
 
 
@@ -149,30 +124,21 @@ fun SettingsScreen(
         modifier = Modifier
             .fillMaxSize(),
         containerColor = Color.Transparent,
-        contentWindowInsets = WindowInsets.safeDrawing,
+        contentWindowInsets = WindowInsets.safeContent,
         snackbarHost = { SnackbarHost(snackBarHostState) }
     ) { padding ->
-        LazyColumn(
+
+        LazyVerticalGrid(
+            columns = GridCells.Adaptive(340.dp),
             contentPadding = padding,
             modifier = Modifier
                 .fillMaxSize()
-                .background(
-                    Brush.verticalGradient(
-                        listOf(
-                            MaterialTheme.colorScheme.surface,
-                            MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.08f),
-                            MaterialTheme.colorScheme.secondaryContainer.copy(alpha = 0.05f)
-                        )
-                    )
-                )
-                .padding(horizontal = 16.dp),
-            verticalArrangement = Arrangement.spacedBy(14.dp)
+                .background(aboutBackgroundBrush()),
+            horizontalArrangement = Arrangement.spacedBy(16.dp),
+            verticalArrangement = Arrangement.spacedBy(16.dp)
         ) {
 
-            item {
-                Spacer(modifier = Modifier.height(16.dp))
-            }
-            item {
+            item(span = { GridItemSpan(maxLineSpan) }) {
                 SettingsHeroCard()
             }
 
@@ -201,7 +167,7 @@ fun SettingsScreen(
                             InlineThemeSelector(
                                 currentTheme = selectedTheme,
                                 onThemeSelected = { theme ->
-                                    viewModel.onThemeSelected(context, theme)
+                                    viewModel.onThemeSelected(theme = theme)
                                 }
                             )
                         }
@@ -212,10 +178,10 @@ fun SettingsScreen(
                     )
 
                     SettingsItem(
-                        icon = Icons.Default.Folder,
-                        text = "Manage all folders",
-                        subtitle = "Choose audio and video save locations",
-                        onClick = { viewModel.showStorageDialog(true) }
+                        icon = Icons.Default.Download,
+                        text = "Download Settings",
+                        subtitle = "Manage network, limits, and storage locations",
+                        onClick = { add(Destination.DownloadSetting) }
                     )
                 }
             }
@@ -233,68 +199,60 @@ fun SettingsScreen(
                         icon = Icons.AutoMirrored.Default.Help,
                         text = "Help",
                         subtitle = "Guides and common answers",
-                        onClick = { add(NavScreens.Help) }
+                        onClick = { add(Destination.Help) }
                     )
 
                     SettingsItem(
                         icon = Icons.Default.Feedback,
                         text = "Send feedback",
                         subtitle = "Tell us what to improve",
-                        onClick = { add(NavScreens.FeedbackScreen) }
+                        onClick = { add(Destination.FeedbackScreen) }
                     )
 
                     SettingsItem(
                         icon = Icons.Default.Info,
                         text = "About us",
                         subtitle = "App and developer info",
-                        onClick = { add(NavScreens.AboutDasMediaHub) }
+                        onClick = { add(Destination.AboutDasMediaHub) }
                     )
                 }
             }
 
-            item {
-                packageInfo.AppVersionInfo()
+            item(span = { GridItemSpan(maxLineSpan) }) {
+                AppVersionInfo(uiState.versionName)
             }
+
+        }
+
+        when (val state = uiState.updateState) {
+            UiState.Loading -> {
+                LoadingDialog(onCancel = viewModel::cancelLoading)
+            }
+
+            is UiState.Error -> {
+                ErrorDialog(
+                    message = state.message,
+                    onDismiss = viewModel::dismissUpdateDialog,
+                    onRetry = viewModel::retryLoad
+                )
+            }
+
+            is UiState.Success -> {
+                ShowUpdateDialog(
+                    appInfo = state.data,
+                    currentVersionCode = uiState.versionCode,
+                    onDismissRequest = viewModel::dismissUpdateDialog,
+                    onDownload = { viewModel.onDownloadUpdateClicked(state.data) }
+                )
+            }
+
+            else -> Unit
         }
     }
 
-    when (val state = uiState.updateState) {
-        UiState.Idle -> Unit
-        UiState.Loading -> {
-            LoadingDialog(onCancel = viewModel::cancelLoading)
-        }
 
-        is UiState.Error -> {
-            ErrorDialog(
-                message = state.message,
-                onDismiss = viewModel::dismissUpdateDialog,
-                onRetry = viewModel::retryLoad
-            )
-        }
 
-        is UiState.Success -> {
-            ShowUpdateDialog(
-                appInfo = state.data,
-                currentVersionCode = uiState.versionCode,
-                onDismissRequest = viewModel::dismissUpdateDialog,
-                onDownload = { viewModel.onDownloadUpdateClicked(state.data) }
-            )
-        }
 
-        else -> Unit
-    }
-
-    if (uiState.showStorageDialog) {
-        StorageTypeDialog(
-            audioPath = audioPath,
-            videoPath = videoPath,
-            onDismissRequest = {
-                viewModel.showStorageDialog(false)
-            },
-            onAudioSelect = viewModel::onPickAudioFolderRequested,
-            onVideoSelect = viewModel::onPickVideoFolderRequested
-        )
-    }
 }
 
 @Composable
@@ -383,31 +341,47 @@ fun SettingsItem(
 
 @Composable
 private fun SettingsHeroCard() {
-    Card(
-        shape = RoundedCornerShape(28.dp),
-        colors = CardDefaults.cardColors(
-            containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.45f)
+    AnimatedVisibility(
+        visible = true,
+        enter = fadeIn(animationSpec = tween(700)) + slideInVertically(
+            animationSpec = tween(700),
+            initialOffsetY = { it / 4 }
         )
     ) {
-        Column(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(20.dp)
+        Card(
+            modifier = Modifier.fillMaxWidth(),
+            shape = RoundedCornerShape(30.dp),
+            colors = CardDefaults.cardColors(
+                containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.80f)
+            ),
+            border = BorderStroke(
+                1.dp,
+                MaterialTheme.colorScheme.primary.copy(alpha = 0.14f)
+            )
         ) {
-            Text(
-                text = "DasMediaHub",
-                style = MaterialTheme.typography.headlineSmall.copy(
-                    fontWeight = FontWeight.ExtraBold
+            Column(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(horizontal = 22.dp, vertical = 26.dp),
+                horizontalAlignment = Alignment.CenterHorizontally
+            ) {
+                Text(
+                    text = "DasMediaHub",
+
+                    style = MaterialTheme.typography.headlineSmall.copy(
+                        fontWeight = FontWeight.ExtraBold
+                    )
                 )
-            )
 
-            Spacer(modifier = Modifier.height(6.dp))
 
-            Text(
-                text = "Manage appearance, storage, updates, and app info in one place.",
-                style = MaterialTheme.typography.bodyMedium,
-                color = MaterialTheme.colorScheme.onSurfaceVariant
-            )
+                Spacer(modifier = Modifier.height(6.dp))
+
+                Text(
+                    text = "Manage appearance, storage, updates, and app info in one place.",
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                )
+            }
 
         }
     }
@@ -416,7 +390,7 @@ private fun SettingsHeroCard() {
 
 
 @Composable
-fun PackageInfo.AppVersionInfo() {
+fun AppVersionInfo(versionName: String) {
     Text(
         text = "DasMediaHub v$versionName",
         style = MaterialTheme.typography.labelMedium,
@@ -427,7 +401,6 @@ fun PackageInfo.AppVersionInfo() {
         textAlign = TextAlign.Center
     )
 }
-
 @Composable
 fun ShowUpdateDialog(
     appInfo: AppUpdateInfo,
@@ -435,24 +408,123 @@ fun ShowUpdateDialog(
     onDismissRequest: () -> Unit,
     onDownload: () -> Unit
 ) {
-    StyledDialogContainer(
-        icon = Icons.Default.SystemUpdateAlt,
-        title = "Update available",
-        message = buildString {
-            append("Current version code: $currentVersionCode")
-            append("\nLatest version: ${appInfo.versionName}")
-            if (appInfo.whatsNew.isNotBlank()) {
-                append("\n\nWhat’s new:\n${appInfo.whatsNew}")
+    AlertDialog(
+        onDismissRequest = onDismissRequest,
+        shape = MaterialTheme.shapes.large,
+        icon = {
+            Icon(
+                imageVector = Icons.Rounded.SystemUpdateAlt,
+                contentDescription = "Update Icon",
+                tint = MaterialTheme.colorScheme.primary
+            )
+        },
+        title = {
+            Text(
+                text = "Update Available",
+                style = MaterialTheme.typography.headlineSmall
+            )
+        },
+        text = {
+            Column(
+                modifier = Modifier.fillMaxWidth(),
+                verticalArrangement = Arrangement.spacedBy(16.dp)
+            ) {
+                // 1. Version Comparison Row
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.SpaceEvenly,
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                        Text(
+                            text = "Current",
+                            style = MaterialTheme.typography.labelMedium,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                        )
+                        Text(
+                            text = currentVersionCode.toString(),
+                            style = MaterialTheme.typography.titleMedium
+                        )
+                    }
+
+                    Icon(
+                        imageVector = Icons.AutoMirrored.Rounded.ArrowForward,
+                        contentDescription = "To",
+                        tint = MaterialTheme.colorScheme.primary
+                    )
+
+                    Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                        Text(
+                            text = "New",
+                            style = MaterialTheme.typography.labelMedium,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                        )
+                        Text(
+                            text = appInfo.latestVersionName,
+                            style = MaterialTheme.typography.titleMedium,
+                            fontWeight = FontWeight.Bold,
+                            color = MaterialTheme.colorScheme.primary
+                        )
+                    }
+                }
+
+                // 2. Changelog Section
+                if (appInfo.changelog.isNotBlank()) {
+                    HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant)
+
+                    Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                        Text(
+                            text = "What's new:",
+                            style = MaterialTheme.typography.titleSmall,
+                            fontWeight = FontWeight.SemiBold,
+                            color = MaterialTheme.colorScheme.onSurface
+                        )
+
+                        // Scrollable, bordered changelog box
+                        Box(
+                            modifier = Modifier
+                                .clip(MaterialTheme.shapes.medium)
+                                .background(MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.3f))
+                                .border(
+                                    width = 1.dp,
+                                    color = MaterialTheme.colorScheme.outlineVariant,
+                                    shape = MaterialTheme.shapes.medium
+                                )
+                                .fillMaxWidth()
+                                .heightIn(max = 160.dp)
+                                .verticalScroll(rememberScrollState())
+                                .padding(12.dp)
+                        ) {
+                            Text(
+                                text = appInfo.changelog,
+                                style = MaterialTheme.typography.bodyMedium,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant
+                            )
+                        }
+                    }
+                }
+            }
+        },
+        confirmButton = {
+            Button(
+                onClick = onDownload,
+                contentPadding = PaddingValues(horizontal = 16.dp, vertical = 8.dp)
+            ) {
+                Icon(
+                    imageVector = Icons.Rounded.Download,
+                    contentDescription = null,
+                    modifier = Modifier.size(18.dp)
+                )
+                Spacer(modifier = Modifier.width(8.dp))
+                Text("Download")
+            }
+        },
+        dismissButton = {
+            TextButton(onClick = onDismissRequest) {
+                Text("Later")
             }
         }
-    ) {
-        TextButton(onClick = onDismissRequest) {
-            Text("Later")
-        }
-        TextButton(onClick = onDownload) {
-            Text("Download")
-        }
-    }
+    )
 }
 
 @Composable
@@ -828,211 +900,4 @@ internal fun InlineThemeSelector(
             }
         }
     }
-}
-
-
-
-@Composable
-fun StorageTypeDialog(
-    audioPath: String,
-    videoPath: String,
-    onDismissRequest: () -> Unit,
-    onAudioSelect: () -> Unit,
-    onVideoSelect: () -> Unit
-) {
-    BasicAlertDialog(
-        onDismissRequest = onDismissRequest
-    ) {
-        Card(
-            shape = RoundedCornerShape(28.dp),
-            colors = CardDefaults.cardColors(
-                containerColor = MaterialTheme.colorScheme.surface
-            ),
-            elevation = CardDefaults.cardElevation(defaultElevation = 12.dp),
-            modifier = Modifier.fillMaxWidth()
-        ) {
-            Column(
-                modifier = Modifier
-                    .background(
-                        Brush.verticalGradient(
-                            listOf(
-                                MaterialTheme.colorScheme.surface,
-                                MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.18f)
-                            )
-                        )
-                    )
-                    .padding(horizontal = 20.dp, vertical = 22.dp)
-            ) {
-                Surface(
-                    shape = RoundedCornerShape(18.dp),
-                    color = MaterialTheme.colorScheme.primary.copy(alpha = 0.10f),
-                    modifier = Modifier.size(64.dp)
-                ) {
-                    Box(contentAlignment = Alignment.Center) {
-                        Icon(
-                            imageVector = Icons.Default.Folder,
-                            contentDescription = null,
-                            tint = MaterialTheme.colorScheme.primary,
-                            modifier = Modifier.size(30.dp)
-                        )
-                    }
-                }
-
-                Spacer(modifier = Modifier.height(18.dp))
-
-                Text(
-                    text = "Choose save location",
-                    style = MaterialTheme.typography.titleLarge.copy(
-                        fontWeight = FontWeight.Bold
-                    )
-                )
-
-                Spacer(modifier = Modifier.height(6.dp))
-
-                Text(
-                    text = "Select which folder you want to change. Your current save locations are shown below.",
-                    style = MaterialTheme.typography.bodyMedium,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant
-                )
-
-                Spacer(modifier = Modifier.height(20.dp))
-
-                StorageOptionCard(
-                    title = "Audio downloads",
-                    subtitle = "Music, podcasts, voice files",
-                    currentPath = audioPath,
-                    onClick = {
-                        onAudioSelect()
-                        onDismissRequest()
-                    }
-                )
-
-                Spacer(modifier = Modifier.height(12.dp))
-
-                StorageOptionCard(
-                    title = "Video downloads",
-                    subtitle = "Movies, clips, reels, videos",
-                    currentPath = videoPath,
-                    onClick = {
-                        onVideoSelect()
-                        onDismissRequest()
-                    }
-                )
-
-                Spacer(modifier = Modifier.height(18.dp))
-
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.End
-                ) {
-                    TextButton(onClick = onDismissRequest) {
-                        Text("Close")
-                    }
-                }
-            }
-        }
-    }
-}
-
-@Composable
-fun StorageOptionCard(
-    title: String,
-    subtitle: String,
-    currentPath: String,
-    onClick: () -> Unit
-) {
-    Card(
-        modifier = Modifier
-            .fillMaxWidth()
-            .clip(RoundedCornerShape(22.dp))
-            .clickable(onClick = onClick),
-        shape = RoundedCornerShape(22.dp),
-        colors = CardDefaults.cardColors(
-            containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.55f)
-        ),
-        elevation = CardDefaults.cardElevation(defaultElevation = 0.dp)
-    ) {
-        Column(
-            modifier = Modifier.padding(16.dp)
-        ) {
-            Row(
-                verticalAlignment = Alignment.CenterVertically
-            ) {
-                Surface(
-                    shape = RoundedCornerShape(14.dp),
-                    color = MaterialTheme.colorScheme.primary.copy(alpha = 0.10f),
-                    modifier = Modifier.size(42.dp)
-                ) {
-                    Box(contentAlignment = Alignment.Center) {
-                        Icon(
-                            imageVector = Icons.Default.Folder,
-                            contentDescription = null,
-                            tint = MaterialTheme.colorScheme.primary,
-                            modifier = Modifier.size(20.dp)
-                        )
-                    }
-                }
-
-                Spacer(modifier = Modifier.width(12.dp))
-
-                Column(modifier = Modifier.weight(1f)) {
-                    Text(
-                        text = title,
-                        style = MaterialTheme.typography.bodyLarge.copy(
-                            fontWeight = FontWeight.SemiBold
-                        )
-                    )
-
-                    Spacer(modifier = Modifier.height(2.dp))
-
-                    Text(
-                        text = subtitle,
-                        style = MaterialTheme.typography.bodySmall,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant
-                    )
-                }
-
-                Icon(
-                    imageVector = Icons.AutoMirrored.Default.ArrowForwardIos,
-                    contentDescription = null,
-                    tint = MaterialTheme.colorScheme.outline,
-                    modifier = Modifier.size(16.dp)
-                )
-            }
-
-            Spacer(modifier = Modifier.height(14.dp))
-
-            Text(
-                text = "Current folder",
-                style = MaterialTheme.typography.labelMedium,
-                color = MaterialTheme.colorScheme.primary,
-                fontWeight = FontWeight.Bold
-            )
-
-            Spacer(modifier = Modifier.height(6.dp))
-
-            Surface(
-                shape = RoundedCornerShape(14.dp),
-                color = MaterialTheme.colorScheme.background.copy(alpha = 0.7f)
-            ) {
-                Text(
-                    text = formatPathForDisplay(currentPath),
-                    modifier = Modifier.padding(horizontal = 12.dp, vertical = 10.dp),
-                    style = MaterialTheme.typography.bodySmall,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                    maxLines = 3,
-                    overflow = TextOverflow.Ellipsis
-                )
-            }
-        }
-    }
-}
-
-
-private fun formatPathForDisplay(path: String): String {
-    if (path == "Not set") return "Not set yet"
-
-    return path
-        .replace("/storage/emulated/0/", "Internal storage/")
-        .ifBlank { "Internal storage" }
 }

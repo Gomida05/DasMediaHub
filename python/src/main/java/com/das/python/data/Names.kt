@@ -1,5 +1,12 @@
 package com.das.python.data
 
+/**
+ * Enum class representing the names of Python functions
+ * available in the embedded environment.
+ *
+ * Each entry maps a Kotlin constant to the actual function name
+ * string used in the Python scripts.
+ */
 enum class Names(val value: String) {
 
     /**
@@ -29,7 +36,6 @@ enum class Names(val value: String) {
 
     /**
      * GET_TIKTOK_URL is a function in Python that allows fetching a video's stream URL.
-     *
      */
     GET_TIKTOK_URL(value = "get_video_stream");
 }

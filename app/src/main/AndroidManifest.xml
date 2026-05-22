@@ -27,14 +27,9 @@
         android:name="android.permission.REQUEST_INSTALL_PACKAGES"
         tools:ignore="RequestInstallPackagesPolicy" />
 
-    <queries>
-        <package android:name="com.android.chrome" />
-    </queries>
-
     <application
         android:name=".MainApplication"
         android:allowBackup="true"
-        android:appComponentFactory="androidx.core.app.CoreComponentFactory"
         android:enableOnBackInvokedCallback="true"
         android:icon="@mipmap/ic_launcher"
         android:label="@string/app_name"
@@ -42,7 +37,7 @@
         android:roundIcon="@mipmap/ic_launcher_round"
         android:supportsRtl="true"
         android:theme="@style/Theme.AppCompat.DayNight.NoActionBar"
-        tools:targetApi="36" >
+        tools:ignore="UnusedAttribute">
 
         <activity
             android:name=".MainActivity"
@@ -59,9 +54,10 @@
             </intent-filter>
             <intent-filter>
                 <action android:name="android.intent.action.APPLICATION_PREFERENCES" />
-
                 <category android:name="android.intent.category.DEFAULT" />
             </intent-filter>
+
+
             <intent-filter android:autoVerify="true" >
                 <action android:name="android.intent.action.VIEW" />
 
@@ -116,7 +112,7 @@
             android:value="1" />
 
         <service
-            android:name=".services.media.LocalBackGroundPlayer"
+            android:name=".services.media.local.LocalBackGroundPlayer"
             android:enabled="true"
             android:exported="true"
             android:foregroundServiceType="mediaPlayback"
@@ -129,7 +125,7 @@
         </service>
 
         <service
-            android:name=".services.media.OnlineBackgroundPlayer"
+            android:name=".services.media.online.OnlineBackgroundPlayer"
             android:enabled="true"
             android:exported="true"
             android:foregroundServiceType="mediaPlayback"

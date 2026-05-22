@@ -7,6 +7,7 @@ plugins {
     alias(libs.plugins.android.library)
     alias(libs.plugins.chaquo.python)
     alias(libs.plugins.kotlin.serialization)
+    id("maven-publish")
 }
 
 private val loadLocalProperties = Properties().apply {
@@ -18,14 +19,18 @@ android {
 
     defaultConfig {
         minSdk = 26
-        compileSdk = 36
+        compileSdk = 37
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
         consumerProguardFiles("consumer-rules.pro")
         ndk {
             abiFilters.addAll(listOf("arm64-v8a", "x86_64"))
         }
     }
-
+    publishing {
+        singleVariant("release") {
+            withSourcesJar()
+        }
+    }
     buildTypes {
         release {
             isMinifyEnabled = true
@@ -36,21 +41,34 @@ android {
         }
     }
     compileOptions {
-        sourceCompatibility = JavaVersion.VERSION_18
-        targetCompatibility = JavaVersion.VERSION_18
+        sourceCompatibility = JavaVersion.VERSION_21
+        targetCompatibility = JavaVersion.VERSION_21
     }
 }
 
 kotlin {
-    jvmToolchain(18)
+    jvmToolchain(21)
 
     compilerOptions {
         jvmTarget.set(
-            JvmTarget.JVM_18
+            JvmTarget.JVM_21
         )
     }
-}
 
+}
+publishing {
+    publications {
+        create<MavenPublication>("release") {
+            groupId = "com.das"
+            artifactId = "python"
+            version = "1.0.0"
+
+            afterEvaluate {
+                from(components["release"])
+            }
+        }
+    }
+}
 chaquopy {
     defaultConfig {
         version = "3.14"
@@ -71,13 +89,11 @@ chaquopy {
     }
 }
 dependencies {
-    implementation(libs.core.ktx)
-    implementation(libs.appcompat)
-    implementation(libs.material)
-    testImplementation(libs.junit)
-    androidTestImplementation(libs.androidx.junit)
-    androidTestImplementation(libs.androidx.espresso.core)
-
+//    implementation(libs.core.ktx)
+//    implementation(libs.appcompat)
+//    testImplementation(libs.junit)
+    implementation(libs.kotlinx.coroutines.android)
     //serialization JSON
     implementation(libs.kotlinx.serialization.json)
 }
+

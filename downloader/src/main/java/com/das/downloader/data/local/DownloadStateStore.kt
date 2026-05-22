@@ -1,6 +1,6 @@
 package com.das.downloader.data.local
 
-import android.content.Context
+import android.content.SharedPreferences
 import androidx.core.content.edit
 import com.das.downloader.data.model.download.DownloadState
 import com.das.downloader.data.model.download.DownloadStatus
@@ -10,11 +10,29 @@ import kotlinx.coroutines.sync.withLock
 import org.json.JSONArray
 import org.json.JSONObject
 
-class DownloadStateStore(context: Context) {
+/**
+ * Persistence layer for saving and loading download states using [SharedPreferences].
+ * 
+ * It converts a list of [DownloadState] objects into a JSON array for storage.
+ * Operations are thread-safe via a [Mutex].
+ * 
+ * Example usage:
+ * ```kotlin
+ * val store = DownloadStateStore(prefs)
+ * store.saveAll(listOf(downloadState))
+ * val savedStates = store.loadAll()
+ * ```
+ */
+class DownloadStateStore(
+    private val prefs: SharedPreferences
+) {
 
-    private val prefs = context.getSharedPreferences("download_state_store", Context.MODE_PRIVATE)
     private val mutex = Mutex()
 
+    /**
+     * Persists all provided download states to disk.
+     * @param states The list of [DownloadState] objects to save.
+     */
     suspend fun saveAll(states: List<DownloadState>) {
         mutex.withLock {
             val json = JSONArray()
@@ -39,6 +57,10 @@ class DownloadStateStore(context: Context) {
         }
     }
 
+    /**
+     * Loads all persisted download states from disk.
+     * @return A list of [DownloadState] objects, or an empty list if none are saved.
+     */
     suspend fun loadAll(): List<DownloadState> {
         return mutex.withLock {
             val raw = prefs.getString("states", null) ?: return@withLock emptyList()

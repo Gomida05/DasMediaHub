@@ -1,8 +1,8 @@
 package com.das.mediaHub.ui.players.videoPlayer.components
 
-import android.content.Context
-import android.content.Intent
-import androidx.compose.foundation.clickable
+import androidx.compose.foundation.BorderStroke
+import androidx.compose.foundation.background
+import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -13,25 +13,35 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.More
 import androidx.compose.material.icons.filled.Error
 import androidx.compose.material.icons.filled.Favorite
 import androidx.compose.material.icons.filled.FavoriteBorder
+import androidx.compose.material.icons.filled.Headphones
+import androidx.compose.material.icons.filled.Info
 import androidx.compose.material.icons.filled.MusicNote
 import androidx.compose.material.icons.filled.Share
 import androidx.compose.material.icons.filled.Videocam
+import androidx.compose.material.icons.rounded.SearchOff
+import androidx.compose.material.icons.rounded.WarningAmber
+import androidx.compose.material3.AlertDialog
+import androidx.compose.material3.CircularProgressIndicator
+import androidx.compose.material3.DropdownMenu
+import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
-import androidx.compose.runtime.getValue
+import androidx.compose.runtime.MutableState
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
-import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.retain.retain
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -41,233 +51,423 @@ import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.graphics.vector.rememberVectorPainter
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextOverflow
+import androidx.compose.ui.unit.DpOffset
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import androidx.compose.ui.window.Dialog
 import coil.compose.AsyncImage
 import com.das.downloader.data.model.download.DownloadType
-import com.das.mediaHub.MainApplication
+import com.das.mediaHub.data.model.TopPopUp
+import com.das.mediaHub.data.model.VideoAction
 import com.das.mediaHub.data.model.icons.filled.YouTubeIcon
 import com.das.mediaHub.data.model.state.UiState
-import com.das.mediaHub.data.repository.FavoritesRepository
-import com.das.mediaHub.data.repository.WatchHistoryRepository
-import com.das.mediaHub.services.download.DownloadService
-import com.das.mediaHub.ui.players.videoPlayer.ViewerViewModel
+import com.das.mediaHub.ui.components.ErrorStateView
+import com.das.mediaHub.ui.components.dialogs.ActionMenuItem
+import com.das.mediaHub.ui.notification.TopPopupNotification.showNotificationDialog
 import com.das.mediaHub.ui.players.videoPlayer.components.CustomLayouts.SkeletonLoadingLayout
 import com.das.python.YouTuber.formatDate
-import kotlinx.coroutines.launch
-
+import com.das.python.data.model.FewVideoDetails
 
 @Composable
-fun VideoDetailsComposable(
-    mContext: Context,
+internal fun VideoDetailsComposable(
     videoId: String,
+    isSaved: Boolean,
     channelThumbnailURL: String,
-    duration: String,
-    viewModel: ViewerViewModel,
-    clickForMore: () -> Unit,
-    playItInYouTube: () -> Unit
+    detailsState: UiState<FewVideoDetails>,
+    onVideoAction: (VideoAction) -> Unit
 ) {
-    val showDescriptionDialog = remember { mutableStateOf(false) }
-    val detailsState by viewModel.detailsState.collectAsStateWithLifecycle()
+    val showMenu = retain { mutableStateOf(false) }
 
-    val app = mContext.applicationContext as MainApplication
-    val appDatabase = retain {
-        app.appDatabase
-    }
-
-    val dbForFav = retain {
-        FavoritesRepository(appDatabase.favoritesDatabase.favoritesDao())
-    }
-    val watchHistory = retain { WatchHistoryRepository(appDatabase.historyDatabase.watchHistoryDao()) }
-    val scope = rememberCoroutineScope()
-
-    val isSaved by dbForFav.isWatchUrlExist(videoId).collectAsStateWithLifecycle(false)
-
-
-
-    when (val state = detailsState) {
+    when (detailsState) {
         UiState.Idle,
         UiState.Loading -> {
-            SkeletonLoadingLayout()
+            // Added a wrapper to ensure consistent padding with the success state
+            Box(modifier = Modifier.padding(16.dp)) {
+                SkeletonLoadingLayout()
+            }
         }
 
         UiState.Empty -> {
-            Box(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(16.dp),
-                contentAlignment = Alignment.Center
-            ) {
-                Text(
-                    text = "No video details found",
-                    color = MaterialTheme.colorScheme.onSurfaceVariant
-                )
-            }
+            ErrorStateView(
+                title = "No Details Found",
+                message = "We couldn't fetch the information for this video.",
+                icon = Icons.Rounded.SearchOff
+            )
         }
 
         is UiState.Error -> {
-            Box(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(16.dp),
-                contentAlignment = Alignment.Center
-            ) {
-                Text(
-                    text = state.message,
-                    color = MaterialTheme.colorScheme.error
-                )
-            }
+            ErrorStateView(
+                title = "Oops! Something went wrong",
+                message = detailsState.message,
+                icon = Icons.Rounded.WarningAmber
+            )
         }
 
         is UiState.Success -> {
-            val videoDetails = state.data
+            val videoDetails = detailsState.data
             val title = videoDetails.title
 
             LaunchedEffect(channelThumbnailURL) {
                 if (channelThumbnailURL != "none is here") {
-                    scope.launch {
-                        watchHistory.insertNewVideo(
-                            videoId,
-                            title,
-                            videoDetails.date,
-                            videoDetails.viewNumber,
-                            videoDetails.channelName,
-                            duration,
-                            channelThumbnailURL
-                        )
-                    }
+                    onVideoAction(VideoAction.ToggleHistory)
                 }
             }
 
-            Column(modifier = Modifier.padding(16.dp)) {
-                Text(
-                    text = videoDetails.title,
-                    style = MaterialTheme.typography.titleLarge.copy(
-                        fontWeight = FontWeight.Bold,
-                        lineHeight = 28.sp
-                    ),
-                    maxLines = 3,
-                    modifier = Modifier.clickable { showDescriptionDialog.value = true }
-                )
+            Surface(
+                color = MaterialTheme.colorScheme.surfaceContainerLow, // Standard M3 container color
+                shape = RoundedCornerShape(24.dp), // Smoother, more modern corner radius
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(16.dp)
+            ) {
+                Column(modifier = Modifier.padding(20.dp)) {
 
-                Spacer(modifier = Modifier.height(16.dp))
-
-                Row(verticalAlignment = Alignment.CenterVertically) {
-                    AsyncImage(
-                        model = channelThumbnailURL,
-                        error = rememberVectorPainter(Icons.Default.Error),
-                        contentDescription = null,
-                        modifier = Modifier
-                            .size(40.dp)
-                            .clip(CircleShape),
-                        contentScale = ContentScale.Crop
+                    // --- Title Section ---
+                    Text(
+                        text = videoDetails.title,
+                        style = MaterialTheme.typography.titleLarge.copy(
+                            fontWeight = FontWeight.Bold,
+                            lineHeight = 26.sp
+                        ),
+                        maxLines = 3,
+                        overflow = TextOverflow.Ellipsis
                     )
 
-                    Spacer(modifier = Modifier.width(12.dp))
+                    Spacer(modifier = Modifier.height(20.dp))
 
-                    Column(modifier = Modifier.weight(1f)) {
-                        Text(
-                            text = videoDetails.channelName,
-                            style = MaterialTheme.typography.bodyLarge,
-                            fontWeight = FontWeight.Bold,
-                            maxLines = 1
-                        )
-                        Text(
-                            text = "${videoDetails.viewNumber} • ${videoDetails.date.formatDate()}",
-                            style = MaterialTheme.typography.bodySmall,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant
-                        )
-                    }
-                }
-
-                Spacer(modifier = Modifier.height(20.dp))
-
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.SpaceBetween
-                ) {
-                    ActionIconButton(
-                        icon = if (isSaved) Icons.Filled.Favorite else Icons.Default.FavoriteBorder,
-                        label = if (isSaved) "Saved" else "Save",
-                        tint = if (isSaved) Color.Red else MaterialTheme.colorScheme.onSurface
+                    // --- Channel Info Section ---
+                    Row(
+                        verticalAlignment = Alignment.CenterVertically,
+                        modifier = Modifier.fillMaxWidth()
                     ) {
-                        if (isSaved) {
-                            scope.launch {
-                                dbForFav.deleteWatchUrl(videoId)
+                        // Channel Avatar
+                        if (channelThumbnailURL == "none is here") {
+                            Surface(
+                                shape = CircleShape,
+                                color = MaterialTheme.colorScheme.surfaceVariant,
+                                modifier = Modifier.size(46.dp)
+                            ) {
+                                Box(contentAlignment = Alignment.Center) {
+                                    CircularProgressIndicator(
+                                        modifier = Modifier.size(24.dp),
+                                        strokeWidth = 2.dp,
+                                        color = MaterialTheme.colorScheme.primary
+                                    )
+                                }
                             }
                         } else {
-                            scope.launch {
-                                dbForFav.insertData(
-                                    videoId,
-                                    title,
-                                    videoDetails.date,
-                                    videoDetails.viewNumber,
-                                    videoDetails.channelName,
-                                    duration,
-                                    channelThumbnailURL
+                            AsyncImage(
+                                model = channelThumbnailURL,
+                                error = rememberVectorPainter(Icons.Default.Error),
+                                contentDescription = "Channel Thumbnail",
+                                modifier = Modifier
+                                    .size(46.dp)
+                                    .clip(CircleShape),
+                                contentScale = ContentScale.Crop
+                            )
+                        }
+
+                        Spacer(modifier = Modifier.width(16.dp))
+
+                        // Channel Metadata
+                        Column(modifier = Modifier.weight(1f)) {
+                            Text(
+                                text = videoDetails.channelName,
+                                style = MaterialTheme.typography.titleMedium,
+                                fontWeight = FontWeight.Bold,
+                                color = MaterialTheme.colorScheme.onSurface,
+                                maxLines = 1,
+                                overflow = TextOverflow.Ellipsis
+                            )
+
+                            Spacer(modifier = Modifier.height(2.dp))
+
+                            Row(
+                                horizontalArrangement = Arrangement.spacedBy(8.dp),
+                                verticalAlignment = Alignment.CenterVertically
+                            ) {
+                                Text(
+                                    text = videoDetails.viewNumber,
+                                    style = MaterialTheme.typography.bodyMedium,
+                                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                    maxLines = 1
+                                )
+
+                                // Bullet separator for a cleaner look
+                                Text(
+                                    text = "•",
+                                    style = MaterialTheme.typography.bodyMedium,
+                                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                                )
+
+                                Text(
+                                    text = videoDetails.date.formatDate(),
+                                    style = MaterialTheme.typography.bodyMedium,
+                                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                    maxLines = 1
                                 )
                             }
                         }
                     }
 
-                    ActionIconButton(
-                        icon = Icons.Default.Share,
-                        label = "Share"
+                    Spacer(modifier = Modifier.height(20.dp))
+
+                    LazyRow(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.SpaceBetween
                     ) {
-                        val shareIntent = Intent(Intent.ACTION_SEND).apply {
-                            type = "text/plain"
-                            putExtra(Intent.EXTRA_TEXT, "https://youtu.be/$videoId")
+                        item {
+                            ActionIconButton(
+                                icon = if (isSaved) Icons.Filled.Favorite else Icons.Default.FavoriteBorder,
+                                label = if (isSaved) "Saved" else "Save",
+                                tint = if (isSaved) Color.Red else MaterialTheme.colorScheme.onSurface
+                            ) {
+                                onVideoAction(
+                                    VideoAction.ToggleFavorite(insert = !isSaved)
+                                )
+                            }
                         }
-                        mContext.startActivity(Intent.createChooser(shareIntent, "Share via"))
-                    }
 
-                    ActionIconButton(
-                        icon = Icons.Default.MusicNote,
-                        label = "MP3"
-                    ) {
-                        DownloadService.startForYouTube(
-                            context = mContext,
-                            id = videoId,
-                            title = title,
-                            type = DownloadType.MUSIC
-                        )
-                    }
 
-                    ActionIconButton(
-                        icon = Icons.Default.Videocam,
-                        label = "MP4"
-                    ) {
-                        DownloadService.startForYouTube(
-                            context = mContext,
-                            id = videoId,
-                            title = title,
-                            type = DownloadType.VIDEO
-                        )
-                    }
 
-                    ActionIconButton(
-                        icon = Icons.Default.YouTubeIcon,
-                        label = "YouTube",
-                        tint = Color.Red
-                    ) {
-                        playItInYouTube()
-                    }
+                        item {
+                            ActionIconButton(
+                                icon = Icons.Default.MusicNote,
+                                label = "MP3"
+                            ) {
+                                onVideoAction(
+                                    VideoAction.Download(
+                                    id = videoId,
+                                    title = title,
+                                    type = DownloadType.MUSIC
+                                )
+                                )
+                            }
+                        }
 
-                    ActionIconButton(
-                        icon = Icons.AutoMirrored.Default.More,
-                        label = "More"
-                    ) {
-                        clickForMore()
+                        item {
+                            ActionIconButton(
+                                icon = Icons.Default.Videocam,
+                                label = "MP4"
+                            ) {
+                                onVideoAction(
+                                    VideoAction.Download(
+                                        id = videoId,
+                                        title = title,
+                                        type = DownloadType.VIDEO
+                                    )
+                                )
+                            }
+                        }
+
+
+                        item {
+                            ActionIconButton(
+                                icon = Icons.Default.Share,
+                                label = "Share"
+                            ) {
+                               onVideoAction(VideoAction.Share)
+                            }
+                        }
+
+                        item {
+                            Box {
+                                ActionIconButton(
+                                    icon = Icons.AutoMirrored.Default.More,
+                                    label = "More"
+                                ) {
+                                    showMenu.value = !showMenu.value
+                                }
+                                VideoActionMenu(
+                                    title = title,
+                                    expanded = showMenu.value,
+                                    onDismissRequest = { showMenu.value = false },
+                                ) { _, _ ->
+                                    VideoDetailsActionItems(
+                                        channelName = "",
+                                        onVideoAction = onVideoAction,
+                                        onDismissRequest = {
+                                            showMenu.value = false
+                                        }
+                                    )
+                                }
+                            }
+                        }
+
                     }
                 }
             }
 
-            if (showDescriptionDialog.value) {
-                ShowDescriptionDialog(videoDetails.description) {
-                    showDescriptionDialog.value = false
+        }
+    }
+}
+
+@Composable
+fun VideoDetailsActionItems(
+    channelName: String,
+    onVideoAction: (VideoAction) -> Unit,
+    onDismissRequest: () -> Unit,
+) {
+
+
+    ActionMenuItem(
+        icon = Icons.Default.YouTubeIcon,
+        title = "Open in YouTube",
+        subtitle = "Watch in official app",
+        iconColor = Color.Red,
+        onClick = {
+            onVideoAction(VideoAction.PlayInYoutube)
+            onDismissRequest()
+        }
+    )
+
+    // 🎧 Background play
+    ActionMenuItem(
+        icon = Icons.Default.Headphones,
+        title = "Play in background",
+        subtitle = "Audio only",
+        onClick = {
+            onDismissRequest()
+            onVideoAction(VideoAction.PlayBackground)
+        }
+    )
+
+    // ℹ️ Details
+    ActionMenuItem(
+        icon = Icons.Default.Info,
+        title = "Video details",
+        subtitle = channelName.ifBlank { "More info" },
+        onClick = {
+            onDismissRequest()
+            showNotificationDialog = TopPopUp(
+                message = "More video details are coming soon.",
+                icon = Icons.Default.Info,
+                loading = false
+            )
+        }
+    )
+}
+
+@Composable
+fun VideoActionMenu(
+    title: String,
+    expanded: Boolean,
+    onDismissRequest: () -> Unit,
+    addActionMenuItems: @Composable ( MutableState<Boolean>,  MutableState<String?>) -> Unit
+) {
+    val isLoading = remember { mutableStateOf(false) }
+    val errorMessage = remember { mutableStateOf<String?>(null) }
+
+
+
+
+
+    if (isLoading.value) {
+        Dialog(onDismissRequest = {}) {
+            Surface(
+                shape = RoundedCornerShape(28.dp),
+                color = MaterialTheme.colorScheme.surface,
+                tonalElevation = 8.dp,
+                shadowElevation = 12.dp
+            ) {
+                Column(
+                    modifier = Modifier.padding(24.dp),
+                    horizontalAlignment = Alignment.CenterHorizontally
+                ) {
+                    CircularProgressIndicator()
+                    Spacer(modifier = Modifier.height(16.dp))
+                    Text(
+                        text = "Starting background play...",
+                        style = MaterialTheme.typography.titleMedium,
+                        fontWeight = FontWeight.SemiBold
+                    )
+                    Spacer(modifier = Modifier.height(4.dp))
+                    Text(
+                        text = "Please wait a moment",
+                        style = MaterialTheme.typography.bodyMedium,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
                 }
             }
+        }
+    }
+
+    errorMessage.value?.let { message ->
+        AlertDialog(
+            onDismissRequest = { errorMessage.value = null },
+            shape = RoundedCornerShape(28.dp),
+            title = {
+                Text(
+                    text = "Couldn't play video",
+                    fontWeight = FontWeight.Bold
+                )
+            },
+            text = { Text(message) },
+            confirmButton = {
+                TextButton(onClick = { errorMessage.value = null }) {
+                    Text("OK")
+                }
+            }
+        )
+    }
+
+    DropdownMenu(
+        expanded = expanded,
+        onDismissRequest = onDismissRequest,
+        offset = DpOffset(x = 0.dp, y = 8.dp),
+        shape = RoundedCornerShape(24.dp),
+        containerColor = MaterialTheme.colorScheme.surface,
+        tonalElevation = 12.dp,
+        shadowElevation = 18.dp,
+        modifier = Modifier
+            .width(260.dp)
+            .background(
+                MaterialTheme.colorScheme.surface,
+                RoundedCornerShape(24.dp)
+            )
+            .border(
+                BorderStroke(
+                    1.dp,
+                    MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.35f)
+                ),
+                RoundedCornerShape(24.dp)
+            )
+    ) {
+        Column(modifier = Modifier.padding(vertical = 8.dp)) {
+
+            // Header
+            Column(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(horizontal = 16.dp, vertical = 10.dp)
+            ) {
+                Text(
+                    text = "Options",
+                    style = MaterialTheme.typography.titleMedium,
+                    fontWeight = FontWeight.Bold
+                )
+
+                Spacer(modifier = Modifier.height(4.dp))
+
+                Text(
+                    text = title,
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    maxLines = 2,
+                    overflow = TextOverflow.Ellipsis
+                )
+            }
+
+            HorizontalDivider(
+                modifier = Modifier.padding(vertical = 4.dp),
+                color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.35f)
+            )
+
+            addActionMenuItems(
+                isLoading,
+                errorMessage
+            )
         }
     }
 }
@@ -298,3 +498,5 @@ private fun ActionIconButton(
         )
     }
 }
+
+

@@ -27,26 +27,7 @@
 # Keep your Python code if you're using Chaquopy
 -keep class com.chaquo.python.** { *; }
 
-# === Google Identity (One Tap / GoogleID) ===
-
-# Public API
--keep class com.google.android.gms.auth.api.identity.** { *; }
-
-# Internal Identity implementation (package-private, required)
--keep class com.google.android.gms.auth.api.identity.internal.** { *; }
-
-# Required synthetic + builder classes used by R8
--keep class com.google.android.gms.auth.api.identity.zz* { *; }
-
-# Keep constructors only (prevents constructor mismatch)
--keepclassmembers class com.google.android.gms.auth.api.identity.** {
-    <init>(...);
-}
-
-# Silence warnings without keeping everything
--dontwarn com.google.android.gms.auth.api.identity.**
-
 # Missing classes rules for downloader and python modules
 -dontwarn com.das.downloader.**
--dontwarn com.das.downloader.data.local.PathPreferences
+-dontwarn com.das.mediaHub.data.local.PathPreferences
 -dontwarn com.das.python.**

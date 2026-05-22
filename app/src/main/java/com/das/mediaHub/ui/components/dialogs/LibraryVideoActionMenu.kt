@@ -1,6 +1,5 @@
 package com.das.mediaHub.ui.components.dialogs
 
-import android.content.Context
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
@@ -19,21 +18,13 @@ import androidx.compose.material.icons.filled.DeleteOutline
 import androidx.compose.material.icons.filled.Headphones
 import androidx.compose.material.icons.filled.Info
 import androidx.compose.material.icons.filled.PlayArrow
-import androidx.compose.material3.AlertDialog
-import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
-import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.remember
-import androidx.compose.runtime.rememberCoroutineScope
-import androidx.compose.runtime.retain.retain
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
@@ -42,92 +33,21 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.DpOffset
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.window.Dialog
 import com.das.mediaHub.data.model.TopPopUp
-import com.das.mediaHub.data.model.VideoItem
-import com.das.mediaHub.services.media.OnlineBackgroundPlayer.Companion.playAudioFromUrl
-import com.das.mediaHub.ui.TopPopupNotification.showNotificationDialog
 import com.das.mediaHub.ui.downloaded.ActionMenuItem
-import com.das.python.YouTuber.loadStreamUrl
-import com.das.python.data.model.VideosListData
-import kotlinx.coroutines.launch
+import com.das.mediaHub.ui.notification.TopPopupNotification.showNotificationDialog
 
 @Composable
 fun LibraryVideoActionMenu(
-    context: Context,
     expanded: Boolean,
-    onDismissRequest: () -> Unit,
-    selectedData: VideoItem,
+    title: String,
+    channelName: String,
     onRemoveFromHistory: () -> Unit,
-    onOpenVideo: () -> Unit
+    onOpenVideo: () -> Unit,
+    onPlayItBackground: () -> Unit,
+    onDismissRequest: () -> Unit
 ) {
-    val isLoading = remember { mutableStateOf(false) }
-    val errorMessage = remember { mutableStateOf<String?>(null) }
 
-    val mediaDetails by retain {
-        mutableStateOf(
-            VideosListData(
-                selectedData.watchUrl,
-                selectedData.title,
-                selectedData.views,
-                selectedData.dateTime,
-                selectedData.duration,
-                selectedData.channelName,
-                ""
-            )
-        )
-    }
-
-    val scope = rememberCoroutineScope()
-
-    if (isLoading.value) {
-        Dialog(onDismissRequest = {}) {
-            Surface(
-                shape = RoundedCornerShape(28.dp),
-                color = MaterialTheme.colorScheme.surface,
-                tonalElevation = 8.dp,
-                shadowElevation = 12.dp
-            ) {
-                Column(
-                    modifier = Modifier.padding(24.dp),
-                    horizontalAlignment = Alignment.CenterHorizontally
-                ) {
-                    CircularProgressIndicator()
-                    Spacer(modifier = Modifier.height(16.dp))
-                    Text(
-                        text = "Starting background play...",
-                        style = MaterialTheme.typography.titleMedium,
-                        fontWeight = FontWeight.SemiBold
-                    )
-                    Spacer(modifier = Modifier.height(4.dp))
-                    Text(
-                        text = "Please wait a moment",
-                        style = MaterialTheme.typography.bodyMedium,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant
-                    )
-                }
-            }
-        }
-    }
-
-    errorMessage.value?.let { message ->
-        AlertDialog(
-            onDismissRequest = { errorMessage.value = null },
-            shape = RoundedCornerShape(28.dp),
-            title = {
-                Text(
-                    text = "Couldn't play video",
-                    fontWeight = FontWeight.Bold
-                )
-            },
-            text = { Text(message) },
-            confirmButton = {
-                TextButton(onClick = { errorMessage.value = null }) {
-                    Text("OK")
-                }
-            }
-        )
-    }
 
     DropdownMenu(
         expanded = expanded,
@@ -168,7 +88,7 @@ fun LibraryVideoActionMenu(
                 Spacer(modifier = Modifier.height(4.dp))
 
                 Text(
-                    text = selectedData.title,
+                    text = title,
                     style = MaterialTheme.typography.bodySmall,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                     maxLines = 2,
@@ -195,40 +115,13 @@ fun LibraryVideoActionMenu(
                 icon = Icons.Default.Headphones,
                 title = "Play in background",
                 subtitle = "Audio only",
-                onClick = {
-                    isLoading.value = true
-                    onDismissRequest()
-
-                    scope.launch {
-                        mediaDetails.loadStreamUrl(
-                            onSuccess = { streamResult ->
-                                isLoading.value = false
-
-                                if (streamResult.audioUrl.isBlank()) {
-                                    errorMessage.value =
-                                        "This video can’t be played in the background right now."
-                                    return@loadStreamUrl
-                                }
-
-                                context.playAudioFromUrl(
-                                    audioUrl = streamResult.audioUrl,
-                                    selectedItem = streamResult
-                                )
-                            },
-                            onFailure = {
-                                isLoading.value = false
-                                errorMessage.value =
-                                    "Couldn't start background play. Please try again."
-                            }
-                        )
-                    }
-                }
+                onClick = onPlayItBackground
             )
 
             ActionMenuItem(
                 icon = Icons.Default.Info,
                 title = "Video details",
-                subtitle = selectedData.channelName.ifBlank { "More info" },
+                subtitle = channelName.ifBlank { "More info" },
                 onClick = {
                     onDismissRequest()
                     showNotificationDialog = TopPopUp(

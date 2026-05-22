@@ -1,95 +1,100 @@
-# 🎬 DasMediaHub
+# DasMediaHub
 
-**The Ultimate All-in-One Media Discovery & Download Suite**
+**The Ultimate All-in-One Media Discovery and Download Suite**
 
-DasMediaHub is a cutting-edge Android application engineered with **Jetpack Compose** and **Material 3**. It provides a unified, high-performance interface for discovering, streaming, and downloading content from across the web, including **YouTube, TikTok, and Instagram**.
+DasMediaHub is a cutting-edge Android application engineered with Jetpack Compose and Material 3. It provides a unified, high-performance interface for discovering, streaming, and downloading content from across the web, including YouTube, TikTok, and Instagram.
 
-> ⚠️ This project is intended for educational purposes. Users are responsible for complying with all applicable laws and platform terms.
+> This project is intended for educational purposes. Users are responsible for complying with all applicable laws and platform terms.
 
 [![App Version](https://img.shields.io/badge/Version-14.0-blue.svg)](https://github.com/Gomida05/DasMediaHub/releases)
-[![Kotlin Version](https://img.shields.io/badge/Kotlin-2.3.20-purple.svg)](https://kotlinlang.org/)
+[![Kotlin Version](https://img.shields.io/badge/Kotlin-2.3.21-purple.svg)](https://kotlinlang.org/)
 [![Compose](https://img.shields.io/badge/UI-Jetpack_Compose-green.svg)](https://developer.android.com/jetpack/compose)
 [![Material 3](https://img.shields.io/badge/Design-Material_3-blue.svg)](https://m3.material.io/)
 [![License](https://img.shields.io/badge/License-Apache%202.0-blue.svg)](LICENSE)
----
-
-## 🌟 Key Highlights
-
-- **🚀 Performance-First Architecture:** Built using the latest Android standards (Target SDK 37, Kotlin 2.3.20).
-- **🎞️ Premium Playback:** Seamless media experience powered by **AndroidX Media3 (ExoPlayer)** with background playback, dedicated media notifications, and PiP support.
-- **📥 Smart Downloads:** A robust, background-resilient download manager with real-time status notifications.
-- **🐍 Python-Powered Intelligence:** Leverages **Chaquopy** to execute Python scripts for advanced metadata extraction and content scraping.
-- **☁️ Firebase Integration:** Real-time data persistence and analytics via Firestore.
 
 ---
 
-## ⚙️ Core Initialization
+## Key Highlights
 
-DasMediaHub centralizes its core service initialization in `MainApplication` to ensure a seamless experience:
-- **Python Engine:** Automatically starts the Python environment via Chaquopy for instant metadata extraction.
-- **Notification Channels:** Pre-configures dedicated channels for Downloads, Media Playback (Local & Remote), and Error Reporting.
-
-## 🐍 Python Engine (`:python` module)
-
-The heart of DasMediaHub's extraction logic lies in a dedicated Python module powered by **Chaquopy** (integrated via AAR for optimized distribution). This allows the app to leverage powerful Python libraries for media scraping that are not natively available in Kotlin.
-
-### 🛠 Core Python Libraries Used:
-- **`yt-dlp`**: High-performance extraction of video/audio URLs and metadata from 1000+ sites.
-- **`pytubefix`**: Specialized handling for YouTube-specific streams.
-- **`youtube-search-python`**: Fast, lightweight YouTube searching without API keys.
-- **`httpx` & `requests`**: Robust networking for scraping and API interaction.
-
-> ⚠️ Some features rely on third-party tools such as `yt-dlp`. Their behavior and legality may vary depending on your region and usage.
+- **Performance-First Architecture:** Built using the latest Android standards (Target SDK 37, Kotlin 2.3.21).
+- **Refined Playback Experience:** Seamless media switching powered by AndroidX Media3 (ExoPlayer). Optimized for smooth transitions, zero-flicker rotation, and robust background playback.
+- **Resumable Downloads:** A custom, background-resilient download engine supporting HTTP Range requests for reliable content saving.
+- **Python-Powered Intelligence:** Leverages Chaquopy to execute Python scripts for high-accuracy metadata extraction and advanced content scraping.
+- **Real-time Data Persistence:** Integrated with Firebase Firestore for feedback collection and Room/DataStore for local history and favorites management.
+- **Developer-Friendly Codebase:** Fully documented with comprehensive KDocs and usage examples across all core modules.
 
 ---
 
-## ✨ Features
+## Core Modules
 
-### 🔍 Discovery & Search
+### :app (The Interface)
+The main UI layer built with Navigation 3. It coordinates between the media services and the domain layers, featuring a unified state management system for the video player to ensure a polished user experience.
+
+### :python (The Extraction Engine)
+The heart of DasMediaHub's extraction logic. Powered by Chaquopy, it leverages high-performance Python libraries:
+- **yt-dlp**: Multi-site metadata and stream extraction.
+- **pytubefix**: Specialized handling for YouTube-specific streams.
+- **httpx & requests**: Robust networking for scraping and API interaction.
+
+### :downloader (The Storage Layer)
+A decoupled, clean-architecture module dedicated to managing the download lifecycle. It handles concurrent tasks, sequential queuing, and persistent state tracking to ensure downloads survive app restarts.
+
+---
+
+## Features
+
+### Discovery and Search
 - **Universal Search:** Find content across multiple platforms simultaneously.
-- **Platform Specific Hubs:** Dedicated interfaces for YouTube, TikTok, and Instagram.
-- **Rich Previews:** High-quality thumbnails and metadata for every result.
+- **Metadata Richness:** High-quality thumbnails, formatted view counts, and channel details for every result.
+- **Deep Link Support:** Seamlessly handles external links from gomida05.com and YouTube.
 
-### 🎥 Media Experience
-- **Advanced Player:** Support for HLS, DASH, and standard MP4/WebM formats.
-- **Picture-in-Picture (PiP):** Continue watching while using other apps.
-- **Background Audio:** Listen to your favorite content even when the screen is off.
-- **History & Library:** Track what you've watched and manage your local downloads effortlessly.
+### Media Experience
+- **Advanced Player:** Support for HLS, DASH, and standard MP4/WebM formats with unified state handling.
+- **Picture-in-Picture (PiP):** Multitasking support with automatic state synchronization.
+- **Background Audio:** Listen to content while the screen is off or while using other apps.
+- **Library Management:** Persistent Watch History and "Save for Later" functionality.
 
-### 🎨 Design & Personalization
-- **Material 3 Interface:** Sleek, modern components with intuitive navigation.
-- **Dynamic Color:** Adapts its theme based on your device's wallpaper.
-- **Full Customization:** Toggle between Light and Dark modes with smooth transitions.
-
----
-
-## 🛠 Tech Stack & Tools
-
-| Category       | Technology                                        |
-|:---------------|:--------------------------------------------------|
-| **Language**   | Kotlin 2.3.20, Python (via Chaquopy 17.0.0)       |
-| **UI**         | Jetpack Compose, Material 3, Navigation 3         |
-| **Networking** | OkHttp 5, Kotlin Serialization                    |
-| **Media**      | AndroidX Media3 (ExoPlayer, Session), Coil, Glide |
-| **Storage**    | Firebase Firestore, Local File System             |
-| **Build**      | Gradle Kotlin DSL, Version Catalog                |
+### Design and Personalization
+- **Material 3 UI:** Modern components with intuitive navigation.
+- **Dynamic Color:** The interface adapts its theme based on your device's wallpaper.
+- **Custom Storage:** User-definable paths for Music and Video libraries.
 
 ---
 
-## 🚀 Getting Started
+## Tech Stack and Tools
 
-### 📋 Prerequisites
+| Category | Technology |
+| :--- | :--- |
+| **Language** | Kotlin 2.3.21, Python 3.14 (via Chaquopy 17.0.0) |
+| **UI** | Jetpack Compose, Material 3, Navigation 3 |
+| **Networking** | Ktor 3.5.0, OkHttp 5 |
+| **Media** | AndroidX Media3 (ExoPlayer, Session), Coil, Glide |
+| **Storage** | Room DB 3.0.0-alpha05, DataStore, Firebase Firestore |
+| **Build** | Gradle 9.x (Kotlin DSL), Version Catalog, KSP |
+
+---
+
+## Getting Started
+
+### Prerequisites
 - **Android Studio Ladybug** (or later)
 - **Android SDK 37**
-- **JDK 18**
+- **JDK 21**
 - **Local Python Interpreter** (for build-time compilation)
 
-### 🔨 Installation & Build
+### Installation and Build
 1. Clone the repository:
    ```bash
    git clone https://github.com/Gomida05/DasMediaHub.git
    ```
-2. Configure your `local.properties` (see below).
+2. Configure your `local.properties`:
+   ```properties
+   PYTHON_PATH=/path/to/your/python3
+   KEYSTORE_FILE=C:/path/to/your/release.jks
+   KEYSTORE_PASSWORD=your_password
+   KEY_ALIAS=your_alias
+   KEY_PASSWORD=your_password
+   ```
 3. Open the project in Android Studio and sync with Gradle.
 4. Run the app:
    ```bash
@@ -98,24 +103,7 @@ The heart of DasMediaHub's extraction logic lies in a dedicated Python module po
 
 ---
 
-## 🔐 Local Configuration (`local.properties`)
-
-To ensure all features work correctly, add the following to your `local.properties`:
-
-```properties
-# Path to your local Python interpreter (required by Chaquopy)
-PYTHON_PATH=/usr/bin/python3
-
-# App Signing (Required for Release)
-KEYSTORE_FILE=C:/path/to/your/release.jks
-KEYSTORE_PASSWORD= your_password
-KEY_ALIAS=your_alias
-KEY_PASSWORD=your_password
-```
-
----
-
-## 🤝 Contributing
+## Contributing
 
 Contributions make the open-source community an amazing place! If you'd like to contribute:
 1. **Fork** the project.
@@ -126,51 +114,14 @@ Contributions make the open-source community an amazing place! If you'd like to 
 
 ---
 
+## License
 
-## 📄 License
-
-This project is licensed under the **Apache License 2.0**.
-
-See the [LICENSE](LICENSE) file for full details.
+This project is licensed under the **Apache License 2.0**. See the [LICENSE](LICENSE) file for full details.
 
 ---
 
+## Legal Disclaimer
 
-## ⚠️ Legal Disclaimer
+DasMediaHub is an open-source project provided for **educational and personal use only**. This application does **not host, store, or distribute any media content**. It functions as a client that accesses publicly available data from third-party services.
 
-DasMediaHub is an open-source project provided for **educational and personal use only**.
-
-This application does **not host, store, or distribute any media content**. It functions as a client that accesses publicly available data from third-party services.
-
-### ❗ User Responsibility
-By using this software, you agree that:
-- You are solely responsible for your use of the application
-- You will comply with all applicable local, national, and international laws
-- You will adhere to the Terms of Service of all platforms accessed through this app
-
-### 🚫 No Affiliation
-DasMediaHub is **not affiliated with, endorsed by, or sponsored by**:
-- YouTube (Google LLC)
-- TikTok (ByteDance Ltd.)
-- Instagram (Meta Platforms, Inc.)
-
-All trademarks and copyrights belong to their respective owners.
-
-### 📥 Content & Copyright
-Accessing, downloading, or redistributing media may violate:
-- Platform Terms of Service
-- Copyright and intellectual property laws
-
-You are solely responsible for ensuring that your actions are lawful and permitted.
-
-### ⚠️ Limitation of Liability
-The developers and contributors of DasMediaHub:
-- Make **no guarantees** about the legality of usage in your jurisdiction
-- Are **not responsible** for any misuse of the software
-- Shall **not be held liable** for any claims, damages, or legal issues arising from its use
-
----
-
-By using this software, you acknowledge and agree to this disclaimer.
-
-**Developed with ❤️ by the DasMediaHub Team**
+**Developed by the DasMediaHub Team**

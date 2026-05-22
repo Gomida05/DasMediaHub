@@ -1,18 +1,16 @@
 package com.das.mediaHub.navigation
 
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.History
 import androidx.compose.material.icons.filled.Home
 import androidx.compose.material.icons.filled.Settings
-import androidx.compose.material.icons.filled.WatchLater
+import androidx.compose.material.icons.outlined.History
 import androidx.compose.material.icons.outlined.Home
 import androidx.compose.material.icons.outlined.Settings
-import androidx.compose.material.icons.outlined.WatchLater
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.Stable
-import androidx.compose.runtime.retain.retain
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.navigation3.runtime.NavKey
-import com.das.mediaHub.navigation.NavScreens
 
 @Stable
 data class BottomNavItem(
@@ -23,29 +21,25 @@ data class BottomNavItem(
 ) {
     internal companion object {
         @Composable
-        fun rememberBottomNavigationItems(): List<BottomNavItem> {
-            return retain {
-                listOf(
-                    BottomNavItem(
-                        title = "Home",
-                        selectedIcon = Icons.Filled.Home,
-                        unselectedIcon = Icons.Outlined.Home,
-                        key = NavScreens.Home
-                    ),
-                    BottomNavItem(
-                        title = "Recently Watched",
-                        selectedIcon = Icons.Filled.WatchLater,
-                        unselectedIcon = Icons.Outlined.WatchLater,
-                        key = NavScreens.RecentlyWatched
-                    ),
-                    BottomNavItem(
-                        title = "Setting",
-                        selectedIcon = Icons.Filled.Settings,
-                        unselectedIcon = Icons.Outlined.Settings,
-                        key = NavScreens.Setting
-                    )
-                )
-            }
-        }
+        fun rememberBottomNavigationItems() = listOf(
+            BottomNavItem(
+                title = "Home",
+                selectedIcon = Icons.Filled.Home,
+                unselectedIcon = Icons.Outlined.Home,
+                key = Destination.Home
+            ),
+            BottomNavItem(
+                title = "History",
+                selectedIcon = Icons.Filled.History,
+                unselectedIcon = Icons.Outlined.History,
+                key = Destination.RecentlyWatched
+            ),
+            BottomNavItem(
+                title = "Settings",
+                selectedIcon = Icons.Filled.Settings,
+                unselectedIcon = Icons.Outlined.Settings,
+                key = Destination.Setting
+            )
+        )
     }
 }

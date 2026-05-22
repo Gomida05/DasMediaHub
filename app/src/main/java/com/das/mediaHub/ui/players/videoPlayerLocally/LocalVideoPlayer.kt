@@ -32,10 +32,8 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.core.net.toUri
+import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
-import androidx.lifecycle.viewmodel.compose.viewModel
-import androidx.lifecycle.viewmodel.initializer
-import androidx.lifecycle.viewmodel.viewModelFactory
 import androidx.media3.common.MediaItem
 import androidx.media3.common.MediaMetadata
 import androidx.media3.session.MediaController
@@ -55,14 +53,7 @@ fun LocalVideoPlayer(videoUri: String) {
     PIP.BindPip(activity = activity)
     HandlePip(activity = activity)
 
-    val viewModel = viewModel(
-        modelClass = LocalPlayerViewModel::class.java.kotlin,
-        factory = viewModelFactory {
-            initializer {
-                LocalPlayerViewModel(context.applicationContext.contentResolver)
-            }
-        }
-    )
+    val viewModel = hiltViewModel<LocalPlayerViewModel>()
 
     val metadataState by viewModel.currentMediaMetadata.collectAsStateWithLifecycle()
     val playlistState by viewModel.uiState.collectAsStateWithLifecycle()

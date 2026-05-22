@@ -15,42 +15,54 @@ import com.bumptech.glide.request.transition.Transition
 import com.das.mediaHub.MainActivity
 import com.das.mediaHub.R
 
+/**
+ * Adapter responsible for providing metadata (title, text, icons) to the Media3 
+ * [PlayerNotificationManager].
+ *
+ * This is used for local media playback notifications, ensuring they display the 
+ * correct media information and provide an intent to open the app when clicked.
+ */
 @SuppressLint("UnsafeOptInUsageError")
 class DescriptionAdapter(val context: Context): MediaDescriptionAdapter {
 
-    private var cachedArtwork: Bitmap? = null
+    private var bitmapCache: Bitmap? = null
 
-
+    /** Retrieves the title from current media metadata. */
     override fun getCurrentContentTitle(player: Player): CharSequence {
         return player.mediaMetadata.title ?: "Unknown"
     }
 
+    /** Creates a [PendingIntent] to launch [MainActivity] when the notification is clicked. */
     override fun createCurrentContentIntent(player: Player): PendingIntent {
         val intent = Intent(context, MainActivity::class.java)
-        val pendingIntent = PendingIntent.getActivity(
+        return PendingIntent.getActivity(
             context,
             0,
             intent,
             PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
         )
-        return pendingIntent
     }
 
+    /** Retrieves the artist/content text from media metadata. */
     override fun getCurrentContentText(player: Player): CharSequence? {
         return player.mediaMetadata.artist
     }
 
+    /** Retrieves subtext from media metadata. */
     override fun getCurrentSubText(player: Player): CharSequence? {
         return player.currentMediaItem?.mediaMetadata?.description
     }
 
-
+    /**
+     * Loads and provides the large icon for the notification.
+     * Uses Glide for asynchronous bitmap loading and includes a local cache.
+     */
     override fun getCurrentLargeIcon(
         player: Player,
         callback: PlayerNotificationManager.BitmapCallback
     ): Bitmap? {
 
-        cachedArtwork?.let {
+        bitmapCache?.let {
             callback.onBitmap(it)
             return it
         }
@@ -64,16 +76,13 @@ class DescriptionAdapter(val context: Context): MediaDescriptionAdapter {
                     resource: Bitmap,
                     transition: Transition<in Bitmap>?
                 ) {
-                    cachedArtwork = resource
+                    bitmapCache = resource
                     callback.onBitmap(resource)
                 }
 
                 override fun onLoadCleared(placeholder: Drawable?) {}
             })
 
-
-
-        return cachedArtwork
+        return bitmapCache
     }
-
 }

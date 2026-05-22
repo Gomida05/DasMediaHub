@@ -8,13 +8,15 @@ plugins {
     alias(libs.plugins.google.gms)
     alias(libs.plugins.kotlin.serialization)
     alias(libs.plugins.kotlin.ksp)
-
-    id("kotlin-parcelize")
+    alias(libs.plugins.room3)
+    alias(libs.plugins.dagger.hilt)
 }
 
 private val loadLocalProperties = Properties().apply {
     load(FileInputStream(rootProject.file("local.properties")))
 }
+
+
 android {
     signingConfigs {
         create("release") {
@@ -26,14 +28,14 @@ android {
         }
     }
     namespace = "com.das.mediaHub"
+    compileSdk = 37
 
     defaultConfig {
         applicationId = "com.das.mediaHub"
-        compileSdk = 36
         minSdk = 26
         targetSdk = 37
-        versionCode = 14
-        versionName = "14.0"
+        versionCode = 15
+        versionName = "15.0"
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
 
@@ -47,9 +49,16 @@ android {
         includeInBundle = false
         includeInApk = false
     }
-    buildToolsVersion = "36.1.0"
 
     buildTypes {
+        debug {
+            isMinifyEnabled = false
+            proguardFiles(
+                getDefaultProguardFile("proguard-android-optimize.txt"),
+                "proguard-rules.pro"
+            )
+        }
+
         release {
             isMinifyEnabled = true
             isShrinkResources = true
@@ -62,78 +71,85 @@ android {
     }
 
     compileOptions {
-        sourceCompatibility = JavaVersion.VERSION_18
-        targetCompatibility = JavaVersion.VERSION_18
+        sourceCompatibility = JavaVersion.VERSION_21
+        targetCompatibility = JavaVersion.VERSION_21
     }
 
 
     buildFeatures {
         compose = true
+        buildConfig = true
     }
+
+
 }
 
 kotlin {
+
+    jvmToolchain(21)
     compilerOptions {
-        jvmTarget.set(JvmTarget.JVM_18)
+        jvmTarget.set(JvmTarget.JVM_21)
         allWarningsAsErrors.set(false)
         freeCompilerArgs.add("-opt-in=androidx.compose.material3.ExperimentalMaterial3Api")
     }
 }
 
-ksp {
-    //Set room
-    arg("room.schemaLocation", "$projectDir/schemas")
-
+room3 {
+    schemaDirectory("$projectDir/schemas")
 }
 
 dependencies {
-    //Alpha
-    implementation(libs.androidx.core.pip)
 
     // Python Integration: The app uses a dedicated :python module
     // for metadata scraping and extraction via Chaquopy.
 //     implementation(project(":python")) // Uncomment for development
-     implementation(project(":downloader"))
-    implementation(files("../libs/aar/das-python.aar"))
+//     implementation(project(":downloader"))
+    implementation(libs.com.das.downloader)
+    implementation(libs.com.das.python)
+//    implementation(files("../libs/aar/das-python.aar"))
+//    implementation(files("../libs/aar/das-downloader.aar"))
 
+    //Ktor
+    implementation(libs.ktor.client.core)
+    implementation(libs.ktor.client.cio)
+    implementation(libs.ktor.client.content.negotiation)
+    implementation(libs.ktor.serialization.kotlinx.json)
 
     //Firebase dependencies
     implementation(platform(libs.firebase.bom))
     implementation(libs.firebase.analytics)
-    implementation(libs.firebase.firestore.ktx)
-
-
-    //Google
-    implementation(libs.play.services.auth)
+    implementation(libs.firebase.firestore)
 
     implementation(libs.coil.compose)
     implementation(libs.coil.video)
 
-    implementation(libs.runtime.livedata)
-    implementation(libs.ui.viewbinding)
 
     //Material 3
     implementation(platform(libs.compose.bom))
     implementation(libs.material3)
     implementation(libs.activity.compose)
-
-    //Room DB
-    implementation(libs.androidx.room.runtime)
-    implementation(libs.androidx.room.ktx)
-    ksp(libs.androidx.room.compiler)
-
-    //preview
-    implementation(libs.ui.tooling.preview)
-    implementation(libs.googleid)
     implementation(libs.androidx.lifecycle.runtime.ktx)
     implementation(libs.androidx.ui)
     implementation(libs.androidx.ui.graphics)
-    androidTestImplementation(platform(libs.compose.bom))
-    androidTestImplementation(libs.androidx.ui.test.junit4)
+
+    //Room DB
+    implementation(libs.androidx.room3.runtime)
+    ksp(libs.androidx.room3.compiler)
+
+    //Dagger Hilt
+    implementation(libs.hilt.android)
+    ksp(libs.hilt.compiler)
+    implementation(libs.hilt.navigation.compose)
+
+    //preview
+    implementation(libs.ui.tooling.preview)
     debugImplementation(libs.ui.tooling)
 
     //icons
     implementation(libs.material.icons.extended)
+
+    //DataStore
+    implementation(libs.androidx.datastore.preferences)
 
     //browser
     implementation(libs.browser)
@@ -144,11 +160,8 @@ dependencies {
 
     implementation(libs.glide)
     implementation(libs.runtime.android)
-    implementation(libs.appcompat)
 
 
-    implementation(libs.constraintlayout)
-    implementation(libs.lifecycle.livedata.ktx)
     implementation(libs.lifecycle.viewmodel.ktx)
     implementation(libs.lifecycle.viewmodel.compose)
     implementation(libs.androidx.lifecycle.viewmodel.navigation3)
@@ -157,26 +170,15 @@ dependencies {
 
     //Media 3
     implementation(libs.media3.session)
-    implementation(libs.media3.exoplayer.dash)
-    implementation(libs.media3.exoplayer.hls)
     implementation(libs.media3.ui)
     implementation(libs.media3.ui.compose)
     implementation(libs.media3.ui.material3)
     implementation(libs.media3.exoplayer)
-    implementation(libs.media3.common)
     implementation(libs.media3.common.ktx)
 
     //serialization JSON
     implementation(libs.kotlinx.serialization.json)
 
-    implementation(libs.androidx.credentials)
-    implementation(libs.androidx.credentials.play.services.auth)
 
-    testImplementation(libs.junit)
-    implementation(libs.kotlin.stdlib)
-    debugImplementation(libs.androidx.ui.test.manifest)
-
-    //okhttp
-    implementation(libs.okhttp)
 
 }

@@ -17,8 +17,8 @@ internal class NotificationChannels(context: Context) {
 
     private fun createChannelGroups() {
         val groups = listOf(
-            NotificationChannelGroup("MNGC", "MediaPlayer notifications"),
-            NotificationChannelGroup("NGC", "Download notifications")
+            NotificationChannelGroup(MEDIA_GROUP, "MediaPlayer notifications"),
+            NotificationChannelGroup(DOWNLOAD_GROUP, "Download notifications")
         )
         manager.createNotificationChannelGroups(groups)
     }
@@ -26,7 +26,7 @@ internal class NotificationChannels(context: Context) {
     private fun createChannels() {
         val channels = listOf(
             NotificationChannel(
-                "error_searching",
+                ERROR_SEARCHING,
                 "Error Notifications",
                 NotificationManager.IMPORTANCE_HIGH
             ).apply {
@@ -34,29 +34,29 @@ internal class NotificationChannels(context: Context) {
                 enableVibration(true)
             },
             NotificationChannel(
-                "download_channel",
+                DOWNLOAD_CHANNEL,
                 "Downloads",
                 NotificationManager.IMPORTANCE_LOW
             ).apply {
-                group = "NGC"
+                group = DOWNLOAD_GROUP
                 description = "This channel is for download notifications"
             },
             NotificationChannel(
-                "MediaYouTubePlayer",
+                MEDIA_YOUTUBE_PLAYER,
                 "Media Player",
                 NotificationManager.IMPORTANCE_LOW
             ).apply {
-                group = "MNGC"
+                group = MEDIA_GROUP
                 enableLights(false)
                 enableVibration(false)
                 setSound(null, null)
             },
             NotificationChannel(
-                "MusicPlayerNotification",
+                MUSIC_PLAYER_NOTIFICATION,
                 "Local Music Player",
                 NotificationManager.IMPORTANCE_LOW
             ).apply {
-                group = "MNGC"
+                group = MEDIA_GROUP
                 enableLights(false)
                 enableVibration(false)
                 setSound(null, null)
@@ -66,6 +66,7 @@ internal class NotificationChannels(context: Context) {
                 "Media Downloader",
                 NotificationManager.IMPORTANCE_LOW
             ).apply {
+                group = DOWNLOAD_GROUP
                 enableVibration(false)
                 setShowBadge(false)
                 description = "Media Downloader for videos and music"
@@ -75,5 +76,15 @@ internal class NotificationChannels(context: Context) {
         )
 
         manager.createNotificationChannels(channels)
+    }
+
+
+    companion object NotificationChannelNames {
+        const val ERROR_SEARCHING = "error_searching"
+        const val DOWNLOAD_CHANNEL = "download_channel"
+        const val MEDIA_YOUTUBE_PLAYER = "MediaYouTubePlayer"
+        const val MUSIC_PLAYER_NOTIFICATION = "MusicPlayerNotification"
+        const val MEDIA_GROUP = "MNGC"
+        const val DOWNLOAD_GROUP = "NGC"
     }
 }

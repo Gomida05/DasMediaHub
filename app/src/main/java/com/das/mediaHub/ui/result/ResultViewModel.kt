@@ -1,12 +1,15 @@
 package com.das.mediaHub.ui.result
 
+import android.util.Log
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.das.mediaHub.data.error.ErrorMapper
 import com.das.mediaHub.data.model.state.UiState
+import com.das.mediaHub.ui.players.videoPlayer.components.CustomMethods.toVideosListData
 import com.das.python.YouTuber
+import com.das.python.YouTuber.loadStreamUrl
+import com.das.python.data.model.ItemsStreamUrlsForMediaItemData
 import com.das.python.data.model.searcher.Video
-import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
@@ -79,7 +82,11 @@ class ResultViewModel: ViewModel() {
                     )
                 }
             } catch (e: Exception) {
-                e.printStackTrace()
+                Log.d(
+                    "Error is here",
+                    "error message ${e.message}",
+                    e
+                )
                 _searchResults.value = UiState.Error(ErrorMapper.map(e))
             }
         }
@@ -94,8 +101,6 @@ class ResultViewModel: ViewModel() {
         _isLoadingMore.value = true
 
         viewModelScope.launch {
-            delay(500)
-
             val nextBatchStart = currentBatch * batchSize
             val moreItems = _allResults.drop(nextBatchStart).take(batchSize)
 
@@ -108,4 +113,18 @@ class ResultViewModel: ViewModel() {
         }
     }
 
+    fun loadStreamUrl(
+        mediaItem: Video,
+        onStart: () -> Unit,
+        onSuccess: (ItemsStreamUrlsForMediaItemData) -> Unit,
+        onFailure: (Exception) -> Unit,
+    ) {
+        onStart()
+        viewModelScope.launch {
+            mediaItem.toVideosListData().loadStreamUrl(
+                onSuccess = onSuccess,
+                onFailure = onFailure
+            )
+        }
+    }
 }

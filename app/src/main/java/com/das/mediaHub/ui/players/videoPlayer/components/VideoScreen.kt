@@ -7,9 +7,12 @@ import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.Error
+import androidx.compose.material.icons.rounded.VideocamOff
+import androidx.compose.material.icons.rounded.WarningAmber
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
@@ -17,10 +20,12 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
-import androidx.media3.exoplayer.ExoPlayer
+import androidx.media3.common.Player
 import com.das.mediaHub.PIP.rememberPipModifier
 import com.das.mediaHub.data.model.state.UiState
 import com.das.mediaHub.ui.players.videoPlayerLocally.CustomPlayer
@@ -29,7 +34,7 @@ import com.das.mediaHub.ui.players.videoPlayerLocally.CustomPlayer
 @Composable
 fun VideoScreen(
     videoState: UiState<String>,
-    mExoPlayer: ExoPlayer,
+    player: Player,
     isInFullScreen: Boolean,
     isInPipMode: Boolean,
     fullScreen: (Boolean) -> Unit
@@ -48,77 +53,136 @@ fun VideoScreen(
     ) {
 
         CustomPlayer(
-            player = mExoPlayer,
+            player = player,
             showControls = !isInPipMode,
             isFullScreen = isInFullScreen,
             onFullScreenChanged = fullScreen,
             modifier = Modifier.fillMaxSize()
         )
 
-        // 🔥 Always keep PlayerView alive
-
-        /**
-         *         AndroidView(
-         *             modifier = Modifier.fillMaxSize(),
-         *             factory = {
-         *                 PlayerView(it).apply {
-         *                     player = mExoPlayer
-         *                     keepScreenOn = true
-         *                 }
-         *             },
-         *             update = { playerView ->
-         *                 playerView.player = mExoPlayer
-         *                 playerView.setFullscreenButtonState(isInFullScreen)
-         *                 playerView.setFullscreenButtonClickListener { fullScreen(it) }
-         *                 playerView.resizeMode =
-         *                     if (isInFullScreen)
-         *                         AspectRatioFrameLayout.RESIZE_MODE_ZOOM
-         *                     else
-         *                         AspectRatioFrameLayout.RESIZE_MODE_FIT
-         *
-         *                 playerView.useController = !isInPipMode
-         *             }
-         *         )
-         */
-
-        // 🔥 Overlay states (instead of replacing player)
         when (videoState) {
             UiState.Idle,
             UiState.Loading -> {
-                // Only show spinner if nothing is loaded yet
-                if (mExoPlayer.currentMediaItem == null) {
-                    CircularProgressIndicator()
+                if (player.currentMediaItem == null && !isInPipMode) {
+                    VideoLoadingOverlay()
                 }
             }
 
             UiState.Empty -> {
-                Text(
-                    text = "No video found",
-                    color = Color.White,
-                    textAlign = TextAlign.Center
-                )
+                if (!isInPipMode) {
+                    VideoEmptyOverlay()
+                }
             }
 
             is UiState.Error -> {
                 if (!isInPipMode) {
-                    Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                        Icon(
-                            imageVector = Icons.Default.Error,
-                            contentDescription = null,
-                            tint = MaterialTheme.colorScheme.error,
-                            modifier = Modifier.size(48.dp)
-                        )
-                        Spacer(modifier = Modifier.height(8.dp))
-                        Text(
-                            text = videoState.message,
-                            color = Color.White,
-                            textAlign = TextAlign.Center
-                        )
-                    }
+                    VideoErrorOverlay(message = videoState.message)
                 }
             }
 
             is UiState.Success -> Unit
         }
+    }
+}
+
+
+/**
+ * A sleek, semi-transparent error overlay.
+ * Dims the background to ensure the error is legible even if a bright video frame is stuck underneath.
+ */
+@Composable
+private fun VideoErrorOverlay(message: String) {
+    Box(
+        modifier = Modifier
+            .fillMaxSize()
+            .background(Color.Black.copy(alpha = 0.75f)), // Cinematic dimming
+        contentAlignment = Alignment.Center
+    ) {
+        Column(
+            horizontalAlignment = Alignment.CenterHorizontally,
+            modifier = Modifier.padding(horizontal = 32.dp, vertical = 16.dp)
+        ) {
+            // Pill-shaped icon background for a premium look
+            Box(
+                modifier = Modifier
+                    .clip(RoundedCornerShape(50))
+                    .background(MaterialTheme.colorScheme.errorContainer.copy(alpha = 0.8f))
+                    .padding(12.dp),
+                contentAlignment = Alignment.Center
+            ) {
+                Icon(
+                    imageVector = Icons.Rounded.WarningAmber,
+                    contentDescription = "Playback Error",
+                    tint = MaterialTheme.colorScheme.onErrorContainer,
+                    modifier = Modifier.size(32.dp)
+                )
+            }
+
+            Spacer(modifier = Modifier.height(16.dp))
+
+            Text(
+                text = "Playback Error",
+                style = MaterialTheme.typography.titleMedium,
+                fontWeight = FontWeight.Bold,
+                color = Color.White // Forced white for contrast against the black overlay
+            )
+
+            Spacer(modifier = Modifier.height(4.dp))
+
+            Text(
+                text = message,
+                style = MaterialTheme.typography.bodyMedium,
+                color = Color.White.copy(alpha = 0.8f),
+                textAlign = TextAlign.Center
+            )
+        }
+    }
+}
+
+/**
+ * Empty state overlay, styled similarly to the error overlay but using neutral colors.
+ */
+@Composable
+private fun VideoEmptyOverlay() {
+    Box(
+        modifier = Modifier
+            .fillMaxSize()
+            .background(Color.Black.copy(alpha = 0.75f)),
+        contentAlignment = Alignment.Center
+    ) {
+        Column(horizontalAlignment = Alignment.CenterHorizontally) {
+            Icon(
+                imageVector = Icons.Rounded.VideocamOff,
+                contentDescription = "No Video Found",
+                tint = Color.White.copy(alpha = 0.6f),
+                modifier = Modifier.size(42.dp)
+            )
+            Spacer(modifier = Modifier.height(12.dp))
+            Text(
+                text = "No video available",
+                style = MaterialTheme.typography.titleMedium,
+                color = Color.White.copy(alpha = 0.9f)
+            )
+        }
+    }
+}
+
+/**
+ * Styled loading spinner designed specifically for dark media player environments.
+ */
+@Composable
+private fun VideoLoadingOverlay() {
+    Box(
+        modifier = Modifier
+            .fillMaxSize()
+            .background(Color.Black.copy(alpha = 0.4f)), // Lighter dimming for loading
+        contentAlignment = Alignment.Center
+    ) {
+        CircularProgressIndicator(
+            color = MaterialTheme.colorScheme.primary,
+            trackColor = Color.White.copy(alpha = 0.2f),
+            strokeWidth = 3.dp,
+            modifier = Modifier.size(48.dp)
+        )
     }
 }

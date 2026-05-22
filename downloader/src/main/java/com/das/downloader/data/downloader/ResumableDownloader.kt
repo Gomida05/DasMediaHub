@@ -1,31 +1,53 @@
 package com.das.downloader.data.downloader
 
+import com.das.downloader.data.model.Outcome
 import com.das.downloader.data.model.download.DownloadTask
+import com.das.downloader.exception.NetworkRequestException
+import io.ktor.client.HttpClient
+import io.ktor.client.request.header
+import io.ktor.client.request.prepareGet
+import io.ktor.client.statement.bodyAsChannel
+import io.ktor.utils.io.readAvailable
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.ensureActive
 import kotlinx.coroutines.withContext
-import okhttp3.OkHttpClient
-import okhttp3.Request
 import java.io.File
 import java.io.RandomAccessFile
 
+/**
+ * A low-level downloader that supports HTTP Range requests for resuming interrupted downloads.
+ * 
+ * It uses the Ktor [HttpClient] with the CIO engine for efficient, non-blocking I/O.
+ * 
+ * Example usage:
+ * ```kotlin
+ * val downloader = ResumableDownloader()
+ * val outcome = downloader.download(
+ *     task = myTask,
+ *     alreadyDownloadedBytes = 1024L,
+ *     isPaused = { false },
+ *     isCanceled = { false },
+ *     onProgress = { downloaded, total -> println("Progress: $downloaded/$total") }
+ * )
+ * ```
+ */
 class ResumableDownloader(
-    private val client: OkHttpClient = OkHttpClient()
-) {
+    private val client: HttpClient
+) : Downloader {
 
-    sealed class Outcome {
-        data object Completed : Outcome()
-        data object Paused : Outcome()
-        data object Canceled : Outcome()
-        data class Failed(val message: String) : Outcome()
-    }
-
-    suspend fun download(
+    /**
+     * Executes the download for the given [DownloadTask].
+     * 
+     * @param task The task metadata.
+     * @param alreadyDownloadedBytes Bytes already saved to disk (for resuming).
+     * @param isPaused Lambda to check if the task should be paused.
+     * @param onProgress Callback to report download progress.
+     * @return The [com.das.downloader.data.model.Outcome] of the download attempt.
+     */
+    override suspend fun download(
         task: DownloadTask,
         alreadyDownloadedBytes: Long,
         isPaused: () -> Boolean,
-        isCanceled: () -> Boolean,
         onProgress: (downloaded: Long, total: Long) -> Unit
     ): Outcome = withContext(Dispatchers.IO) {
         val file = File(task.destinationPath)
@@ -37,22 +59,18 @@ class ResumableDownloader(
         }
 
         try {
-            val builder = Request.Builder().url(task.url)
-            task.headers.forEach { (key, value) -> builder.addHeader(key, value) }
-
-            if (startByte > 0L) {
-                builder.addHeader("Range", "bytes=$startByte-")
-            }
-
-            client.newCall(builder.build()).execute().use { response ->
-                if (!response.isSuccessful && response.code != 206) {
-                    return@withContext Outcome.Failed("HTTP ${response.code}")
+            client.prepareGet(task.url) {
+                task.headers.forEach { (key, value) -> header(key, value) }
+                if (startByte > 0L) {
+                    header("Range", "bytes=$startByte-")
                 }
+            }.execute { response ->
 
-                val body = response.body
+                if (response.status.value == 416) return@execute Outcome.Completed
 
-                val supportsResume = response.code == 206
-                val contentLength = body.contentLength()
+                val statusCode = response.status.value
+                val supportsResume = statusCode == 206
+                val contentLength = response.headers["Content-Length"]?.toLongOrNull() ?: -1L
 
                 val totalBytes = when {
                     supportsResume && contentLength >= 0 -> startByte + contentLength
@@ -65,45 +83,51 @@ class ResumableDownloader(
                     startByte = 0L
                 }
 
+                // Using standard Kotlin File appending/writing
                 val raf = RandomAccessFile(file, "rw")
                 if (startByte > 0L) {
                     raf.seek(startByte)
                 } else {
-                    raf.setLength(0L)
+                    raf.setLength(0L) // Ensure file is empty if we aren't resuming
                 }
 
-                body.byteStream().use { input ->
-                    raf.use { output ->
-                        val buffer = ByteArray(DEFAULT_BUFFER_SIZE)
-                        var downloaded = startByte
+                val channel = response.bodyAsChannel()
+                val buffer = ByteArray(DEFAULT_BUFFER_SIZE)
+                var downloaded = startByte
 
-                        while (true) {
-                            ensureActive()
+                var lastUpdateTime = System.currentTimeMillis()
 
-                            if (isCanceled()) {
-                                output.close()
-                                file.delete()
-                                return@withContext Outcome.Canceled
-                            }
+                raf.use { output ->
+                    while (!channel.isClosedForRead) {
+                        // Check for manual pause (still valid since it's custom domain logic)
+                        if (isPaused()) {
+                            return@execute Outcome.Paused
+                        }
 
-                            if (isPaused()) {
-                                return@withContext Outcome.Paused
-                            }
+                        val read = channel.readAvailable(buffer, 0, buffer.size)
+                        if (read == -1) break
 
-                            val read = input.read(buffer)
-                            if (read == -1) break
+                        output.write(buffer, 0, read)
+                        downloaded += read
 
-                            output.write(buffer, 0, read)
-                            downloaded += read
+                        // 3. Throttle progress updates (e.g., every 100ms)
+                        val currentTime = System.currentTimeMillis()
+                        if (currentTime - lastUpdateTime > 100 || downloaded == totalBytes) {
                             onProgress(downloaded, totalBytes)
+                            lastUpdateTime = currentTime
                         }
                     }
                 }
-
                 Outcome.Completed
             }
-        } catch (e: CancellationException) {
-            throw e
+        } catch (_: CancellationException) {
+            // 2. Cancellation caught here.
+            // We delete the file because standard cancellation equals "Abort".
+            // If they want to "Pause", they use the isPaused() lambda logic.
+            file.delete()
+            Outcome.Canceled
+        } catch (e: NetworkRequestException) {
+            Outcome.Failed("HTTP ${e.code}: ${e.message}")
         } catch (e: Exception) {
             Outcome.Failed(e.message ?: "Unknown error")
         }

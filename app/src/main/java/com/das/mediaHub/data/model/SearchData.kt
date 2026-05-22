@@ -1,13 +1,20 @@
 package com.das.mediaHub.data.model
 
-import androidx.room.Entity
-import androidx.room.Index
-import androidx.room.PrimaryKey
+import kotlinx.serialization.Serializable
 
-@Entity(tableName = "search_data")
+/**
+ * Data class representing a search query or a saved search history item.
+ *
+ * @property id Unique identifier for the search entry.
+ * @property value The search query string.
+ *
+ * Example usage:
+ * ```kotlin
+ * val recentSearch = SearchData(id = "1", value = "lofi hip hop")
+ * ```
+ */
+@Serializable
 data class SearchData(
-    @PrimaryKey
-
     val id: String,
     val value: String
 )

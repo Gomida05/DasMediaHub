@@ -1,47 +1,41 @@
 package com.das.mediaHub.services.download
 
-import android.app.Service
 import android.content.Context
 import android.content.Intent
-import android.os.IBinder
+import androidx.lifecycle.LifecycleService
+import androidx.lifecycle.lifecycleScope
 import com.das.downloader.data.downloader.DownloadCoordinator
 import com.das.downloader.data.downloader.DownloadNotifier
 import com.das.downloader.data.downloader.DownloadQueueManager
-import com.das.downloader.data.downloader.DownloaderRepo
 import com.das.downloader.data.model.AppUpdateInfo
 import com.das.downloader.data.model.download.DownloadType
-import kotlinx.coroutines.CoroutineScope
+import dagger.hilt.android.AndroidEntryPoint
 import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.SupervisorJob
-import kotlinx.coroutines.cancel
 import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.launch
+import javax.inject.Inject
 
-class DownloadService : Service() {
+@AndroidEntryPoint
+class DownloadService : LifecycleService() {
 
-    private val scope = CoroutineScope(SupervisorJob() + Dispatchers.Main.immediate)
+    @Inject
+    lateinit var queue: DownloadQueueManager
 
-    private val queue by lazy {
-        DownloadQueueManager.get(this)
-    }
-    private val notifier by lazy {
-        DownloadNotifier(this)
-    }
-    private val coordinator by lazy {
-        DownloadCoordinator(DownloaderRepo(this))
-    }
+    @Inject
+    lateinit var coordinator: DownloadCoordinator
+
+    @Inject
+    lateinit var notifier: DownloadNotifier
 
     override fun onCreate() {
         super.onCreate()
 
 
-        startForeground(FOREGROUND_NOTIFICATION_ID, notifier.foregroundNotification())
 
-        scope.launch(Dispatchers.IO) {
+
+        lifecycleScope.launch {
             queue.restore()
-        }
 
-        scope.launch {
             queue.states.collectLatest { states ->
                 states.forEach { notifier.notifyState(it) }
             }
@@ -49,6 +43,7 @@ class DownloadService : Service() {
     }
 
     override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
+        super.onStartCommand(intent, flags, startId)
 
         when (intent?.action) {
             ACTION_START -> {
@@ -63,7 +58,7 @@ class DownloadService : Service() {
                 val type = runCatching { DownloadType.valueOf(typeName) }.getOrNull()
                     ?: return START_NOT_STICKY
 
-                scope.launch {
+                lifecycleScope.launch(Dispatchers.IO) {
                     when (type) {
                         DownloadType.VIDEO -> {
                             coordinator.enqueueVideoFromYoutube(
@@ -94,10 +89,10 @@ class DownloadService : Service() {
                         DownloadType.APK -> {
                             coordinator.downloadApk(
                                 appInfo = AppUpdateInfo(
-                                    appURL = intent.getStringExtra(EXTRA_APK_URL) ?: "",
-                                    versionName = intent.getStringExtra(EXTRA_VERSION_NAME) ?: "",
-                                    versionCode = intent.getIntExtra(EXTRA_VERSION_CODE, 0),
-                                    whatsNew = intent.getStringExtra(EXTRA_WHATS_NEW) ?: ""
+                                    apkUrl = intent.getStringExtra(EXTRA_APK_URL) ?: "",
+                                    latestVersionName = intent.getStringExtra(EXTRA_VERSION_NAME) ?: "",
+                                    latestVersionCode = intent.getIntExtra(EXTRA_VERSION_CODE, 0),
+                                    changelog = intent.getStringExtra(EXTRA_WHATS_NEW) ?: ""
                                 )
                             )
                         }
@@ -117,15 +112,10 @@ class DownloadService : Service() {
                 intent.getStringExtra(EXTRA_TASK_ID)?.let(queue::cancel)
             }
         }
-
+        startForeground(
+            FOREGROUND_NOTIFICATION_ID, notifier.foregroundNotification()
+        )
         return START_STICKY
-    }
-
-    override fun onBind(intent: Intent?): IBinder? = null
-
-    override fun onDestroy() {
-        scope.cancel()
-        super.onDestroy()
     }
 
     companion object {
@@ -189,11 +179,12 @@ class DownloadService : Service() {
         fun startForApk(context: Context, appInfo: AppUpdateInfo) {
             val intent = Intent(context, DownloadService::class.java).apply {
                 action = ACTION_START
-                putExtra(EXTRA_APK_URL, appInfo.appURL)
-                putExtra(EXTRA_VERSION_NAME, appInfo.versionName)
-                putExtra(EXTRA_VERSION_CODE, appInfo.versionCode)
-                putExtra(EXTRA_WHATS_NEW, appInfo.whatsNew)
-                putExtra(EXTRA_TYPE, "apk") // or "music"
+                putExtra(EXTRA_APK_URL, appInfo.apkUrl)
+                putExtra(EXTRA_VERSION_NAME, appInfo.latestVersionName)
+                putExtra(EXTRA_VERSION_CODE, appInfo.latestVersionCode)
+                putExtra(EXTRA_WHATS_NEW, appInfo.changelog)
+                putExtra(EXTRA_TITLE, "App Update")
+                putExtra(EXTRA_TYPE, DownloadType.APK.name)
             }
             context.startService(intent)
         }

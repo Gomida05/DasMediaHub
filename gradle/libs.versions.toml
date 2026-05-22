@@ -1,64 +1,54 @@
 [versions]
 activityComposeVersion = "1.13.0"
-agp = "9.1.1"
+agp = "9.2.1"
 appcompatVersion = "1.7.1"
 browserVersion = "1.10.0"
 coilComposeVersion = "2.7.0"
 coilVideoVersion = "2.7.0"
-composeBomVersion = "2026.03.01"
-constraintlayoutVersion = "2.2.1"
+composeBomVersion = "2026.05.01"
 coreKtxVersion = "1.18.0"
 chaquo = "17.0.0"
-corePipVersion = "1.0.0-alpha02"
-credentialsVersion = "1.6.0"
-credentialsPlayServicesAuthVersion = "1.6.0"
-firebaseBomVersion = "34.12.0"
-glideVersion = "5.0.5"
+datastorePreferencesVersion = "1.2.1"
+firebaseBomVersion = "34.13.0"
+glideVersion = "5.0.7"
 gms = "4.4.4"
-kspVersion = "2.3.4"
-junitJunit = "4.13.2"
-kotlin = "2.3.20"
-kotlinStdlibVersion = "2.3.20"
+hiltVersion = "2.59.2"
+hiltNavigationComposeVersion = "1.3.0"
+kotlinxCoroutinesAndroidVersion = "1.11.0"
+kspVersion = "2.3.6"
+kotlin = "2.3.21"
 kotlinxSerializationJsonVersion = "1.11.0"
-lifecycleLivedataKtxVersion = "2.10.0"
 lifecycleViewmodelComposeVersion = "2.10.0"
 lifecycleViewmodelKtxVersion = "2.10.0"
-media3Version = "1.10.0"
-mediaVersion = "1.7.1"
-nav3Core = "1.1.0"
-okhttpVersion = "5.3.2"
-playServicesAuthVersion = "21.5.1"
-roomVersion = "2.8.4"
-runtimeAndroidVersion = "1.10.6"
-runtimeLivedataVersion = "1.10.6"
-uiViewbindingVersion = "1.10.6"
-firebaseFirestoreKtxVersion = "25.1.4"
-googleidVersion = "1.2.0"
+media3Version = "1.10.1"
+mediaVersion = "1.8.0"
+nav3Core = "1.1.2"
+ktor = "3.5.0"
+room3Version = "3.0.0-alpha05"
+runtimeAndroidVersion = "1.11.2"
+firestoreVersion = "26.3.0"
 lifecycleRuntimeKtxVersion = "2.10.0"
-junitVersion = "1.3.0"
-espressoCoreVersion = "3.7.0"
-materialVersion = "1.13.0"
+dasPython = "1.0.0"
+dasDownloader = "1.0.5"
 
 [libraries]
 activity-compose = { module = "androidx.activity:activity-compose", version.ref = "activityComposeVersion" }
-androidx-core-pip = { module = "androidx.core:core-pip", version.ref = "corePipVersion" }
-androidx-credentials-play-services-auth = { module = "androidx.credentials:credentials-play-services-auth", version.ref = "credentialsPlayServicesAuthVersion" }
-androidx-credentials = { module = "androidx.credentials:credentials", version.ref = "credentialsVersion" }
-androidx-room-ktx = { module = "androidx.room:room-ktx", version.ref = "roomVersion" }
-androidx-room-runtime = { module = "androidx.room:room-runtime", version.ref = "roomVersion" }
+androidx-datastore-preferences = { module = "androidx.datastore:datastore-preferences", version.ref = "datastorePreferencesVersion" }
+androidx-room3-runtime = { group = "androidx.room3", name = "room3-runtime", version.ref = "room3Version" }
+androidx-room3-compiler = { group = "androidx.room3", name = "room3-compiler", version.ref = "room3Version" }
 appcompat = { module = "androidx.appcompat:appcompat", version.ref = "appcompatVersion" }
 browser = { module = "androidx.browser:browser", version.ref = "browserVersion" }
 coil-video = { module = "io.coil-kt:coil-video", version.ref = "coilVideoVersion" }
 coil-compose = { module = "io.coil-kt:coil-compose", version.ref = "coilComposeVersion" }
 compose-bom = { module = "androidx.compose:compose-bom", version.ref = "composeBomVersion" }
-constraintlayout = { module = "androidx.constraintlayout:constraintlayout", version.ref = "constraintlayoutVersion" }
 core-ktx = { module = "androidx.core:core-ktx", version.ref = "coreKtxVersion" }
 firebase-analytics = { module = "com.google.firebase:firebase-analytics" }
 firebase-bom = { module = "com.google.firebase:firebase-bom", version.ref = "firebaseBomVersion" }
 glide = { module = "com.github.bumptech.glide:glide", version.ref = "glideVersion" }
-kotlin-stdlib = { module = "org.jetbrains.kotlin:kotlin-stdlib", version.ref = "kotlinStdlibVersion" }
-junit = { module = "junit:junit", version.ref = "junitJunit" }
-lifecycle-livedata-ktx = { module = "androidx.lifecycle:lifecycle-livedata-ktx", version.ref = "lifecycleLivedataKtxVersion" }
+hilt-android = { group = "com.google.dagger", name = "hilt-android", version.ref = "hiltVersion" }
+hilt-compiler = { group = "com.google.dagger", name = "hilt-compiler", version.ref = "hiltVersion" }
+hilt-navigation-compose = { group = "androidx.hilt", name = "hilt-navigation-compose", version.ref = "hiltNavigationComposeVersion" }
+kotlinx-coroutines-android = { module = "org.jetbrains.kotlinx:kotlinx-coroutines-android", version.ref = "kotlinxCoroutinesAndroidVersion" }
 lifecycle-viewmodel-compose = { module = "androidx.lifecycle:lifecycle-viewmodel-compose", version.ref = "lifecycleViewmodelComposeVersion" }
 lifecycle-viewmodel-ktx = { module = "androidx.lifecycle:lifecycle-viewmodel-ktx", version.ref = "lifecycleViewmodelKtxVersion" }
 androidx-lifecycle-viewmodel-navigation3 = { module = "androidx.lifecycle:lifecycle-viewmodel-navigation3", version.ref = "lifecycleViewmodelComposeVersion" }
@@ -68,33 +58,30 @@ material-icons-extended = { module = "androidx.compose.material:material-icons-e
 material3 = { module = "androidx.compose.material3:material3" }
 media = { module = "androidx.media:media", version.ref = "mediaVersion" }
 media3-common-ktx = { module = "androidx.media3:media3-common-ktx", version.ref = "media3Version" }
-media3-common = { module = "androidx.media3:media3-common", version.ref = "media3Version" }
 media3-exoplayer = { module = "androidx.media3:media3-exoplayer", version.ref = "media3Version" }
-media3-exoplayer-dash = { module = "androidx.media3:media3-exoplayer-dash", version.ref = "media3Version" }
-media3-exoplayer-hls = { module = "androidx.media3:media3-exoplayer-hls", version.ref = "media3Version" }
 media3-session = { module = "androidx.media3:media3-session", version.ref = "media3Version" }
-media3-ui = { module = "androidx.media3:media3-ui", version.ref = "media3Version" }
+media3-ui = { group = "androidx.media3", name = "media3-ui", version.ref = "media3Version" }
 media3-ui-compose = { module = "androidx.media3:media3-ui-compose", version.ref = "media3Version" }
 media3-ui-material3 = { module = "androidx.media3:media3-ui-compose-material3", version.ref = "media3Version" }
-okhttp = { module = "com.squareup.okhttp3:okhttp", version.ref = "okhttpVersion" }
-play-services-auth = { module = "com.google.android.gms:play-services-auth", version.ref = "playServicesAuthVersion" }
+
+#Ktor
+ktor-client-core = { group = "io.ktor", name = "ktor-client-core", version.ref = "ktor" }
+ktor-client-cio = { group = "io.ktor", name = "ktor-client-cio", version.ref = "ktor" }
+ktor-client-content-negotiation = { group = "io.ktor", name = "ktor-client-content-negotiation", version.ref = "ktor" }
+ktor-serialization-kotlinx-json = { group = "io.ktor", name = "ktor-serialization-kotlinx-json", version.ref = "ktor" }
+
 runtime-android = { module = "androidx.compose.runtime:runtime-android", version.ref = "runtimeAndroidVersion" }
-runtime-livedata = { module = "androidx.compose.runtime:runtime-livedata", version.ref = "runtimeLivedataVersion" }
 ui-tooling = { module = "androidx.compose.ui:ui-tooling" }
 ui-tooling-preview = { module = "androidx.compose.ui:ui-tooling-preview" }
-ui-viewbinding = { module = "androidx.compose.ui:ui-viewbinding", version.ref = "uiViewbindingVersion" }
-firebase-firestore-ktx = { group = "com.google.firebase", name = "firebase-firestore-ktx", version.ref = "firebaseFirestoreKtxVersion" }
+firebase-firestore = { group = "com.google.firebase", name = "firebase-firestore", version.ref = "firestoreVersion" }
 kotlinx-serialization-json = { module = "org.jetbrains.kotlinx:kotlinx-serialization-json", version.ref = "kotlinxSerializationJsonVersion" }
-googleid = { group = "com.google.android.libraries.identity.googleid", name = "googleid", version.ref = "googleidVersion" }
 androidx-lifecycle-runtime-ktx = { group = "androidx.lifecycle", name = "lifecycle-runtime-ktx", version.ref = "lifecycleRuntimeKtxVersion" }
 androidx-ui = { group = "androidx.compose.ui", name = "ui" }
 androidx-ui-graphics = { group = "androidx.compose.ui", name = "ui-graphics" }
-androidx-ui-test-manifest = { group = "androidx.compose.ui", name = "ui-test-manifest" }
-androidx-ui-test-junit4 = { group = "androidx.compose.ui", name = "ui-test-junit4" }
-androidx-junit = { group = "androidx.test.ext", name = "junit", version.ref = "junitVersion" }
-androidx-espresso-core = { group = "androidx.test.espresso", name = "espresso-core", version.ref = "espressoCoreVersion" }
-material = { group = "com.google.android.material", name = "material", version.ref = "materialVersion" }
-androidx-room-compiler = { group = "androidx.room", name = "room-compiler", version.ref = "roomVersion" }
+
+#MYProject
+com-das-python = { group = "com.das", name = "python", version.ref = "dasPython"}
+com-das-downloader = { group = "com.das", name = "downloader", version.ref = "dasDownloader" }
 
 [plugins]
 android-application = { id = "com.android.application", version.ref = "agp" }
@@ -104,3 +91,5 @@ google-gms = { id = "com.google.gms.google-services", version.ref = "gms" }
 kotlin-serialization = { id = "org.jetbrains.kotlin.plugin.serialization", version.ref = "kotlin" }
 android-library = { id = "com.android.library", version.ref = "agp" }
 kotlin-ksp = { id = "com.google.devtools.ksp", version.ref = "kspVersion"}
+room3 = { id = "androidx.room3", version.ref = "room3Version" }
+dagger-hilt = { id = "com.google.dagger.hilt.android", version.ref = "hiltVersion"}

@@ -1,17 +1,35 @@
 package com.das.mediaHub.data.repository
 
 import android.os.Build
-import com.google.firebase.Firebase
-import com.google.firebase.firestore.DocumentReference
-import com.google.firebase.firestore.firestore
+import com.google.firebase.firestore.FirebaseFirestore
 import kotlinx.coroutines.tasks.await
 import java.util.Locale
+import javax.inject.Inject
+import javax.inject.Singleton
 
-class UserFeedbackRepository {
-
-    suspend fun sendFeedback(message: String): DocumentReference {
-        val db = Firebase.firestore
-
+/**
+ * Repository responsible for sending user feedback to Firebase Firestore.
+ *
+ * It collects the feedback message along with basic device metadata (model, OS version, 
+ * locale) to help developers diagnose issues.
+ *
+ * Example usage:
+ * ```kotlin
+ * @Inject lateinit var repository: UserFeedbackRepository
+ * repository.sendFeedback("The search is a bit slow on my device.")
+ * ```
+ */
+@Singleton
+class UserFeedbackRepository @Inject constructor(
+    private val firestore: FirebaseFirestore
+) {
+    /**
+     * Uploads user feedback to the "user_feedback" Firestore collection.
+     * 
+     * @param message The feedback message written by the user.
+     * @throws Exception if the upload fails.
+     */
+    suspend fun sendFeedback(message: String) {
         val feedbackData = hashMapOf(
             "message" to message,
             "timestamp" to System.currentTimeMillis(),
@@ -21,7 +39,7 @@ class UserFeedbackRepository {
             "region" to Locale.getDefault().toString()
         )
 
-        return db.collection("user_feedback")
+        firestore.collection("user_feedback")
             .add(feedbackData)
             .await()
     }

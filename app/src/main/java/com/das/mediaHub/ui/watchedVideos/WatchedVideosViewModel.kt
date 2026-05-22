@@ -3,56 +3,94 @@ package com.das.mediaHub.ui.watchedVideos
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.das.mediaHub.data.error.ErrorMapper
-import com.das.mediaHub.data.model.VideoItem
-import com.das.mediaHub.data.model.VideoItem.Companion.toVideoItem
 import com.das.mediaHub.data.model.WatchedVideoEntity
 import com.das.mediaHub.data.model.state.UiState
 import com.das.mediaHub.data.repository.WatchHistoryRepository
-import kotlinx.coroutines.Dispatchers
+import com.das.mediaHub.ui.players.videoPlayer.components.CustomMethods.toVideosListData
+import com.das.python.YouTuber.loadStreamUrl
+import com.das.python.data.model.ItemsStreamUrlsForMediaItemData
+import dagger.hilt.android.lifecycle.HiltViewModel
+import kotlinx.coroutines.ExperimentalCoroutinesApi
+import kotlinx.coroutines.FlowPreview
 import kotlinx.coroutines.flow.MutableStateFlow
-import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.SharingStarted
+import kotlinx.coroutines.flow.catch
+import kotlinx.coroutines.flow.debounce
+import kotlinx.coroutines.flow.flatMapLatest
+import kotlinx.coroutines.flow.map
+import kotlinx.coroutines.flow.onStart
+import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
-import kotlinx.coroutines.withContext
+import javax.inject.Inject
 
-class WatchedVideosViewModel(
-    private val dbHelper: WatchHistoryRepository
+@HiltViewModel
+class WatchedVideosViewModel @Inject constructor(
+    private val repository: WatchHistoryRepository
 ) : ViewModel() {
+    var searchQuery = MutableStateFlow("")
+        private set
 
-    private val _savedListsState = MutableStateFlow<UiState<List<VideoItem>>>(UiState.Idle)
-    val savedListState = _savedListsState.asStateFlow()
+    @OptIn(ExperimentalCoroutinesApi::class, FlowPreview::class)
+    val uiState = searchQuery
+        .debounce(300)
+        .flatMapLatest { query ->
+            repository.getWatchedVideos()
+                .map { list ->
+                    val filtered = if (query.isBlank()) {
+                        list
+                    } else {
+                        list.filter {
+                            it.title.contains(query, ignoreCase = true) ||
+                                    it.channelName.contains(query, ignoreCase = true)
+                        }
+                    }
 
-    fun fetchData() {
-        _savedListsState.value = UiState.Loading
-
-        viewModelScope.launch {
-            try {
-                val result = withContext(Dispatchers.IO) {
-                    dbHelper.getWatchedVideos()
+                    if (filtered.isEmpty()) UiState.Empty
+                    else UiState.Success(filtered)
                 }
-
-                _savedListsState.value = if (result.isEmpty()) UiState.Empty else UiState.Success(result.map { it.toVideoItem() })
-            } catch (e: Exception) {
-                _savedListsState.value = UiState.Error(ErrorMapper.map(e))
-            }
         }
-    }
+        .onStart {
+            emit(UiState.Loading)
+        }
+        .catch {
+            emit(UiState.Error(ErrorMapper.map(it)))
+        }
+        .stateIn(
+            viewModelScope,
+            started = SharingStarted.WhileSubscribed(5000),
+            initialValue = UiState.Idle
+        )
+
 
     fun deleteVideo(videoId: String) {
         viewModelScope.launch {
-            withContext(Dispatchers.IO) {
-                dbHelper.deleteWatchUrl(videoId)
-            }
-            removeSearchItemFromState(videoId = videoId)
+            repository.deleteWatchUrl(videoId)
         }
     }
 
-    private fun removeSearchItemFromState(videoId: String) {
-        val currentState = _savedListsState.value
 
-        if (currentState is UiState.Success) {
-            val updatedList = currentState.data.filter { it.watchUrl != videoId }
-            _savedListsState.value =
-                if (updatedList.isEmpty()) UiState.Empty else UiState.Success(updatedList)
+    fun searchVideos(query: String) {
+        searchQuery.value = query
+    }
+
+    fun clearAllVideos() {
+        viewModelScope.launch {
+            repository.clearAll()
+        }
+    }
+
+    fun loadStreamUrl(
+        mediaItem: WatchedVideoEntity,
+        onStart: () -> Unit,
+        onSuccess: (ItemsStreamUrlsForMediaItemData) -> Unit,
+        onFailure: (Exception) -> Unit,
+    ) {
+        onStart()
+        viewModelScope.launch {
+            mediaItem.toVideosListData().loadStreamUrl(
+                onSuccess = onSuccess,
+                onFailure = onFailure
+            )
         }
     }
 }

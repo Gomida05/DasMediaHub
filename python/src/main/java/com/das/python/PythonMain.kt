@@ -9,7 +9,6 @@ import com.das.python.data.model.StreamUrlRespond
 import com.das.python.data.annotation.PythonModule
 import com.das.python.data.annotation.RequiresPythonInit
 import com.das.python.data.ensurePythonInitialized
-import kotlinx.coroutines.Dispatchers
 import kotlinx.serialization.SerializationException
 import kotlinx.serialization.json.Json
 
@@ -22,7 +21,16 @@ import kotlinx.serialization.json.Json
  * - Invoke Python functions
  * - Convert JSON results into Kotlin models
  *
- * All Python calls are executed on [Dispatchers.IO].
+ * Example:
+ * ```
+ * // In Application class
+ * class MyApp : Application() {
+ *     override fun onCreate() {
+ *         super.onCreate()
+ *         PythonMain.apply { startPython() }
+ *     }
+ * }
+ * ```
  */
 object PythonMain {
 
@@ -30,7 +38,7 @@ object PythonMain {
      * Lazy instance of the embedded Python interpreter.
      *
      * Accessing this before [Application.startPython]
-     * may cause runtime failure.
+     * may cause a [com.das.python.exceptions.PythonNotInitializedException].
      */
     @get:RequiresPythonInit
     val pythonInstant by lazy {
@@ -53,11 +61,14 @@ object PythonMain {
      * Starts the embedded Python environment.
      *
      * Must be called once (typically inside Application.onCreate()).
-     *
      * Safe to call multiple times — Python will only start once.
      *
-     * @receiver Application instance
+     * Example:
+     * ```
+     * context.startPython()
+     * ```
      *
+     * @receiver Application instance
      * @throws IllegalStateException if Python fails to initialize
      */
     @Throws(IllegalStateException::class)
@@ -73,12 +84,14 @@ object PythonMain {
      * The result from Python must be a JSON string which will
      * be deserialized into type [T].
      *
-     * This function runs on Dispatchers.IO.
+     * Example:
+     * ```
+     * val result: MyModel = pythonInstant.callMethod(Names.SEARCHER, "query_string")
+     * ```
      *
      * @param name Enum representing the Python function name.
      * @param args Argument string passed to the Python function.
      * @param module Python module name (default = "main").
-     *
      * @return Parsed Kotlin object of type [T].
      *
      * @throws IllegalStateException If Python runtime is not started.
@@ -116,9 +129,14 @@ object PythonMain {
      * Internally calls a Python function that extracts
      * streaming information and returns it as JSON.
      *
-     * @param type Python function identifier.
-     * @param id YouTube video ID.
+     * Example:
+     * ```
+     * val audio = PythonMain.getStreamUrl(Names.GET_AUDIO_STREAM_URL, "videoId")
+     * ```
      *
+     * @param type Python function identifier (e.g., GET_VIDEO_STREAM_URL).
+     * @param id YouTube video ID.
+     * @param module Python module name.
      * @return Parsed [StreamUrlRespond] object.
      *
      * @throws IllegalStateException If Python is not started.
@@ -147,8 +165,12 @@ object PythonMain {
     /**
      * Retrieves playlist data from a YouTube playlist URL.
      *
-     * @param url Full YouTube playlist URL.
+     * Example:
+     * ```
+     * val playlist = PythonMain.getPlayListUrl("https://youtube.com/playlist?list=...")
+     * ```
      *
+     * @param url Full YouTube playlist URL.
      * @return List of [PlayListDataClass].
      *
      * @throws IllegalStateException If Python is not started.
@@ -175,10 +197,13 @@ object PythonMain {
      *
      * Uses the configured [jsonParser].
      *
-     * @receiver JSON string.
+     * Example:
+     * ```
+     * val model = "{\"key\": \"value\"}".decodeStringToJson<MyModel>()
+     * ```
      *
-     * @throws SerializationException If JSON is invalid
-     * or does not match the target type.
+     * @receiver JSON string.
+     * @throws SerializationException If JSON is invalid or does not match the target type.
      */
     @Throws(SerializationException::class)
     inline fun <reified T> String.decodeStringToJson(): T {

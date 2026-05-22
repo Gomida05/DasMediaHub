@@ -1,35 +1,36 @@
 package com.das.mediaHub.data.mediacontroller.online
 
-import android.app.PictureInPictureParams
-import android.content.Context
 import android.net.Uri
-import android.os.Build
-import android.util.Rational
-import androidx.media3.common.AudioAttributes
-import androidx.media3.common.C
+import androidx.core.net.toUri
 import androidx.media3.common.MediaItem
+import androidx.media3.common.MediaMetadata
 import androidx.media3.common.Player
-import androidx.media3.exoplayer.ExoPlayer
 import com.das.mediaHub.PIP
-import com.das.mediaHub.PIP.findActivity
-import com.das.mediaHub.PIP.getPipSourceRect
+import javax.inject.Inject
+import javax.inject.Singleton
 
-internal class VideoPlayerManager(private val applicationContext: Context): PlayerController {
+/**
+ * Concrete implementation of [PlayerController] responsible for managing online video playback.
+ *
+ * It uses Hilt for dependency injection to provide a [Singleton] player instance.
+ * It also handles Picture-in-Picture (PiP) state management and automatically 
+ * fetches YouTube thumbnails for notifications.
+ *
+ * Example usage:
+ * ```kotlin
+ * @Inject
+ * lateinit var videoPlayerManager: VideoPlayerManager
+ * videoPlayerManager.playVideo("videoId", videoUri)
+ * ```
+ */
+@Singleton
+class VideoPlayerManager @Inject constructor(
+    override val player: Player
+): PlayerController {
 
-
-
-    override val player by lazy {
-        ExoPlayer.Builder(applicationContext)
-            .setAudioAttributes(
-                AudioAttributes.Builder()
-                    .setUsage(C.USAGE_MEDIA)
-                    .setContentType(C.AUDIO_CONTENT_TYPE_MOVIE)
-                    .build(), true
-            )
-            .setWakeMode(C.WAKE_MODE_NETWORK)
-            .setHandleAudioBecomingNoisy(true)
-            .build()
-    }
+    /** Current playback position in milliseconds. */
+    val currentPosition: Long
+        get() = player.currentPosition.coerceAtLeast(0)
 
     override fun addListener(listener: Player.Listener) {
         player.addListener(listener)
@@ -39,19 +40,42 @@ internal class VideoPlayerManager(private val applicationContext: Context): Play
         player.removeListener(listener)
     }
 
+    /**
+     * Builds and sets a [MediaItem] with metadata for the given video.
+     */
     private fun addMediaItem(videoId: String, uri: Uri) {
         val mediaItem = MediaItem.Builder()
             .setMediaId(videoId)
+            .setMediaMetadata(
+                MediaMetadata.Builder()
+                    .setTitle(videoId)
+                    .setMediaType(MediaMetadata.MEDIA_TYPE_VIDEO)
+                    .setArtworkUri("https://img.youtube.com/vi/$videoId/0.jpg".toUri())
+                    .build()
+            )
             .setUri(uri)
             .build()
-
         player.setMediaItem(mediaItem)
     }
 
+    /**
+     * Loads and plays a video. If the video is already loaded, it resumes playback.
+     */
     override fun playVideo(videoId: String, uri: Uri) {
+        val currentItem = player.currentMediaItem
+
+        if (currentItem?.mediaId == videoId) {
+            // Already loaded → just resume if needed
+            if (!player.isPlaying) {
+                player.play()
+            }
+            return
+        }
+
+        // New video → load it
         addMediaItem(videoId = videoId, uri = uri)
         player.prepare()
-        resume()
+        player.play()
     }
 
     override fun pause() {
@@ -66,32 +90,17 @@ internal class VideoPlayerManager(private val applicationContext: Context): Play
         player.seekTo(positionMs)
     }
 
-    override fun release() {
+    /**
+     * Clears the current media and resets Picture-in-Picture flags.
+     */
+    override fun closeCurrentlyMedia() {
         player.clearMediaItems()
         PIP.isPlaybackActive = false
         PIP.allowAutoPip = false
-
     }
 
-    private fun updatePipActions() {
-        applicationContext.findActivity()?.let { activity ->
-            val params = PictureInPictureParams.Builder()
-                .setAspectRatio(Rational(16, 9))
-
-            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
-                params
-                    .setAutoEnterEnabled(true)
-                    .setSeamlessResizeEnabled(true)
-                    .setSourceRectHint(activity.getPipSourceRect())
-            }
-            activity.setPictureInPictureParams(params.build())
-        }
-    }
-
-    override fun close() {
-        release()
+    override fun release() {
+        closeCurrentlyMedia()
         player.release()
     }
-
-
 }

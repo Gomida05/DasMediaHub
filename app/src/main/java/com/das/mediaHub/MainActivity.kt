@@ -8,42 +8,65 @@ import android.content.Intent.EXTRA_STREAM
 import android.content.Intent.EXTRA_TEXT
 import android.content.pm.PackageManager
 import android.net.Uri
+import android.os.Build
 import android.os.Build.VERSION.SDK_INT
 import android.os.Build.VERSION_CODES.TIRAMISU
 import android.os.Bundle
+import android.provider.Settings
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
+import androidx.activity.viewModels
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Info
+import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
 import androidx.core.content.FileProvider
 import androidx.core.content.IntentCompat.getParcelableExtra
-import androidx.navigation3.runtime.NavBackStack
-import androidx.navigation3.runtime.NavKey
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import androidx.media3.common.MediaItem
+import androidx.media3.exoplayer.ExoPlayer
+import coil.ImageLoader
+import coil.decode.VideoFrameDecoder
+import com.das.mediaHub.core.LocalImageLoader
 import com.das.mediaHub.data.constants.Action.ACTION_START
 import com.das.mediaHub.data.constants.DownloadConstants.DOWNLOAD_FINISHED
 import com.das.mediaHub.data.model.TopPopUp
-import com.das.mediaHub.navigation.NavScreens
-import com.das.mediaHub.navigation.NavScreens.Downloaded
-import com.das.mediaHub.navigation.NavScreens.OnlineVideoPlayer
-import com.das.mediaHub.navigation.NavScreens.Searcher
-import com.das.mediaHub.navigation.NavScreens.Setting
-import com.das.mediaHub.services.media.LocalBackGroundPlayer
-import com.das.mediaHub.ui.TopPopupNotification.showNotificationDialog
+import com.das.mediaHub.navigation.AppBackStack
+import com.das.mediaHub.navigation.Destination
+import com.das.mediaHub.navigation.Destination.Downloaded
+import com.das.mediaHub.navigation.Destination.OnlineVideoPlayer
+import com.das.mediaHub.navigation.Destination.Searcher
+import com.das.mediaHub.navigation.Destination.Setting
+import com.das.mediaHub.network.ConnectivityViewModel
+import com.das.mediaHub.services.media.local.LocalBackGroundPlayer
+import com.das.mediaHub.ui.notification.TopPopupNotification.showNotificationDialog
 import com.das.mediaHub.ui.theme.DasMediaHubTheme
 import com.das.python.YouTuber.extractPlaylistId
 import com.das.python.YouTuber.isValidYouTubePlaylistUrl
 import com.das.python.YouTuber.isValidYoutubeURL
 import com.das.python.YouTuber.youtubeExtractor
+import dagger.hilt.android.AndroidEntryPoint
 import java.io.File
+import javax.inject.Inject
 
-
+@AndroidEntryPoint
 class MainActivity : ComponentActivity() {
 
     private var pendingIntent by mutableStateOf<Intent?>(null)
+
+    private val imageLoaderLocal by lazy {
+        ImageLoader.Builder(applicationContext)
+            .components { add(VideoFrameDecoder.Factory()) }
+            .build()
+    }
+
+    @Inject
+    lateinit var justExoPlayer: ExoPlayer
+
+    private val connectivityViewModel by viewModels<ConnectivityViewModel>()
 
 
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -51,18 +74,32 @@ class MainActivity : ComponentActivity() {
         super.onCreate(savedInstanceState)
         onNewIntent(intent)
         setContent {
-            DasMediaHubTheme {
-                MainApp(
-                    pendingIntent = pendingIntent
-                ) { intent, backStack ->
-                    handleNavIntent(intent = intent, backStack = backStack)
-                    pendingIntent = null
+            CompositionLocalProvider(
+                LocalImageLoader provides imageLoaderLocal
+            ) {
+                val networkState by connectivityViewModel.networkState.collectAsStateWithLifecycle()
+                DasMediaHubTheme {
+                    MainApp(
+                        isConnected = networkState.isConnected,
+                        pendingIntent = pendingIntent,
+                        onHandleIntent = { intent, backStack ->
+                            handleNavIntent(intent = intent, backStack = backStack)
+                            pendingIntent = null
+                        },
+                        openNetworkSetting = {
+                            val intent = if (SDK_INT >= Build.VERSION_CODES.Q) {
+                                Intent(Settings.Panel.ACTION_INTERNET_CONNECTIVITY)
+                            } else {
+                                Intent(Settings.ACTION_WIRELESS_SETTINGS)
+                            }
+
+                            startActivity(intent)
+                        },
+                    )
                 }
             }
         }
     }
-
-
 
     override fun onNewIntent(intent: Intent) {
         super.onNewIntent(intent)
@@ -76,8 +113,7 @@ class MainActivity : ComponentActivity() {
     }
 
 
-
-    private fun handleNavIntent(intent: Intent, backStack: NavBackStack<NavKey>) {
+    private fun handleNavIntent(intent: Intent, backStack: AppBackStack) {
         when (intent.action) {
             Intent.ACTION_SEND -> handleSendIntent(intent, backStack)
             Intent.ACTION_VIEW -> handleViewIntent(intent, backStack)
@@ -89,7 +125,7 @@ class MainActivity : ComponentActivity() {
 
     private fun handleSendIntent(
         intent: Intent,
-        backStack: NavBackStack<NavKey>
+        backStack: AppBackStack
     ) {
         val type = intent.type.orEmpty()
 
@@ -102,7 +138,7 @@ class MainActivity : ComponentActivity() {
             type.startsWith("video/") -> {
                 val uri = intent.getSharedUri()
                 if (uri != null) {
-                    backStack.add(NavScreens.LocalVideoPlayer(uri.toString()))
+                    backStack.add(Destination.LocalVideoPlayer(uri.toString()))
                 } else {
                     showInfoMessage("Video not found")
                 }
@@ -111,7 +147,9 @@ class MainActivity : ComponentActivity() {
             type.startsWith("audio/") -> {
                 val uri = intent.getSharedUri()
                 if (uri != null) {
-                    playAudio(uri)
+                    uri.path?.let {
+                        playAudio(it)
+                    }
                 } else {
                     showInfoMessage("Audio not found")
                 }
@@ -123,7 +161,7 @@ class MainActivity : ComponentActivity() {
 
     private fun handleViewIntent(
         intent: Intent,
-        backStack: NavBackStack<NavKey>
+        backStack: AppBackStack
     ) {
         val uri = intent.data
         if (uri == null) {
@@ -132,15 +170,20 @@ class MainActivity : ComponentActivity() {
         }
 
         when {
-            isVideoUri(uri) -> backStack.add(NavScreens.LocalVideoPlayer(uri.toString()))
-            isAudioUri(uri) -> playAudio(uri)
+            isVideoUri(uri) -> backStack.add(Destination.LocalVideoPlayer(uri.toString()))
+            isAudioUri(uri) -> {
+                uri.path?.let {
+                    playAudio(it)
+                }
+            }
+
             else -> showInfoMessage("Unsupported media type")
         }
     }
 
     private fun handleSharedText(
         sharedText: String,
-        backStack: NavBackStack<NavKey>
+        backStack: AppBackStack
     ) {
         when {
             sharedText.startsWith("DownloadsPageFr") -> {
@@ -211,12 +254,14 @@ class MainActivity : ComponentActivity() {
             icon = Icons.Default.Info
         )
     }
-    private fun playAudio(uri: Uri?) {
+
+    private fun playAudio(uri: String) {
+
+        justExoPlayer.setMediaItem(MediaItem.fromUri(uri))
+        justExoPlayer.prepare()
         val playIntent = Intent(this, LocalBackGroundPlayer::class.java).apply {
             action = ACTION_START
-            putExtra("media_id", uri?.path)
-            putExtra("media_url", uri?.path)
-            putExtra("title", title)
+            putExtra("media_id", uri)
         }
         startService(playIntent)
     }

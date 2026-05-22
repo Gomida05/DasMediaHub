@@ -35,6 +35,7 @@ class TikTokViewModel : ViewModel() {
         viewModelScope.launch {
             try {
                 val tiktokInfo = TikTokUrlResolver.resolveTikTokVideoUrl(currentUrl)
+
                 val tiktokResult = tiktokInfo.result
                 if (tiktokInfo.success && tiktokResult != null) {
                     _uiState.value = UiState.Success(tiktokResult)

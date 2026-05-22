@@ -1,105 +1,166 @@
 package com.das.mediaHub.data.error
 
 import com.chaquo.python.PyException
+import com.das.python.exceptions.PyCallError
 import java.io.IOException
 import java.net.SocketTimeoutException
 import java.net.UnknownHostException
 
+/**
+ * Utility object for mapping exceptions and raw error strings into user-friendly, 
+ * localized error messages.
+ *
+ * This centralizes error handling across the app, ensuring that technical logs 
+ * (like Python tracebacks or HTTP 403 errors) are translated into messages 
+ * that users can understand and act upon.
+ */
 object ErrorMapper {
 
+    // Centralized user-facing messages for consistency and easy updates
+    private const val MSG_NO_INTERNET = "No internet connection. Please check your network and try again."
+    private const val MSG_TIMEOUT = "The request took too long. Please try again."
+    private const val MSG_NETWORK_ERROR = "A network error occurred. Please try again."
+    private const val MSG_FORBIDDEN = "Access was denied. Please try again later."
+    private const val MSG_NOT_FOUND = "We couldn’t find what you were looking for."
+    private const val MSG_TOO_MANY_REQUESTS = "Too many requests. Please wait a moment and try again."
+    private const val MSG_SERVER_ERROR = "The server is having trouble right now. Please try again later."
+    private const val MSG_DATA_ERROR = "We received an unexpected response or data error. Please try again."
+    private const val MSG_PROCESSING_ERROR = "Something went wrong while processing your request."
+    const val MSG_GENERIC = "Something went wrong. Please try again."
+
+    /**
+     * Maps a [Throwable] to a user-friendly error string.
+     * 
+     * @param throwable The exception to map.
+     * @return A localized error message.
+     */
     fun map(throwable: Throwable?): String {
         return when (throwable) {
-            is UnknownHostException ->
-                "No internet connection. Please check your network and try again."
-
-            is SocketTimeoutException ->
-                "The request took too long. Please try again."
-
-            is IOException ->
-                "A network error occurred. Please try again."
-
-            is PyException ->
-                mapPythonError(throwable)
-
-            else ->
-                "Something went wrong. Please try again."
+            is UnknownHostException -> MSG_NO_INTERNET
+            is SocketTimeoutException -> MSG_TIMEOUT
+            is IOException -> MSG_NETWORK_ERROR
+            is PyCallError -> mapPythonError(throwable) // Added handling for new sealed class
+            is PyException -> mapPythonError(throwable)
+            else -> MSG_GENERIC
         }
     }
 
+    /**
+     * Analyzes a raw error message string and returns a user-friendly version.
+     *
+     * @param message The raw error message (e.g., from a server response).
+     * @return A user-friendly error string.
+     */
     fun mapMessage(message: String?): String {
         if (message.isNullOrBlank()) {
-            return "Something went wrong. Please try again."
+            return MSG_GENERIC
+        }
+        return analyzeErrorMessage(message.lowercase())
+    }
+
+    /**
+     * Specifically maps [PyException]s, which often contain complex tracebacks.
+     */
+    private fun mapPythonError(error: PyException): String {
+        val message = error.message
+        if (message.isNullOrBlank()) {
+            return MSG_PROCESSING_ERROR
         }
 
-        val msg = message.lowercase()
+        val matchedMessage = analyzeErrorMessage(message.lowercase())
 
-        return when {
-            "unknownhostexception" in msg ||
-                    "failed to establish a new connection" in msg ||
-                    "temporary failure in name resolution" in msg ||
-                    "name or service not known" in msg ->
-                "No internet connection. Please check your network."
+        // If the shared analyzer couldn't find a specific match, default to a processing error
+        // rather than the standard generic error, to hint that it was a Python-layer issue.
+        return if (matchedMessage == MSG_GENERIC) MSG_PROCESSING_ERROR else matchedMessage
+    }
 
-            "sockettimeoutexception" in msg ||
-                    "timed out" in msg ||
-                    "timeout" in msg ->
-                "The request took too long. Please try again."
+    /**
+     * Specifically maps [PyCallError]s, handling internal wrapper exceptions cleanly.
+     */
+    private fun mapPythonError(error: PyCallError): String {
+        return when (error) {
+            is PyCallError.NotStarted,
+            is PyCallError.ModuleNotFound,
+            is PyCallError.FunctionNotFound -> {
+                // These represent internal app configuration/integration issues.
+                MSG_PROCESSING_ERROR
+            }
 
-            "http 403" in msg || "403 forbidden" in msg ->
-                "Access was denied. Please try again later."
+            is PyCallError.InvalidJson -> {
+                // Maps directly to data parsing errors.
+                MSG_DATA_ERROR
+            }
 
-            "http 404" in msg || "not found" in msg ->
-                "We couldn’t find what you were looking for."
+            is PyCallError.PythonException -> {
+                // Delegate to mapping the underlying cause (e.g., a PyException or network issue inside Python)
+                val cause = error.cause
 
-            "http 429" in msg || "too many requests" in msg ->
-                "Too many requests. Please wait a moment and try again."
+                if (cause != null) {
+                    val mappedCause = map(cause)
+                    if (mappedCause != MSG_GENERIC) {
+                        return mappedCause
+                    }
+                }
 
-            "http 500" in msg || "http 502" in msg || "http 503" in msg || "server error" in msg ->
-                "The server is having trouble right now. Please try again later."
-
-            "json" in msg || "decode" in msg || "parse" in msg ->
-                "We received an unexpected response. Please try again."
-
-            "python" in msg || "pyexception" in msg || "traceback" in msg ->
-                "Something went wrong while processing your request."
-
-            else ->
-                "Something went wrong. Please try again."
+                // If no cause or it maps to generic, fallback to analyzing the message string
+                val message = error.message
+                if (message.isNullOrBlank()) {
+                    MSG_PROCESSING_ERROR
+                } else {
+                    val matchedMessage = analyzeErrorMessage(message.lowercase())
+                    if (matchedMessage == MSG_GENERIC) MSG_PROCESSING_ERROR else matchedMessage
+                }
+            }
         }
     }
 
-    private fun mapPythonError(error: PyException): String {
-        val message = error.message.orEmpty().lowercase()
-
+    /**
+     * Shared logic to map string-based error messages (both HTTP and Python tracebacks)
+     * to user-friendly UI strings.
+     */
+    private fun analyzeErrorMessage(msg: String): String {
         return when {
-            "unknownhostexception" in message ||
-                    "failed to establish a new connection" in message ||
-                    "temporary failure in name resolution" in message ->
-                "No internet connection. Please check your network."
+            msg.containsAny(
+                "unknownhostexception",
+                "failed to establish a new connection",
+                "temporary failure in name resolution",
+                "name or service not known",
+                "[errno 7]",
+                "no address associated with hostname"
+            ) -> MSG_NO_INTERNET
 
-            "timed out" in message || "timeout" in message ->
-                "The request took too long. Please try again."
+            msg.containsAny(
+                "sockettimeoutexception",
+                "timed out",
+                "timeout"
+            ) -> MSG_TIMEOUT
 
-            "403" in message ->
-                "Access was denied. Please try again later."
+            msg.containsAny("http 403", "403 forbidden", "403") -> MSG_FORBIDDEN
 
-            "404" in message ->
-                "We couldn’t find what you were looking for."
+            msg.containsAny("http 404", "not found", "404") -> MSG_NOT_FOUND
 
-            "429" in message || "too many requests" in message ->
-                "Too many requests. Please wait a moment and try again."
+            msg.containsAny("http 429", "too many requests", "429") -> MSG_TOO_MANY_REQUESTS
 
-            "500" in message || "502" in message || "503" in message ->
-                "The server is having trouble right now. Please try again later."
+            msg.containsAny(
+                "http 500", "http 502", "http 503",
+                "server error", "500", "502", "503"
+            ) -> MSG_SERVER_ERROR
 
-            "jsondecodeerror" in message ||
-                    "valueerror" in message ||
-                    "keyerror" in message ||
-                    "typeerror" in message ->
-                "Something went wrong while processing the data."
+            msg.containsAny(
+                "json", "decode", "parse", "jsondecodeerror",
+                "valueerror", "keyerror", "typeerror"
+            ) -> MSG_DATA_ERROR
 
-            else ->
-                "Something went wrong while processing your request."
+            msg.containsAny("python", "pyexception", "traceback") -> MSG_PROCESSING_ERROR
+
+            else -> MSG_GENERIC
         }
+    }
+
+    /**
+     * Helper extension function to cleanly check if a string contains ANY of the provided keywords.
+     */
+    private fun String.containsAny(vararg keywords: String): Boolean {
+        return keywords.any { keyword -> this.contains(keyword) }
     }
 }

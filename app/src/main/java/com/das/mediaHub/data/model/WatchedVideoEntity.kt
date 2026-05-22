@@ -1,35 +1,53 @@
 package com.das.mediaHub.data.model
 
-import androidx.room.ColumnInfo
-import androidx.room.Entity
-import androidx.room.Ignore
-import androidx.room.PrimaryKey
+import androidx.room3.ColumnInfo
+import androidx.room3.Entity
+import androidx.room3.Ignore
+import androidx.room3.PrimaryKey
 
+/**
+ * Room [Entity] representing a video that has been watched by the user.
+ *
+ * This class maps directly to the "Watched_Videos" table in the database and 
+ * implements [VideoUiModel] for easy UI integration.
+ *
+ * @property title Title of the video.
+ * @property videoId Unique identifier for the video (Primary Key).
+ * @property views Formatted view count.
+ * @property dateTime Formatted upload date.
+ * @property duration Formatted video length.
+ * @property channelName Name of the uploading channel.
+ * @property channelThumbnail URL of the channel's profile picture.
+ */
 @Entity(tableName = "Watched_Videos")
 data class WatchedVideoEntity(
     @ColumnInfo(name = "title")
-    val title: String,
+    override val title: String,
 
     @PrimaryKey
     @ColumnInfo(name = "video_id")
-    val watchUrl: String,
+    override val videoId: String,
 
     @ColumnInfo(name = "viewNumber")
-    val views: String,
+    override val views: String,
 
     @ColumnInfo(name = "videoDate")
-    val dateTime: String,
+    override val dateTime: String,
 
     @ColumnInfo(name = "duration")
-    val duration: String,
+    override val duration: String,
 
     @ColumnInfo(name = "videoChannelName")
-    val channelName: String,
+    override val channelName: String,
 
     @ColumnInfo(name = "channelThumbnail")
-    val channelThumbnail: String
-) {
+    override val channelThumbnail: String
+) : VideoUiModel {
+
+    /**
+     * Dynamically generates the YouTube thumbnail URL for this video.
+     */
     @get:Ignore
-    val thumbnailUrl: String
-        get() = "https://img.youtube.com/vi/$watchUrl/0.jpg"
+    override val thumbnailUrl: String
+        get() = "https://img.youtube.com/vi/$videoId/0.jpg"
 }

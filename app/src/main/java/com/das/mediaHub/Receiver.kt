@@ -4,8 +4,8 @@ import android.content.BroadcastReceiver
 import android.content.Context
 import android.content.Intent
 import com.das.mediaHub.data.constants.Notifications
-import com.das.mediaHub.services.media.LocalBackGroundPlayer
-import com.das.mediaHub.services.media.OnlineBackgroundPlayer
+import com.das.mediaHub.services.media.local.LocalBackGroundPlayer
+import com.das.mediaHub.services.media.online.OnlineBackgroundPlayer
 
 class Receiver: BroadcastReceiver() {
 

@@ -10,8 +10,9 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.safeDrawing
-import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.layout.safeContent
+import androidx.compose.foundation.lazy.staggeredgrid.LazyVerticalStaggeredGrid
+import androidx.compose.foundation.lazy.staggeredgrid.StaggeredGridCells
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
@@ -24,16 +25,15 @@ import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
-import androidx.compose.material3.LargeTopAppBar
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
+import androidx.compose.material3.TopAppBar
 import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.input.nestedscroll.nestedScroll
@@ -41,137 +41,125 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import androidx.navigation3.runtime.NavBackStack
-import androidx.navigation3.runtime.NavKey
+import com.das.mediaHub.navigation.AppBackStack
 
 @Composable
-fun HelpScreen(backStack: NavBackStack<NavKey>) {
-    val scrollBehavior = TopAppBarDefaults.exitUntilCollapsedScrollBehavior()
+fun HelpScreen(backStack: AppBackStack) {
+    val scrollBehavior = TopAppBarDefaults.enterAlwaysScrollBehavior()
 
-    Box(
+    Scaffold(
+        containerColor = Color.Transparent,
+        contentWindowInsets = WindowInsets.safeContent,
+        topBar = {
+            TopAppBar(
+                title = {
+                    Text(
+                        text = "Help & Support",
+                        style = MaterialTheme.typography.headlineSmall.copy(
+                            fontWeight = FontWeight.ExtraBold,
+                            textAlign = TextAlign.Center
+                        ),
+                        modifier = Modifier.fillMaxWidth()
+                    )
+                },
+                navigationIcon = {
+                    IconButton(onClick = { backStack.removeLastOrNull() }) {
+                        Icon(
+                            imageVector = Icons.AutoMirrored.Default.ArrowBack,
+                            contentDescription = "Back"
+                        )
+                    }
+                },
+                colors = TopAppBarDefaults.topAppBarColors(
+                    containerColor = Color.Transparent,
+                    scrolledContainerColor = MaterialTheme.colorScheme.surface.copy(alpha = 0.95f)
+                ),
+                scrollBehavior = scrollBehavior
+            )
+        },
         modifier = Modifier
             .fillMaxSize()
-            .background(
-                Brush.verticalGradient(
-                    listOf(
-                        MaterialTheme.colorScheme.surface,
-                        MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.08f)
-                    )
+            .nestedScroll(scrollBehavior.nestedScrollConnection)
+    ) { padding ->
+
+        LazyVerticalStaggeredGrid(
+            columns = StaggeredGridCells.Adaptive(340.dp),
+            contentPadding = padding,
+            modifier = Modifier
+                .fillMaxSize()
+                .background(aboutBackgroundBrush()),
+            horizontalArrangement = Arrangement.spacedBy(10.dp),
+            verticalItemSpacing = 10.dp
+        ) {
+            item {
+                HelpHeroCard()
+            }
+
+            item {
+                HelpCard(
+                    icon = Icons.Default.Download,
+                    title = "How do I download media?",
+                    content = "Search for a video or paste a supported link. Once the media is loaded, use the download option to choose the format or quality you want and start saving it."
                 )
-            )
-    ) {
-        Scaffold(
-            containerColor = Color.Transparent,
-            contentWindowInsets = WindowInsets.safeDrawing,
-            topBar = {
-                LargeTopAppBar(
-                    title = {
-                        Text(
-                            text = "Help & Support",
-                            style = MaterialTheme.typography.headlineSmall.copy(
-                                fontWeight = FontWeight.ExtraBold,
-                                textAlign = TextAlign.Center
-                            ),
-                            modifier = Modifier.fillMaxWidth()
+            }
+
+            item {
+                HelpCard(
+                    icon = Icons.Default.Folder,
+                    title = "Where are my files saved?",
+                    content = "Downloaded files are saved to your selected storage folder. You can change audio and video save locations from Settings > Storage."
+                )
+            }
+
+            item {
+                HelpCard(
+                    icon = Icons.Default.Headphones,
+                    title = "Does background playback work?",
+                    content = "Yes. DasMediaHub supports background audio playback, so your media can keep playing while the screen is locked or while you use other apps."
+                )
+            }
+
+            item {
+                HelpCard(
+                    icon = Icons.Default.BugReport,
+                    title = "How can I report an issue?",
+                    content = "If something is not working correctly or you want to suggest an improvement, open Settings and use the Send Feedback option."
+                )
+            }
+
+            item {
+                Card(
+                    shape = RoundedCornerShape(22.dp),
+                    colors = CardDefaults.cardColors(
+                        containerColor = MaterialTheme.colorScheme.secondaryContainer.copy(
+                            alpha = 0.45f
                         )
-                    },
-                    navigationIcon = {
-                        IconButton(onClick = { backStack.removeLastOrNull() }) {
-                            Icon(
-                                imageVector = Icons.AutoMirrored.Default.ArrowBack,
-                                contentDescription = "Back"
-                            )
-                        }
-                    },
-                    colors = TopAppBarDefaults.topAppBarColors(
-                        containerColor = Color.Transparent,
-                        scrolledContainerColor = MaterialTheme.colorScheme.surface.copy(alpha = 0.95f)
                     ),
-                    scrollBehavior = scrollBehavior
-                )
-            },
-            modifier = Modifier.nestedScroll(scrollBehavior.nestedScrollConnection)
-        ) { padding ->
-            LazyColumn(
-                modifier = Modifier
-                    .fillMaxSize()
-                    .padding(horizontal = 16.dp),
-                contentPadding = padding,
-                verticalArrangement = Arrangement.spacedBy(14.dp)
-            ) {
-                item { Spacer(modifier = Modifier.height(8.dp)) }
-
-                item {
-                    HelpHeroCard()
-                }
-
-                item {
-                    HelpCard(
-                        icon = Icons.Default.Download,
-                        title = "How do I download media?",
-                        content = "Search for a video or paste a supported link. Once the media is loaded, use the download option to choose the format or quality you want and start saving it."
-                    )
-                }
-
-                item {
-                    HelpCard(
-                        icon = Icons.Default.Folder,
-                        title = "Where are my files saved?",
-                        content = "Downloaded files are saved to your selected storage folder. You can change audio and video save locations from Settings > Storage."
-                    )
-                }
-
-                item {
-                    HelpCard(
-                        icon = Icons.Default.Headphones,
-                        title = "Does background playback work?",
-                        content = "Yes. DasMediaHub supports background audio playback, so your media can keep playing while the screen is locked or while you use other apps."
-                    )
-                }
-
-                item {
-                    HelpCard(
-                        icon = Icons.Default.BugReport,
-                        title = "How can I report an issue?",
-                        content = "If something is not working correctly or you want to suggest an improvement, open Settings and use the Send Feedback option."
-                    )
-                }
-
-                item {
-                    Card(
-                        shape = RoundedCornerShape(22.dp),
-                        colors = CardDefaults.cardColors(
-                            containerColor = MaterialTheme.colorScheme.secondaryContainer.copy(alpha = 0.45f)
-                        ),
-                        elevation = CardDefaults.cardElevation(defaultElevation = 0.dp),
-                        modifier = Modifier.fillMaxWidth()
+                    elevation = CardDefaults.cardElevation(defaultElevation = 0.dp),
+                    modifier = Modifier.fillMaxWidth()
+                ) {
+                    Column(
+                        modifier = Modifier.padding(18.dp)
                     ) {
-                        Column(
-                            modifier = Modifier.padding(18.dp)
-                        ) {
-                            Text(
-                                text = "Quick tip",
-                                style = MaterialTheme.typography.titleMedium.copy(
-                                    fontWeight = FontWeight.Bold
-                                )
+                        Text(
+                            text = "Quick tip",
+                            style = MaterialTheme.typography.titleMedium.copy(
+                                fontWeight = FontWeight.Bold
                             )
+                        )
 
-                            Spacer(modifier = Modifier.height(8.dp))
+                        Spacer(modifier = Modifier.height(8.dp))
 
-                            Text(
-                                text = "For the best experience, make sure your download folders are set correctly in Settings before saving large audio or video files.",
-                                style = MaterialTheme.typography.bodyMedium,
-                                color = MaterialTheme.colorScheme.onSecondaryContainer,
-                                lineHeight = 22.sp
-                            )
-                        }
+                        Text(
+                            text = "For the best experience, make sure your download folders are set correctly in Settings before saving large audio or video files.",
+                            style = MaterialTheme.typography.bodyMedium,
+                            color = MaterialTheme.colorScheme.onSecondaryContainer,
+                            lineHeight = 22.sp
+                        )
                     }
                 }
-
-                item {
-                    Spacer(modifier = Modifier.height(20.dp))
-                }
             }
+
         }
     }
 }

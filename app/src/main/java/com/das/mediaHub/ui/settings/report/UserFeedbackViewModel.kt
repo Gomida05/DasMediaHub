@@ -6,13 +6,17 @@ import com.das.mediaHub.data.model.FeedBackCategory
 import com.das.mediaHub.data.model.ModeType
 import com.das.mediaHub.data.model.state.UserFeedbackUiState
 import com.das.mediaHub.data.repository.UserFeedbackRepository
+import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
+import javax.inject.Inject
 
-class UserFeedbackViewModel: ViewModel() {
-    private val repository = UserFeedbackRepository()
+@HiltViewModel
+class UserFeedbackViewModel @Inject constructor(
+    private val repository: UserFeedbackRepository
+): ViewModel() {
     private val _uiState = MutableStateFlow(UserFeedbackUiState())
     val uiState = _uiState.asStateFlow()
 
