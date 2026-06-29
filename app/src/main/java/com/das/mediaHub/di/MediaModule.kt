@@ -17,10 +17,17 @@ import dagger.hilt.android.qualifiers.ApplicationContext
 import dagger.hilt.components.SingletonComponent
 import javax.inject.Singleton
 
+/**
+ * Hilt module for providing media-related dependencies, such as ExoPlayer and MediaSession.
+ */
 @Module
 @InstallIn(SingletonComponent::class)
 object MediaModule {
 
+    /**
+     * Provides a configured instance of [ExoPlayer].
+     * Configured for general media usage with network wake mode and audio focus handling.
+     */
     @Provides
     fun provideJustExoPlayer(
         @ApplicationContext context: Context
@@ -38,7 +45,10 @@ object MediaModule {
             .build()
     }
 
-
+    /**
+     * Provides a [MediaSession] instance for the given [Player].
+     * Sets the session activity to launch [MainActivity].
+     */
     @Provides
     fun provideMediaSession(
         @ApplicationContext context: Context,
@@ -56,12 +66,15 @@ object MediaModule {
             .build()
     }
 
-
+    /**
+     * Provides a singleton [Player] instance (using [ExoPlayer]).
+     * Configured for movie playback with network wake mode and audio focus handling.
+     */
     @Provides
     @Singleton
     fun provideExoPlayer(
         @ApplicationContext context: Context
-    ): Player { // Returning the interface is better for decoupling, but you can return ExoPlayer if you need specific ExoPlayer methods
+    ): Player {
         return ExoPlayer.Builder(context)
             .setAudioAttributes(
                 AudioAttributes.Builder()
@@ -74,10 +87,13 @@ object MediaModule {
             .build()
     }
 
+    /**
+     * Provides the singleton [VideoPlayerManager] for controlling video playback.
+     */
     @Provides
     @Singleton
     fun provideVideoPlayerManager(
-        player: Player // Hilt injects the player we just built above
+        player: Player
     ): VideoPlayerManager {
         return VideoPlayerManager(player)
     }

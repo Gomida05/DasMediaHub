@@ -11,6 +11,22 @@ import com.das.mediaHub.data.mediacontroller.local.DescriptionAdapter
 import dagger.hilt.android.AndroidEntryPoint
 import javax.inject.Inject
 
+/**
+ * A service that handles background audio playback for local media files.
+ *
+ * It manages an [ExoPlayer] instance and a [PlayerNotificationManager] to provide
+ * playback controls in the system notification area. It supports basic playback
+ * actions like START, PAUSE, and STOP via Intents.
+ *
+ * Example usage:
+ * ```kotlin
+ * val intent = Intent(context, LocalBackGroundPlayer::class.java).apply {
+ *     action = "com.das.mediaHub.START_BACKGROUND_MEDIA"
+ *     putExtra("media_id", trackIndex)
+ * }
+ * context.startService(intent)
+ * ```
+ */
 @SuppressLint("UnsafeOptInUsageError")
 @AndroidEntryPoint
 class LocalBackGroundPlayer: MediaSessionService() {

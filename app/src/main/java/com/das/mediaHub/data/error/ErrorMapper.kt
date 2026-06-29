@@ -2,9 +2,12 @@ package com.das.mediaHub.data.error
 
 import com.chaquo.python.PyException
 import com.das.python.exceptions.PyCallError
+import java.io.FileNotFoundException
 import java.io.IOException
+import java.net.ConnectException
 import java.net.SocketTimeoutException
 import java.net.UnknownHostException
+import javax.net.ssl.SSLHandshakeException
 
 /**
  * Utility object for mapping exceptions and raw error strings into user-friendly, 
@@ -26,6 +29,10 @@ object ErrorMapper {
     private const val MSG_SERVER_ERROR = "The server is having trouble right now. Please try again later."
     private const val MSG_DATA_ERROR = "We received an unexpected response or data error. Please try again."
     private const val MSG_PROCESSING_ERROR = "Something went wrong while processing your request."
+    private const val MSG_STORAGE_ERROR = "Could not access storage. Please check permissions."
+    private const val MSG_NO_SPACE = "Not enough storage space available."
+    private const val MSG_SSL_ERROR = "Secure connection failed. Please check your device's date and time."
+    private const val MSG_UNSUPPORTED = "This content is not supported or could not be played."
     const val MSG_GENERIC = "Something went wrong. Please try again."
 
     /**
@@ -37,11 +44,29 @@ object ErrorMapper {
     fun map(throwable: Throwable?): String {
         return when (throwable) {
             is UnknownHostException -> MSG_NO_INTERNET
+            is ConnectException -> MSG_NO_INTERNET
             is SocketTimeoutException -> MSG_TIMEOUT
-            is IOException -> MSG_NETWORK_ERROR
-            is PyCallError -> mapPythonError(throwable) // Added handling for new sealed class
+            is SSLHandshakeException -> MSG_SSL_ERROR
+            is FileNotFoundException -> MSG_NOT_FOUND
+            is SecurityException -> MSG_STORAGE_ERROR
+            is IOException -> {
+                val message = throwable.message?.lowercase() ?: ""
+                when {
+                    message.contains("no space") -> MSG_NO_SPACE
+                    message.contains("permission") -> MSG_STORAGE_ERROR
+                    else -> MSG_NETWORK_ERROR
+                }
+            }
+            is PyCallError -> mapPythonError(throwable) 
             is PyException -> mapPythonError(throwable)
-            else -> MSG_GENERIC
+            else -> {
+                val message = throwable?.message
+                if (message != null) {
+                    val analyzed = analyzeErrorMessage(message.lowercase())
+                    if (analyzed != MSG_GENERIC) return analyzed
+                }
+                MSG_GENERIC
+            }
         }
     }
 
@@ -126,30 +151,40 @@ object ErrorMapper {
                 "temporary failure in name resolution",
                 "name or service not known",
                 "[errno 7]",
-                "no address associated with hostname"
+                "no address associated with hostname",
+                "failed to connect to"
             ) -> MSG_NO_INTERNET
 
             msg.containsAny(
                 "sockettimeoutexception",
                 "timed out",
-                "timeout"
+                "timeout",
+                "read timed out"
             ) -> MSG_TIMEOUT
 
-            msg.containsAny("http 403", "403 forbidden", "403") -> MSG_FORBIDDEN
+            msg.containsAny("http 403", "403 forbidden", "403", "forbidden") -> MSG_FORBIDDEN
 
-            msg.containsAny("http 404", "not found", "404") -> MSG_NOT_FOUND
+            msg.containsAny("http 404", "not found", "404", "could not find") -> MSG_NOT_FOUND
 
-            msg.containsAny("http 429", "too many requests", "429") -> MSG_TOO_MANY_REQUESTS
+            msg.containsAny("http 429", "too many requests", "429", "rate limit") -> MSG_TOO_MANY_REQUESTS
 
             msg.containsAny(
                 "http 500", "http 502", "http 503",
-                "server error", "500", "502", "503"
+                "server error", "500", "502", "503", "internal server error"
             ) -> MSG_SERVER_ERROR
 
             msg.containsAny(
                 "json", "decode", "parse", "jsondecodeerror",
-                "valueerror", "keyerror", "typeerror"
+                "valueerror", "keyerror", "typeerror", "malformed"
             ) -> MSG_DATA_ERROR
+
+            msg.containsAny("no space left on device", "enospc", "disk full") -> MSG_NO_SPACE
+
+            msg.containsAny("permission denied", "eacces", "access denied") -> MSG_STORAGE_ERROR
+
+            msg.containsAny("ssl", "certificate", "handshake") -> MSG_SSL_ERROR
+
+            msg.containsAny("unsupported", "not supported", "unplayable") -> MSG_UNSUPPORTED
 
             msg.containsAny("python", "pyexception", "traceback") -> MSG_PROCESSING_ERROR
 

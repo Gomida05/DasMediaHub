@@ -2,8 +2,9 @@ package com.das.mediaHub.ui.search
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.das.mediaHub.data.error.ErrorMapper
 import com.das.mediaHub.data.model.SearchData
-import com.das.mediaHub.data.model.state.UiState
+import com.das.mediaHub.data.model.interfaces.UiState
 import com.das.mediaHub.data.repository.SearchHistoryRepository
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.MutableSharedFlow
@@ -31,7 +32,7 @@ class SearchViewModel @Inject constructor(
             emit(UiState.Loading)
         }
         .catch { e ->
-            emit(UiState.Error(e.message ?: "Unknown error"))
+            emit(UiState.Error(ErrorMapper.map(e)))
         }
         .stateIn(
             scope = viewModelScope,
@@ -97,7 +98,7 @@ class SearchViewModel @Inject constructor(
 
     private fun reportFailure(e: Throwable) {
         viewModelScope.launch {
-            _errorFlow.tryEmit(e.message ?: "An unknown error occurred")
+            _errorFlow.emit(ErrorMapper.map(e))
         }
     }
 }

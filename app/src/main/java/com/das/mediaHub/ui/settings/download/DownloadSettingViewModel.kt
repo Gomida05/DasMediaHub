@@ -1,35 +1,48 @@
 package com.das.mediaHub.ui.settings.download
 
+import android.content.Context
 import android.net.Uri
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.das.downloader.data.local.DownloadPreferences
 import com.das.downloader.data.model.PathType
+import com.das.mediaHub.data.error.ErrorMapper
 import com.das.mediaHub.data.repository.StorageRepo
 import dagger.hilt.android.lifecycle.HiltViewModel
+import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asSharedFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import javax.inject.Inject
 
-// 1. Define UI State for your new settings
+/**
+ * UI State for the Download Settings screen.
+ */
 data class DownloadSettingUiState(
     val downloadOverData: Boolean = false,
     val maxConcurrentDownloads: Int = 3,
-    // Add other settings here as you expand
 )
 
-// 2. Safely type your effects so you can emit both folder requests and messages
+/**
+ * Effects for the Download Settings screen.
+ */
 sealed interface DownloadSettingEffect {
+    /** Request to pick a folder for a specific [PathType]. */
     data class PickFolder(val pathType: PathType) : DownloadSettingEffect
+    /** Show a snackbar message. */
     data class ShowMessage(val message: String) : DownloadSettingEffect
 }
 
+/**
+ * ViewModel for the Download Settings screen, handling user preferences for downloads.
+ */
 @HiltViewModel
 class DownloadSettingViewModel @Inject constructor(
+    @param:ApplicationContext private val context: Context,
     private val storageRepo: StorageRepo
-    // private val pathPreferences: PathPreferences // Inject this too instead of calling a static method!
 ): ViewModel() {
 
     private val _effects = MutableSharedFlow<DownloadSettingEffect>()
@@ -38,26 +51,51 @@ class DownloadSettingViewModel @Inject constructor(
     private val _uiState = MutableStateFlow(DownloadSettingUiState())
     val uiState = _uiState.asStateFlow()
 
-    // --- New Setting Updaters ---
-
-    fun updateDownloadOverData(enabled: Boolean) {
-        // Here you would also save this to DataStore/SharedPreferences
-        _uiState.value = _uiState.value.copy(downloadOverData = enabled)
+    init {
+        loadSettings()
     }
 
+    private fun loadSettings() {
+        _uiState.update {
+            it.copy(
+                downloadOverData = DownloadPreferences.getDownloadOverMobileData(context),
+                maxConcurrentDownloads = DownloadPreferences.getMaxConcurrentDownloads(context)
+            )
+        }
+    }
+
+    // --- New Setting Updaters ---
+
+    /**
+     * Updates and persists the setting for downloading over mobile data.
+     */
+    fun updateDownloadOverData(enabled: Boolean) {
+        DownloadPreferences.updateDownloadOverMobileData(context, enabled)
+        _uiState.update { it.copy(downloadOverData = enabled) }
+    }
+
+    /**
+     * Updates and persists the maximum number of concurrent downloads allowed.
+     */
     fun updateMaxConcurrentDownloads(max: Int) {
-        // Here you would also save this to DataStore/SharedPreferences
-        _uiState.value = _uiState.value.copy(maxConcurrentDownloads = max)
+        DownloadPreferences.updateMaxConcurrentDownloads(context, max)
+        _uiState.update { it.copy(maxConcurrentDownloads = max) }
     }
 
     // --- Existing Storage Logic ---
 
+    /**
+     * Triggers a request for the user to pick a folder.
+     */
     fun onPickFolderRequested(pathType: PathType) {
         viewModelScope.launch {
             _effects.emit(DownloadSettingEffect.PickFolder(pathType))
         }
     }
 
+    /**
+     * Handles the result of a folder picker request.
+     */
     fun onFolderPicked(pathType: PathType, uri: Uri?) {
         if (uri == null) return
 
@@ -85,10 +123,8 @@ class DownloadSettingViewModel @Inject constructor(
                     )
                 )
             } catch (e: Exception) {
-                _effects.emit(DownloadSettingEffect.ShowMessage(e.message?:""))
+                _effects.emit(DownloadSettingEffect.ShowMessage(ErrorMapper.map(e)))
             }
         }
     }
-
-
 }

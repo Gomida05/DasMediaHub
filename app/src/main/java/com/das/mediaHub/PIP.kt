@@ -6,18 +6,19 @@ import android.content.Context
 import android.content.ContextWrapper
 import android.graphics.Rect
 import android.os.Build
-import android.util.Log
 import android.util.Rational
 import android.view.View
 import android.view.WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON
 import androidx.activity.ComponentActivity
+import androidx.activity.compose.LocalActivity
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberUpdatedState
+import androidx.compose.runtime.retain.retain
+import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.layout.boundsInWindow
@@ -35,9 +36,9 @@ internal object PIP {
         get() = isPlaybackActive && allowAutoPip
 
     @Composable
-    fun BindPip(activity: ComponentActivity?) {
-        var sourceRect by remember { mutableStateOf(Rect(0, 0, 1, 1)) }
-        var aspectRatio by remember { mutableStateOf(Rational(16, 9)) }
+    fun BindPip(activity: Activity?) {
+        var sourceRect by rememberSaveable { mutableStateOf(Rect(0, 0, 1, 1)) }
+        var aspectRatio by rememberSaveable { mutableStateOf(Rational(16, 9)) }
         val canEnter = canEnterPipMode
 
         LaunchedEffect(activity, canEnter, sourceRect, aspectRatio) {
@@ -50,7 +51,6 @@ internal object PIP {
             }
 
             activity?.setPictureInPictureParams(builder.build())
-            Log.d("PIP", "setPictureInPictureParams autoEnter=$canEnter")
         }
     }
 
@@ -77,7 +77,7 @@ internal object PIP {
     fun rememberIsInPipMode(): Boolean {
         val activity = LocalContext.current.findActivity()
 
-        var pipMode by remember { mutableStateOf(activity?.isInPictureInPictureMode) }
+        var pipMode by retain { mutableStateOf(activity?.isInPictureInPictureMode) }
         val observer = Consumer<PictureInPictureModeChangedInfo> { info ->
             pipMode = info.isInPictureInPictureMode
         }
@@ -94,9 +94,9 @@ internal object PIP {
 
     @Composable
     fun Modifier.rememberPipModifier(): Modifier {
-        val activity = LocalContext.current.findActivity()
-        var sourceRect by remember { mutableStateOf(Rect(0, 0, 1, 1)) }
-        var aspectRatio by remember { mutableStateOf(Rational(1, 1)) }
+        val activity = LocalActivity.current
+        var sourceRect by rememberSaveable { mutableStateOf(Rect(0, 0, 1, 1)) }
+        var aspectRatio by rememberSaveable { mutableStateOf(Rational(1, 1)) }
         val canEnter = canEnterPipMode
 
         DisposableEffect(activity, canEnter, sourceRect, aspectRatio) {
@@ -148,7 +148,7 @@ internal object PIP {
         return null
     }
 
-    fun disablePipAndScreenLock(activity: ComponentActivity?) {
+    fun disablePipAndScreenLock(activity: Activity?) {
         allowAutoPip = false
         isPlaybackActive = false
 

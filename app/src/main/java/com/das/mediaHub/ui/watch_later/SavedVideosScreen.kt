@@ -10,7 +10,7 @@ import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.safeContent
+import androidx.compose.foundation.layout.safeDrawing
 import androidx.compose.foundation.lazy.grid.GridCells
 import androidx.compose.foundation.lazy.grid.GridItemSpan
 import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
@@ -43,8 +43,9 @@ import androidx.compose.ui.unit.DpOffset
 import androidx.compose.ui.unit.dp
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import com.das.mediaHub.data.error.ErrorMapper
 import com.das.mediaHub.data.model.TopPopUp
-import com.das.mediaHub.data.model.state.UiState
+import com.das.mediaHub.data.model.interfaces.UiState
 import com.das.mediaHub.navigation.AppBackStack
 import com.das.mediaHub.navigation.Destination
 import com.das.mediaHub.services.media.online.OnlineBackgroundPlayer.Companion.playAudioFromUrl
@@ -160,7 +161,7 @@ fun SavedVideosScreen(backStack: AppBackStack) {
             }
 
         },
-        contentWindowInsets = WindowInsets.safeContent
+        contentWindowInsets = WindowInsets.safeDrawing
     ) { paddingValues ->
         LazyVerticalGrid(
             columns = GridCells.Adaptive(minSize = 320.dp),
@@ -278,7 +279,7 @@ private fun onClickListListener(
         backStack.add(Destination.OnlineVideoPlayer(videoId = selectedId))
     } catch (e: Exception) {
         showNotificationDialog = TopPopUp(
-            message = "Error: ${e.message}",
+            message = ErrorMapper.map(e),
             icon = Icons.Default.Bookmark,
             loading = false
         )

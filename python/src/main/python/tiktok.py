@@ -40,11 +40,11 @@ def get_video_stream(url: str):
                 result = {
                     "id": info.get("id"),
                     "title": info.get("title"),
-                    "duration": info.get("duration"),
+                    "duration": str(info.get("duration")),
                     "thumbnail": info.get("thumbnail"),
                     "uploader": info.get("uploader"),
-                    "view_count": info.get("view_count"),
-                    "like_count": info.get("like_count"),
+                    "view_count": str(info.get("view_count")),
+                    "like_count": str(info.get("like_count")),
                     "webpage_url": info.get("webpage_url"),
                     "stream_url": best
                 }
@@ -56,7 +56,7 @@ def get_video_stream(url: str):
                 )
 
         except DownloadError:
-             last_error = "VIDEO_UNAVAILABLE"
+            last_error = "VIDEO_UNAVAILABLE"
         except ExtractorError:
             last_error = "TIKTOK_EXTRACTION_FAILED"
             

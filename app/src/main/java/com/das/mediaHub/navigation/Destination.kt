@@ -15,7 +15,7 @@ sealed interface Destination : NavKey {
     data class OnlineVideoPlayer(val videoId: String) : Destination
 
     @Serializable
-    data class ResultViewerPage(val value: String) : Destination
+    data class ResultRoute(val value: String) : Destination
 
     @Serializable
     data object RecentlyWatched : Destination
@@ -39,10 +39,7 @@ sealed interface Destination : NavKey {
     data object FeedbackScreen : Destination
 
     @Serializable
-    data object TikTok : Destination
-
-    @Serializable
-    data object Instagram : Destination
+    data class SocialDownloader(val newUrl: String? = null) : Destination
 
     @Serializable
     data object AboutDasMediaHub : Destination

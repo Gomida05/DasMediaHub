@@ -17,5 +17,13 @@
         name="download"
         path="Download/" />
 
+    <external-files-path
+        name="external_download"
+        path="Download/" />
+
+    <external-files-path
+        name="external_root"
+        path="." />
+
 </paths>
 

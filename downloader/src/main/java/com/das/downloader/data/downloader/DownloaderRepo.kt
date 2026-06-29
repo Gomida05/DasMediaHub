@@ -1,6 +1,8 @@
 package com.das.downloader.data.downloader
 
-import com.das.downloader.data.model.AppUpdateInfo
+import android.content.Context
+import com.das.downloader.DownloadQueueManager
+import com.das.downloader.data.local.DownloadPreferences
 import com.das.downloader.data.model.download.DownloadTask
 import com.das.downloader.data.model.download.DownloadType
 import java.io.File
@@ -17,7 +19,6 @@ import java.io.File
  *     queue = downloadQueueManager,
  *     videoPath = "/sdcard/Movies/DasMediaHub",
  *     audioPath = "/sdcard/Music/DasMediaHub",
- *     apkPath = "/sdcard/Download",
  *     appName = "DasMediaHub"
  * )
  * repo.enqueueVideo("https://example.com/video.mp4", "Sample Video")
@@ -25,11 +26,23 @@ import java.io.File
  */
 class DownloaderRepo(
     private val queue: DownloadQueueManager,
-    private val videoPath: String,
-    private val audioPath: String,
-    private val apkPath: String,
-    private val appName: String
+    private val context: Context
 ) {
+
+    /**
+     * The resolved directory path for saving downloaded videos.
+     * Retrieved dynamically based on the user's current settings in [DownloadPreferences].
+     */
+    private val videoPath: String
+        get() = DownloadPreferences.getVideoPath(context)
+
+    /**
+     * The resolved directory path for saving downloaded audio files.
+     * Retrieved dynamically based on the user's current settings in [DownloadPreferences].
+     */
+    private val audioPath: String
+        get() = DownloadPreferences.getAudioPath(context)
+
 
     /**
      * Enqueues a video for download.
@@ -52,8 +65,8 @@ class DownloaderRepo(
                 id = id,
                 url = url,
                 title = title,
-                type = DownloadType.VIDEO,
-                destinationPath = buildFilePath(base, title, DownloadType.VIDEO),
+                type = DownloadType.YOUTUBE_VIDEO,
+                destinationPath = buildFilePath(base, title, DownloadType.YOUTUBE_VIDEO),
                 playlistName = playlistName
             )
         )
@@ -81,53 +94,37 @@ class DownloaderRepo(
                 id = id,
                 url = url,
                 title = title,
-                type = DownloadType.MUSIC,
-                destinationPath = buildFilePath(base, title, DownloadType.MUSIC),
+                type = DownloadType.YOUTUBE_AUDIO,
+                destinationPath = buildFilePath(base, title, DownloadType.YOUTUBE_AUDIO),
                 playlistName = playlistName
             )
         )
         return id
     }
 
-    /**
-     * Enqueues an APK for download.
-     * 
-     * @param appInfo Information about the app update/APK.
-     * @return The unique task ID.
-     */
-    fun enqueueApk(appInfo: AppUpdateInfo): String {
-        val id = DownloadQueueManager.newTaskId()
-        queue.enqueue(
-            DownloadTask(
-                id = id,
-                url = appInfo.apkUrl,
-                title = appName,
-                type = DownloadType.APK,
-                destinationPath = buildFilePath(apkPath, appName, DownloadType.APK)
-            )
-        )
-        return id
-    }
+
 
     /**
-     * Enqueues a TikTok video for download.
+     * Enqueues a TikTok or Instagram video for download.
      * 
      * @param url Direct video URL.
      * @param title Title for the video.
      * @return The unique task ID.
      */
-    fun enqueueTiktokVideo(url: String, title: String): String {
-        val base = File(videoPath, title.toSafeFileName()).apply { mkdirs() }.absolutePath
+    fun queueMediaDownload(url: String, title: String, mediaType: DownloadType): String {
         val id = DownloadQueueManager.newTaskId()
+        val base = if (mediaType == DownloadType.YOUTUBE_AUDIO) audioPath else videoPath
+
         queue.enqueue(
             DownloadTask(
                 id = id,
                 url = url,
                 title = title,
-                type = DownloadType.VIDEO,
-                destinationPath = buildFilePath(base, title, DownloadType.VIDEO)
+                type = mediaType,
+                destinationPath = buildFilePath(base, title, mediaType)
             )
         )
+
         return id
     }
 
@@ -144,8 +141,8 @@ class DownloaderRepo(
                 id = DownloadQueueManager.newTaskId(),
                 url = url,
                 title = title,
-                type = DownloadType.VIDEO,
-                destinationPath = buildFilePath(base, title, DownloadType.VIDEO),
+                type = DownloadType.YOUTUBE_VIDEO,
+                destinationPath = buildFilePath(base, title, DownloadType.YOUTUBE_VIDEO),
                 playlistName = playlistName
             )
         }
@@ -165,8 +162,8 @@ class DownloaderRepo(
                 id = DownloadQueueManager.newTaskId(),
                 url = url,
                 title = title,
-                type = DownloadType.MUSIC,
-                destinationPath = buildFilePath(base, title, DownloadType.MUSIC),
+                type = DownloadType.YOUTUBE_AUDIO,
+                destinationPath = buildFilePath(base, title, DownloadType.YOUTUBE_AUDIO),
                 playlistName = playlistName
             )
         }

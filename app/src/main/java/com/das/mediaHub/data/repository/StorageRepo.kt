@@ -4,7 +4,7 @@ import android.content.Context
 import android.content.Intent
 import android.net.Uri
 import androidx.documentfile.provider.DocumentFile
-import com.das.downloader.data.local.PathPreferences
+import com.das.downloader.data.local.DownloadPreferences
 import com.das.downloader.data.model.PathType
 import dagger.hilt.android.qualifiers.ApplicationContext
 import javax.inject.Inject
@@ -42,7 +42,7 @@ class StorageRepo @Inject constructor(
     }
 
     fun updatePath(pathType: PathType, newPath: String) {
-        PathPreferences.updatePath(
+        DownloadPreferences.updatePath(
             context = context,
             pathType = pathType,
             newPath = newPath

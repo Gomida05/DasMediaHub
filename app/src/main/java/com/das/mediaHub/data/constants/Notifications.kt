@@ -6,8 +6,10 @@ package com.das.mediaHub.data.constants
  */
 object Notifications {
     /** Action string for when the audio service notification is deleted. */
-    const val AUDIO_SERVICE_FROM_URL_NOTIFICATION = "com.das.mediaHub.services.media.AudioServiceFromUrl.NOTIFICATION_DELETED"
-    
+    const val AUDIO_SERVICE_FROM_URL_NOTIFICATION = "OnlineBackgroundPlayer.NOTIFICATION_DELETED"
+
+    const val OPEN_IT_NOW = "OnlineBackgroundPlayer.OPEN_CURRENTLY"
+
     /** Action string for when the background player notification is deleted. */
-    const val BACKGROUND_GROUND_PLAYER_NOTIFICATION = "com.das.mediaHub.services.BackgroundPlayer.NOTIFICATION_DELETED"
+    const val BACKGROUND_GROUND_PLAYER_NOTIFICATION = "BackgroundPlayer.NOTIFICATION_DELETED"
 }

@@ -23,6 +23,8 @@ import javax.inject.Singleton
 class UserFeedbackRepository @Inject constructor(
     private val firestore: FirebaseFirestore
 ) {
+
+
     /**
      * Uploads user feedback to the "user_feedback" Firestore collection.
      * 

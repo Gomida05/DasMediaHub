@@ -76,13 +76,14 @@ import androidx.core.net.toUri
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
 import coil.compose.AsyncImage
+import com.das.downloader.data.downloader.DownloadRequest
 import com.das.downloader.data.model.download.DownloadType
 import com.das.mediaHub.data.model.TopPopUp
 import com.das.mediaHub.data.model.icons.filled.YouTubeIcon
-import com.das.mediaHub.data.model.state.UiState
+import com.das.mediaHub.data.model.interfaces.UiState
 import com.das.mediaHub.navigation.AppBackStack
 import com.das.mediaHub.navigation.Destination.OnlineVideoPlayer
-import com.das.mediaHub.services.download.DownloadService
+import com.das.mediaHub.services.download.DownloadDispatcher
 import com.das.mediaHub.services.media.online.OnlineBackgroundPlayer.Companion.playAudioFromUrl
 import com.das.mediaHub.ui.components.ErrorStateView
 import com.das.mediaHub.ui.components.dialogs.ActionMenuItem
@@ -268,8 +269,7 @@ fun ResultScreen(backStack: AppBackStack, data: String) {
                                             dialogState = ActionDialogState.Idle
 
                                             if (streamResult.audioUrl.isBlank()) {
-                                                dialogState =
-                                                    ActionDialogState.Error("This video can’t be played in the background right now.")
+                                                dialogState = ActionDialogState.Error("This video can’t be played in the background right now.")
                                                 return@loadStreamUrl
                                             }
 
@@ -285,13 +285,27 @@ fun ResultScreen(backStack: AppBackStack, data: String) {
                                     )
                                 },
                                 downloadIt = { id, title, type ->
-                                    DownloadService.startForYouTube(
-                                        context = context,
-                                        id = id,
-                                        title = title,
-                                        type = type
-                                    )
-
+                                    when (type) {
+                                        DownloadType.YOUTUBE_VIDEO -> {
+                                            DownloadDispatcher.enqueue(
+                                                context = context,
+                                                request = DownloadRequest.YoutubeVideo(
+                                                    videoId = id,
+                                                    title = title
+                                                )
+                                            )
+                                        }
+                                        DownloadType.YOUTUBE_AUDIO -> {
+                                            DownloadDispatcher.enqueue(
+                                                context = context,
+                                                request = DownloadRequest.YoutubeAudio(
+                                                    videoId = id,
+                                                    title = title
+                                                )
+                                            )
+                                        }
+                                        else -> Unit
+                                    }
                                 }
                             ) {
                                 scope.launch { snackBar.showSnackbar(it) }
@@ -693,7 +707,7 @@ fun DownloadTypeDialog(
                     color = MaterialTheme.colorScheme.primary.copy(alpha = 0.08f),
                     modifier = Modifier.fillMaxWidth(),
                     onClick = {
-                        onDismiss(DownloadType.MUSIC)
+                        onDismiss(DownloadType.YOUTUBE_AUDIO)
                     }
                 ) {
                     Row(
@@ -746,7 +760,7 @@ fun DownloadTypeDialog(
                     color = MaterialTheme.colorScheme.secondary.copy(alpha = 0.08f),
                     modifier = Modifier.fillMaxWidth(),
                     onClick = {
-                        onDismiss(DownloadType.VIDEO)
+                        onDismiss(DownloadType.YOUTUBE_VIDEO)
                     }
                 ) {
                     Row(

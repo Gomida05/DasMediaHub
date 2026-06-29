@@ -4,13 +4,14 @@ import com.das.downloader.data.model.Outcome
 import com.das.downloader.data.model.download.DownloadTask
 import com.das.downloader.exception.NetworkRequestException
 import io.ktor.client.HttpClient
+import io.ktor.client.plugins.HttpRequestTimeoutException
+import io.ktor.client.plugins.HttpTimeoutConfig
+import io.ktor.client.plugins.timeout
 import io.ktor.client.request.header
 import io.ktor.client.request.prepareGet
 import io.ktor.client.statement.bodyAsChannel
 import io.ktor.utils.io.readAvailable
 import kotlinx.coroutines.CancellationException
-import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.withContext
 import java.io.File
 import java.io.RandomAccessFile
 
@@ -49,7 +50,7 @@ class ResumableDownloader(
         alreadyDownloadedBytes: Long,
         isPaused: () -> Boolean,
         onProgress: (downloaded: Long, total: Long) -> Unit
-    ): Outcome = withContext(Dispatchers.IO) {
+    ): Outcome {
         val file = File(task.destinationPath)
         file.parentFile?.mkdirs()
 
@@ -58,11 +59,17 @@ class ResumableDownloader(
             startByte = file.length()
         }
 
-        try {
+        return try {
             client.prepareGet(task.url) {
                 task.headers.forEach { (key, value) -> header(key, value) }
                 if (startByte > 0L) {
                     header("Range", "bytes=$startByte-")
+                }
+
+                timeout {
+                    requestTimeoutMillis = HttpTimeoutConfig.INFINITE_TIMEOUT_MS // Large content can take a long time
+                    connectTimeoutMillis = 15_000 // 15 seconds to connect
+                    socketTimeoutMillis = 15_000  // 15 seconds between packets
                 }
             }.execute { response ->
 
@@ -98,26 +105,34 @@ class ResumableDownloader(
                 var lastUpdateTime = System.currentTimeMillis()
 
                 raf.use { output ->
-                    while (!channel.isClosedForRead) {
+                    while (true) {
                         // Check for manual pause (still valid since it's custom domain logic)
                         if (isPaused()) {
                             return@execute Outcome.Paused
                         }
 
                         val read = channel.readAvailable(buffer, 0, buffer.size)
-                        if (read == -1) break
+                        if (read <= 0) {
+                            if (channel.isClosedForRead) break
+                            continue
+                        }
 
                         output.write(buffer, 0, read)
                         downloaded += read
 
                         // 3. Throttle progress updates (e.g., every 100ms)
                         val currentTime = System.currentTimeMillis()
-                        if (currentTime - lastUpdateTime > 100 || downloaded == totalBytes) {
+                        if (currentTime - lastUpdateTime > 100 || (totalBytes > 0 && downloaded == totalBytes)) {
                             onProgress(downloaded, totalBytes)
                             lastUpdateTime = currentTime
                         }
                     }
                 }
+
+                if (totalBytes > 0 && downloaded < totalBytes) {
+                    return@execute Outcome.Failed("Incomplete download: $downloaded/$totalBytes bytes")
+                }
+
                 Outcome.Completed
             }
         } catch (_: CancellationException) {
@@ -126,6 +141,8 @@ class ResumableDownloader(
             // If they want to "Pause", they use the isPaused() lambda logic.
             file.delete()
             Outcome.Canceled
+        } catch (e: HttpRequestTimeoutException) {
+            Outcome.Failed("Request timed out: ${e.message}")
         } catch (e: NetworkRequestException) {
             Outcome.Failed("HTTP ${e.code}: ${e.message}")
         } catch (e: Exception) {

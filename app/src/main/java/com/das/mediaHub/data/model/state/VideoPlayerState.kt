@@ -1,5 +1,6 @@
 package com.das.mediaHub.data.model.state
 
+import com.das.mediaHub.data.model.interfaces.UiState
 import com.das.python.data.model.FewVideoDetails
 import com.das.python.data.model.searcher.Video
 

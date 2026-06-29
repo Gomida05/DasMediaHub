@@ -8,7 +8,7 @@ import androidx.browser.customtabs.CustomTabsIntent
 import androidx.core.view.WindowCompat
 import androidx.core.view.WindowInsetsCompat
 import androidx.core.view.WindowInsetsControllerCompat
-import com.das.mediaHub.data.model.VideoUiModel
+import com.das.mediaHub.data.model.interfaces.VideoUiModel
 import com.das.python.data.model.VideosListData
 import com.das.python.data.model.searcher.Video
 

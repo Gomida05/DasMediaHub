@@ -32,7 +32,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import coil.compose.AsyncImage
-import com.das.mediaHub.data.model.VideoAction
+import com.das.mediaHub.data.model.interfaces.VideoAction
 import com.das.mediaHub.ui.result.DownloadTypeDialog
 import com.das.mediaHub.ui.result.ResultScreenActionItems
 import com.das.python.data.model.searcher.Video

@@ -1,11 +1,13 @@
 package com.das.python
 
-import com.das.python.data.constants.YouTubeRegexes
+import com.das.python.data.model.FewVideoDetails
 import com.das.python.data.model.ItemsStreamUrlsForMediaItemData
 import com.das.python.data.model.PlayListDataClass
-import com.das.python.data.model.responds.ResponseVideo
 import com.das.python.data.model.VideosListData
+import com.das.python.data.model.responds.ApiResponse
 import com.das.python.data.model.responds.RespondVideoDetails
+import com.das.python.data.model.responds.ResponseVideo
+import com.das.python.data.model.searcher.SearchResponse
 import com.das.python.exceptions.PyCallError
 import java.net.URL
 import java.text.SimpleDateFormat
@@ -411,9 +413,9 @@ object YouTuber {
      * ```
      *
      * @param query Search keywords.
-     * @return [ResponseVideo] containing search results.
+     * @return `ApiResponse<SearchResponse> ` containing search results.
      */
-    suspend fun search(query: String): ResponseVideo {
+    suspend fun search(query: String): ApiResponse<SearchResponse> {
         val result = py.searchNow(query = query)
         return result
     }
@@ -427,9 +429,9 @@ object YouTuber {
      * ```
      *
      * @param url Full YouTube video URL.
-     * @return [RespondVideoDetails] containing video metadata.
+     * @return `ApiResponse<FewVideoDetails>` containing video metadata.
      */
-    suspend fun searchByUrl(url: String): RespondVideoDetails {
+    suspend fun searchByUrl(url: String): ApiResponse<FewVideoDetails> {
         val result = py.searchByUrl(url = url)
         return result
     }

@@ -37,7 +37,8 @@ import androidx.compose.material.icons.automirrored.filled.HelpCenter
 import androidx.compose.material.icons.filled.CloudDownload
 import androidx.compose.material.icons.filled.Devices
 import androidx.compose.material.icons.filled.DownloadDone
-import androidx.compose.material.icons.filled.Info
+import androidx.compose.material.icons.filled.History
+import androidx.compose.material.icons.filled.LiveTv
 import androidx.compose.material.icons.filled.Palette
 import androidx.compose.material.icons.filled.PrivacyTip
 import androidx.compose.material.icons.filled.Security
@@ -56,7 +57,6 @@ import androidx.compose.material3.TopAppBar
 import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.retain.retain
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -66,7 +66,6 @@ import androidx.compose.ui.graphics.ColorFilter
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.input.nestedscroll.nestedScroll
-import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalResources
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
@@ -74,6 +73,7 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.das.mediaHub.BuildConfig
 import com.das.mediaHub.R
 import com.das.mediaHub.navigation.AppBackStack
 import com.das.mediaHub.navigation.Destination
@@ -81,12 +81,9 @@ import com.das.mediaHub.ui.theme.ThemePreferences.isDarkMode
 
 @Composable
 fun AboutDasMediaHub(backStack: AppBackStack) {
-    val context = LocalContext.current
-    val resources = LocalResources.current
-    val versionName = retain {
-        context.packageManager.getPackageInfo(context.packageName, 0).versionName
-    }
 
+    val resources = LocalResources.current
+    val versionName = BuildConfig.VERSION_NAME
     val scrollBehavior = TopAppBarDefaults.enterAlwaysScrollBehavior()
 
 
@@ -182,15 +179,31 @@ fun AboutDasMediaHub(backStack: AppBackStack) {
                 FeatureCard(
                     icon = Icons.Default.Devices,
                     title = "Multi-platform support",
-                    description = "Access content from different platforms without constantly switching between apps."
+                    description = "Seamlessly access and download content from YouTube, TikTok, and Instagram in one unified interface."
+                )
+            }
+
+            item {
+                FeatureCard(
+                    icon = Icons.Default.LiveTv,
+                    title = "Seamless playback",
+                    description = "Enjoy premium features like Background Playback and Picture-in-Picture mode for a better multitasking experience."
                 )
             }
 
             item {
                 FeatureCard(
                     icon = Icons.Default.CloudDownload,
-                    title = "Simple downloads",
-                    description = "Save audio and video to the folders you choose with a cleaner download flow."
+                    title = "Smart downloads",
+                    description = "Save audio and video in your preferred quality directly to the custom folders you've chosen in settings."
+                )
+            }
+
+            item {
+                FeatureCard(
+                    icon = Icons.Default.History,
+                    title = "Library & History",
+                    description = "Keep your media organized. Easily manage your downloads, watch history, and 'Save for Later' items."
                 )
             }
 
@@ -198,15 +211,7 @@ fun AboutDasMediaHub(backStack: AppBackStack) {
                 FeatureCard(
                     icon = Icons.Default.Palette,
                     title = "Modern interface",
-                    description = "A more polished Material 3 design with light, dark, and system theme support."
-                )
-            }
-
-            item {
-                FeatureCard(
-                    icon = Icons.Default.Info,
-                    title = "Built for everyday use",
-                    description = "Designed to keep media browsing, playback, and organization easy to understand."
+                    description = "A polished Material 3 design that supports Light, Dark, and Dynamic system themes on Android 12+."
                 )
             }
 
@@ -218,7 +223,7 @@ fun AboutDasMediaHub(backStack: AppBackStack) {
                 Card(
                     shape = RoundedCornerShape(24.dp),
                     colors = CardDefaults.cardColors(
-                        containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.45f)
+                        containerColor = MaterialTheme.colorScheme.secondaryContainer.copy(alpha = 0.45f)
                     ),
                     elevation = CardDefaults.cardElevation(defaultElevation = 0.dp),
                     modifier = Modifier.fillMaxWidth()
@@ -227,7 +232,7 @@ fun AboutDasMediaHub(backStack: AppBackStack) {
                         modifier = Modifier.padding(18.dp)
                     ) {
                         Text(
-                            text = "Why we built it",
+                            text = "Our Mission",
                             style = MaterialTheme.typography.titleMedium.copy(
                                 fontWeight = FontWeight.Bold
                             )
@@ -236,9 +241,9 @@ fun AboutDasMediaHub(backStack: AppBackStack) {
                         Spacer(modifier = Modifier.height(8.dp))
 
                         Text(
-                            text = "The goal of DasMediaHub is to give users a cleaner and more comfortable way to enjoy media, manage downloads, and keep everything in one place without unnecessary clutter.",
+                            text = "DasMediaHub was created to simplify how you enjoy digital media. We believe managing your favorite content should be private, fast, and free of clutter. This app is our contribution to a more user-centric mobile experience.",
                             style = MaterialTheme.typography.bodyMedium,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                            color = MaterialTheme.colorScheme.onSecondaryContainer,
                             lineHeight = 22.sp
                         )
                     }
@@ -430,6 +435,10 @@ private fun InfoCard() {
         colors = CardDefaults.cardColors(
             containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.45f)
         ),
+        border = BorderStroke(
+            1.dp,
+            MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.2f)
+        ),
         elevation = CardDefaults.cardElevation(defaultElevation = 0.dp),
         modifier = Modifier.fillMaxWidth()
     ) {
@@ -467,6 +476,10 @@ private fun MiniHighlightCard(
         shape = RoundedCornerShape(22.dp),
         colors = CardDefaults.cardColors(
             containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.42f)
+        ),
+        border = BorderStroke(
+            1.dp,
+            MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.2f)
         ),
         elevation = CardDefaults.cardElevation(defaultElevation = 0.dp)
     ) {
@@ -528,6 +541,10 @@ fun FeatureCard(
         shape = RoundedCornerShape(24.dp),
         colors = CardDefaults.cardColors(
             containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.42f)
+        ),
+        border = BorderStroke(
+            1.dp,
+            MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.2f)
         ),
         elevation = CardDefaults.cardElevation(defaultElevation = 0.dp)
     ) {

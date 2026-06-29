@@ -58,7 +58,6 @@ import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.remember
 import androidx.compose.runtime.retain.retain
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
@@ -84,11 +83,11 @@ import androidx.media3.common.MediaItem
 import androidx.media3.common.Player
 import coil.ImageLoader
 import coil.compose.AsyncImage
-import com.das.mediaHub.core.LocalImageLoader
+import coil.decode.VideoFrameDecoder
 import com.das.mediaHub.data.constants.Action.ACTION_START
 import com.das.mediaHub.data.local.ThemePreferences.audioPathState
 import com.das.mediaHub.data.local.ThemePreferences.videoPathState
-import com.das.mediaHub.data.model.state.UiState
+import com.das.mediaHub.data.model.interfaces.UiState
 import com.das.mediaHub.navigation.AppBackStack
 import com.das.mediaHub.navigation.Destination
 import com.das.mediaHub.services.media.local.LocalBackGroundPlayer
@@ -248,7 +247,7 @@ fun DownloadedScreen(
                                 },
                                 onDelete = {
                                     viewModel.deleteFileAndRefresh(
-                                        filePath = item.mediaId,
+                                        filePath = item.mediaId.toLocalFilePath() ?: item.mediaId,
                                         isVideo = isVideo,
                                         pathLocation = currentPath
                                     )
@@ -391,7 +390,7 @@ private fun SimpleTabRow(
                     MaterialTheme.colorScheme.primary.copy(alpha = 0.15f)
                 else
                     Color.Transparent,
-                label = "tabBg"
+                label = "tabBackground"
             )
 
             val contentColor by animateColorAsState(
@@ -502,12 +501,16 @@ private fun DownloadItem(
     onClick: () -> Unit,
     onDelete: () -> Unit
 ) {
+    val imageLoaderLocal = retain {
+        ImageLoader.Builder(context)
+            .components { add(VideoFrameDecoder.Factory()) }
+            .build()
+    }
 
-    val imageLoaderLocal = LocalImageLoader.current
 
-    var showMenu by remember { mutableStateOf(false) }
-    var showDelete by remember { mutableStateOf(false) }
-    var showInfo by remember { mutableStateOf(false) }
+    var showMenu by retain { mutableStateOf(false) }
+    var showDelete by retain { mutableStateOf(false) }
+    var showInfo by retain { mutableStateOf(false) }
 
     val title = itemDetails.mediaMetadata.title?.toString().orEmpty().ifBlank { "Unknown title" }
     val description = itemDetails.mediaMetadata.description?.toString().orEmpty()
@@ -562,7 +565,9 @@ private fun DownloadItem(
                 onPlay = onClick,
                 onInfo = { showInfo = true },
                 onDelete = { showDelete = true },
-                context = context
+                onOpenFolder = {
+                    showInFileManager(context, itemDetails.mediaId)
+                }
             )
         }
     }
@@ -706,7 +711,7 @@ private fun DownloadMenu(
     onPlay: () -> Unit,
     onInfo: () -> Unit,
     onDelete: () -> Unit,
-    context: Context
+    onOpenFolder: () -> Unit
 ) {
     LocalMediaActionMenu(
         expanded = expanded,
@@ -715,9 +720,7 @@ private fun DownloadMenu(
         isVideo = isVideo,
         onPlay = onPlay,
         onShowInfo = onInfo,
-        onOpenFolder = {
-            showInFileManager(context, item.mediaId)
-        },
+        onOpenFolder = onOpenFolder,
         onRemoveDownload = onDelete
     )
 }

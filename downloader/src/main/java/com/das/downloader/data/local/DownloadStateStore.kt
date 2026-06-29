@@ -2,11 +2,14 @@ package com.das.downloader.data.local
 
 import android.content.SharedPreferences
 import androidx.core.content.edit
+import com.das.downloader.data.downloader.DownloadRequest
 import com.das.downloader.data.model.download.DownloadState
 import com.das.downloader.data.model.download.DownloadStatus
 import com.das.downloader.data.model.download.DownloadType
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
+import kotlinx.serialization.encodeToString
+import kotlinx.serialization.json.Json
 import org.json.JSONArray
 import org.json.JSONObject
 
@@ -48,8 +51,10 @@ class DownloadStateStore(
                         put("progress", state.progress)
                         put("downloadedBytes", state.downloadedBytes)
                         put("totalBytes", state.totalBytes)
+                        put("downloadSpeed", state.downloadSpeed)
                         put("errorMessage", state.errorMessage)
                         put("playlistName", state.playlistName)
+                        put("request", state.request?.let { Json.encodeToString(it) })
                     }
                 )
             }
@@ -79,8 +84,13 @@ class DownloadStateStore(
                             progress = obj.getInt("progress"),
                             downloadedBytes = obj.getLong("downloadedBytes"),
                             totalBytes = obj.getLong("totalBytes"),
+                            downloadSpeed = obj.optLong("downloadSpeed", 0L),
                             errorMessage = obj.optString("errorMessage", ""),
-                            playlistName = obj.optString("playlistName", "")
+                            playlistName = obj.optString("playlistName", ""),
+                            request = obj.optString("request", "").let { 
+                                if (it.isBlank() || it == "null") null 
+                                else Json.decodeFromString<DownloadRequest>(it) 
+                            }
                         )
                     )
                 }

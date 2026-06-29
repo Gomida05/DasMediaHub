@@ -72,11 +72,12 @@ import androidx.compose.ui.unit.dp
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import coil.compose.AsyncImage
+import com.das.mediaHub.data.error.ErrorMapper
 import com.das.mediaHub.data.model.TopPopUp
-import com.das.mediaHub.data.model.state.UiState
+import com.das.mediaHub.data.model.interfaces.UiState
 import com.das.mediaHub.navigation.AppBackStack
 import com.das.mediaHub.navigation.Destination
-import com.das.mediaHub.navigation.Destination.ResultViewerPage
+import com.das.mediaHub.navigation.Destination.ResultRoute
 import com.das.mediaHub.ui.notification.TopPopupNotification.showNotificationDialog
 import com.das.python.YouTuber.extractPlaylistId
 import com.das.python.YouTuber.isValidYouTubePlaylistUrl
@@ -236,7 +237,7 @@ fun SearchScreen(
                             onDelete = { viewModel.deleteById(item.id) },
                             onClick = { text ->
                                 viewModel.setQuery(text)
-                                backStack.add(ResultViewerPage(text))
+                                backStack.add(ResultRoute(text))
                             }
                         )
                     }
@@ -602,11 +603,11 @@ private fun keyEvent(
 
             else -> {
                 addIt(editTextText)
-                backStack.add(ResultViewerPage(editTextText))
+                backStack.add(ResultRoute(editTextText))
             }
         }
     } catch (e: Exception) {
-        error(e.message ?: "Unknown error")
+        error(ErrorMapper.map(e))
     }
 }
 

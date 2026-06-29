@@ -3,6 +3,8 @@ package com.das.python
 import com.chaquo.python.PyException
 import com.chaquo.python.PyObject
 import com.chaquo.python.Python
+import com.das.python.data.Names
+import com.das.python.data.model.Modules
 import com.das.python.exceptions.PyCallError
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
@@ -95,13 +97,13 @@ object PyRuntime {
      * @throws RuntimeException if Python crashes or returns null.
      */
     internal suspend inline fun <reified T> callJson(
-        module: String,
-        function: String,
+        module: Modules,
+        function: Names,
         vararg args: Any?
     ): T = withContext(Dispatchers.IO) {
         ensureStarted()
         try {
-            val f = function(module, function)
+            val f = function(module.value, function.value)
             val result = f.call(*args) ?: throw Exception("Python returned null from $module.$function")
             json.decodeFromString(result.toString())
         } catch (e: PyException) {

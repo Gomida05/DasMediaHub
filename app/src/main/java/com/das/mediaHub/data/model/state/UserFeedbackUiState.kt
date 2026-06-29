@@ -1,7 +1,7 @@
 package com.das.mediaHub.data.model.state
 
-import com.das.mediaHub.data.model.FeedBackCategory
-import com.das.mediaHub.data.model.ModeType
+import com.das.mediaHub.data.model.enums.FeedBackCategory
+import com.das.mediaHub.data.model.enums.ModeType
 
 /**
  * Data class representing the state of the User Feedback screen.
@@ -67,4 +67,15 @@ data class UserFeedbackUiState(
             feedbackText.isBlank() -> "Start typing"
             else -> "Looking good"
         }
+
+    fun toFinalMessage(): String {
+        return buildString {
+            append("Category: ${selectedCategory.label}\n")
+            if (!selectedMood?.label.isNullOrBlank()) {
+                append("Mood: ${selectedMood.label}\n")
+            }
+            append("\n")
+            append(feedbackText.trim())
+        }
+    }
 }

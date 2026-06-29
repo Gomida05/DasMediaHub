@@ -24,7 +24,7 @@ class FavoritesRepository @Inject constructor(
 ) {
 
     /**
-     * A [Flow] of all videos currently saved in the favorites database.
+     * A [Flow] of all videos currently saved in the favorites' database.
      */
     val allSavedVideos: Flow<List<SavedVideosListData>>
         get() = dao.getAllSavedVideos()
@@ -38,7 +38,7 @@ class FavoritesRepository @Inject constructor(
         dao.isWatchUrlExist(videoId)
 
     /**
-     * Inserts a new video into the favorites database.
+     * Inserts a new video into the favorites' database.
      * 
      * @param videoId Unique video identifier.
      * @param title Video title.

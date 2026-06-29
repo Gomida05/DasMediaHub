@@ -1,6 +1,7 @@
 package com.das.downloader.data.model
 
-import kotlinx.serialization.SerialName
+import android.os.Parcelable
+import kotlinx.parcelize.Parcelize
 import kotlinx.serialization.Serializable
 
 /**
@@ -14,13 +15,14 @@ import kotlinx.serialization.Serializable
  * @property apkUrl The direct URL to download the new APK.
  * @property changelog Description of changes and new features in this version.
  */
+@Parcelize
 @Serializable
 data class AppUpdateInfo(
     val latestVersionCode: Int = -1,
     val latestVersionName: String = "",
     val apkUrl: String = "",
     val changelog: String = ""
-) {
+) : Parcelable {
 
     /**
      * Checks if this object contains valid update data.

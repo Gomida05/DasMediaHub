@@ -41,7 +41,7 @@ import com.das.mediaHub.PIP
 import com.das.mediaHub.PIP.HandlePip
 import com.das.mediaHub.PIP.findActivity
 import com.das.mediaHub.data.mediacontroller.online.VideoPlayerListener
-import com.das.mediaHub.data.model.state.UiState
+import com.das.mediaHub.data.model.interfaces.UiState
 import com.das.mediaHub.ui.players.videoPlayer.components.CustomMethods.rotateScreen
 
 
@@ -73,7 +73,7 @@ fun LocalVideoPlayer(videoUri: String) {
         else -> fallbackMetadata
     }
 
-    val currentItem = remember(videoUri, resolvedMetadata) {
+    val currentItem = retain(videoUri, resolvedMetadata) {
         MediaItem.Builder()
             .setMediaId(videoUri)
             .setUri(videoUri.toUri())
@@ -154,24 +154,12 @@ fun LocalVideoPlayer(videoUri: String) {
     }
 
     LaunchedEffect(playlistState, controller) {
-        if (controller == null) return@LaunchedEffect
-
-        when (val state = playlistState) {
-            is UiState.Empty -> {
-                snackBarHostState.showSnackbar(
-                    message = "No more videos found in this folder",
-                    duration = SnackbarDuration.Short
-                )
-            }
-
-            is UiState.Error -> {
-                snackBarHostState.showSnackbar(
-                    message = state.message,
-                    duration = SnackbarDuration.Long
-                )
-            }
-
-            else -> Unit
+        val currentState = playlistState
+        if (controller != null && currentState is UiState.Error) {
+            snackBarHostState.showSnackbar(
+                message = currentState.message,
+                duration = SnackbarDuration.Long
+            )
         }
     }
 
@@ -206,13 +194,6 @@ fun LocalVideoPlayer(videoUri: String) {
             }
 
             when {
-                showFullScreenLoading -> {
-                    PlayerStateView(
-                        title = "Loading video",
-                        message = "Preparing your player..."
-                    )
-                }
-
                 showFullScreenError -> {
                     PlayerStateView(
                         title = "Couldn’t open video",
@@ -220,6 +201,15 @@ fun LocalVideoPlayer(videoUri: String) {
                         showProgress = false
                     )
                 }
+
+                showFullScreenLoading -> {
+                    PlayerStateView(
+                        title = "Loading video",
+                        message = "Preparing your player..."
+                    )
+                }
+
+
             }
 
             if (showPlaylistLoadingOverlay) {

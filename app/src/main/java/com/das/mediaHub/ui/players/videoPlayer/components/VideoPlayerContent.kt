@@ -31,7 +31,6 @@ import androidx.compose.runtime.retain.retain
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalWindowInfo
 import androidx.compose.ui.text.AnnotatedString
@@ -44,8 +43,8 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.core.net.toUri
 import androidx.media3.common.Player
-import com.das.mediaHub.data.model.VideoAction
-import com.das.mediaHub.data.model.state.UiState
+import com.das.mediaHub.data.model.interfaces.VideoAction
+import com.das.mediaHub.data.model.interfaces.UiState
 import com.das.mediaHub.data.model.state.VideoPlayerState
 import com.das.mediaHub.data.model.state.VideoUiState
 import com.das.mediaHub.ui.components.ErrorStateView
@@ -61,7 +60,8 @@ fun FullscreenVideoContent(
     exoPlayer: Player,
     isInFullScreen: Boolean,
     isInPipMode: Boolean,
-    onToggleFullscreen: (Boolean) -> Unit
+    onToggleFullscreen: (Boolean) -> Unit,
+    onRetryStreamUrl: () -> Unit
 ) {
     Box(
         modifier = modifier,
@@ -72,7 +72,8 @@ fun FullscreenVideoContent(
             player = exoPlayer,
             isInFullScreen = isInFullScreen,
             isInPipMode = isInPipMode,
-            fullScreen = onToggleFullscreen
+            fullScreen = onToggleFullscreen,
+            onRetry = onRetryStreamUrl
         )
     }
 }
@@ -90,7 +91,8 @@ fun StandardVideoContent(
     onToggleFullscreen: (Boolean) -> Unit,
     onFetchSuggestions: (String) -> Unit,
     onSelectVideo: (String) -> Unit,
-    onVideoAction: (VideoAction) -> Unit
+    onVideoAction: (VideoAction) -> Unit,
+    onRetryStreamUrl: () -> Unit
 ) {
     var expanded by retain { mutableStateOf(false) }
 
@@ -102,31 +104,27 @@ fun StandardVideoContent(
     if (isWideScreen) {
         Row (
             modifier = Modifier
-                .fillMaxSize()
-                .padding(paddings),
+                .fillMaxSize(),
             horizontalArrangement = Arrangement.spacedBy(8.dp)
         ) {
 
             LazyColumn(
+                contentPadding = paddings,
                 modifier = Modifier
                     .weight(1.5f)
                     .fillMaxHeight()
             ) {
-                item {
-                    Box(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .clip(RoundedCornerShape(12.dp))
-                    ) {
-                        VideoScreen(
-                            videoState = uiState.streamState,
-                            player = player,
-                            isInFullScreen = false,
-                            isInPipMode = false,
-                            fullScreen = onToggleFullscreen
-                        )
-                    }
+                item(key = "wide_player_header_$currentVideoId", contentType = "video_player") {
+                    VideoScreen(
+                        videoState = uiState.streamState,
+                        player = player,
+                        isInFullScreen = false,
+                        isInPipMode = false,
+                        fullScreen = onToggleFullscreen,
+                        onRetry = onRetryStreamUrl
+                    )
                 }
+
 
                 item {
                     Spacer(modifier = Modifier.height(16.dp))
@@ -158,6 +156,7 @@ fun StandardVideoContent(
 
 
             LazyColumn(
+                contentPadding = paddings,
                 modifier = Modifier
                     .weight(1f)
                     .fillMaxHeight()
@@ -192,7 +191,8 @@ fun StandardVideoContent(
                     player = player,
                     isInFullScreen = false,
                     isInPipMode = false,
-                    fullScreen = onToggleFullscreen
+                    fullScreen = onToggleFullscreen,
+                    onRetry = onRetryStreamUrl
                 )
             }
 

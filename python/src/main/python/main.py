@@ -97,13 +97,11 @@ def get_audio_url(media_url, retries: int = 3):
 
         except (PytubeFixError, ExtractError, RequestException, ssl.SSLError, socket.error) as e:
             last_error = e
-            print(f"[Audio attempt {attempt + 1}] transient error: {e}")
             time.sleep(1.2)
 
         except Exception as e:
             # Catch-all to protect Chaquopy
             last_error = e
-            print(f"[Audio attempt {attempt + 1}] unexpected error: {e}")
             time.sleep(1.2)
 
     return make_response(
@@ -131,7 +129,6 @@ def getPlayListUrls(youtube_url):
 
         return json.dumps(data)
     except Exception as e:
-        print(f"There is an error in searching that playlist {e}")
         return False
 
 def Searcher(inputer):
@@ -158,7 +155,6 @@ def Searcher(inputer):
         traceback.print_exc()
         err_msg = f"Unexpected error during search: {e}"
 
-    print(err_msg)
     traceback.print_exc()
     return make_response(success=False, error=err_msg, result=None)
 
@@ -197,6 +193,5 @@ def SearchWithLink(inputer):
     except Exception as e:
         err_msg = f"Unexpected error fetching video info: {str(e)}"
 
-    print(err_msg)
     traceback.print_exc()
     return make_response(success=False, error=err_msg)

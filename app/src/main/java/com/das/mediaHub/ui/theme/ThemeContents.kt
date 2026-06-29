@@ -11,41 +11,42 @@ import androidx.compose.ui.unit.sp
 object ThemeContents {
 
     val CustomLightColors = lightColorScheme(
-        primary = Color(0xFF006064), // Deep Cyan
+        primary = Color(0xFF006769), // Modern Soft Teal
         onPrimary = Color.White,
-        primaryContainer = Color(0xFFE0F7FA),
-        onPrimaryContainer = Color(0xFF001F20),
-        secondary = Color(0xFFFF7043), // Deep Orange
+        primaryContainer = Color(0xFFC7F0F0),
+        onPrimaryContainer = Color(0xFF002021),
+        secondary = Color(0xFF904D00), // Modern Amber
         onSecondary = Color.White,
-        secondaryContainer = Color(0xFFFFE0B2),
-        onSecondaryContainer = Color(0xFF3E2723),
-        background = Color(0xFFF8F9FA),
-        onBackground = Color(0xFF1A1C1E),
-        surface = Color(0xFFFFFFFF),
-        onSurface = Color(0xFF1A1C1E),
-        surfaceVariant = Color(0xFFE1E2E1),
-        onSurfaceVariant = Color(0xFF444746),
-        outline = Color(0xFF747775),
-        error = Color(0xFFB00020)
+        secondaryContainer = Color(0xFFFFDCC7),
+        onSecondaryContainer = Color(0xFF2E1500),
+        background = Color(0xFFF6FBF9), // Very light tinted background
+        onBackground = Color(0xFF171D1D),
+        surface = Color(0xFFFCFDFD),
+        onSurface = Color(0xFF171D1D),
+        surfaceVariant = Color(0xFFDBE5E5), // Softer gray-teal
+        onSurfaceVariant = Color(0xFF3F4948),
+        outline = Color(0xFF6F7979),
+        error = Color(0xFFBA1A1A),
+        outlineVariant = Color(0xFFBFC8C8)
     )
 
     val CustomDarkColors = darkColorScheme(
-        primary = Color(0xFF80DEEA), // Light Cyan
-        onPrimary = Color(0xFF00363A),
-        primaryContainer = Color(0xFF004D40),
-        onPrimaryContainer = Color(0xFFE0F7FA),
-        secondary = Color(0xFFFFAB91), // Light Orange
-        onSecondary = Color(0xFF4E2600),
-        secondaryContainer = Color(0xFF6D4C41),
-        onSecondaryContainer = Color(0xFFFFE0B2),
-        background = Color(0xFF121212),
-        onBackground = Color(0xFFE1E2E1),
-        surface = Color(0xFF1E1E1E),
-        onSurface = Color(0xFFE1E2E1),
-        surfaceVariant = Color(0xFF444746),
-        onSurfaceVariant = Color(0xFFC4C7C5),
-        outline = Color(0xFF8E918F),
-        error = Color(0xFFF2B8B5)
+        primary = Color(0xFF4DB6AC), // Brighter teal for dark mode
+        onPrimary = Color(0xFF003738),
+        primaryContainer = Color(0xFF004F50),
+        onPrimaryContainer = Color(0xFFC7F0F0),
+        secondary = Color(0xFFFFB74D),
+        onSecondary = Color(0xFF4D2600),
+        secondaryContainer = Color(0xFF6E3900),
+        onSecondaryContainer = Color(0xFFFFDCC7),
+        background = Color(0xFF0E1415), // Deep dark teal/gray
+        onBackground = Color(0xFFDEE3E3),
+        surface = Color(0xFF0E1415),
+        onSurface = Color(0xFFDEE3E3),
+        surfaceVariant = Color(0xFF3F4948),
+        onSurfaceVariant = Color(0xFFBFC8C8),
+        outline = Color(0xFF899392),
+        error = Color(0xFFFFB4AB)
     )
 
     val Typography = Typography(

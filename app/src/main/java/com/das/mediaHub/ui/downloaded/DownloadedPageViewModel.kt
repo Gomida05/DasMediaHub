@@ -1,5 +1,7 @@
 package com.das.mediaHub.ui.downloaded
 
+import android.content.Context
+import android.media.MediaScannerConnection
 import androidx.core.net.toUri
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
@@ -8,9 +10,10 @@ import androidx.media3.common.MediaMetadata
 import androidx.media3.exoplayer.ExoPlayer
 import com.das.mediaHub.data.error.ErrorMapper
 import com.das.mediaHub.data.mediacontroller.MediaStoreCache
-import com.das.mediaHub.data.model.ContentType
-import com.das.mediaHub.data.model.state.UiState
+import com.das.mediaHub.data.model.enums.ContentType
+import com.das.mediaHub.data.model.interfaces.UiState
 import dagger.hilt.android.lifecycle.HiltViewModel
+import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -24,6 +27,7 @@ import javax.inject.Inject
 
 @HiltViewModel
 class DownloadedPageViewModel @Inject constructor(
+    @ApplicationContext private val context: Context,
     val justExoPlayer: ExoPlayer
 ) : ViewModel() {
 
@@ -155,14 +159,26 @@ class DownloadedPageViewModel @Inject constructor(
     }
 
     fun deleteFileAndRefresh(filePath: String, isVideo: Boolean, pathLocation: String) {
-        runCatching {
-            File(filePath).delete()
-        }
+        viewModelScope.launch(Dispatchers.IO) {
+            val file = File(filePath)
+            if (file.exists()) {
+                val deleted = file.delete()
+                if (deleted) {
+                    // Notify MediaScanner so it's removed from Gallery/Music players
+                    MediaScannerConnection.scanFile(
+                        context,
+                        arrayOf(filePath),
+                        null,
+                        null
+                    )
+                }
+            }
 
-        if (isVideo) {
-            fetchVideoFiles(pathLocation)
-        } else {
-            fetchMusicFiles(pathLocation)
+            if (isVideo) {
+                fetchVideoFiles(pathLocation)
+            } else {
+                fetchMusicFiles(pathLocation)
+            }
         }
     }
 }

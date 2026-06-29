@@ -30,6 +30,7 @@ fun DasMediaHubTheme(
 
     val colorScheme = when {
         Build.VERSION.SDK_INT >= Build.VERSION_CODES.S -> {
+            // Respect user choice even if dynamic color is available
             if (isDarkTheme) dynamicDarkColorScheme(context) else dynamicLightColorScheme(context)
         }
 

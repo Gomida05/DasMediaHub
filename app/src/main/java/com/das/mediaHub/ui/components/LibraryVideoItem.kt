@@ -37,7 +37,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import coil.compose.AsyncImage
-import com.das.mediaHub.data.model.VideoUiModel
+import com.das.mediaHub.data.model.interfaces.VideoUiModel
 import com.das.mediaHub.ui.components.dialogs.DevelopmentInfoDialog
 import com.das.mediaHub.ui.components.dialogs.LibraryVideoActionMenu
 
@@ -57,7 +57,7 @@ fun LibraryVideoItem(
         colors = CardDefaults.cardColors(containerColor = Color.Transparent),
         modifier = Modifier
             .fillMaxWidth()
-            .padding(vertical = 8.dp)
+            .padding(horizontal = 8.dp, vertical = 8.dp)
     ) {
         Column(Modifier
             .fillMaxWidth()) {

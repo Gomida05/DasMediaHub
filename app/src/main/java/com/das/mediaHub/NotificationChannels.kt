@@ -4,7 +4,7 @@ import android.app.NotificationChannel
 import android.app.NotificationChannelGroup
 import android.app.NotificationManager
 import android.content.Context
-import com.das.downloader.data.downloader.DownloadNotifier.Companion.DOWNLOADER_NOTIFICATION_CHANNEL
+import com.das.downloader.DownloadNotifier.Companion.DOWNLOADER_NOTIFICATION_CHANNEL
 
 internal class NotificationChannels(context: Context) {
 

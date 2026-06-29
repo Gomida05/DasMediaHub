@@ -1,5 +1,7 @@
 package com.das.downloader.data.model.download
 
+import com.das.downloader.data.downloader.DownloadRequest
+
 /**
  * Data class containing a summary of a download's progress and status.
  * 
@@ -11,8 +13,10 @@ package com.das.downloader.data.model.download
  * @property totalSize Total size of the file in bytes.
  * @property bytesDownloaded Number of bytes already saved to disk.
  * @property status Current [DownloadStatus] of the task.
+ * @property downloadSpeed Bytes per second.
  * @property errorMessage Descriptive error message if the task failed.
  * @property filePath Absolute local path where the file is being saved.
+ * @property request The original request that created this state.
  */
 data class DownloadInfo(
     val id: String,
@@ -21,6 +25,8 @@ data class DownloadInfo(
     val totalSize: Long,
     val bytesDownloaded: Long,
     val status: DownloadStatus,
+    val downloadSpeed: Long = 0L,
     val errorMessage: String? = null,
-    val filePath: String = ""
+    val filePath: String = "",
+    val request: DownloadRequest? = null
 )

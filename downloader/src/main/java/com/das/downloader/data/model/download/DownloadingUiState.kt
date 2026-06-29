@@ -26,5 +26,7 @@ sealed interface DownloadingUiState {
                     it.status == DownloadStatus.DOWNLOADING ||
                     it.status == DownloadStatus.PAUSED
         }
-    ) : DownloadingUiState
+    ) : DownloadingUiState {
+
+    }
 }

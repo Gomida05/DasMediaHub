@@ -374,12 +374,16 @@ object CustomLayouts {
      * Advanced Shimmer Effect.
      * Features: Diagonal gradient, non-linear easing, and subtle "bloom".
      */
-    private fun Modifier.shimmerLoading(
+    @Composable
+    fun Modifier.shimmerLoading(
         durationMillis: Int = 1500
     ): Modifier = composed {
         val transition = rememberInfiniteTransition(label = "shimmerTransition")
 
-        // Main movement animation
+        // Dynamically get the appropriate color for the current theme
+        // Using onSurface with a low alpha provides a subtle, theme-aware shimmer
+        val shimmerColor = MaterialTheme.colorScheme.onSurface
+
         val translateAnim by transition.animateFloat(
             initialValue = 0f,
             targetValue = 1f,
@@ -390,7 +394,6 @@ object CustomLayouts {
             label = "shimmerTranslate"
         )
 
-        // Subtle alpha pulse for extra polish
         val alphaPulse by transition.animateFloat(
             initialValue = 0.7f,
             targetValue = 1f,
@@ -404,22 +407,19 @@ object CustomLayouts {
         this.drawWithCache {
             val width = size.width
             val height = size.height
-            
-            // Wider shimmer for smoother transition
             val shimmerWidth = (width * 1.2f).coerceAtLeast(200.dp.toPx())
 
+            // Use the dynamically fetched shimmerColor
             val shimmerColors = listOf(
-                ShimmerColor.copy(alpha = 0.0f),
-                ShimmerColor.copy(alpha = 0.15f * alphaPulse),
-                ShimmerColor.copy(alpha = 0.45f * alphaPulse), // The "bright" spot
-                ShimmerColor.copy(alpha = 0.15f * alphaPulse),
-                ShimmerColor.copy(alpha = 0.0f),
+                shimmerColor.copy(alpha = 0.0f),
+                shimmerColor.copy(alpha = 0.1f * alphaPulse),
+                shimmerColor.copy(alpha = 0.3f * alphaPulse), // Increased base opacity slightly for visibility
+                shimmerColor.copy(alpha = 0.1f * alphaPulse),
+                shimmerColor.copy(alpha = 0.0f),
             )
 
-            // xPosition moves from -shimmerWidth to width
             val xPosition = (width + shimmerWidth) * translateAnim - shimmerWidth
 
-            // Diagonal brush for a more organic feel
             val brush = Brush.linearGradient(
                 colors = shimmerColors,
                 start = Offset(xPosition, 0f),
@@ -428,6 +428,9 @@ object CustomLayouts {
             )
 
             onDrawBehind {
+                // IMPORTANT: Skeletons need a base background color to shimmer over.
+                // If the element is transparent, the shimmer won't be visible.
+                drawRect(color = shimmerColor.copy(alpha = 0.05f))
                 drawRect(brush = brush)
             }
         }

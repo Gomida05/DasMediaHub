@@ -2,8 +2,9 @@ package com.das.mediaHub.ui.settings.report
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import com.das.mediaHub.data.model.FeedBackCategory
-import com.das.mediaHub.data.model.ModeType
+import com.das.mediaHub.data.error.ErrorMapper
+import com.das.mediaHub.data.model.enums.FeedBackCategory
+import com.das.mediaHub.data.model.enums.ModeType
 import com.das.mediaHub.data.model.state.UserFeedbackUiState
 import com.das.mediaHub.data.repository.UserFeedbackRepository
 import dagger.hilt.android.lifecycle.HiltViewModel
@@ -78,31 +79,23 @@ class UserFeedbackViewModel @Inject constructor(
         val current = _uiState.value
         if (!current.canSend) return
 
-        val finalMessage = buildString {
-            append("Category: ${current.selectedCategory.label}\n")
-            if (!current.selectedMood?.label.isNullOrBlank()) {
-                append("Mood: ${current.selectedMood.label}\n")
-            }
-            append("\n")
-            append(current.feedbackText.trim())
-        }
 
         viewModelScope.launch {
             _uiState.update { it.copy(isSending = true, message = null, error = null) }
 
-            runCatching {
+            try {
+                val finalMessage = current.toFinalMessage()
                 repository.sendFeedback(finalMessage)
-            }.onSuccess {
                 _uiState.update {
                     UserFeedbackUiState(
                         message = "Sent successfully ✨ Thanks for helping improve the app."
                     )
                 }
-            }.onFailure { throwable ->
+            } catch (throwable: Exception) {
                 _uiState.update {
                     it.copy(
                         isSending = false,
-                        error = "Couldn’t send feedback: ${throwable.message ?: "Unknown error"}"
+                        error = "Couldn’t send feedback: ${ErrorMapper.map(throwable)}"
                     )
                 }
             }

@@ -4,12 +4,13 @@ import androidx.room3.ColumnInfo
 import androidx.room3.Entity
 import androidx.room3.Ignore
 import androidx.room3.PrimaryKey
+import com.das.mediaHub.data.model.interfaces.VideoUiModel
 
 /**
  * Room [Entity] representing a video that has been watched by the user.
  *
  * This class maps directly to the "Watched_Videos" table in the database and 
- * implements [VideoUiModel] for easy UI integration.
+ * implements [com.das.mediaHub.data.model.interfaces.VideoUiModel] for easy UI integration.
  *
  * @property title Title of the video.
  * @property videoId Unique identifier for the video (Primary Key).

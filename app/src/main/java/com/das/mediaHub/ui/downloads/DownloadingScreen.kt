@@ -13,9 +13,8 @@ import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
-import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.safeDrawing
+import androidx.compose.foundation.layout.safeContent
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
@@ -32,6 +31,7 @@ import androidx.compose.material.icons.filled.Pause
 import androidx.compose.material.icons.filled.PlayArrow
 import androidx.compose.material.icons.filled.Refresh
 import androidx.compose.material.icons.filled.Schedule
+import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.CircularProgressIndicator
@@ -44,13 +44,20 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
+import androidx.compose.material3.TopAppBar
+import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.retain.retain
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.input.nestedscroll.nestedScroll
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
@@ -62,6 +69,7 @@ import com.das.downloader.data.model.download.DownloadInfo
 import com.das.downloader.data.model.download.DownloadState
 import com.das.downloader.data.model.download.DownloadStatus
 import com.das.downloader.data.model.download.DownloadingUiState
+import com.das.mediaHub.data.error.ErrorMapper
 import com.das.mediaHub.navigation.AppBackStack
 import com.das.mediaHub.navigation.Destination
 
@@ -72,11 +80,79 @@ fun DownloadingScreen(backStack: AppBackStack) {
 
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
 
+    val downloads = (uiState as? DownloadingUiState.Success)?.downloads
+
+    val activeCount by retain {
+        mutableStateOf(downloads?.count { it.status == DownloadStatus.DOWNLOADING || it.status == DownloadStatus.QUEUED })
+    }
+    val activeCountString = retain {
+        when (activeCount) {
+            null -> "Manage your active downloads"
+            0 -> "No active downloads right now"
+            1 -> "1 active download"
+            else -> "$activeCount active downloads"
+        }
+    }
+
+    val topAppBarScrollBehavior = TopAppBarDefaults.enterAlwaysScrollBehavior()
     Scaffold(
-        containerColor = MaterialTheme.colorScheme.surface,
-        contentWindowInsets = WindowInsets.safeDrawing
+        containerColor = MaterialTheme.colorScheme.background,
+        topBar = {
+            TopAppBar(
+                scrollBehavior = topAppBarScrollBehavior,
+                title = {
+                    Column {
+                        Text(
+                            text = "Downloads",
+                            style = MaterialTheme.typography.headlineSmall,
+                            fontWeight = FontWeight.ExtraBold
+                        )
+
+                        Text(
+                            text = activeCountString,
+                            style = MaterialTheme.typography.bodyMedium,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                        )
+                    }
+                },
+                navigationIcon = {
+                    FilledTonalIconButton(onClick = { backStack.removeLastOrNull() }) {
+                        Icon(
+                            imageVector = Icons.AutoMirrored.Filled.ArrowBack,
+                            contentDescription = "Back"
+                        )
+                    }
+                },
+                actions = {
+                    FilledTonalButton(
+                        onClick = { backStack.add(Destination.Downloaded) },
+                        shape = RoundedCornerShape(18.dp),
+                        contentPadding = PaddingValues(horizontal = 14.dp, vertical = 10.dp)
+                    ) {
+                        Icon(
+                            imageVector = Icons.Default.Folder,
+                            contentDescription = null,
+                            modifier = Modifier.size(18.dp)
+                        )
+                        Spacer(modifier = Modifier.width(8.dp))
+                        Text(
+                            text = "Files",
+                            fontWeight = FontWeight.SemiBold
+                        )
+                    }
+                },
+                colors = TopAppBarDefaults.topAppBarColors(
+                    containerColor = Color.Transparent,
+                    scrolledContainerColor = MaterialTheme.colorScheme.background
+                )
+            )
+        },
+        contentWindowInsets = WindowInsets.safeContent,
+        modifier = Modifier
+            .fillMaxSize()
+            .nestedScroll(topAppBarScrollBehavior.nestedScrollConnection)
     ) { paddingValues ->
-        Box(
+        LazyColumn(
             modifier = Modifier
                 .fillMaxSize()
                 .background(
@@ -87,74 +163,88 @@ fun DownloadingScreen(backStack: AppBackStack) {
                             MaterialTheme.colorScheme.secondary.copy(alpha = 0.04f)
                         )
                     )
-                )
-                .padding(paddingValues)
+                ),
+            contentPadding = paddingValues
         ) {
+            item {
+                DownloadsHeader()
+            }
+
             when (val state = uiState) {
                 DownloadingUiState.Loading -> {
-                    LoadingDownloadsState(
-                        onBack = { backStack.removeLastOrNull() }
-                    )
+                    item {
+                        Box(
+                            contentAlignment = Alignment.Center,
+                            modifier = Modifier.fillMaxWidth()
+                        ) {
+                            LoadingDownloadsState()
+                        }
+                    }
                 }
 
                 is DownloadingUiState.Error -> {
-                    DownloadsPageLayout(
-                        onBack = { backStack.removeLastOrNull() },
-                        onOpenDownloaded = { backStack.add(Destination.Downloaded) }
-                    ) {
-                        MessageState(
-                            title = "Something went wrong",
-                            message = state.message,
-                            modifier = Modifier.fillMaxSize()
-                        )
+                    item {
+                        Box(
+                            contentAlignment = Alignment.Center,
+                            modifier = Modifier.fillMaxWidth()
+                        ) {
+                            MessageState(
+                                title = "Something went wrong",
+                                message = ErrorMapper.mapMessage(state.message),
+                                modifier = Modifier.fillMaxSize()
+                            )
+
+                        }
                     }
                 }
 
                 DownloadingUiState.Empty -> {
-                    DownloadsPageLayout(
-                        onBack = { backStack.removeLastOrNull() },
-                        onOpenDownloaded = { backStack.add(Destination.Downloaded) }
-                    ) {
-                        EmptyDownloadsState()
+                    item {
+                        Box(
+                            contentAlignment = Alignment.Center,
+                            modifier = Modifier.fillMaxWidth()
+                        ) {
+                            EmptyDownloadsState()
+                        }
                     }
                 }
 
                 is DownloadingUiState.Success -> {
-                    val activeDownloads = state.downloads.filter {
-                        it.status != DownloadStatus.COMPLETED &&
-                                it.status != DownloadStatus.CANCELED
-                    }
+                    val activeDownloads = state.downloads
 
-                    DownloadsPageLayout(
-                        onBack = { backStack.removeLastOrNull() },
-                        onOpenDownloaded = { backStack.add(Destination.Downloaded) },
-                        activeCount = activeDownloads.size
-                    ) {
-                        if (activeDownloads.isEmpty()) {
-                            EmptyDownloadsState()
-                        } else {
-                            LazyColumn(
-                                modifier = Modifier.fillMaxSize(),
-                                contentPadding = PaddingValues(bottom = 20.dp),
-                                verticalArrangement = Arrangement.spacedBy(14.dp)
+                    if (activeDownloads.isNotEmpty()) {
+                        item {
+                            Box(
+                                contentAlignment = Alignment.Center,
+                                modifier = Modifier.fillMaxWidth()
                             ) {
-                                item {
-                                    DownloadsSummaryCard(activeCount = activeDownloads.size)
-                                }
-
-                                items(
-                                    items = activeDownloads,
-                                    key = { it.id }
-                                ) { download ->
-                                    DownloadProgressItem(
-                                        download = download,
-                                        onPause = { viewModel.pauseDownload(download.id) },
-                                        onResume = { viewModel.resumeDownload(download.id) },
-                                        onCancel = { viewModel.cancelDownload(download.id) },
-                                        onRetry = { viewModel.resumeDownload(download.id) }
-                                    )
-                                }
+                                EmptyDownloadsState()
                             }
+                        }
+                    } else {
+
+                        item {
+                            DownloadsSummaryCard(activeCount = activeDownloads.size)
+                        }
+
+                        items(
+                            items = activeDownloads,
+                            key = { it.id }
+                        ) { download ->
+                            DownloadProgressItem(
+                                download = download,
+                                onPause = { viewModel.pauseDownload(download.id) },
+                                onResume = { viewModel.resumeDownload(download.id) },
+                                onCancel = { viewModel.cancelDownload(download.id) },
+                                onRetry = {
+                                    download.request?.let { _ ->
+                                        viewModel.resumeDownload(download.id) // Fallback or standard retry
+                                        // If it's a fresh retry via dispatcher:
+                                        // DownloadDispatcher.enqueue(context, req)
+                                    } ?: viewModel.resumeDownload(download.id)
+                                },
+                                onRemove = { viewModel.removeFinished(download.id) }
+                            )
                         }
                     }
                 }
@@ -163,134 +253,51 @@ fun DownloadingScreen(backStack: AppBackStack) {
     }
 }
 
-@Composable
-private fun DownloadsPageLayout(
-    onBack: () -> Unit,
-    onOpenDownloaded: () -> Unit,
-    activeCount: Int? = null,
-    content: @Composable () -> Unit
-) {
-    Column(
-        modifier = Modifier
-            .fillMaxSize()
-            .padding(horizontal = 20.dp, vertical = 12.dp)
-            .navigationBarsPadding(),
-        verticalArrangement = Arrangement.spacedBy(18.dp)
-    ) {
-        DownloadsHeader(
-            onBack = onBack,
-            onOpenDownloaded = onOpenDownloaded,
-            activeCount = activeCount
-        )
-
-        Box(
-            modifier = Modifier.fillMaxSize()
-        ) {
-            content()
-        }
-    }
-}
 
 @Composable
-private fun DownloadsHeader(
-    onBack: () -> Unit,
-    onOpenDownloaded: () -> Unit,
-    activeCount: Int? = null
-) {
-    Column(
-        verticalArrangement = Arrangement.spacedBy(14.dp)
+private fun DownloadsHeader() {
+
+    Surface(
+        shape = RoundedCornerShape(24.dp),
+        color = MaterialTheme.colorScheme.surface.copy(alpha = 0.72f),
+        border = BorderStroke(
+            1.dp,
+            MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.18f)
+        ),
+        modifier = Modifier.fillMaxWidth()
     ) {
         Row(
-            modifier = Modifier.fillMaxWidth(),
-            verticalAlignment = Alignment.CenterVertically
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(horizontal = 16.dp, vertical = 14.dp),
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.spacedBy(12.dp)
         ) {
-            FilledTonalIconButton(onClick = onBack) {
+            Surface(
+                shape = CircleShape,
+                color = MaterialTheme.colorScheme.primary.copy(alpha = 0.12f)
+            ) {
                 Icon(
-                    imageVector = Icons.AutoMirrored.Filled.ArrowBack,
-                    contentDescription = "Back"
+                    imageVector = Icons.Default.Downloading,
+                    contentDescription = null,
+                    tint = MaterialTheme.colorScheme.primary,
+                    modifier = Modifier
+                        .padding(10.dp)
+                        .size(20.dp)
                 )
             }
 
-            Spacer(modifier = Modifier.width(12.dp))
-
-            Column(modifier = Modifier.weight(1f)) {
+            Column {
                 Text(
-                    text = "Downloads",
-                    style = MaterialTheme.typography.headlineSmall,
-                    fontWeight = FontWeight.ExtraBold
+                    text = "Downloads in progress",
+                    style = MaterialTheme.typography.titleSmall,
+                    fontWeight = FontWeight.Bold
                 )
-
                 Text(
-                    text = when (activeCount) {
-                        null -> "Manage your active downloads"
-                        0 -> "No active downloads right now"
-                        1 -> "1 active download"
-                        else -> "$activeCount active downloads"
-                    },
-                    style = MaterialTheme.typography.bodyMedium,
+                    text = "Pause, resume, retry, or cancel downloads from here.",
+                    style = MaterialTheme.typography.bodySmall,
                     color = MaterialTheme.colorScheme.onSurfaceVariant
                 )
-            }
-
-            FilledTonalButton(
-                onClick = onOpenDownloaded,
-                shape = RoundedCornerShape(18.dp),
-                contentPadding = PaddingValues(horizontal = 14.dp, vertical = 10.dp)
-            ) {
-                Icon(
-                    imageVector = Icons.Default.Folder,
-                    contentDescription = null,
-                    modifier = Modifier.size(18.dp)
-                )
-                Spacer(modifier = Modifier.width(8.dp))
-                Text(
-                    text = "Files",
-                    fontWeight = FontWeight.SemiBold
-                )
-            }
-        }
-
-        Surface(
-            shape = RoundedCornerShape(24.dp),
-            color = MaterialTheme.colorScheme.surface.copy(alpha = 0.72f),
-            border = BorderStroke(
-                1.dp,
-                MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.18f)
-            )
-        ) {
-            Row(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(horizontal = 16.dp, vertical = 14.dp),
-                verticalAlignment = Alignment.CenterVertically,
-                horizontalArrangement = Arrangement.spacedBy(12.dp)
-            ) {
-                Surface(
-                    shape = CircleShape,
-                    color = MaterialTheme.colorScheme.primary.copy(alpha = 0.12f)
-                ) {
-                    Icon(
-                        imageVector = Icons.Default.Downloading,
-                        contentDescription = null,
-                        tint = MaterialTheme.colorScheme.primary,
-                        modifier = Modifier
-                            .padding(10.dp)
-                            .size(20.dp)
-                    )
-                }
-
-                Column {
-                    Text(
-                        text = "Downloads in progress",
-                        style = MaterialTheme.typography.titleSmall,
-                        fontWeight = FontWeight.Bold
-                    )
-                    Text(
-                        text = "Pause, resume, retry, or cancel downloads from here.",
-                        style = MaterialTheme.typography.bodySmall,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant
-                    )
-                }
             }
         }
     }
@@ -353,10 +360,12 @@ fun DownloadProgressItem(
     onPause: () -> Unit,
     onResume: () -> Unit,
     onCancel: () -> Unit,
-    onRetry: () -> Unit
+    onRetry: () -> Unit,
+    onRemove: () -> Unit
 ) {
     val context = LocalContext.current
 
+    var showErrorDialog by retain { mutableStateOf(false) }
     val totalSizeStr = if (download.totalSize > 0) {
         Formatter.formatFileSize(context, download.totalSize)
     } else {
@@ -364,21 +373,39 @@ fun DownloadProgressItem(
     }
 
     val downloadedSizeStr = Formatter.formatFileSize(context, download.bytesDownloaded)
+    val speedStr = if (download.status == DownloadStatus.DOWNLOADING && download.downloadSpeed > 0) {
+        Formatter.formatFileSize(context, download.downloadSpeed) + "/s"
+    } else ""
+
+    val etaStr = if (download.status == DownloadStatus.DOWNLOADING && download.downloadSpeed > 0 && download.totalSize > 0) {
+        val remainingBytes = download.totalSize - download.bytesDownloaded
+        val etaSeconds = remainingBytes / download.downloadSpeed
+        if (etaSeconds < 60) {
+            "${etaSeconds}s remaining"
+        } else if (etaSeconds < 3600) {
+            "${etaSeconds / 60}m remaining"
+        } else {
+            "${etaSeconds / 3600}h remaining"
+        }
+    } else ""
 
     val statusText = when (download.status) {
         DownloadStatus.QUEUED -> "Queued"
         DownloadStatus.DOWNLOADING -> "Downloading"
         DownloadStatus.PAUSED -> "Paused"
         DownloadStatus.COMPLETED -> "Completed"
-        DownloadStatus.FAILED -> download.errorMessage ?: "Failed"
+        DownloadStatus.FAILED -> "Failed"
         DownloadStatus.CANCELED -> "Canceled"
     }
 
     val statusColor = when (download.status) {
         DownloadStatus.FAILED -> MaterialTheme.colorScheme.error
         DownloadStatus.PAUSED -> MaterialTheme.colorScheme.tertiary
+        DownloadStatus.COMPLETED -> Color(0xFF4CAF50)
         else -> MaterialTheme.colorScheme.primary
     }
+
+    val progressPercent = (download.progress * 100).toInt().coerceIn(0, 100)
 
     Card(
         shape = RoundedCornerShape(24.dp),
@@ -389,7 +416,8 @@ fun DownloadProgressItem(
             1.dp,
             MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.18f)
         ),
-        modifier = Modifier.fillMaxWidth()
+        modifier = Modifier
+            .fillMaxWidth()
     ) {
         Column(
             modifier = Modifier.padding(16.dp),
@@ -409,6 +437,7 @@ fun DownloadProgressItem(
                         imageVector = when (download.status) {
                             DownloadStatus.PAUSED -> Icons.Default.Pause
                             DownloadStatus.FAILED -> Icons.Default.Refresh
+                            DownloadStatus.COMPLETED -> Icons.Default.DownloadDone
                             else -> Icons.Default.Downloading
                         },
                         contentDescription = null,
@@ -430,18 +459,33 @@ fun DownloadProgressItem(
                     Spacer(modifier = Modifier.height(4.dp))
 
                     StatusPill(
-                        text = statusText,
+                        text = if (download.status == DownloadStatus.DOWNLOADING) "$statusText • $progressPercent%" else statusText,
                         color = statusColor
                     )
                 }
 
-                DownloadActions(
-                    status = download.status,
-                    onPause = onPause,
-                    onResume = onResume,
-                    onRetry = onRetry,
-                    onCancel = onCancel
-                )
+                Column(horizontalAlignment = Alignment.End) {
+                    DownloadActions(
+                        status = download.status,
+                        onPause = onPause,
+                        onResume = onResume,
+                        onRetry = onRetry,
+                        onCancel = onCancel,
+                        onRemove = onRemove
+                    )
+                    if (download.status == DownloadStatus.FAILED && !download.errorMessage.isNullOrBlank()) {
+                        TextButton(
+                            onClick = { showErrorDialog = true },
+                            contentPadding = PaddingValues(0.dp)
+                        ) {
+                            Text(
+                                "Error Details",
+                                style = MaterialTheme.typography.labelSmall,
+                                color = MaterialTheme.colorScheme.error
+                            )
+                        }
+                    }
+                }
             }
 
             Column(
@@ -451,7 +495,7 @@ fun DownloadProgressItem(
                     progress = { download.progress.coerceIn(0f, 1f) },
                     modifier = Modifier
                         .fillMaxWidth()
-                        .height(10.dp)
+                        .height(8.dp)
                         .clip(CircleShape),
                     color = statusColor,
                     trackColor = statusColor.copy(alpha = 0.12f)
@@ -462,21 +506,70 @@ fun DownloadProgressItem(
                     horizontalArrangement = Arrangement.SpaceBetween,
                     verticalAlignment = Alignment.CenterVertically
                 ) {
-                    Text(
-                        text = "${(download.progress.coerceIn(0f, 1f) * 100).toInt()}%",
-                        style = MaterialTheme.typography.labelLarge,
-                        fontWeight = FontWeight.Bold,
-                        color = statusColor
-                    )
+                    Row(verticalAlignment = Alignment.CenterVertically) {
+                        Text(
+                            text = "$progressPercent%",
+                            style = MaterialTheme.typography.labelLarge,
+                            fontWeight = FontWeight.Black,
+                            color = statusColor
+                        )
 
-                    Text(
-                        text = "$downloadedSizeStr / $totalSizeStr",
-                        style = MaterialTheme.typography.bodySmall,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant
-                    )
+                        if (speedStr.isNotBlank()) {
+                            Spacer(Modifier.width(8.dp))
+                            Surface(
+                                color = MaterialTheme.colorScheme.primary.copy(alpha = 0.1f),
+                                shape = RoundedCornerShape(4.dp)
+                            ) {
+                                Text(
+                                    text = speedStr,
+                                    modifier = Modifier.padding(horizontal = 6.dp, vertical = 2.dp),
+                                    style = MaterialTheme.typography.labelSmall,
+                                    fontWeight = FontWeight.Bold,
+                                    color = MaterialTheme.colorScheme.primary
+                                )
+                            }
+                        }
+                    }
+
+                    Column(horizontalAlignment = Alignment.End) {
+                        Text(
+                            text = if (download.status == DownloadStatus.COMPLETED) totalSizeStr else "$downloadedSizeStr / $totalSizeStr",
+                            style = MaterialTheme.typography.labelMedium,
+                            fontWeight = FontWeight.Bold,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                        )
+                        if (etaStr.isNotBlank()) {
+                            Text(
+                                text = etaStr,
+                                style = MaterialTheme.typography.labelSmall,
+                                color = MaterialTheme.colorScheme.secondary,
+                                fontWeight = FontWeight.Medium
+                            )
+                        }
+                    }
                 }
             }
         }
+    }
+
+    if (showErrorDialog) {
+        AlertDialog(
+            onDismissRequest = { showErrorDialog = false },
+            confirmButton = {
+                TextButton(onClick = { showErrorDialog = false }) {
+                    Text("Close")
+                }
+            },
+            title = {
+                Text("Download Error")
+            },
+            text = {
+                Text(
+                    text = ErrorMapper.mapMessage(download.errorMessage),
+                    style = MaterialTheme.typography.bodyMedium
+                )
+            }
+        )
     }
 }
 
@@ -486,7 +579,8 @@ private fun DownloadActions(
     onPause: () -> Unit,
     onResume: () -> Unit,
     onRetry: () -> Unit,
-    onCancel: () -> Unit
+    onCancel: () -> Unit,
+    onRemove: () -> Unit
 ) {
     Row(
         verticalAlignment = Alignment.CenterVertically
@@ -520,15 +614,25 @@ private fun DownloadActions(
                 }
             }
 
-            else -> Unit
+            DownloadStatus.COMPLETED,
+            DownloadStatus.CANCELED -> {
+                IconButton(onClick = onRemove) {
+                    Icon(
+                        imageVector = Icons.Default.Close,
+                        contentDescription = "Remove"
+                    )
+                }
+            }
         }
 
-        IconButton(onClick = onCancel) {
-            Icon(
-                imageVector = Icons.Default.Close,
-                contentDescription = "Cancel",
-                modifier = Modifier.size(20.dp)
-            )
+        if (status != DownloadStatus.COMPLETED && status != DownloadStatus.CANCELED) {
+            IconButton(onClick = onCancel) {
+                Icon(
+                    imageVector = Icons.Default.Close,
+                    contentDescription = "Cancel",
+                    modifier = Modifier.size(20.dp)
+                )
+            }
         }
     }
 }
@@ -545,9 +649,11 @@ private fun StatusPill(
         Text(
             text = text,
             modifier = Modifier.padding(horizontal = 10.dp, vertical = 5.dp),
-            style = MaterialTheme.typography.labelMedium,
-            fontWeight = FontWeight.Bold,
-            color = color
+            style = MaterialTheme.typography.labelMedium.copy(
+                fontWeight = FontWeight.Bold,
+                color = color
+            ),
+            maxLines = 2
         )
     }
 }
@@ -629,21 +735,13 @@ fun EmptyDownloadsState() {
 }
 
 @Composable
-private fun LoadingDownloadsState(
-    onBack: () -> Unit
-) {
+private fun LoadingDownloadsState() {
     Column(
         modifier = Modifier
             .fillMaxSize()
             .padding(horizontal = 20.dp, vertical = 12.dp),
         verticalArrangement = Arrangement.spacedBy(18.dp)
     ) {
-        DownloadsHeader(
-            onBack = onBack,
-            onOpenDownloaded = {},
-            activeCount = null
-        )
-
         Box(
             modifier = Modifier.fillMaxSize(),
             contentAlignment = Alignment.Center
@@ -661,6 +759,7 @@ fun DownloadState.toDownloadInfo(): DownloadInfo {
         totalSize = totalBytes,
         bytesDownloaded = downloadedBytes,
         status = status,
+        downloadSpeed = downloadSpeed,
         errorMessage = errorMessage,
         filePath = destinationPath
     )

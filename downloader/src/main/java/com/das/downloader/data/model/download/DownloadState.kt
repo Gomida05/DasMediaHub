@@ -1,5 +1,7 @@
 package com.das.downloader.data.model.download
 
+import com.das.downloader.data.downloader.DownloadRequest
+
 /**
  * Data class representing the full persistable state of a download task.
  * 
@@ -28,8 +30,10 @@ data class DownloadState(
     val progress: Int = 0,
     val downloadedBytes: Long = 0L,
     val totalBytes: Long = -1L,
+    val downloadSpeed: Long = 0L, // Bytes per second
     val errorMessage: String? = null,
-    val playlistName: String? = null
+    val playlistName: String? = null,
+    val request: DownloadRequest? = null
 ) {
     companion object {
         /**

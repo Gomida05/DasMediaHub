@@ -5,6 +5,7 @@ import androidx.compose.material.icons.filled.Error
 import androidx.media3.common.PlaybackException
 import androidx.media3.common.Player
 import com.das.mediaHub.PIP
+import com.das.mediaHub.data.error.ErrorMapper
 import com.das.mediaHub.data.model.TopPopUp
 import com.das.mediaHub.ui.notification.TopPopupNotification.showNotificationDialog
 
@@ -36,7 +37,7 @@ internal class VideoPlayerListener(
     override fun onPlayerError(error: PlaybackException) {
         super.onPlayerError(error)
         showNotificationDialog = TopPopUp(
-            message = "Something went wrong: ${error.message}",
+            message = ErrorMapper.map(error),
             icon = Icons.Filled.Error
         )
         PIP.isPlaybackActive = false

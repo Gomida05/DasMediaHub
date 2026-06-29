@@ -9,7 +9,7 @@ import androidx.media3.common.MediaItem
 import androidx.media3.common.MediaMetadata
 import com.das.mediaHub.data.error.ErrorMapper
 import com.das.mediaHub.data.local.LocalMediaDataSource
-import com.das.mediaHub.data.model.state.UiState
+import com.das.mediaHub.data.model.interfaces.UiState
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.delay
@@ -18,6 +18,7 @@ import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
 import java.io.File
 import javax.inject.Inject
+import kotlin.time.Duration.Companion.milliseconds
 
 @HiltViewModel
 class LocalPlayerViewModel @Inject constructor(
@@ -51,7 +52,7 @@ class LocalPlayerViewModel @Inject constructor(
 
         scanJob?.cancel()
         scanJob = viewModelScope.launch {
-            delay(300)
+            delay(300.milliseconds)
             _uiState.value = UiState.Loading
 
             try {

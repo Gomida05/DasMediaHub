@@ -4,6 +4,7 @@ plugins {
     alias(libs.plugins.android.library)
     alias(libs.plugins.kotlin.serialization)
     id("maven-publish")
+    id("kotlin-parcelize")
 }
 
 android {
@@ -53,7 +54,7 @@ publishing {
         create<MavenPublication>("release") {
             groupId = "com.das"
             artifactId = "downloader"
-            version = "1.0.5"
+            version = "2.0.0"
 
             afterEvaluate {
                 from(components["release"])
@@ -78,6 +79,6 @@ dependencies {
     implementation(libs.kotlinx.serialization.json)
 
     implementation(libs.core.ktx)
-    implementation(libs.appcompat)
+    implementation(libs.androidx.work.runtime.ktx)
 
 }

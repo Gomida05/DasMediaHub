@@ -27,6 +27,7 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.safeContent
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.lazy.grid.GridCells
 import androidx.compose.foundation.lazy.grid.GridItemSpan
 import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
@@ -41,13 +42,16 @@ import androidx.compose.material.icons.filled.Check
 import androidx.compose.material.icons.filled.ColorLens
 import androidx.compose.material.icons.filled.Contrast
 import androidx.compose.material.icons.filled.DarkMode
+import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.Download
 import androidx.compose.material.icons.filled.ErrorOutline
 import androidx.compose.material.icons.filled.ExpandLess
 import androidx.compose.material.icons.filled.ExpandMore
 import androidx.compose.material.icons.filled.Feedback
 import androidx.compose.material.icons.filled.Info
+import androidx.compose.material.icons.filled.InstallMobile
 import androidx.compose.material.icons.filled.LightMode
+import androidx.compose.material.icons.filled.SystemUpdate
 import androidx.compose.material.icons.filled.Update
 import androidx.compose.material.icons.rounded.Download
 import androidx.compose.material.icons.rounded.SystemUpdateAlt
@@ -90,15 +94,17 @@ import androidx.compose.ui.window.Dialog
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.das.downloader.data.model.AppUpdateInfo
-import com.das.mediaHub.data.model.state.UiState
+import com.das.mediaHub.data.model.interfaces.UiState
 import com.das.mediaHub.navigation.Destination
 import com.das.mediaHub.ui.theme.AppTheme
 import com.das.mediaHub.ui.theme.ThemePreferences.loadThemeState
 import kotlinx.coroutines.delay
+import kotlin.time.Duration.Companion.milliseconds
 
 @Composable
 fun SettingsScreen(
     add: (Destination) -> Unit,
+    onShowMainUpdateDialog: () -> Unit
 ) {
 
     val viewModel = hiltViewModel<SettingsViewModel>()
@@ -224,6 +230,17 @@ fun SettingsScreen(
 
         }
 
+        if (uiState.showPendingUpdateDialog) {
+            PendingUpdateFoundDialog(
+                onInstall = {
+                    onShowMainUpdateDialog()
+                    viewModel.dismissPendingUpdateDialog()
+                },
+                onDelete = viewModel::deletePendingUpdateAndCheckAgain,
+                onCancel = viewModel::dismissPendingUpdateDialog
+            )
+        }
+
         when (val state = uiState.updateState) {
             UiState.Loading -> {
                 LoadingDialog(onCancel = viewModel::cancelLoading)
@@ -242,7 +259,7 @@ fun SettingsScreen(
                     appInfo = state.data,
                     currentVersionCode = uiState.versionCode,
                     onDismissRequest = viewModel::dismissUpdateDialog,
-                    onDownload = { viewModel.onDownloadUpdateClicked(state.data) }
+                    onDownload = viewModel::onDownloadUpdateClicked
                 )
             }
 
@@ -622,7 +639,7 @@ private fun loadingMessage(): String {
                 ".." -> "..."
                 else -> ""
             }
-            delay(400)
+            delay(400.milliseconds)
         }
     }
 
@@ -633,7 +650,7 @@ private fun loadingMessage(): String {
 @Composable
 private fun StyledDialogContainer(
     icon: ImageVector? = null,
-    title: String,
+    title: String = "Something went wrong",
     message: String,
     actions: @Composable () -> Unit
 ) {
@@ -727,7 +744,6 @@ private fun ErrorDialog(
     if (!message.isNullOrEmpty()) {
         StyledDialogContainer(
             icon = Icons.Default.ErrorOutline,
-            title = "Something went wrong",
             message = message
         ) {
             if (onRetry != null) {
@@ -897,6 +913,117 @@ internal fun InlineThemeSelector(
                         onThemeSelected(theme)
                     }
                 )
+            }
+        }
+    }
+}
+
+@Composable
+fun PendingUpdateFoundDialog(
+    onInstall: () -> Unit,
+    onDelete: () -> Unit,
+    onCancel: () -> Unit
+) {
+    Dialog(
+        onDismissRequest = onCancel
+    ) {
+        Surface(
+            shape = MaterialTheme.shapes.extraLarge,
+            color = MaterialTheme.colorScheme.surface,
+            tonalElevation = 6.dp
+        ) {
+            Column(
+                modifier = Modifier
+                    .padding(24.dp)
+                    .widthIn(min = 280.dp)
+            ) {
+
+                Text(
+                    text = "Update Already Downloaded",
+                    style = MaterialTheme.typography.headlineSmall
+                )
+
+                Spacer(modifier = Modifier.height(12.dp))
+
+                Text(
+                    text = "A newer version has already been downloaded and is ready to install.",
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                )
+
+                Spacer(modifier = Modifier.height(20.dp))
+
+                Column {
+
+                    Row(verticalAlignment = Alignment.CenterVertically) {
+                        Icon(
+                            imageVector = Icons.Default.SystemUpdate,
+                            contentDescription = null,
+                            tint = MaterialTheme.colorScheme.primary
+                        )
+
+                        Spacer(modifier = Modifier.width(8.dp))
+
+                        Text("Ready to install immediately")
+                    }
+
+                    Spacer(modifier = Modifier.height(8.dp))
+
+                    Row(verticalAlignment = Alignment.CenterVertically) {
+                        Icon(
+                            imageVector = Icons.Default.Delete,
+                            contentDescription = null,
+                            tint = MaterialTheme.colorScheme.error
+                        )
+
+                        Spacer(modifier = Modifier.width(8.dp))
+
+                        Text("Delete download and check for updates again")
+                    }
+                }
+
+                Spacer(modifier = Modifier.height(24.dp))
+
+                // Secondary actions
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.SpaceBetween
+                ) {
+                    TextButton(onClick = onCancel) {
+                        Text("Cancel")
+                    }
+
+                    TextButton(onClick = onDelete) {
+                        Icon(
+                            imageVector = Icons.Default.Delete,
+                            contentDescription = null
+                        )
+
+                        Spacer(modifier = Modifier.width(6.dp))
+
+                        Text(
+                            text = "Delete",
+                            color = MaterialTheme.colorScheme.error
+                        )
+                    }
+                }
+
+                Spacer(modifier = Modifier.height(12.dp))
+
+                // Primary action
+                Button(
+                    onClick = onInstall,
+                    modifier = Modifier.fillMaxWidth()
+                ) {
+                    Icon(
+                        imageVector = Icons.Default.InstallMobile,
+                        contentDescription = null
+                    )
+
+                    Spacer(modifier = Modifier.width(6.dp))
+
+                    Text("Install Now")
+                }
             }
         }
     }

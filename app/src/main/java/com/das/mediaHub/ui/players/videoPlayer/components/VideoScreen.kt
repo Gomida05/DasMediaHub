@@ -9,11 +9,14 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.rounded.Refresh
 import androidx.compose.material.icons.rounded.VideocamOff
 import androidx.compose.material.icons.rounded.WarningAmber
 import androidx.compose.material3.CircularProgressIndicator
+import androidx.compose.material3.FilledTonalButton
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
@@ -27,7 +30,7 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.media3.common.Player
 import com.das.mediaHub.PIP.rememberPipModifier
-import com.das.mediaHub.data.model.state.UiState
+import com.das.mediaHub.data.model.interfaces.UiState
 import com.das.mediaHub.ui.players.videoPlayerLocally.CustomPlayer
 
 
@@ -37,7 +40,8 @@ fun VideoScreen(
     player: Player,
     isInFullScreen: Boolean,
     isInPipMode: Boolean,
-    fullScreen: (Boolean) -> Unit
+    fullScreen: (Boolean) -> Unit,
+    onRetry: () -> Unit
 ) {
     val playerModifier = when {
         isInPipMode -> Modifier.rememberPipModifier()
@@ -48,7 +52,9 @@ fun VideoScreen(
     }
 
     Box(
-        modifier = playerModifier.background(Color.Black),
+        modifier = playerModifier
+            .clip(RoundedCornerShape(20.dp))
+            .background(Color.Black),
         contentAlignment = Alignment.Center
     ) {
 
@@ -76,7 +82,7 @@ fun VideoScreen(
 
             is UiState.Error -> {
                 if (!isInPipMode) {
-                    VideoErrorOverlay(message = videoState.message)
+                    VideoErrorOverlay(message = videoState.message, onRetry = onRetry)
                 }
             }
 
@@ -91,22 +97,30 @@ fun VideoScreen(
  * Dims the background to ensure the error is legible even if a bright video frame is stuck underneath.
  */
 @Composable
-private fun VideoErrorOverlay(message: String) {
+private fun VideoErrorOverlay(
+    message: String,
+    onRetry: () -> Unit
+) {
     Box(
         modifier = Modifier
             .fillMaxSize()
-            .background(Color.Black.copy(alpha = 0.75f)), // Cinematic dimming
+            .background(Color.Black.copy(alpha = 0.75f)),
         contentAlignment = Alignment.Center
     ) {
         Column(
             horizontalAlignment = Alignment.CenterHorizontally,
-            modifier = Modifier.padding(horizontal = 32.dp, vertical = 16.dp)
+            modifier = Modifier.padding(
+                horizontal = 32.dp,
+                vertical = 16.dp
+            )
         ) {
-            // Pill-shaped icon background for a premium look
+
             Box(
                 modifier = Modifier
                     .clip(RoundedCornerShape(50))
-                    .background(MaterialTheme.colorScheme.errorContainer.copy(alpha = 0.8f))
+                    .background(
+                        MaterialTheme.colorScheme.errorContainer.copy(alpha = 0.8f)
+                    )
                     .padding(12.dp),
                 contentAlignment = Alignment.Center
             ) {
@@ -124,7 +138,7 @@ private fun VideoErrorOverlay(message: String) {
                 text = "Playback Error",
                 style = MaterialTheme.typography.titleMedium,
                 fontWeight = FontWeight.Bold,
-                color = Color.White // Forced white for contrast against the black overlay
+                color = Color.White
             )
 
             Spacer(modifier = Modifier.height(4.dp))
@@ -135,6 +149,23 @@ private fun VideoErrorOverlay(message: String) {
                 color = Color.White.copy(alpha = 0.8f),
                 textAlign = TextAlign.Center
             )
+
+
+            Spacer(modifier = Modifier.height(20.dp))
+
+            FilledTonalButton(
+                onClick = onRetry,
+                shape = RoundedCornerShape(50)
+            ) {
+                Icon(
+                    imageVector = Icons.Rounded.Refresh,
+                    contentDescription = null
+                )
+
+                Spacer(modifier = Modifier.width(8.dp))
+
+                Text("Retry")
+            }
         }
     }
 }
@@ -186,3 +217,4 @@ private fun VideoLoadingOverlay() {
         )
     }
 }
+

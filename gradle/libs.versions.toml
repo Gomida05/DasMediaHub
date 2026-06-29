@@ -1,53 +1,56 @@
 [versions]
 activityComposeVersion = "1.13.0"
 agp = "9.2.1"
-appcompatVersion = "1.7.1"
 browserVersion = "1.10.0"
 coilComposeVersion = "2.7.0"
 coilVideoVersion = "2.7.0"
-composeBomVersion = "2026.05.01"
-coreKtxVersion = "1.18.0"
+composeBomVersion = "2026.06.00"
+coreKtxVersion = "1.19.0"
 chaquo = "17.0.0"
 datastorePreferencesVersion = "1.2.1"
-firebaseBomVersion = "34.13.0"
+firebaseBomVersion = "34.15.0"
+fireAnalyticsVersion = "23.2.0"
 glideVersion = "5.0.7"
-gms = "4.4.4"
+gms = "4.5.0"
 hiltVersion = "2.59.2"
 hiltNavigationComposeVersion = "1.3.0"
 kotlinxCoroutinesAndroidVersion = "1.11.0"
 kspVersion = "2.3.6"
-kotlin = "2.3.21"
+kotlin = "2.4.0"
 kotlinxSerializationJsonVersion = "1.11.0"
-lifecycleViewmodelComposeVersion = "2.10.0"
-lifecycleViewmodelKtxVersion = "2.10.0"
+lifecycleViewmodelComposeVersion = "2.11.0"
+lifecycleViewmodelKtxVersion = "2.11.0"
 media3Version = "1.10.1"
 mediaVersion = "1.8.0"
-nav3Core = "1.1.2"
-ktor = "3.5.0"
-room3Version = "3.0.0-alpha05"
-runtimeAndroidVersion = "1.11.2"
-firestoreVersion = "26.3.0"
-lifecycleRuntimeKtxVersion = "2.10.0"
-dasPython = "1.0.0"
-dasDownloader = "1.0.5"
+nav3Core = "1.1.3"
+ktor = "3.5.1"
+room3Version = "3.0.0-rc01"
+runtimeAndroidVersion = "1.11.3"
+firestoreVersion = "26.4.0"
+lifecycleRuntimeKtxVersion = "2.11.0"
+dasPython = "2.2.2"
+dasDownloader = "2.0.0"
+workRuntimeKtxVersion = "2.11.2"
 
 [libraries]
 activity-compose = { module = "androidx.activity:activity-compose", version.ref = "activityComposeVersion" }
 androidx-datastore-preferences = { module = "androidx.datastore:datastore-preferences", version.ref = "datastorePreferencesVersion" }
 androidx-room3-runtime = { group = "androidx.room3", name = "room3-runtime", version.ref = "room3Version" }
 androidx-room3-compiler = { group = "androidx.room3", name = "room3-compiler", version.ref = "room3Version" }
-appcompat = { module = "androidx.appcompat:appcompat", version.ref = "appcompatVersion" }
+androidx-work-runtime-ktx = { module = "androidx.work:work-runtime-ktx", version.ref = "workRuntimeKtxVersion" }
 browser = { module = "androidx.browser:browser", version.ref = "browserVersion" }
 coil-video = { module = "io.coil-kt:coil-video", version.ref = "coilVideoVersion" }
 coil-compose = { module = "io.coil-kt:coil-compose", version.ref = "coilComposeVersion" }
 compose-bom = { module = "androidx.compose:compose-bom", version.ref = "composeBomVersion" }
 core-ktx = { module = "androidx.core:core-ktx", version.ref = "coreKtxVersion" }
-firebase-analytics = { module = "com.google.firebase:firebase-analytics" }
+firebase-analytics = { module = "com.google.firebase:firebase-analytics", version.ref = "fireAnalyticsVersion" }
 firebase-bom = { module = "com.google.firebase:firebase-bom", version.ref = "firebaseBomVersion" }
 glide = { module = "com.github.bumptech.glide:glide", version.ref = "glideVersion" }
 hilt-android = { group = "com.google.dagger", name = "hilt-android", version.ref = "hiltVersion" }
 hilt-compiler = { group = "com.google.dagger", name = "hilt-compiler", version.ref = "hiltVersion" }
 hilt-navigation-compose = { group = "androidx.hilt", name = "hilt-navigation-compose", version.ref = "hiltNavigationComposeVersion" }
+androidx-hilt-work = { group = "androidx.hilt", name = "hilt-work", version.ref = "hiltNavigationComposeVersion" }
+androidx-hilt-compiler = { group = "androidx.hilt", name = "hilt-compiler", version.ref = "hiltNavigationComposeVersion" }
 kotlinx-coroutines-android = { module = "org.jetbrains.kotlinx:kotlinx-coroutines-android", version.ref = "kotlinxCoroutinesAndroidVersion" }
 lifecycle-viewmodel-compose = { module = "androidx.lifecycle:lifecycle-viewmodel-compose", version.ref = "lifecycleViewmodelComposeVersion" }
 lifecycle-viewmodel-ktx = { module = "androidx.lifecycle:lifecycle-viewmodel-ktx", version.ref = "lifecycleViewmodelKtxVersion" }

@@ -43,8 +43,13 @@ import androidx.compose.ui.window.DialogProperties
 
 @Composable
 fun NoConnectionScreen(
+    networkStatus: ConnectivityObserver.Status,
     onRetry: () -> Unit
 ) {
+
+
+    val (title, message) = networkStatus.toStatusText()
+
     val infiniteTransition = rememberInfiniteTransition(label = "wifi_anim")
 
     val scale by infiniteTransition.animateFloat(
@@ -121,7 +126,7 @@ fun NoConnectionScreen(
                     Spacer(modifier = Modifier.height(36.dp))
 
                     Text(
-                        text = "Connection lost",
+                        text = title,
                         style = MaterialTheme.typography.headlineMedium.copy(
                             fontWeight = FontWeight.Black,
                             letterSpacing = (-0.5).sp
@@ -133,7 +138,7 @@ fun NoConnectionScreen(
                     Spacer(modifier = Modifier.height(12.dp))
 
                     Text(
-                        text = "DasMediaHub couldn’t reach online services. Check your connection to continue streaming, searching, or downloading.",
+                        text = message,
                         style = MaterialTheme.typography.bodyLarge,
                         color = MaterialTheme.colorScheme.onSurfaceVariant,
                         textAlign = TextAlign.Center,
@@ -167,5 +172,39 @@ fun NoConnectionScreen(
                 }
             }
         }
+    }
+}
+
+private fun ConnectivityObserver.Status.toStatusText(): Pair<String, String> {
+    return when (this) {
+        ConnectivityObserver.Status.Available ->
+            "You're back online" to "Connection restored successfully."
+
+        ConnectivityObserver.Status.Losing ->
+            "Weak connection" to "Network is unstable. Some features may not work properly."
+
+        ConnectivityObserver.Status.Lost ->
+            "Connection lost" to "Your internet connection dropped."
+
+        ConnectivityObserver.Status.Unavailable ->
+            "No connection" to "Check your internet connection and try again."
+        else -> "" to ""
+    }
+}
+
+fun ConnectivityObserver.Status.toUiMessage(): String {
+    return when (this) {
+        ConnectivityObserver.Status.Available ->
+            "Back online"
+
+        ConnectivityObserver.Status.Losing ->
+            "Weak connection"
+
+        ConnectivityObserver.Status.Lost ->
+            "Connection lost"
+
+        ConnectivityObserver.Status.Unavailable ->
+            "No internet connection"
+        else -> ""
     }
 }

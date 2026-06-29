@@ -12,7 +12,7 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.safeContent
+import androidx.compose.foundation.layout.safeDrawing
 import androidx.compose.foundation.lazy.grid.GridCells
 import androidx.compose.foundation.lazy.grid.GridItemSpan
 import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
@@ -33,7 +33,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.remember
+import androidx.compose.runtime.retain.retain
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -45,8 +45,9 @@ import androidx.compose.ui.unit.DpOffset
 import androidx.compose.ui.unit.dp
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import com.das.mediaHub.data.error.ErrorMapper
 import com.das.mediaHub.data.model.TopPopUp
-import com.das.mediaHub.data.model.state.UiState
+import com.das.mediaHub.data.model.interfaces.UiState
 import com.das.mediaHub.navigation.AppBackStack
 import com.das.mediaHub.navigation.Destination
 import com.das.mediaHub.navigation.Destination.OnlineVideoPlayer
@@ -70,11 +71,11 @@ fun RecentlyWatchedVideosScreen(backStack: AppBackStack) {
     val scrollBehavior = TopAppBarDefaults.enterAlwaysScrollBehavior()
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
     val searchQuery by viewModel.searchQuery.collectAsStateWithLifecycle()
-    val isSearching = remember { mutableStateOf(false) }
-    val showMenu = remember { mutableStateOf(false) }
+    val isSearching = retain { mutableStateOf(false) }
+    val showMenu = retain { mutableStateOf(false) }
     val lazyGridState = rememberLazyGridState()
-    val focusRequester = remember { FocusRequester() }
-    var dialogState by remember { mutableStateOf<ActionDialogState>(ActionDialogState.Idle) }
+    val focusRequester = retain { FocusRequester() }
+    var dialogState by retain { mutableStateOf<ActionDialogState>(ActionDialogState.Idle) }
 
 
     LaunchedEffect(isSearching.value) {
@@ -84,24 +85,24 @@ fun RecentlyWatchedVideosScreen(backStack: AppBackStack) {
     }
 
     Scaffold(
-            modifier = Modifier.nestedScroll(scrollBehavior.nestedScrollConnection),
-            containerColor = Color.Transparent,
-            topBar = {
-                RecentlyWatchedTopAppBar(
-                    isSearching = isSearching.value,
-                    searchQuery = searchQuery,
-                    showMenu = showMenu.value,
-                    focusRequester = focusRequester,
-                    scrollBehavior = scrollBehavior,
-                    onSearchVideos = viewModel::searchVideos,
-                    onOpenMenu = { showMenu.value = it },
-                    onSearchModeChange = { isSearching.value = it },
-                    navigateToSaved = { backStack.add(Destination.Saved) },
-                    onClearAll = viewModel::clearAllVideos
-                )
-            },
-            contentWindowInsets = WindowInsets.safeContent
-        ) { paddingValues ->
+        modifier = Modifier.nestedScroll(scrollBehavior.nestedScrollConnection),
+        containerColor = Color.Transparent,
+        topBar = {
+            RecentlyWatchedTopAppBar(
+                isSearching = isSearching.value,
+                searchQuery = searchQuery,
+                showMenu = showMenu.value,
+                focusRequester = focusRequester,
+                scrollBehavior = scrollBehavior,
+                onSearchVideos = viewModel::searchVideos,
+                onOpenMenu = { showMenu.value = it },
+                onSearchModeChange = { isSearching.value = it },
+                navigateToSaved = { backStack.add(Destination.Saved) },
+                onClearAll = viewModel::clearAllVideos
+            )
+        },
+        contentWindowInsets = WindowInsets.safeDrawing
+    ) { paddingValues ->
         LazyVerticalGrid(
             columns = GridCells.Adaptive(minSize = 320.dp),
             state = lazyGridState,
@@ -158,7 +159,8 @@ fun RecentlyWatchedVideosScreen(backStack: AppBackStack) {
                                         dialogState = ActionDialogState.Idle
 
                                         if (streamResult.audioUrl.isBlank()) {
-                                            dialogState = ActionDialogState.Error("This video can’t be played in the background right now.")
+                                            dialogState =
+                                                ActionDialogState.Error("This video can’t be played in the background right now.")
                                             return@loadStreamUrl
                                         }
 
@@ -169,7 +171,7 @@ fun RecentlyWatchedVideosScreen(backStack: AppBackStack) {
                                     },
                                     onFailure = {
                                         dialogState = ActionDialogState.Error(
-                                            it.message ?:""
+                                            it.message ?: ""
                                         )
 
                                     }
@@ -285,7 +287,7 @@ private fun onClickListListener(
         controller.add(OnlineVideoPlayer(videoId = selectedId))
     } catch (e: Exception) {
         showNotificationDialog = TopPopUp(
-            message = "Error: ${e.message}",
+            message = ErrorMapper.map(e),
             icon = Icons.Default.VideoLibrary,
             loading = false
         )

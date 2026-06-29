@@ -1,11 +1,11 @@
 package com.das.python.data.interfaces
 
-import com.das.python.data.model.StreamUrlRespond
 import com.das.python.data.annotation.PyFunction
 import com.das.python.data.annotation.PyModule
+import com.das.python.data.model.FewVideoDetails
 import com.das.python.data.model.PlayListDataClass
-import com.das.python.data.model.responds.RespondVideoDetails
-import com.das.python.data.model.responds.ResponseVideo
+import com.das.python.data.model.responds.ApiResponse
+import com.das.python.data.model.searcher.SearchResponse
 
 /**
  * Interface representing the core Python operations available
@@ -21,13 +21,13 @@ interface MainPy {
      * Extracts the direct audio stream URL for a given YouTube video.
      */
     @PyFunction("get_audio_url")
-    suspend fun getAudioStreamUrl(videoUrl: String): StreamUrlRespond
+    suspend fun getAudioStreamUrl(videoUrl: String): ApiResponse<String>
 
     /**
      * Extracts the direct video stream URL for a given YouTube video.
      */
     @PyFunction("get_video_url")
-    suspend fun getVideoStreamUrl(videoUrl: String): StreamUrlRespond
+    suspend fun getVideoStreamUrl(videoUrl: String): ApiResponse<String>
 
     /**
      * Retrieves metadata for all videos within a YouTube playlist.
@@ -39,11 +39,11 @@ interface MainPy {
      * Searches YouTube for videos matching the provided query string.
      */
     @PyFunction("Searcher")
-    suspend fun searchNow(query: String): ResponseVideo
+    suspend fun searchNow(query: String): ApiResponse<SearchResponse>
 
     /**
      * Retrieves comprehensive metadata for a single video via its URL.
      */
     @PyFunction("SearchWithLink")
-    suspend fun searchByUrl(url: String): RespondVideoDetails
+    suspend fun searchByUrl(url: String): ApiResponse<FewVideoDetails>
 }

@@ -6,29 +6,50 @@ import android.app.NotificationManager
 import android.app.PendingIntent
 import android.content.Context
 import android.content.Intent
+import android.graphics.Bitmap
+import android.graphics.BitmapFactory
+import android.net.Uri
 import android.util.Log
 import androidx.core.app.NotificationCompat
 import androidx.core.content.getSystemService
 import androidx.core.net.toUri
 import androidx.media3.common.MediaItem
 import androidx.media3.common.MediaMetadata
+import androidx.media3.common.util.BitmapLoader
 import androidx.media3.exoplayer.ExoPlayer
 import androidx.media3.session.MediaSession
 import androidx.media3.session.MediaSessionService
 import androidx.media3.session.MediaStyleNotificationHelper
+import com.bumptech.glide.Glide
 import com.das.mediaHub.MainActivity
 import com.das.mediaHub.R
 import com.das.mediaHub.Receiver
 import com.das.mediaHub.data.constants.Action
 import com.das.mediaHub.data.constants.Notifications
+import com.das.mediaHub.data.constants.Notifications.OPEN_IT_NOW
 import com.das.mediaHub.data.local.db.dao.FavoritesDao
 import com.das.mediaHub.data.mediacontroller.online.MediaSessionPlaybackState
 import com.das.mediaHub.data.model.PlaybackPayload
 import com.das.python.data.model.ItemsStreamUrlsForMediaItemData
+import com.google.common.util.concurrent.Futures
+import com.google.common.util.concurrent.ListenableFuture
 import dagger.hilt.android.AndroidEntryPoint
 import okhttp3.internal.toLongOrDefault
 import javax.inject.Inject
 
+/**
+ * A service for handling background audio playback from online sources (e.g., YouTube).
+ *
+ * It uses [ExoPlayer] to stream media and integrates with [MediaSession] to provide
+ * system-wide playback controls. It features custom [BitmapLoader] using Glide for
+ * loading album art from URLs.
+ *
+ * Example usage:
+ * ```kotlin
+ * // Using the extension function provided in the companion object
+ * context.playAudioFromUrl(audioUrl, selectedMediaItem)
+ * ```
+ */
 @AndroidEntryPoint
 class OnlineBackgroundPlayer : MediaSessionService() {
 
@@ -42,14 +63,37 @@ class OnlineBackgroundPlayer : MediaSessionService() {
 
     //For now
     private val mediaSession by lazy {
+        @SuppressLint("UnsafeOptInUsageError")
         MediaSession.Builder(applicationContext, exoPlayer)
             .setSessionActivity(
                 PendingIntent.getActivity(
                     applicationContext,
                     0,
                     Intent(applicationContext, MainActivity::class.java),
-                    PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
+                    FLAGS
                 )
+            )
+            .setBitmapLoader(
+
+                object : BitmapLoader {
+                    override fun supportsMimeType(mimeType: String): Boolean {
+                        return true
+                    }
+
+                    override fun decodeBitmap(data: ByteArray): ListenableFuture<Bitmap> {
+                        val bitmap = BitmapFactory.decodeByteArray(data, 0, data.size)
+                        return Futures.immediateFuture(bitmap)
+                    }
+
+                    override fun loadBitmap(uri: Uri): ListenableFuture<Bitmap> {
+                        val bitmap = Glide.with(this@OnlineBackgroundPlayer)
+                            .asBitmap()
+                            .load(uri)
+                            .submit()
+                            .get()
+                        return Futures.immediateFuture(bitmap)
+                    }
+                }
             )
             .build()
     }
@@ -131,14 +175,21 @@ class OnlineBackgroundPlayer : MediaSessionService() {
             this,
             0,
             deleteIntent,
-            PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
+            FLAGS
         )
+        val mainIntent = Intent(
+            applicationContext,
+            MainActivity::class.java
+        ).apply {
+            action = OPEN_IT_NOW
+            putExtra("VideoID", EXTRA_VIDEO_ID)
+        }
 
         val pendingIntent = PendingIntent.getActivity(
             this,
             0,
-            Intent(this, MainActivity::class.java),
-            PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
+            mainIntent,
+            FLAGS
         )
 
         return NotificationCompat.Builder(this, CHANNEL_ID)
@@ -240,5 +291,6 @@ class OnlineBackgroundPlayer : MediaSessionService() {
             startService(playIntent)
         }
 
+        private const val FLAGS = PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
     }
 }

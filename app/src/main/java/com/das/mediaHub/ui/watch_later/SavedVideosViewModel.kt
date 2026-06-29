@@ -4,7 +4,7 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.das.mediaHub.data.error.ErrorMapper
 import com.das.mediaHub.data.model.SavedVideosListData
-import com.das.mediaHub.data.model.state.UiState
+import com.das.mediaHub.data.model.interfaces.UiState
 import com.das.mediaHub.data.repository.FavoritesRepository
 import com.das.mediaHub.ui.players.videoPlayer.components.CustomMethods.toVideosListData
 import com.das.python.YouTuber.loadStreamUrl
@@ -76,7 +76,7 @@ class SavedVideosViewModel @Inject constructor(
             runCatching {
                 dbHelper.deleteWatchUrl(videoId)
             }.onFailure { e ->
-                _errorFlow.tryEmit(e.message ?: "Failed to delete video")
+                _errorFlow.tryEmit(ErrorMapper.map(e))
             }
         }
     }
@@ -86,7 +86,7 @@ class SavedVideosViewModel @Inject constructor(
             runCatching {
                 dbHelper.clearAll()
             }.onFailure { e ->
-                _errorFlow.tryEmit(e.message ?: "Failed to clear repository")
+                _errorFlow.tryEmit(ErrorMapper.map(e))
             }
         }
     }

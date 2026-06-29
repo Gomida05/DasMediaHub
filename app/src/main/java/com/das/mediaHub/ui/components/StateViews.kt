@@ -23,7 +23,7 @@ import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.Close
-import androidx.compose.material.icons.filled.CloudOff
+import androidx.compose.material.icons.filled.History
 import androidx.compose.material.icons.filled.MoreVert
 import androidx.compose.material.icons.filled.Search
 import androidx.compose.material.icons.rounded.Error
@@ -259,13 +259,15 @@ fun ErrorStateView(
 @Composable
 fun EmptyStateView(
     title: String = "No videos found",
-    message: String = "We couldn't find any videos matching your request.",
-    icon: ImageVector = Icons.Default.CloudOff
+    message: String = "Videos you watch will appear here.",
+    icon: ImageVector = Icons.Default.History,
+    onPrimaryAction: (() -> Unit)? = null,
+    primaryActionText: String = "Start watching"
 ) {
     Box(
         modifier = Modifier
             .fillMaxWidth()
-            .padding(horizontal = 20.dp, vertical = 32.dp),
+            .padding(horizontal = 20.dp, vertical = 40.dp),
         contentAlignment = Alignment.Center
     ) {
         Card(
@@ -273,41 +275,43 @@ fun EmptyStateView(
             colors = CardDefaults.cardColors(
                 containerColor = MaterialTheme.colorScheme.surfaceContainerLow
             ),
-            elevation = CardDefaults.cardElevation(defaultElevation = 2.dp),
+            elevation = CardDefaults.cardElevation(defaultElevation = 1.dp),
             modifier = Modifier.fillMaxWidth()
         ) {
             Column(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .padding(horizontal = 24.dp, vertical = 32.dp),
+                    .padding(horizontal = 24.dp, vertical = 28.dp),
                 horizontalAlignment = Alignment.CenterHorizontally
             ) {
+
+                // icon background feels softer + less “heavy”
                 Surface(
                     shape = CircleShape,
-                    color = MaterialTheme.colorScheme.secondaryContainer.copy(alpha = 0.45f),
-                    modifier = Modifier.size(96.dp)
+                    color = MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.35f),
+                    modifier = Modifier.size(88.dp)
                 ) {
                     Box(contentAlignment = Alignment.Center) {
                         Icon(
                             imageVector = icon,
                             contentDescription = null,
-                            modifier = Modifier.size(42.dp),
-                            tint = MaterialTheme.colorScheme.secondary
+                            modifier = Modifier.size(40.dp),
+                            tint = MaterialTheme.colorScheme.primary
                         )
                     }
                 }
 
-                Spacer(modifier = Modifier.height(20.dp))
+                Spacer(modifier = Modifier.height(18.dp))
 
                 Text(
                     text = title,
                     style = MaterialTheme.typography.titleLarge.copy(
-                        fontWeight = FontWeight.Bold
+                        fontWeight = FontWeight.SemiBold
                     ),
                     textAlign = TextAlign.Center
                 )
 
-                Spacer(modifier = Modifier.height(8.dp))
+                Spacer(modifier = Modifier.height(6.dp))
 
                 Text(
                     text = message,
@@ -315,6 +319,17 @@ fun EmptyStateView(
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                     textAlign = TextAlign.Center
                 )
+
+                if (onPrimaryAction != null) {
+                    Spacer(modifier = Modifier.height(18.dp))
+
+                    Button(
+                        onClick = onPrimaryAction,
+                        shape = RoundedCornerShape(14.dp)
+                    ) {
+                        Text(primaryActionText)
+                    }
+                }
             }
         }
     }

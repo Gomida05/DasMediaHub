@@ -4,7 +4,7 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.das.mediaHub.data.error.ErrorMapper
 import com.das.mediaHub.data.model.WatchedVideoEntity
-import com.das.mediaHub.data.model.state.UiState
+import com.das.mediaHub.data.model.interfaces.UiState
 import com.das.mediaHub.data.repository.WatchHistoryRepository
 import com.das.mediaHub.ui.players.videoPlayer.components.CustomMethods.toVideosListData
 import com.das.python.YouTuber.loadStreamUrl

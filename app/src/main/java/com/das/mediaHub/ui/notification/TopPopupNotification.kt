@@ -43,13 +43,14 @@ import com.das.mediaHub.data.model.TopPopUp
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import kotlin.math.roundToInt
+import kotlin.time.Duration.Companion.milliseconds
 
 /**
  * Centralized helper for displaying a transient top popup notification
  * across the application.
  *
  * This object holds the shared state for the currently visible notification
- * and exposes a composable extension function on [com.das.mediaHub.data.model.TopPopUp] to render it.
+ * and exposes a composable extension function on [TopPopUp] to render it.
  *
  * The popup appears from the top of the screen, auto-dismisses after a
  * configurable duration, and can be dismissed manually via an upward swipe.
@@ -100,7 +101,7 @@ internal object TopPopupNotification {
             offsetY.snapTo(-heightPx)
             offsetY.animateTo(0f)
 
-            delay(durationMillis)
+            delay(durationMillis.milliseconds)
 
             offsetY.animateTo(-heightPx)
             onDismiss()

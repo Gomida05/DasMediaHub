@@ -29,5 +29,5 @@
 
 # Missing classes rules for downloader and python modules
 -dontwarn com.das.downloader.**
--dontwarn com.das.mediaHub.data.local.PathPreferences
+-dontwarn com.das.mediaHub.data.local.DownloadPreferences
 -dontwarn com.das.python.**

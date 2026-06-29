@@ -8,14 +8,14 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.retain.RetainedEffect
 import androidx.compose.runtime.retain.retain
 import androidx.compose.ui.platform.LocalContext
-import com.das.downloader.data.local.PathPreferences
-import com.das.downloader.data.local.PathPreferences.getPrefsName
+import com.das.downloader.data.local.DownloadPreferences
+import com.das.downloader.data.local.DownloadPreferences.getPrefsName
 import com.das.downloader.data.model.PathType
 
 /**
  * Utility object for accessing and observing storage path preferences within Composable functions.
  *
- * It provides reactive [MutableState] wrappers around [PathPreferences] to allow UI 
+ * It provides reactive [MutableState] wrappers around [DownloadPreferences] to allow UI 
  * components to automatically recompose when a download path is updated in settings.
  */
 internal object ThemePreferences {
@@ -53,9 +53,9 @@ internal object ThemePreferences {
 
         // Helper to fetch the latest value based on PathType
         fun getCurrentPath(): String = if (key == PathType.AUDIO) {
-            PathPreferences.getAudioPath(context)
+            DownloadPreferences.getAudioPath(context)
         } else {
-            PathPreferences.getVideoPath(context)
+            DownloadPreferences.getVideoPath(context)
         }
 
         val prefs = retain {

@@ -54,6 +54,7 @@ import androidx.compose.ui.unit.dp
 import androidx.media3.common.Player
 import androidx.media3.session.MediaController
 import androidx.media3.ui.compose.ContentFrame
+import androidx.media3.ui.compose.SURFACE_TYPE_TEXTURE_VIEW
 import androidx.media3.ui.compose.indicators.ProgressIndicator
 import androidx.media3.ui.compose.material3.Player
 import androidx.media3.ui.compose.material3.buttons.PlaybackSpeedToggleButton
@@ -65,6 +66,7 @@ import androidx.media3.ui.compose.state.rememberPlayPauseButtonState
 import androidx.media3.ui.compose.state.rememberPreviousButtonState
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.delay
+import kotlin.time.Duration.Companion.milliseconds
 
 @SuppressLint("UnsafeOptInUsageError")
 @Composable
@@ -111,7 +113,7 @@ fun CustomPlayer(
     }
 
     LaunchedEffect(isPlayerUiVisible, isSeeking, isPlaying) {
-        delay(5000L)
+        delay(5000L.milliseconds)
         if (!isSeeking) {
             isPlayerUiVisible = false
         }
@@ -122,7 +124,7 @@ fun CustomPlayer(
             if (!isSeeking) {
                 currentPosition = player.currentPosition.coerceAtLeast(0)
             }
-            delay(16L)
+            delay(16L.milliseconds)
         }
     }
     Column(
@@ -192,7 +194,7 @@ fun CustomPlayer(
 
     LaunchedEffect(isPlayerUiVisible) {
         if (!showControls) return@LaunchedEffect
-        delay(5000L)
+        delay(5000L.milliseconds)
         if (!isSeeking) {
             isPlayerUiVisible = false
         }
@@ -200,6 +202,7 @@ fun CustomPlayer(
 
     Player(
         player = player,
+        contentScale = ContentScale.Fit,
         modifier = modifier
             .clickable(
                 indication = null,
@@ -216,7 +219,7 @@ fun CustomPlayer(
                 isFullScreen = isFullScreen,
                 isSeeking = {
                     isSeeking = it
-                }
+                },
             ) {
                 onFullScreenChanged(it)
             }
@@ -232,7 +235,7 @@ private fun BottomControls(
     player: Player?,
     isFullScreen: Boolean?,
     isSeeking: (Boolean) -> Unit,
-    onFullScreenChanged: (Boolean) -> Unit
+    onFullScreenChanged: (Boolean) -> Unit,
 ) {
     AnimatedVisibility(visible = showControls, enter = fadeIn(), exit = fadeOut()) {
         Column(Modifier.fillMaxWidth().padding(horizontal = 15.dp)) {

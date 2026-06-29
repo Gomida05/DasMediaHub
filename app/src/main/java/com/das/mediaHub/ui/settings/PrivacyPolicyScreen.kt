@@ -1,5 +1,6 @@
 package com.das.mediaHub.ui.settings
 
+import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -92,42 +93,49 @@ fun PrivacyPolicyScreen(backStack: AppBackStack) {
             item {
                 PolicyCard(
                     title = "Introduction",
-                    content = "DasMediaHub is committed to protecting your privacy. This page explains how information is handled when you use the app."
+                    content = "DasMediaHub is built with a 'privacy-first' philosophy. We believe your media consumption should remain private and under your control. This policy outlines our commitment to transparency and data protection."
                 )
             }
 
             item {
                 PolicyCard(
-                    title = "Data collection",
-                    content = "DasMediaHub is mainly designed as a local media tool. It does not require a user account, and it does not store personal details like your name, email address, or phone number on our servers."
+                    title = "Zero Data Harvesting",
+                    content = "We do not collect, store, or sell your personal information. DasMediaHub does not require accounts, logins, or any personally identifiable information (PII) to function. Your identity remains anonymous to us."
                 )
             }
 
             item {
                 PolicyCard(
-                    title = "How information is used",
-                    content = "Data such as media links, search input, or selected content is processed only to provide the features you use inside the app. Some technical processing may happen locally on your device."
+                    title = "Local Processing & Storage",
+                    content = "All your app data—including watch history, 'Save for Later' items, and download tasks—is stored exclusively on your device. We do not use cloud storage for your preferences, meaning your data never leaves your phone."
                 )
             }
 
             item {
                 PolicyCard(
-                    title = "Third-party services",
-                    content = "The app may interact with third-party platforms such as YouTube, TikTok, or Instagram. When you use those services through the app, their own privacy policies and terms may also apply."
+                    title = "Third-Party Platforms",
+                    content = "When you browse or download from platforms like YouTube, TikTok, or Instagram, the app acts as a client. Your interaction with these services is subject to their respective Privacy Policies and Terms of Service. We do not share your app-specific data with them."
+                )
+            }
+
+            item {
+                PolicyCard(
+                    title = "Usage Analytics",
+                    content = "DasMediaHub does not use intrusive tracking or telemetry. We may occasionally use basic, anonymous crash reports to improve app stability, but these contain no personal information and cannot be traced back to you."
                 )
             }
 
             item {
                 PolicyCard(
                     title = "Permissions",
-                    content = "The app may request access to storage for saving media, notifications for download progress, and internet access for loading and processing online content. These permissions are used only for core app features."
+                    content = "The app requests only essential permissions: Storage (to save media), Internet (to load content), and Notifications (to show download progress). We never access your contacts, location, or other sensitive device data."
                 )
             }
 
             item {
                 PolicyCard(
-                    title = "Policy updates",
-                    content = "This Privacy Policy may be updated over time. When changes are made, the latest version will be shown inside the app."
+                    title = "Changes to this Policy",
+                    content = "As we add new features, we may update this policy. Any changes will be reflected here. By continuing to use DasMediaHub, you agree to the terms outlined in the latest version."
                 )
             }
 
@@ -135,17 +143,18 @@ fun PrivacyPolicyScreen(backStack: AppBackStack) {
                 Card(
                     shape = RoundedCornerShape(22.dp),
                     colors = CardDefaults.cardColors(
-                        containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(
-                            alpha = 0.42f
+                        containerColor = MaterialTheme.colorScheme.secondaryContainer.copy(
+                            alpha = 0.45f
                         )
                     ),
                     elevation = CardDefaults.cardElevation(defaultElevation = 0.dp),
                     modifier = Modifier.fillMaxWidth()
                 ) {
                     Text(
-                        text = "Last updated: April 2026",
+                        text = "Last updated: June 2026",
                         style = MaterialTheme.typography.labelLarge.copy(
-                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                            color = MaterialTheme.colorScheme.onSecondaryContainer,
+                            fontWeight = FontWeight.Bold
                         ),
                         modifier = Modifier.padding(
                             horizontal = 18.dp,
@@ -165,6 +174,10 @@ private fun PrivacyHeroCard() {
         shape = RoundedCornerShape(28.dp),
         colors = CardDefaults.cardColors(
             containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.42f)
+        ),
+        border = BorderStroke(
+            1.dp,
+            MaterialTheme.colorScheme.primary.copy(alpha = 0.15f)
         ),
         elevation = CardDefaults.cardElevation(defaultElevation = 0.dp),
         modifier = Modifier.fillMaxWidth()
@@ -221,6 +234,10 @@ fun PolicyCard(
         shape = RoundedCornerShape(24.dp),
         colors = CardDefaults.cardColors(
             containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.42f)
+        ),
+        border = BorderStroke(
+            1.dp,
+            MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.2f)
         ),
         elevation = CardDefaults.cardElevation(defaultElevation = 0.dp),
         modifier = Modifier.fillMaxWidth()

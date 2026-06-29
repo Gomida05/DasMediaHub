@@ -1,26 +1,28 @@
-# 🛠️ My YouTube Search Fix
+# 🛠️ YouTube Search Core (DasMediaHub Edition)
 
-A patched and optimized version of `youtube-search-python` specifically tailored for use within the **DasMediaHub** Android application.
+A specialized, high-performance patch of `youtube-search-python` optimized for the **DasMediaHub** v16.0 release.
 
-## 📌 Purpose
+## 📌 Overview
 
-This library provides a high-performance, API-key-free way to search for YouTube content. It has been modified to:
-- **Fix Compatibility Issues:** Resolved specific extraction errors encountered in the original library.
-- **Optimize for Mobile:** Refined networking and parsing logic to work seamlessly with Chaquopy on Android.
-- **Support Advanced Extraction:** Enhanced support for playlists, channels, and stream URL fetching.
+This core module provides a robust, API-key-free bridge for searching YouTube content directly within the Android environment. It has been meticulously refined to ensure maximum compatibility with **Chaquopy** and mobile networking constraints.
 
-## 🚀 Key Features
+### 🔧 Improvements in v16.0
+- **Extraction Stability:** Fixed critical parsing errors caused by recent YouTube layout changes.
+- **Mobile Optimization:** Drastically reduced memory footprint during large search result parsing.
+- **Enhanced Reliability:** Improved timeout handling and retry logic for unstable mobile data connections.
+- **Clean Architecture:** Refined internal logic to work seamlessly with the `:app` module's new state management.
 
-- **Search:** Videos, Playlists, Channels, and more.
-- **Suggestions:** Real-time search suggestions.
-- **Metadata Extraction:** Detailed info including views, duration, and high-res thumbnails.
-- **Transcript Support:** Fetching video transcripts when available.
-- **Stream URL Fetching:** Integrated logic for retrieving direct media URLs.
+## 🚀 Key Capabilities
 
-## 🛠 Integration in DasMediaHub
+- **Deep Search:** Instantly fetch Videos, Playlists, and Channel data.
+- **Smart Suggestions:** Real-time search predictions as the user types.
+- **Comprehensive Metadata:** Accurate view counts, durations, and high-resolution thumbnail extraction.
+- **Media Stream Logic:** Integrated handlers for direct stream URL retrieval and transcript fetching.
 
-This package is included as a local dependency in the `:python` module. It is automatically initialized alongside the Python engine in `MainApplication.kt` and utilized by `main.py` for all YouTube search queries.
+## 🛠 Integration
+
+This package serves as a local dependency for the `:python` module. It is initialized during the application startup and is the primary engine behind every YouTube query made in **MediaHub**.
 
 ---
 
-*Part of the [DasMediaHub](https://github.com/Gomida05/DasMediaHub) project.*
+*Part of the [DasMediaHub](https://github.com/Gomida05/DasMediaHub) project ecosystem.*

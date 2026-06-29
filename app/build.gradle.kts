@@ -34,8 +34,8 @@ android {
         applicationId = "com.das.mediaHub"
         minSdk = 26
         targetSdk = 37
-        versionCode = 15
-        versionName = "15.0"
+        versionCode = 16
+        versionName = "16.0"
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
 
@@ -124,6 +124,8 @@ dependencies {
     implementation(libs.coil.video)
 
 
+    //WorkManager
+    implementation(libs.androidx.work.runtime.ktx)
     //Material 3
     implementation(platform(libs.compose.bom))
     implementation(libs.material3)
@@ -140,6 +142,8 @@ dependencies {
     implementation(libs.hilt.android)
     ksp(libs.hilt.compiler)
     implementation(libs.hilt.navigation.compose)
+    implementation(libs.androidx.hilt.work)
+    ksp(libs.androidx.hilt.compiler)
 
     //preview
     implementation(libs.ui.tooling.preview)

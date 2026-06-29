@@ -4,6 +4,7 @@ import android.net.ConnectivityManager
 import android.net.ConnectivityManager.NetworkCallback
 import android.net.Network
 import android.net.NetworkCapabilities
+import com.das.mediaHub.data.model.NetworkDataClass
 import kotlinx.coroutines.channels.awaitClose
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.callbackFlow
@@ -101,4 +102,27 @@ class NetworkObserver @Inject constructor(
             }
         }
             .distinctUntilChanged()
+
+    override fun observe(): Flow<ConnectivityObserver.Status> {
+        return callbackFlow {
+            val currentNetwork = connectivityManager.activeNetwork
+            val capabilities = connectivityManager.getNetworkCapabilities(currentNetwork)
+            val isConnected = capabilities?.hasCapability(NetworkCapabilities.NET_CAPABILITY_VALIDATED) == true
+
+            trySend(if (isConnected) {
+                ConnectivityObserver.Status.Available
+            } else {
+                ConnectivityObserver.Status.Unavailable
+            })
+
+            val callback = object : NetworkCallback() {
+                override fun onAvailable(network: Network) { trySend(ConnectivityObserver.Status.Available) }
+                override fun onLosing(network: Network, maxMsToLive: Int) { trySend(ConnectivityObserver.Status.Losing) }
+                override fun onLost(network: Network) { trySend(ConnectivityObserver.Status.Lost) }
+                override fun onUnavailable() { trySend(ConnectivityObserver.Status.Unavailable) }
+            }
+                connectivityManager.registerDefaultNetworkCallback(callback)
+            awaitClose { connectivityManager.unregisterNetworkCallback(callback) }
+        }.distinctUntilChanged()
+    }
 }

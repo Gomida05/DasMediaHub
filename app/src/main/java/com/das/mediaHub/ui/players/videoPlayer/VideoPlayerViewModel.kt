@@ -11,7 +11,7 @@ import com.das.mediaHub.data.error.ErrorMapper
 import com.das.mediaHub.data.error.ErrorMapper.MSG_GENERIC
 import com.das.mediaHub.data.mediacontroller.online.VideoPlayerListener
 import com.das.mediaHub.data.mediacontroller.online.VideoPlayerManager
-import com.das.mediaHub.data.model.state.UiState
+import com.das.mediaHub.data.model.interfaces.UiState
 import com.das.mediaHub.data.model.state.VideoPlayerState
 import com.das.mediaHub.data.model.state.VideoUiState
 import com.das.mediaHub.data.model.state.VideoUiState.Companion.toVideoUiState
@@ -111,6 +111,7 @@ class VideoPlayerViewModel @Inject constructor(
         fetchVideoDetails(videoId)
     }
 
+
     /**
      * Refreshes the current video data.
      */
@@ -118,7 +119,7 @@ class VideoPlayerViewModel @Inject constructor(
         loadVideo(_uiState.value.videoId)
     }
 
-    private fun fetchStreamUrl(videoId: String) {
+    fun fetchStreamUrl(videoId: String) {
         viewModelScope.launch {
             try {
                 val streamUrl = YouTuber.getVideoStreamUrl(videoId)
@@ -188,7 +189,7 @@ class VideoPlayerViewModel @Inject constructor(
                     fetchSuggestions(videoId, formattedDetails.title)
                 }
             } catch (e: SerializationException) {
-                _uiState.update { it.copy(detailsState = UiState.Error(ErrorMapper.mapMessage(e.message))) }
+                _uiState.update { it.copy(detailsState = UiState.Error(ErrorMapper.map(e))) }
                 Log.e("VideoPlayer", "Error parsing video details JSON: ${e.message}")
             } catch (e: Exception) {
                 _uiState.update { it.copy(detailsState = UiState.Error(ErrorMapper.map(e))) }

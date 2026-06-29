@@ -21,10 +21,17 @@ import io.ktor.serialization.kotlinx.json.json
 import kotlinx.serialization.json.Json
 import javax.inject.Singleton
 
+/**
+ * Hilt module for providing network-related dependencies, including Ktor [HttpClient]
+ * and connectivity observers.
+ */
 @Module
 @InstallIn(SingletonComponent::class)
 object NetworkModule {
 
+    /**
+     * Provides the singleton [ConnectivityObserver] to monitor network status.
+     */
     @Provides
     @Singleton
     fun provideConnectivityObserver(
@@ -33,6 +40,10 @@ object NetworkModule {
         return NetworkObserver(connectivityManager)
     }
 
+    /**
+     * Provides a singleton [HttpClient] configured with Ktor's CIO engine,
+     * JSON serialization, and response validation.
+     */
     @Provides
     @Singleton
     fun provideHttpClient(): HttpClient {
@@ -62,7 +73,9 @@ object NetworkModule {
         }
     }
 
-
+    /**
+     * Provides the singleton [ConnectivityManager] system service.
+     */
     @Provides
     @Singleton
     fun provideConnectivityManager(

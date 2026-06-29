@@ -59,9 +59,9 @@ import androidx.compose.ui.window.Dialog
 import coil.compose.AsyncImage
 import com.das.downloader.data.model.download.DownloadType
 import com.das.mediaHub.data.model.TopPopUp
-import com.das.mediaHub.data.model.VideoAction
+import com.das.mediaHub.data.model.interfaces.VideoAction
 import com.das.mediaHub.data.model.icons.filled.YouTubeIcon
-import com.das.mediaHub.data.model.state.UiState
+import com.das.mediaHub.data.model.interfaces.UiState
 import com.das.mediaHub.ui.components.ErrorStateView
 import com.das.mediaHub.ui.components.dialogs.ActionMenuItem
 import com.das.mediaHub.ui.notification.TopPopupNotification.showNotificationDialog
@@ -240,7 +240,7 @@ internal fun VideoDetailsComposable(
                                     VideoAction.Download(
                                     id = videoId,
                                     title = title,
-                                    type = DownloadType.MUSIC
+                                    type = DownloadType.YOUTUBE_AUDIO
                                 )
                                 )
                             }
@@ -255,7 +255,7 @@ internal fun VideoDetailsComposable(
                                     VideoAction.Download(
                                         id = videoId,
                                         title = title,
-                                        type = DownloadType.VIDEO
+                                        type = DownloadType.YOUTUBE_VIDEO
                                     )
                                 )
                             }

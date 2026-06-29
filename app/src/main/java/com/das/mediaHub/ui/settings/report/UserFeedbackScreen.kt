@@ -75,8 +75,8 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
-import com.das.mediaHub.data.model.FeedBackCategory
-import com.das.mediaHub.data.model.ModeType
+import com.das.mediaHub.data.model.enums.FeedBackCategory
+import com.das.mediaHub.data.model.enums.ModeType
 import com.das.mediaHub.ui.settings.aboutBackgroundBrush
 
 @Composable

@@ -17,22 +17,44 @@ import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
 import androidx.activity.viewModels
+import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.layout.widthIn
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Info
-import androidx.compose.runtime.CompositionLocalProvider
+import androidx.compose.material.icons.filled.InstallMobile
+import androidx.compose.material.icons.filled.Schedule
+import androidx.compose.material.icons.filled.SystemUpdate
+import androidx.compose.material3.Button
+import androidx.compose.material3.Icon
+import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.Surface
+import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
+import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.retain.retain
 import androidx.compose.runtime.setValue
+import androidx.compose.ui.Alignment
+import androidx.compose.ui.Modifier
+import androidx.compose.ui.unit.dp
+import androidx.compose.ui.window.Dialog
 import androidx.core.content.FileProvider
 import androidx.core.content.IntentCompat.getParcelableExtra
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.media3.common.MediaItem
 import androidx.media3.exoplayer.ExoPlayer
-import coil.ImageLoader
-import coil.decode.VideoFrameDecoder
-import com.das.mediaHub.core.LocalImageLoader
 import com.das.mediaHub.data.constants.Action.ACTION_START
 import com.das.mediaHub.data.constants.DownloadConstants.DOWNLOAD_FINISHED
+import com.das.mediaHub.data.constants.Notifications.OPEN_IT_NOW
 import com.das.mediaHub.data.model.TopPopUp
 import com.das.mediaHub.navigation.AppBackStack
 import com.das.mediaHub.navigation.Destination
@@ -40,7 +62,7 @@ import com.das.mediaHub.navigation.Destination.Downloaded
 import com.das.mediaHub.navigation.Destination.OnlineVideoPlayer
 import com.das.mediaHub.navigation.Destination.Searcher
 import com.das.mediaHub.navigation.Destination.Setting
-import com.das.mediaHub.network.ConnectivityViewModel
+import com.das.mediaHub.network.MainViewModel
 import com.das.mediaHub.services.media.local.LocalBackGroundPlayer
 import com.das.mediaHub.ui.notification.TopPopupNotification.showNotificationDialog
 import com.das.mediaHub.ui.theme.DasMediaHubTheme
@@ -55,47 +77,167 @@ import javax.inject.Inject
 @AndroidEntryPoint
 class MainActivity : ComponentActivity() {
 
-    private var pendingIntent by mutableStateOf<Intent?>(null)
-
-    private val imageLoaderLocal by lazy {
-        ImageLoader.Builder(applicationContext)
-            .components { add(VideoFrameDecoder.Factory()) }
-            .build()
-    }
+    private var pendingIntent: Intent? = null
 
     @Inject
     lateinit var justExoPlayer: ExoPlayer
 
-    private val connectivityViewModel by viewModels<ConnectivityViewModel>()
-
+    private val viewModel by viewModels<MainViewModel>()
 
     override fun onCreate(savedInstanceState: Bundle?) {
         enableEdgeToEdge()
         super.onCreate(savedInstanceState)
-        onNewIntent(intent)
+        updateNewIntent(intent)
         setContent {
-            CompositionLocalProvider(
-                LocalImageLoader provides imageLoaderLocal
-            ) {
-                val networkState by connectivityViewModel.networkState.collectAsStateWithLifecycle()
-                DasMediaHubTheme {
-                    MainApp(
-                        isConnected = networkState.isConnected,
-                        pendingIntent = pendingIntent,
-                        onHandleIntent = { intent, backStack ->
-                            handleNavIntent(intent = intent, backStack = backStack)
-                            pendingIntent = null
-                        },
-                        openNetworkSetting = {
-                            val intent = if (SDK_INT >= Build.VERSION_CODES.Q) {
-                                Intent(Settings.Panel.ACTION_INTERNET_CONNECTIVITY)
-                            } else {
-                                Intent(Settings.ACTION_WIRELESS_SETTINGS)
-                            }
+            var updateApkFile by retain {
+                mutableStateOf<File?>(null)
+            }
+            val showUpdateDialog by viewModel.showUpdateDialog.collectAsStateWithLifecycle()
 
-                            startActivity(intent)
+            val networkState by viewModel.networkState.collectAsStateWithLifecycle()
+            val pendingUpdate by viewModel.pendingUpdate.collectAsStateWithLifecycle()
+
+            LaunchedEffect(pendingUpdate) {
+                val path = pendingUpdate.apkPath ?: return@LaunchedEffect
+
+                val file = File(path)
+
+                if (file.exists() && pendingUpdate.versionCode > BuildConfig.VERSION_CODE) {
+                    updateApkFile = file
+                    viewModel.setShowUpdateDialog(true)
+                } else if (file.exists()) {
+                    file.delete()
+                    viewModel.clearPendingUpdate()
+                }
+            }
+
+            DasMediaHubTheme {
+                MainApp(
+                    status = networkState,
+                    pendingIntent = pendingIntent,
+                    onHandleIntent = { intent, backStack ->
+                        backStack.handleNavIntent(intent = intent)
+                    },
+                    openNetworkSetting = {
+                        handleNetwork()
+                    },
+                    onShowMainUpdateDialog = {
+                        viewModel.setShowUpdateDialog(true)
+                    }
+                )
+
+                if (showUpdateDialog) {
+                    DasUpdateDialog(
+                        onInstall = {
+                            updateApkFile?.let { installApk(it) }
+                            viewModel.setShowUpdateDialog(false)
                         },
+                        notNow = {
+                            viewModel.setShowUpdateDialog(false)
+                        },
+                        onCancel = {
+                            updateApkFile?.delete()
+                            updateApkFile = null
+                            viewModel.clearPendingUpdate()
+                            viewModel.setShowUpdateDialog(false)
+                        }
                     )
+                }
+            }
+        }
+    }
+    @Composable
+    private fun DasUpdateDialog(
+        onInstall: () -> Unit,
+        notNow: () -> Unit,
+        onCancel: () -> Unit
+    ) {
+        Dialog(onDismissRequest = { /* locked */ }) {
+            Surface(
+                shape = MaterialTheme.shapes.extraLarge,
+                color = MaterialTheme.colorScheme.surface,
+                tonalElevation = 6.dp
+            ) {
+                Column(
+                    modifier = Modifier
+                        .padding(24.dp)
+                        .widthIn(min = 280.dp)
+                ) {
+
+                    Text(
+                        text = "Update available",
+                        style = MaterialTheme.typography.headlineSmall
+                    )
+
+                    Spacer(Modifier.height(12.dp))
+
+                    Text(
+                        text = "A new version has finished downloading and is ready to install.",
+                        style = MaterialTheme.typography.bodyMedium,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+
+                    Spacer(Modifier.height(20.dp))
+
+                    Column {
+                        Row(verticalAlignment = Alignment.CenterVertically) {
+                            Icon(
+                                imageVector = Icons.Default.SystemUpdate,
+                                contentDescription = null,
+                                tint = MaterialTheme.colorScheme.primary
+                            )
+                            Spacer(Modifier.width(8.dp))
+                            Text("Improved performance and bug fixes")
+                        }
+
+                        Spacer(Modifier.height(8.dp))
+
+                        Row(verticalAlignment = Alignment.CenterVertically) {
+                            Icon(
+                                imageVector = Icons.Default.Schedule,
+                                contentDescription = null,
+                                tint = MaterialTheme.colorScheme.secondary
+                            )
+                            Spacer(Modifier.width(8.dp))
+                            Text("Installation takes less than a minute")
+                        }
+                    }
+
+                    Spacer(Modifier.height(24.dp))
+
+                    // Secondary actions
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.SpaceBetween
+                    ) {
+                        TextButton(onClick = onCancel) {
+                            Text("No")
+                        }
+
+                        TextButton(onClick = notNow) {
+                            Icon(
+                                imageVector = Icons.Default.Schedule,
+                                contentDescription = null
+                            )
+                            Spacer(Modifier.width(6.dp))
+                            Text("Later")
+                        }
+                    }
+
+                    Spacer(Modifier.height(12.dp))
+
+                    // Primary action
+                    Button(
+                        onClick = onInstall,
+                        modifier = Modifier.fillMaxWidth()
+                    ) {
+                        Icon(
+                            imageVector = Icons.Default.InstallMobile,
+                            contentDescription = null
+                        )
+                        Spacer(Modifier.width(6.dp))
+                        Text("Install update")
+                    }
                 }
             }
         }
@@ -103,7 +245,10 @@ class MainActivity : ComponentActivity() {
 
     override fun onNewIntent(intent: Intent) {
         super.onNewIntent(intent)
-        pendingIntent = intent
+        updateNewIntent(intent)
+    }
+    private fun updateNewIntent(newIntent: Intent?) {
+        pendingIntent = newIntent
     }
 
 
@@ -113,32 +258,42 @@ class MainActivity : ComponentActivity() {
     }
 
 
-    private fun handleNavIntent(intent: Intent, backStack: AppBackStack) {
+
+    private fun AppBackStack.handleNavIntent(intent: Intent) {
         when (intent.action) {
-            Intent.ACTION_SEND -> handleSendIntent(intent, backStack)
-            Intent.ACTION_VIEW -> handleViewIntent(intent, backStack)
+            Intent.ACTION_SEND -> handleSendIntent(intent)
+            Intent.ACTION_VIEW -> handleViewIntent(intent)
             DOWNLOAD_FINISHED -> handleDownloadFinished(intent)
-            Intent.ACTION_APPLICATION_PREFERENCES -> backStack.add(Setting)
+            Intent.ACTION_APPLICATION_PREFERENCES -> add(Setting)
+            OPEN_IT_NOW -> {
+                intent.getStringExtra("VideoID")?. let {
+                    add(
+                        OnlineVideoPlayer(
+                            it
+                        )
+                    )
+                }
+            }
         }
+        updateNewIntent(null)
     }
 
 
-    private fun handleSendIntent(
-        intent: Intent,
-        backStack: AppBackStack
+    private fun AppBackStack.handleSendIntent(
+        intent: Intent
     ) {
         val type = intent.type.orEmpty()
 
         when {
             type.startsWith("text/") -> {
                 val sharedText = intent.getStringExtra(EXTRA_TEXT).orEmpty()
-                handleSharedText(sharedText, backStack)
+                handleSharedText(sharedText)
             }
 
             type.startsWith("video/") -> {
                 val uri = intent.getSharedUri()
                 if (uri != null) {
-                    backStack.add(Destination.LocalVideoPlayer(uri.toString()))
+                    add(Destination.LocalVideoPlayer(uri.toString()))
                 } else {
                     showInfoMessage("Video not found")
                 }
@@ -159,9 +314,8 @@ class MainActivity : ComponentActivity() {
         }
     }
 
-    private fun handleViewIntent(
-        intent: Intent,
-        backStack: AppBackStack
+    private fun AppBackStack.handleViewIntent(
+        intent: Intent
     ) {
         val uri = intent.data
         if (uri == null) {
@@ -170,7 +324,7 @@ class MainActivity : ComponentActivity() {
         }
 
         when {
-            isVideoUri(uri) -> backStack.add(Destination.LocalVideoPlayer(uri.toString()))
+            isVideoUri(uri) -> add(Destination.LocalVideoPlayer(uri.toString()))
             isAudioUri(uri) -> {
                 uri.path?.let {
                     playAudio(it)
@@ -181,35 +335,34 @@ class MainActivity : ComponentActivity() {
         }
     }
 
-    private fun handleSharedText(
-        sharedText: String,
-        backStack: AppBackStack
+    private fun AppBackStack.handleSharedText(
+        sharedText: String
     ) {
         when {
             sharedText.startsWith("DownloadsPageFr") -> {
-                backStack.add(Downloaded)
+                add(Downloaded)
             }
 
             sharedText.isValidYoutubeURL() -> {
                 val videoId = sharedText.youtubeExtractor()
                 if (videoId != null) {
-                    backStack.add(OnlineVideoPlayer(videoId))
+                    add(OnlineVideoPlayer(videoId))
                 } else {
-                    backStack.add(Searcher(sharedText))
+                    add(Searcher(sharedText))
                 }
             }
 
             sharedText.isValidYouTubePlaylistUrl() -> {
                 val playlistId = extractPlaylistId(sharedText)
                 if (playlistId != null) {
-                    backStack.add(OnlineVideoPlayer(playlistId))
+                    add(OnlineVideoPlayer(playlistId))
                 } else {
-                    backStack.add(Searcher(sharedText))
+                    add(Searcher(sharedText))
                 }
             }
 
             else -> {
-                backStack.add(Searcher(sharedText))
+                add(Searcher(sharedText))
             }
         }
     }
@@ -223,7 +376,7 @@ class MainActivity : ComponentActivity() {
 
         val apkUri = FileProvider.getUriForFile(
             this@MainActivity,
-            "${this@MainActivity.packageName}.file-provider",
+            "${this@MainActivity.packageName}.provider",
             file
         )
 
@@ -285,10 +438,19 @@ class MainActivity : ComponentActivity() {
         }
     }
 
+    private fun handleNetwork() {
+        val intent = if (SDK_INT >= Build.VERSION_CODES.Q) {
+            Intent(Settings.Panel.ACTION_INTERNET_CONNECTIVITY)
+        } else {
+            Intent(Settings.ACTION_WIRELESS_SETTINGS)
+        }
+
+        startActivity(intent)
+    }
 
     override fun onDestroy() {
         super.onDestroy()
-        pendingIntent = null
+        updateNewIntent(null)
     }
 
 }

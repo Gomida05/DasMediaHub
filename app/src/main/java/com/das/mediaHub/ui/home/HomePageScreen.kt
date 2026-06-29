@@ -2,6 +2,7 @@ package com.das.mediaHub.ui.home
 
 import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.animation.core.spring
+import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
@@ -10,6 +11,7 @@ import androidx.compose.foundation.interaction.collectIsPressedAsState
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.WindowInsets
@@ -26,6 +28,7 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.AutoAwesome
 import androidx.compose.material.icons.filled.Download
+import androidx.compose.material.icons.filled.Link
 import androidx.compose.material.icons.filled.PlayCircle
 import androidx.compose.material.icons.filled.Search
 import androidx.compose.material.icons.outlined.Info
@@ -53,23 +56,28 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.navigation3.runtime.NavKey
-import com.das.mediaHub.data.model.icons.filled.InstagramIcon
-import com.das.mediaHub.data.model.icons.filled.TikTokIcon
 import com.das.mediaHub.data.model.icons.filled.YouTubeIcon
 import com.das.mediaHub.navigation.Destination
 import com.das.mediaHub.navigation.Destination.Searcher
+import com.das.mediaHub.navigation.Destination.SocialDownloader
+import com.das.mediaHub.ui.components.dialogs.ClipboardAlertDialog
 
 @Composable
 fun HomePageScreen(navigate: (NavKey) -> Unit) {
 
     val topAppBarScrollBehavior = TopAppBarDefaults.enterAlwaysScrollBehavior()
+
     Scaffold(
         containerColor = MaterialTheme.colorScheme.background,
         contentWindowInsets = WindowInsets.safeContent,
         topBar = {
             TopAppBar(
                 title = {
-                    Row(verticalAlignment = Alignment.CenterVertically) {
+                    Row(
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.Center,
+                        modifier = Modifier.fillMaxWidth()
+                    ) {
                         Icon(
                             imageVector = Icons.Default.PlayCircle,
                             contentDescription = "Logo",
@@ -111,6 +119,7 @@ fun HomePageScreen(navigate: (NavKey) -> Unit) {
         modifier = Modifier.nestedScroll(topAppBarScrollBehavior.nestedScrollConnection)
     ) { paddingValues ->
 
+
         LazyColumn(
             modifier = Modifier
                 .fillMaxSize()
@@ -125,18 +134,27 @@ fun HomePageScreen(navigate: (NavKey) -> Unit) {
                         endY = 1200f
                     )
                 ),
-            contentPadding = paddingValues,
+            contentPadding = PaddingValues(
+                top = paddingValues.calculateTopPadding() + 16.dp,
+                bottom = paddingValues.calculateBottomPadding() + 32.dp,
+                start = 20.dp,
+                end = 20.dp
+            ),
             verticalArrangement = Arrangement.spacedBy(32.dp)
         ) {
             item {
-                HeroSection(onSearchClick = { navigate(Searcher("")) })
+                Box(
+                    contentAlignment = Alignment.Center,
+                    modifier = Modifier.fillMaxWidth()
+                ) {
+                    HeroSection(onSearchClick = { navigate(Searcher("")) })
+                }
             }
 
             item {
                 PlatformSection(
                     onYoutubeClick = { navigate(Searcher("")) },
-                    onTikTokClick = { navigate(Destination.TikTok) },
-                    onInstagramClick = { navigate(Destination.Instagram) }
+                    onPasteUrlClick = { navigate(SocialDownloader()) }
                 )
             }
 
@@ -144,6 +162,10 @@ fun HomePageScreen(navigate: (NavKey) -> Unit) {
                 InfoBanner()
                 Spacer(modifier = Modifier.height(32.dp))
             }
+        }
+
+        ClipboardAlertDialog { socialUrl ->
+            navigate(SocialDownloader(newUrl = socialUrl))
         }
     }
 }
@@ -156,7 +178,7 @@ private fun HeroSection(onSearchClick: () -> Unit) {
     ) {
         Surface(
             shape = CircleShape,
-            color = MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.6f)
+            color = MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.4f)
         ) {
             Row(
                 modifier = Modifier.padding(horizontal = 12.dp, vertical = 6.dp),
@@ -170,7 +192,7 @@ private fun HeroSection(onSearchClick: () -> Unit) {
                     modifier = Modifier.size(14.dp)
                 )
                 Text(
-                    text = "ALL-IN-ONE HUB",
+                    text = "DISCOVER",
                     style = MaterialTheme.typography.labelMedium.copy(
                         fontWeight = FontWeight.Bold,
                         letterSpacing = 1.sp
@@ -181,7 +203,7 @@ private fun HeroSection(onSearchClick: () -> Unit) {
         }
 
         Text(
-            text = "Streamline your\nentertainment.",
+            text = "Your media universe,\nall in one place.",
             style = MaterialTheme.typography.displaySmall.copy(
                 fontWeight = FontWeight.Black,
                 lineHeight = 44.sp,
@@ -199,6 +221,7 @@ private fun HeroSection(onSearchClick: () -> Unit) {
                 .clickable { onSearchClick() },
             color = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.4f),
             shape = RoundedCornerShape(16.dp),
+            border = BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.2f))
         ) {
             Row(
                 modifier = Modifier.padding(16.dp),
@@ -211,7 +234,7 @@ private fun HeroSection(onSearchClick: () -> Unit) {
                 )
                 Spacer(modifier = Modifier.width(12.dp))
                 Text(
-                    text = "Search videos, music, and more...",
+                    text = "Search for anything...",
                     style = MaterialTheme.typography.bodyLarge,
                     color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.7f)
                 )
@@ -223,14 +246,13 @@ private fun HeroSection(onSearchClick: () -> Unit) {
 @Composable
 private fun PlatformSection(
     onYoutubeClick: () -> Unit,
-    onTikTokClick: () -> Unit,
-    onInstagramClick: () -> Unit
+    onPasteUrlClick: () -> Unit
 ) {
     Column(
         verticalArrangement = Arrangement.spacedBy(20.dp)
     ) {
         Text(
-            text = "Explore Platforms",
+            text = "Get Started",
             style = MaterialTheme.typography.titleLarge.copy(
                 fontWeight = FontWeight.ExtraBold,
                 letterSpacing = (-0.5).sp
@@ -241,39 +263,20 @@ private fun PlatformSection(
         // Featured Card (YouTube)
         PlatformCard(
             title = "YouTube",
-            subtitle = "Videos, music & full playback",
+            subtitle = "Watch, listen, and enjoy without limits",
             icon = Icons.Default.YouTubeIcon,
             accentColor = Color(0xFFFF0000),
             isFeatured = true,
             onClick = onYoutubeClick
         )
 
-        // Secondary Cards Row
-        Row(
-            modifier = Modifier.fillMaxWidth(),
-            horizontalArrangement = Arrangement.spacedBy(16.dp)
-        ) {
-            Box(modifier = Modifier.weight(1f)) {
-                PlatformCard(
-                    title = "TikTok",
-                    subtitle = "Trending clips",
-                    icon = Icons.Default.TikTokIcon,
-                    accentColor = Color(0xFF25F4EE), // Adjusted for better visibility
-                    isBeta = true,
-                    onClick = onTikTokClick
-                )
-            }
-            Box(modifier = Modifier.weight(1f)) {
-                PlatformCard(
-                    title = "Instagram",
-                    subtitle = "Reels & posts",
-                    icon = Icons.Default.InstagramIcon,
-                    accentColor = Color(0xFFE1306C),
-                    isBeta = true,
-                    onClick = onInstagramClick
-                )
-            }
-        }
+        PlatformCard(
+            title = "Paste URL",
+            subtitle = "Save your favorite social media clips",
+            icon = Icons.Default.Link,
+            accentColor = MaterialTheme.colorScheme.primary,
+            onClick = onPasteUrlClick
+        )
     }
 }
 
@@ -284,14 +287,13 @@ private fun PlatformCard(
     icon: ImageVector,
     accentColor: Color,
     isFeatured: Boolean = false,
-    isBeta: Boolean = false,
     onClick: () -> Unit
 ) {
     val interactionSource = remember { MutableInteractionSource() }
     val isPressed by interactionSource.collectIsPressedAsState()
 
     val scale by animateFloatAsState(
-        targetValue = if (isPressed) 0.94f else 1f,
+        targetValue = if (isPressed) 0.96f else 1f,
         animationSpec = spring(dampingRatio = 0.6f, stiffness = 300f),
         label = "card_scale"
     )
@@ -302,7 +304,7 @@ private fun PlatformCard(
             brush = Brush.horizontalGradient(
                 colors = listOf(
                     MaterialTheme.colorScheme.surface,
-                    accentColor.copy(alpha = 0.05f)
+                    accentColor.copy(alpha = 0.08f)
                 )
             )
         )
@@ -317,7 +319,7 @@ private fun PlatformCard(
             .scale(scale)
             .border(
                 width = if (isFeatured) 1.5.dp else 1.dp,
-                color = if (isFeatured) accentColor.copy(alpha = 0.3f) else MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.3f),
+                color = if (isFeatured) accentColor.copy(alpha = 0.4f) else MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.3f),
                 shape = RoundedCornerShape(24.dp)
             ),
         shape = RoundedCornerShape(24.dp),
@@ -355,9 +357,6 @@ private fun PlatformCard(
                         verticalAlignment = Alignment.Top
                     ) {
                         IconContainer(icon = icon, accentColor = accentColor, size = 48.dp)
-                        if (isBeta) {
-                            BetaTag()
-                        }
                     }
                     Spacer(modifier = Modifier.height(20.dp))
                     Text(
@@ -396,30 +395,12 @@ private fun IconContainer(icon: ImageVector, accentColor: Color, size: androidx.
 }
 
 @Composable
-private fun BetaTag() {
-    Surface(
-        color = MaterialTheme.colorScheme.tertiaryContainer,
-        shape = CircleShape
-    ) {
-        Text(
-            text = "BETA",
-            modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp),
-            style = MaterialTheme.typography.labelSmall.copy(
-                fontWeight = FontWeight.Black,
-                fontSize = 9.sp,
-                letterSpacing = 0.5.sp
-            ),
-            color = MaterialTheme.colorScheme.onTertiaryContainer
-        )
-    }
-}
-
-@Composable
 private fun InfoBanner() {
     Surface(
         modifier = Modifier.fillMaxWidth(),
-        color = MaterialTheme.colorScheme.secondaryContainer.copy(alpha = 0.4f),
-        shape = RoundedCornerShape(20.dp)
+        color = MaterialTheme.colorScheme.secondaryContainer.copy(alpha = 0.3f),
+        shape = RoundedCornerShape(24.dp),
+        border = BorderStroke(1.dp, MaterialTheme.colorScheme.secondary.copy(alpha = 0.1f))
     ) {
         Row(
             modifier = Modifier.padding(20.dp),
@@ -434,13 +415,13 @@ private fun InfoBanner() {
             )
             Column {
                 Text(
-                    text = "Tip: Start with YouTube",
+                    text = "Pro Tip: Picture-in-Picture",
                     style = MaterialTheme.typography.titleSmall.copy(fontWeight = FontWeight.Bold),
                     color = MaterialTheme.colorScheme.onSecondaryContainer
                 )
                 Spacer(modifier = Modifier.height(6.dp))
                 Text(
-                    text = "Browse, play, and use Picture-in-Picture seamlessly. TikTok and Instagram integrations are actively being improved.",
+                    text = "You can watch YouTube videos in a floating window while using other apps. Try it now!",
                     style = MaterialTheme.typography.bodyMedium,
                     color = MaterialTheme.colorScheme.onSecondaryContainer.copy(alpha = 0.8f),
                     lineHeight = 20.sp

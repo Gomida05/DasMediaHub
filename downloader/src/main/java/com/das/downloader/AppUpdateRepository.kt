@@ -2,10 +2,12 @@ package com.das.downloader
 
 import com.das.downloader.data.model.AppUpdateInfo
 import com.das.downloader.data.model.UpdateRootResponse
+import com.das.python.PythonMain.decodeStringToJson
 import io.ktor.client.HttpClient
 import io.ktor.client.call.body
 import io.ktor.client.plugins.timeout
 import io.ktor.client.request.get
+import io.ktor.client.statement.bodyAsText
 
 /**
  * Repository responsible for fetching and parsing application update information
@@ -48,9 +50,10 @@ class AppUpdateRepository(
                 requestTimeoutMillis = 10_000
                 connectTimeoutMillis = 10_000
             }
-        }.body<UpdateRootResponse>()
+        }
+        val json = response.bodyAsText().decodeStringToJson<UpdateRootResponse>()
 
-        val dasMediaHub = response.apps?.dasMediaHub
+        val dasMediaHub = json.apps?.dasMediaHub
             ?: throw IllegalStateException("Missing 'apps' or 'DasMediaHub' object")
 
         if (dasMediaHub.latestVersionCode == -1 || dasMediaHub.apkUrl.isBlank()) {
