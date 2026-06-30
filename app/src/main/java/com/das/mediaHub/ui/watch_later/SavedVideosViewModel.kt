@@ -25,6 +25,7 @@ import kotlinx.coroutines.flow.onStart
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
 import javax.inject.Inject
+import kotlin.time.Duration.Companion.milliseconds
 
 @HiltViewModel
 class SavedVideosViewModel @Inject constructor(
@@ -39,7 +40,7 @@ class SavedVideosViewModel @Inject constructor(
 
     @OptIn(ExperimentalCoroutinesApi::class, FlowPreview::class)
     val uiState = _searchQuery
-        .debounce(300)
+        .debounce(300.milliseconds)
         .flatMapLatest { query ->
             dbHelper.allSavedVideos
                 .map { list ->

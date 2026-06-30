@@ -5,8 +5,6 @@ import com.das.python.data.model.ItemsStreamUrlsForMediaItemData
 import com.das.python.data.model.PlayListDataClass
 import com.das.python.data.model.VideosListData
 import com.das.python.data.model.responds.ApiResponse
-import com.das.python.data.model.responds.RespondVideoDetails
-import com.das.python.data.model.responds.ResponseVideo
 import com.das.python.data.model.searcher.SearchResponse
 import com.das.python.exceptions.PyCallError
 import java.net.URL
@@ -271,14 +269,14 @@ object YouTuber {
      *
      * Example:
      * ```
-     * val date = YouTuber.formatDateFromLong(1698393600000L) // "27/10/2023"
+     * val date = 1698393600000L.toSimpleDate() // "27/10/2023"
      * ```
      *
-     * @param timestamp Epoch time in milliseconds.
+     * @receiver Epoch time in milliseconds.
      * @return Formatted date string.
      */
-    fun formatDateFromLong(timestamp: Long): String {
-        val date = Date(timestamp)
+    fun Long.toSimpleDate(): String {
+        val date = Date(this)
         val dateFormat = SimpleDateFormat("dd/MM/yyyy", Locale.getDefault())
         return dateFormat.format(date)
     }
@@ -311,6 +309,40 @@ object YouTuber {
             viewsLong >= 1_000 -> "%.1fK".format(viewsLong / 1_000.0)
             else -> "$viewsLong"
         }
+    }
+
+    /**
+     * Converts a file size in bytes into a human-readable string.
+     *
+     * Example:
+     * ```
+     * val size = 1048576L.toHumanReadable() // "1 MB"
+     * ```
+     *
+     * @receiver Size in bytes.
+     * @return Formatted string with appropriate unit (B, KB, MB, GB, TB, PB).
+     */
+    fun Long.toHumanReadable(): String {
+        if (this < 1024) return "$this B"
+
+        val units = arrayOf("KB", "MB", "GB", "TB", "PB")
+        var value = this.toDouble()
+        var unitIndex = -1
+
+        while (value >= 1024 && unitIndex < units.lastIndex) {
+            value /= 1024
+            unitIndex++
+        }
+
+        val formatted = if (value % 1.0 == 0.0) {
+            value.toInt().toString()
+        } else {
+            String.format(Locale.ROOT, "%.2f", value)
+                .trimEnd('0')
+                .trimEnd('.')
+        }
+
+        return "$formatted ${units[unitIndex]}"
     }
 
     /**

@@ -1,6 +1,5 @@
 package com.das.mediaHub.ui.social
 
-import android.util.Log
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.das.mediaHub.data.error.ErrorMapper
@@ -48,10 +47,9 @@ class SocialDownloaderViewModel : ViewModel() {
         viewModelScope.launch {
             try {
                 // Using getInstagramDetails for both platforms as the underlying logic is shared
-                val response = SocialMediaClient.getInstagramDetails(currentUrl)
+                val response = SocialMediaClient.getUrlInfo(currentUrl)
                 val result = response.result
                 if (response.success && result != null) {
-                    Log.d("Result from Social Media", result.toString())
                     _uiState.value = UiState.Success(result)
                 } else {
                     val rawError = response.error ?: "The content could not be retrieved. It might be private, deleted, or the link is invalid."

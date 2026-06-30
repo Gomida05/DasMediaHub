@@ -6,13 +6,14 @@ import com.das.python.data.model.FewVideoDetails
 import com.das.python.data.model.PlayListDataClass
 import com.das.python.data.model.responds.ApiResponse
 import com.das.python.data.model.searcher.SearchResponse
+import com.das.python.MainPyImpl
 
 /**
  * Interface representing the core Python operations available
  * in the `main.py` module.
  *
  * This interface is used to abstract the communication with Python.
- * Use [com.das.python.MainPyImpl] for the concrete implementation.
+ * Use [MainPyImpl] for the concrete implementation.
  */
 @PyModule("main")
 interface MainPy {

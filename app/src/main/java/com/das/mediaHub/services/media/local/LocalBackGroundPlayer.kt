@@ -3,6 +3,9 @@ package com.das.mediaHub.services.media.local
 import android.annotation.SuppressLint
 import android.app.Notification
 import android.content.Intent
+import android.content.pm.ServiceInfo
+import android.os.Build
+import androidx.core.app.NotificationCompat
 import androidx.media3.exoplayer.ExoPlayer
 import androidx.media3.session.MediaSession
 import androidx.media3.session.MediaSessionService
@@ -61,13 +64,14 @@ class LocalBackGroundPlayer: MediaSessionService() {
             .build()
             .apply {
                 setPlayer(player)
-                setMediaSessionToken(
-                    mediaSession.platformToken
-                )
+                setMediaSessionToken(mediaSession.platformToken)
+                setUseFastForwardAction(true)
+                setUseRewindAction(true)
+                setUseNextAction(true)
+                setUsePreviousAction(true)
+                setPriority(NotificationCompat.PRIORITY_MAX)
             }
         player.prepare()
-        playerNotificationManager
-
     }
     override fun onGetSession(controllerInfo: MediaSession.ControllerInfo): MediaSession {
         return mediaSession
@@ -75,21 +79,19 @@ class LocalBackGroundPlayer: MediaSessionService() {
 
     override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
         super.onStartCommand(intent, flags, startId)
-        val mediaId = intent?.getIntExtra("media_id", 0) ?: 0
-
-        if (mediaId == currentMediaId && player.isPlaying) return START_STICKY
-        if (mediaId == currentMediaId && !player.isPlaying) {
-            player.play()
-            return START_STICKY
-        }
-        currentMediaId = mediaId
+        val mediaId = intent?.getIntExtra(LOCAL_MEDIA_ID, 0) ?: 0
 
         when (intent?.action) {
             ACTION_START -> {
                 if (mediaId in 0 until player.mediaItemCount) {
-                    player.seekTo(mediaId, 0)
+                    if (player.currentMediaItemIndex != mediaId) {
+                        player.seekTo(mediaId, 0)
+                    }
                 }
                 player.play()
+                currentMediaId = mediaId
+                // Ensure player is attached to the manager to trigger metadata update
+                playerNotificationManager.setPlayer(player)
             }
 
             ACTION_PAUSE -> player.pause()
@@ -113,7 +115,15 @@ class LocalBackGroundPlayer: MediaSessionService() {
                 ongoing: Boolean
             ) {
                 if (ongoing) {
-                    startForeground(notificationId, notification)
+                    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
+                        startForeground(
+                            notificationId,
+                            notification,
+                            ServiceInfo.FOREGROUND_SERVICE_TYPE_MEDIA_PLAYBACK
+                        )
+                    } else {
+                        startForeground(notificationId, notification)
+                    }
                 }
             }
 
@@ -140,7 +150,8 @@ class LocalBackGroundPlayer: MediaSessionService() {
         super.onDestroy()
     }
 
-    private companion object {
+    companion object {
+        const val LOCAL_MEDIA_ID = "media_id"
         const val CHANNEL_ID = "MusicPlayerNotification"
         const val NOTIFICATION_ID = 95
         const val ACTION_START = "com.das.mediaHub.START_BACKGROUND_MEDIA"

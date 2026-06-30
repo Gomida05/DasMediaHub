@@ -34,8 +34,8 @@ android {
         applicationId = "com.das.mediaHub"
         minSdk = 26
         targetSdk = 37
-        versionCode = 16
-        versionName = "16.0"
+        versionCode = 17
+        versionName = "16.1"
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
 

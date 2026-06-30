@@ -28,6 +28,7 @@ object MediaModule {
      * Provides a configured instance of [ExoPlayer].
      * Configured for general media usage with network wake mode and audio focus handling.
      */
+    @Singleton
     @Provides
     fun provideJustExoPlayer(
         @ApplicationContext context: Context

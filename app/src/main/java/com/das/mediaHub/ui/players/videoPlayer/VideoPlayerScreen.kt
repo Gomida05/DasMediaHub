@@ -285,9 +285,7 @@ fun Context.handleAction(
                 },
                 onFailure = {
                     dialogState(
-                        ActionDialogState.Error(
-                            "Couldn't start background play. Please try again."
-                        )
+                        ActionDialogState.Error(message = it)
                     )
                 }
             )

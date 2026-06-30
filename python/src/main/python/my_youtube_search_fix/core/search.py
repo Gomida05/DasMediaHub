@@ -117,9 +117,23 @@ class SearchCore(RequestCore, RequestHandler, ComponentHandler):
             if playlistElementKey in element.keys() and findPlaylists:
                 self.resultComponents.append(self._getPlaylistComponent(element))
             if shelfElementKey in element.keys() and findVideos:
-                for shelfElement in self._getShelfComponent(element)['elements']:
-                    self.resultComponents.append(
-                        self._getVideoComponent(shelfElement, shelfTitle=self._getShelfComponent(element)['title']))
+                shelf = self._getShelfComponent(element)
+                if shelf and shelf.get("elements"):
+                    for shelfElement in shelf["elements"]:
+                        self.resultComponents.append(
+                            self._getVideoComponent(
+                                shelfElement,
+                                shelfTitle=shelf.get("title")
+                            )
+                        )
+                '''
+                # This commented code caused the following error:
+                # TypeError: 'NoneType' object is not iterable
+                # because _getShelfComponent(element) can return None.
+                # for shelfElement in self._getShelfComponent(element)['elements']:
+                #     self.resultComponents.append(
+                #         self._getVideoComponent(shelfElement, shelfTitle=self._getShelfComponent(element)['title']))
+                '''
             if richItemKey in element.keys() and findVideos:
                 richItemElement = self._getValue(element, [richItemKey, 'content'])
                 ''' Initial fallback handling for VideosSearch '''

@@ -35,12 +35,7 @@ enum class Names(val value: String) {
     GET_PLAYLIST_URL(value = "get_playlist_url"),
 
     /**
-     * [GET_TIKTOK_URL] is a function in Python that allows fetching the details.
+     * [GET_URL_EXTRACTOR] is a function in Python that allows fetching the details.
      */
-    GET_TIKTOK_URL(value = "get_video_stream"),
-
-    /**
-     * [GET_INSTAGRAM_URL] is a function in Python that allows fetching the details.
-     */
-    GET_INSTAGRAM_URL(value = "getInstagramVideo");
+    GET_URL_EXTRACTOR(value = "getInfoFromUrl")
 }

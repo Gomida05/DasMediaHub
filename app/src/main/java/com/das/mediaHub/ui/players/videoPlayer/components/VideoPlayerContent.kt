@@ -161,14 +161,6 @@ fun StandardVideoContent(
                     .weight(1f)
                     .fillMaxHeight()
             ) {
-                item {
-                    Text(
-                        text = "Up Next",
-                        style = MaterialTheme.typography.titleMedium,
-                        fontWeight = FontWeight.Bold,
-                        modifier = Modifier.padding(bottom = 12.dp, top = 8.dp)
-                    )
-                }
 
                 suggestionsContent(
                     suggestionsState = uiState.suggestionsState,
@@ -215,15 +207,6 @@ fun StandardVideoContent(
                 ) {
                     expanded = it
                 }
-            }
-
-            item {
-                Text(
-                    text = "Up Next",
-                    style = MaterialTheme.typography.titleMedium,
-                    fontWeight = FontWeight.Bold,
-                    modifier = Modifier.padding(start = 16.dp, top = 24.dp, bottom = 12.dp)
-                )
             }
 
             suggestionsContent(

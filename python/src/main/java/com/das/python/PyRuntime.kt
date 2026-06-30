@@ -40,6 +40,7 @@ object PyRuntime {
     val json = Json {
         ignoreUnknownKeys = true
         coerceInputValues = true
+        isLenient = true
     }
 
     /**

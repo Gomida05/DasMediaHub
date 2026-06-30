@@ -1,3 +1,15 @@
+"""Core media helper functions for YouTube extraction and search.
+
+This module provides JSON-friendly response wrappers and user-facing error
+messages for the app's Python backend.
+
+Example:
+    from main import get_video_url
+
+    response = get_video_url("https://www.youtube.com/watch?v=abc123")
+    print(response)
+"""
+
 from pytubefix import YouTube, Playlist
 from pytubefix.exceptions import (
     PytubeFixError,
@@ -8,10 +20,22 @@ from pytubefix.exceptions import (
 from my_youtube_search_fix import Video, VideosSearch
 from requests import RequestException
 from typing import Any, Optional
-import json, traceback, socket, ssl, time
+import json, traceback, socket, ssl
 
 ssl._create_default_https_context = ssl._create_unverified_context
+
+
 def make_response(success: bool, error: Optional[str] = None, result: Any = None):
+    """Return a JSON-serializable response payload.
+
+    Parameters:
+        success (bool): Whether the operation succeeded.
+        error (Optional[str]): A user-facing error message.
+        result (Any): The successful result payload.
+
+    Returns:
+        str: JSON string containing success, error, and result keys.
+    """
     return json.dumps(
         {
             "success": success,
@@ -22,96 +46,115 @@ def make_response(success: bool, error: Optional[str] = None, result: Any = None
 
 
 def get_video_url(video_url, retries: int = 3, delay: float = 1.0):
+    """Fetch the highest-resolution video stream URL for a YouTube link.
+
+    Parameters:
+        video_url (str): The YouTube video URL.
+        retries (int): Number of retry attempts on transient failure.
+        delay (float): Seconds to wait between retry attempts.
+
+    Returns:
+        str: JSON string with the video URL or an error message.
+
+    Example:
+        response = get_video_url("https://www.youtube.com/watch?v=abc123")
+    """
     last_error = None
 
-    for attempt in range(1, retries + 1):
-        try:
-            yt = YouTube(video_url)
+    try:
+        yt = YouTube(video_url)
+        stream = yt.streams.get_highest_resolution()
 
-            stream = yt.streams.get_highest_resolution()
+        if stream is None or not stream.url:
+            raise ExtractError("No valid stream found")
+    
+        return make_response(
+            success=True,
+            result=str(stream.url)
+        )
+    
+    except (VideoUnavailable, RegexMatchError) as e:
+        return make_response(
+            success=False,
+            error="The content is unavailable or cannot be accessed at this time."
+        )
+    
+    except (ExtractError, PytubeFixError) as e:
+        last_error = "We couldn't find a supported video format or stream for this link."
+    
+    except (ssl.SSLError, socket.error, RequestException):
+        last_error = "Secure connection failed. Please check your network or device date and time."
+    
+    except Exception as e:
+        last_error = str(e)
 
-            # if stream is None:
-                # stream = yt.streams.get_audio_only()
-
-            if stream is None or not stream.url:
-                raise ExtractError("No valid stream found")
-
-            return make_response(
-                success=True,
-                result=str(stream.url)
-            )
-
-        except (VideoUnavailable, RegexMatchError) as e:
-            return make_response(
-                success=False,
-                error=str(e) or "Video unavailable or invalid URL"
-            )
-
-        except (ExtractError, PytubeFixError) as e:
-            last_error = e
-
-        except (ssl.SSLError, socket.error, RequestException) as e:
-            last_error = f"Network/TLS error: {e}"
-
-        except Exception as e:
-            last_error = f"Unexpected error: {e}"
-
-
-        time.sleep(delay)
 
     # --- Final failure ---
     return make_response(
         success=False,
-        error=str(last_error) or "Failed to fetch video stream due to network issues"
+        error=last_error or "An unexpected error occurred. Please try again."
     )
 
 
 def get_audio_url(media_url, retries: int = 3):
+    """Fetch an audio-only stream URL for a YouTube link.
+
+    Parameters:
+        media_url (str): The source media URL.
+        retries (int): Number of retry attempts on transient failure.
+
+    Returns:
+        str: JSON string with the audio stream URL or a user-friendly error message.
+    """
     last_error = None
 
-    for attempt in range(retries):
-        try:
-            yt = YouTube(media_url)
+    try:
+        yt = YouTube(media_url)
 
-            # Prefer audio-only (smallest, most reliable)
-            stream = yt.streams.get_audio_only()
+        # Prefer audio-only (smallest, most reliable)
+        stream = yt.streams.get_audio_only()
 
-            # Fallback if audio-only fails
-            if stream is None:
-                stream = yt.streams.filter(only_audio=True).first()
+        # Fallback if audio-only fails
+        if stream is None:
+            stream = yt.streams.filter(only_audio=True).first()
 
-            if stream is None:
-                raise ExtractError("No audio stream available")
+        if stream is None:
+            raise ExtractError("No audio stream available")
 
-            return make_response(
-                success=True,
-                result=str(stream.url)
-            )
+        return make_response(
+            success=True,
+            result=str(stream.url)
+        )
 
-        except (VideoUnavailable, RegexMatchError) as e:
-            # These won't succeed on retry
-            return make_response(
-                success=False,
-                error=str(e)
-            )
+    except (VideoUnavailable, RegexMatchError):
+        # These won't succeed on retry
+        return make_response(
+            success=False,
+            error="The content is unavailable or cannot be accessed at this time."
+        )
 
-        except (PytubeFixError, ExtractError, RequestException, ssl.SSLError, socket.error) as e:
-            last_error = e
-            time.sleep(1.2)
+    except (PytubeFixError, ExtractError, RequestException, ssl.SSLError, socket.error):
+        last_error = "Something went wrong while processing your request. Please try again."
 
-        except Exception as e:
-            # Catch-all to protect Chaquopy
-            last_error = e
-            time.sleep(1.2)
+    except Exception as e:
+        # Catch-all to protect Chaquopy
+        last_error = str(e)
 
     return make_response(
         success=False,
-        error=f"Failed to fetch audio stream after {retries} attempts: {last_error}"
+        error=last_error or "An unexpected error occurred. Please try again."
     )
     
 
 def getPlayListUrls(youtube_url):
+    """Return playlist item metadata for a YouTube playlist URL.
 
+    Parameters:
+        youtube_url (str): The playlist page URL.
+
+    Returns:
+        str|bool: JSON string of playlist items, or False on failure.
+    """
     try:
         play_list = Playlist(youtube_url)
 
@@ -128,10 +171,18 @@ def getPlayListUrls(youtube_url):
         ]
 
         return json.dumps(data)
-    except Exception as e:
+    except Exception:
         return False
 
 def Searcher(inputer):
+    """Search for videos by user query.
+
+    Parameters:
+        inputer: The search query input.
+
+    Returns:
+        str: JSON string containing search results or an error message.
+    """
     try:
 
         # Coerce to string + trim
@@ -143,17 +194,17 @@ def Searcher(inputer):
         results = search.result()
         return make_response(success=True, error=None, result=results)
 
-    except RequestException as e:
-        err_msg = f"Network error while searching videos: {e}"
+    except RequestException:
+        err_msg = "A network error occurred while searching. Please check your connection and try again."
     except socket.gaierror:
-        err_msg = "DNS lookup failed — check your internet connection."
+        err_msg = "No internet connection. Please check your network and try again."
     except TimeoutError:
-        err_msg = "Search request timed out."
-    except PytubeFixError as e:
-        err_msg = f"YouTube library error: {e}"
-    except Exception as e:
+        err_msg = "The request took too long. Please try again."
+    except PytubeFixError:
+        err_msg = "Something went wrong while processing your request. Please try again."
+    except Exception:
         traceback.print_exc()
-        err_msg = f"Unexpected error during search: {e}"
+        err_msg = "Something went wrong while processing your request. Please try again."
 
     traceback.print_exc()
     return make_response(success=False, error=err_msg, result=None)
@@ -162,6 +213,14 @@ def Searcher(inputer):
 # print(vdv)
 
 def SearchWithLink(inputer):
+    """Fetch video metadata from a link for direct link-based lookup.
+
+    Parameters:
+        inputer: The video URL or identifier.
+
+    Returns:
+        str: JSON string containing video metadata or a user-facing error message.
+    """
     try:
 
         video = Video.getInfo(inputer)
@@ -173,25 +232,24 @@ def SearchWithLink(inputer):
             "date": str(video["publishDate"]),
             'channelName': str(video["channel"]["name"]),
             'description': str(video["description"])
-            }
+        }
 
-        val = json.dumps(data)
         return make_response(True, None, data)
 
     except VideoUnavailable:
         err_msg = "The requested video is unavailable or private."
     except RegexMatchError:
-        err_msg = "Invalid YouTube URL or unable to extract video data."
+        err_msg = "Invalid video link or unable to extract video data."
     except ExtractError:
-        err_msg = "Error extracting video information."
-    except PytubeFixError as e:
-        err_msg = f"YouTube processing error: {str(e)}"
-    except RequestException as e:
-        err_msg = f"Network request error: {str(e)}"
+        err_msg = "We couldn't find a supported video format or stream for this link."
+    except PytubeFixError:
+        err_msg = "Something went wrong while processing your request. Please try again."
+    except RequestException:
+        err_msg = "A network error occurred. Please check your internet connection and try again."
     except TimeoutError:
-        err_msg = "Request to YouTube timed out."
-    except Exception as e:
-        err_msg = f"Unexpected error fetching video info: {str(e)}"
+        err_msg = "The request took too long. Please try again."
+    except Exception:
+        err_msg = "Something went wrong while processing your request. Please try again."
 
     traceback.print_exc()
     return make_response(success=False, error=err_msg)

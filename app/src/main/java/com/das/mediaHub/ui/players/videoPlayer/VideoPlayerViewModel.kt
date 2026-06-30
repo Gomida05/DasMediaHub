@@ -201,7 +201,7 @@ class VideoPlayerViewModel @Inject constructor(
     fun loadStreamForBackGroud(
         onStart: () -> Unit,
         onSuccess: (ItemsStreamUrlsForMediaItemData) -> Unit,
-        onFailure: (Exception) -> Unit
+        onFailure: (String) -> Unit
     ) {
         onStart()
         viewModelScope.launch {
@@ -218,7 +218,7 @@ class VideoPlayerViewModel @Inject constructor(
                 )
             mediaDetails.loadStreamUrl(
                 onSuccess = onSuccess,
-                onFailure = onFailure
+                onFailure = { onFailure(ErrorMapper.map(it)) }
             )
         }
     }
@@ -333,7 +333,6 @@ class VideoPlayerViewModel @Inject constructor(
     }
 
     override fun onCleared() {
-        super.onCleared()
         videoPlayerManager.removeListener(playerListener)
         closeCurrentlyPlayingMedia()
     }

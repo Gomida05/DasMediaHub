@@ -61,7 +61,7 @@ publishing {
         create<MavenPublication>("release") {
             groupId = "com.das"
             artifactId = "python"
-            version = "2.2.2"
+            version = "2.3.0"
 
             afterEvaluate {
                 from(components["release"])

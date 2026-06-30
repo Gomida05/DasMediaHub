@@ -328,8 +328,8 @@ fun VideoDetailsActionItems(
         title = "Play in background",
         subtitle = "Audio only",
         onClick = {
-            onDismissRequest()
             onVideoAction(VideoAction.PlayBackground)
+            onDismissRequest()
         }
     )
 

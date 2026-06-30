@@ -93,7 +93,6 @@ class ResultViewModel: ViewModel() {
     }
 
     fun loadMore() {
-        val query = currentQuery ?: return
         val currentState = _searchResults.value as? UiState.Success ?: return
         if (nextPageToken.isNullOrBlank()) return
         if (_isLoadingMore.value || _allResults.isEmpty()) return

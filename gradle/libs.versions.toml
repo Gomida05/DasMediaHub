@@ -28,7 +28,7 @@ room3Version = "3.0.0-rc01"
 runtimeAndroidVersion = "1.11.3"
 firestoreVersion = "26.4.0"
 lifecycleRuntimeKtxVersion = "2.11.0"
-dasPython = "2.2.2"
+dasPython = "2.3.0"
 dasDownloader = "2.0.0"
 workRuntimeKtxVersion = "2.11.2"
 

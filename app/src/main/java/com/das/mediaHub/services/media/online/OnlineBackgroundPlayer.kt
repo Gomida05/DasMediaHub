@@ -6,9 +6,8 @@ import android.app.NotificationManager
 import android.app.PendingIntent
 import android.content.Context
 import android.content.Intent
-import android.graphics.Bitmap
-import android.graphics.BitmapFactory
-import android.net.Uri
+import android.content.pm.ServiceInfo
+import android.os.Build
 import android.util.Log
 import androidx.core.app.NotificationCompat
 import androidx.core.content.getSystemService
@@ -20,7 +19,6 @@ import androidx.media3.exoplayer.ExoPlayer
 import androidx.media3.session.MediaSession
 import androidx.media3.session.MediaSessionService
 import androidx.media3.session.MediaStyleNotificationHelper
-import com.bumptech.glide.Glide
 import com.das.mediaHub.MainActivity
 import com.das.mediaHub.R
 import com.das.mediaHub.Receiver
@@ -31,10 +29,7 @@ import com.das.mediaHub.data.local.db.dao.FavoritesDao
 import com.das.mediaHub.data.mediacontroller.online.MediaSessionPlaybackState
 import com.das.mediaHub.data.model.PlaybackPayload
 import com.das.python.data.model.ItemsStreamUrlsForMediaItemData
-import com.google.common.util.concurrent.Futures
-import com.google.common.util.concurrent.ListenableFuture
 import dagger.hilt.android.AndroidEntryPoint
-import okhttp3.internal.toLongOrDefault
 import javax.inject.Inject
 
 /**
@@ -63,8 +58,8 @@ class OnlineBackgroundPlayer : MediaSessionService() {
 
     //For now
     private val mediaSession by lazy {
-        @SuppressLint("UnsafeOptInUsageError")
-        MediaSession.Builder(applicationContext, exoPlayer)
+        @SuppressLint("UnsafeOptInUsageError", "RestrictedApi")
+        val session = MediaSession.Builder(applicationContext, exoPlayer)
             .setSessionActivity(
                 PendingIntent.getActivity(
                     applicationContext,
@@ -73,29 +68,8 @@ class OnlineBackgroundPlayer : MediaSessionService() {
                     FLAGS
                 )
             )
-            .setBitmapLoader(
-
-                object : BitmapLoader {
-                    override fun supportsMimeType(mimeType: String): Boolean {
-                        return true
-                    }
-
-                    override fun decodeBitmap(data: ByteArray): ListenableFuture<Bitmap> {
-                        val bitmap = BitmapFactory.decodeByteArray(data, 0, data.size)
-                        return Futures.immediateFuture(bitmap)
-                    }
-
-                    override fun loadBitmap(uri: Uri): ListenableFuture<Bitmap> {
-                        val bitmap = Glide.with(this@OnlineBackgroundPlayer)
-                            .asBitmap()
-                            .load(uri)
-                            .submit()
-                            .get()
-                        return Futures.immediateFuture(bitmap)
-                    }
-                }
-            )
             .build()
+        session
     }
 
     private val notificationManager by lazy {
@@ -120,7 +94,7 @@ class OnlineBackgroundPlayer : MediaSessionService() {
 
                 val payload = intent.toPlaybackPayload()
                 if (currentPayload?.videoId == payload?.videoId && exoPlayer.isPlaying) {
-                    startForeground(NOTIFICATION_ID, createMediaNotification())
+                    moveToForeground()
                     return START_STICKY
                 }
                 if (payload == null) {
@@ -131,12 +105,25 @@ class OnlineBackgroundPlayer : MediaSessionService() {
 
                 currentPayload = payload
                 startPlayback(payload)
-                startForeground(NOTIFICATION_ID, createMediaNotification())
+                moveToForeground()
                 return START_STICKY
             }
         }
 
         return START_NOT_STICKY
+    }
+
+    private fun moveToForeground() {
+        val notification = createMediaNotification()
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
+            startForeground(
+                NOTIFICATION_ID,
+                notification,
+                ServiceInfo.FOREGROUND_SERVICE_TYPE_MEDIA_PLAYBACK
+            )
+        } else {
+            startForeground(NOTIFICATION_ID, notification)
+        }
     }
 
     private fun startPlayback(payload: PlaybackPayload) {
@@ -150,7 +137,7 @@ class OnlineBackgroundPlayer : MediaSessionService() {
                     .setMediaType(MediaMetadata.MEDIA_TYPE_MUSIC)
                     .setDescription(payload.channelName)
                     .setAlbumArtist("Unknown Album")
-                    .setDurationMs(payload.duration.toLongOrDefault(0L))
+                    .setDurationMs(payload.duration.toLongOrNull() ?: 0L)
                     .setArtworkUri("https://img.youtube.com/vi/${payload.videoId}/0.jpg".toUri())
                     .build()
             )
@@ -182,7 +169,7 @@ class OnlineBackgroundPlayer : MediaSessionService() {
             MainActivity::class.java
         ).apply {
             action = OPEN_IT_NOW
-            putExtra("VideoID", EXTRA_VIDEO_ID)
+            putExtra("VideoID", currentPayload?.videoId)
         }
 
         val pendingIntent = PendingIntent.getActivity(
